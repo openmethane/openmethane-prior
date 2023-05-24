@@ -1,0 +1,7 @@
+netCDF4
+numpy
+pandas
+python_dateutil
+scipy
+Shapely
+pyception
