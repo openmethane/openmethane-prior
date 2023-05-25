@@ -2,9 +2,12 @@
 - MACC emissions from Copernicus web-site
   - check which emissions are covered so we don't double count
   - These probably supercede EDGAR files
-- base files for geogenic emissions (question for JS)
+- base files for geogenic emissions 
 - GFAS emissions files
+- CarbonTracker emission files
 - agriculture files from Nasimeh
+* define uncertainty for each layer
+Usually an expression like $\sigma = \alpha E + \beta$
 * Suggested workflow
 - define a grid object
 - Make a high-resolution instance, suggest 1km and covering Australia
