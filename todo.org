@@ -1,0 +1,23 @@
+* files we need to find
+- CAMS/MACC emissions from Copernicus web-site
+  - check which emissions are covered so we don't double count
+  - These probably supercede EDGAR files
+- base files for geogenic emissions 
+- GFAS emissions files
+- CarbonTracker emission files
+  - check double counting between these and MACC/CAMS
+- agriculture files from Nasimeh
+- Point source emission files
+- Distribute other anthropogenic emissions according to nightlights unless there's a better proxy for a category
+* define uncertainty for each layer
+Usually an expression like $\sigma = \alpha E + \beta$
+* Suggested workflow
+- define a Grid class
+- Make a high-resolution Grid instance, suggest 1km and covering Australia
+- Write routines to map each emission onto that rid
+- Define a second Grid instance corresponding to our domain
+- write regridding routines which probably just aggregate from high-res to chosen
+- Write combination script
+  - Emissions just add
+  - Uncertainties add quadratically as $\sigma = \sqrt{\sum_{i=1}^{N \sigma_i^2}}$ where $\sigma_i$ is the uncertainty for each sector
+- 
