@@ -7,6 +7,8 @@ import pandas as pd
 import math
 
 def processEmissions():
+    print("processEmissions for Electricity")
+
     electricityEmis = pd.read_csv(sectoralEmissionsPath).to_dict(orient='records')[0]["electricity"]
     electricityFacilities = pd.read_csv(electricityPath, header=0).to_dict(orient='records')
     electricityEmisPerFacility = electricityEmis / len(electricityFacilities)

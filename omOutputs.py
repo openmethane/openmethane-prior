@@ -8,7 +8,8 @@ landuseReprojectionPath = os.path.join("outputs", "land-use.tif")
 ntlReprojectionPath = os.path.join("outputs", "night-time-lights.tif")
 domainOutputPath = os.path.join("outputs", f"om-{omInputs.domainFilename}")
 
-def writeLayer(layerName, layerData):        
+def writeLayer(layerName, layerData):
+    print(f"Writing emissions data for {layerName}")
     datapath = domainOutputPath if os.path.exists(domainOutputPath) else omInputs.domainPath
     with xr.open_dataset(datapath) as dss:
             ds = dss.load()

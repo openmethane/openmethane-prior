@@ -1,1 +1,4 @@
 __pycache__
+outputs/land-use.tif
+outputs/night-time-lights.tif
+outputs/om-geo_em.d01.nc

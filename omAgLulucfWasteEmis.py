@@ -8,6 +8,7 @@ from omOutputs import landuseReprojectionPath, writeLayer
 
 def processEmissions():
     # Load raster land-use data
+    print("processEmissions for Agriculture, LULUCF and waste")
     print("Loading land use data")
     landUseData = rxr.open_rasterio(landuseReprojectionPath, masked=True)
 

@@ -9,11 +9,14 @@ import geopandas
 import pyproj
 
 def processEmissions():
+    print("processEmissions for Industrial, Staionary and Transport")
+
     _ntlData = rxr.open_rasterio(ntlReprojectionPath, masked=True)
 
     ds = xr.open_dataset(domainPath)
     domainProj = pyproj.Proj(proj='lcc', lat_1=ds.TRUELAT1, lat_2=ds.TRUELAT2, lat_0=ds.MOAD_CEN_LAT, lon_0=ds.STAND_LON, a=6370000, b=6370000)
 
+    print("Clipping night-time lights data to Australian land border")
     ausf = geopandas.read_file(auShapefilePath)
     ausf_rp = ausf.to_crs(domainProj.crs)
     ntlData = _ntlData.rio.clip(ausf_rp.geometry.values, ausf_rp.crs)
@@ -54,8 +57,6 @@ def processEmissions():
         except:
             # print(f"ignoring out of range pixel {yDomain[y]}, {xDomain[x]}")
             ignored += 1
-
-    print(f"ignored {ignored} of {len(litPixels)}")
 
     writeLayer(f"OCH4_{'industrial'.upper()}", methane["industrial"])
     writeLayer(f"OCH4_{'stationary'.upper()}", methane["stationary"])
