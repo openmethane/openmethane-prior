@@ -1,0 +1,8 @@
+numpy
+netCDF4
+xarray
+rioxarray
+pyproj
+pandas
+geopandas
+python-dotenv

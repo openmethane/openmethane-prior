@@ -1,5 +1,6 @@
-# openmethane-prior
+# OpenMethane prior emissions estimate outputs
 
-## Outputs
+Outputs files will be saved here.
 
-Outputs layers will be saved here
+- geo_em file with methane layers added
+- reprojected raster layers
