@@ -6,3 +6,4 @@ pyproj
 pandas
 geopandas
 python-dotenv
+colorama

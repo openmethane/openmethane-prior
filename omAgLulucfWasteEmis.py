@@ -106,3 +106,6 @@ def processEmissions():
     print("Writing methane layers domain file")
     for sector in sectorsUsed:
         writeLayer(f"OCH4_{sector.upper()}", methane[sector])
+
+if __name__ == '__main__':
+    processEmissions()

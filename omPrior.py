@@ -5,6 +5,7 @@ import omIndustrialStationaryTransportEmis
 import omElectricityEmis
 import omFugitiveEmis
 import omOutputs
+import omPriorVerify
 
 # Parse args
 parser = argparse.ArgumentParser(description="Calculate the prior methane emissions estimate for OpenMethane")
@@ -22,3 +23,5 @@ omElectricityEmis.processEmissions()
 omFugitiveEmis.processEmissions()
 
 omOutputs.sumLayers()
+
+omPriorVerify.verifyEmis()

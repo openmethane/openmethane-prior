@@ -9,7 +9,7 @@ import math
 def processEmissions():
     print("processEmissions for Electricity")
 
-    electricityEmis = pd.read_csv(sectoralEmissionsPath).to_dict(orient='records')[0]["electricity"]
+    electricityEmis = pd.read_csv(sectoralEmissionsPath).to_dict(orient='records')[0]["electricity"] * 1000000
     electricityFacilities = pd.read_csv(electricityPath, header=0).to_dict(orient='records')
     electricityEmisPerFacility = electricityEmis / len(electricityFacilities)
 
@@ -30,4 +30,7 @@ def processEmissions():
         iy = math.floor((y + hh / 2) / ds.DY)
         methane[0][iy][ix] += electricityEmisPerFacility
 
-    writeLayer(f"OCH4_{'electricity'.upper()}", methane)
+    writeLayer("OCH4_ELECTRICITY", methane)
+
+if __name__ == '__main__':
+    processEmissions()

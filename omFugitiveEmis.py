@@ -8,7 +8,7 @@ import math
 
 def processEmissions():
     print("processEmissions for fugitives")
-    fugitiveEmis = pd.read_csv(sectoralEmissionsPath).to_dict(orient='records')[0]["fugitive"]
+    fugitiveEmis = pd.read_csv(sectoralEmissionsPath).to_dict(orient='records')[0]["fugitive"] * 1000000
     fugitiveFacilities = pd.read_csv(fugitivesPath, header=0).to_dict(orient='records')
     fugitiveEmisPerFacility = fugitiveEmis / len(fugitiveFacilities)
 
@@ -29,5 +29,7 @@ def processEmissions():
         iy = math.floor((y + hh / 2) / ds.DY)
         methane[0][iy][ix] += fugitiveEmisPerFacility
 
-    layerName = f"OCH4_{'fugitive'.upper()}"
-    writeLayer(layerName, methane)
+    writeLayer("OCH4_FUGITIVE", methane)
+
+if __name__ == '__main__':
+    processEmissions()

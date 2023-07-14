@@ -11,6 +11,7 @@ import pyproj
 def processEmissions():
     print("processEmissions for Industrial, Staionary and Transport")
 
+    sectorsUsed = ["industrial", "stationary", "transport"]
     _ntlData = rxr.open_rasterio(ntlReprojectionPath, masked=True)
 
     ds = xr.open_dataset(domainPath)
@@ -26,9 +27,9 @@ def processEmissions():
 
     sectorData = pd.read_csv(sectoralEmissionsPath).to_dict(orient='records')[0]
 
-    ntlIndustrial = ntltScalar * sectorData["industrial"]
-    ntlStationary = ntltScalar * sectorData["stationary"]
-    ntlTransport = ntltScalar * sectorData["transport"]
+    ntlIndustrial = ntltScalar * (sectorData["industrial"]  * 1000000)
+    ntlStationary = ntltScalar * (sectorData["stationary"] * 1000000)
+    ntlTransport = ntltScalar * (sectorData["transport"]  * 1000000)
 
     # Load domain
     ds = nc.Dataset(domainPath)
@@ -44,7 +45,7 @@ def processEmissions():
     yDomain = xr.apply_ufunc(findGrid, ntlData.y, hh, ds.DY).values.astype(int)
 
     methane = {}
-    for sector in ["industrial", "stationary", "transport"]:
+    for sector in sectorsUsed:
         methane[sector] = np.zeros(ds["LANDMASK"].shape)
 
     litPixels = np.argwhere(ntlt.values > 0)
@@ -58,6 +59,8 @@ def processEmissions():
             # print(f"ignoring out of range pixel {yDomain[y]}, {xDomain[x]}")
             ignored += 1
 
-    writeLayer(f"OCH4_{'industrial'.upper()}", methane["industrial"])
-    writeLayer(f"OCH4_{'stationary'.upper()}", methane["stationary"])
-    writeLayer(f"OCH4_{'transport'.upper()}", methane["transport"])
+    for sector in sectorsUsed:
+        writeLayer(f"OCH4_{sector.upper()}", methane[sector])
+
+if __name__ == '__main__':
+    processEmissions()
