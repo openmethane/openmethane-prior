@@ -13,6 +13,7 @@ sectoralEmissionsPath = os.path.join("inputs", getenv("SECTORAL_EMISSIONS"))
 sectoralMappingsPath = os.path.join("inputs", getenv("SECTORAL_MAPPING"))
 ntlPath = os.path.join("inputs", getenv("NTL"))
 auShapefilePath = os.path.join("inputs", getenv("AUSF"))
+livestockDataPath = os.path.join("inputs", getenv("LIVESTOCK_DATA"))
 
 import pyproj
 import samgeo.common as sam
@@ -37,6 +38,7 @@ def checkInputFiles():
     checkInputFile(sectoralEmissionsPath, f"Missing file for sectoral emissions: {sectoralEmissionsPath}", errors)
     checkInputFile(sectoralMappingsPath, f"Missing file for sectoral emissions mappings: {sectoralMappingsPath}", errors)
     checkInputFile(ntlPath, f"Missing file for night time lights: {ntlPath}", errors)
+    checkInputFile(livestockDataPath, f"Missing file for livestock data: {livestockDataPath}", errors)
 
     ## Print all errors and exit (if we have any errors)
     if len(errors) > 0:

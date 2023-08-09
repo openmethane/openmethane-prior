@@ -3,7 +3,7 @@ import numpy as np
 import netCDF4 as nc
 import xarray
 import rioxarray as rxr
-from omInputs import domainPath, sectoralEmissionsPath, sectoralMappingsPath
+from omInputs import domainPath, sectoralEmissionsPath, sectoralMappingsPath, livestockDataPath
 from omOutputs import landuseReprojectionPath, writeLayer
 
 def processEmissions():

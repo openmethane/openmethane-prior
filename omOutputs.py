@@ -35,8 +35,3 @@ def sumLayers():
              ds["OCH4_TOTAL"] = (('Time', 'south_north', 'west_east'), summed)
              ds.to_netcdf(domainOutputPath)
 
-# Test
-# dss = xr.open_dataset(omInputs.domainPath)
-# methane = np.zeros(dss["LANDMASK"].shape)
-# writeLayer("methane", methane)
-# sumLayers()
