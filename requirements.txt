@@ -8,3 +8,5 @@ geopandas
 python-dotenv
 colorama
 cdsapi
+shapely
+bisect
