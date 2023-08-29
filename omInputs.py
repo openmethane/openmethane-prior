@@ -15,6 +15,7 @@ ntlPath = os.path.join("inputs", getenv("NTL"))
 auShapefilePath = os.path.join("inputs", getenv("AUSF"))
 croFilePath = os.path.join("inputs", getenv("croFile"))
 dotFilePath = os.path.join("inputs", getenv("dotFile"))
+termiteFilePath = os.path.join("inputs", getenv("termiteFile"))
 
 import pyproj
 import samgeo.common as sam
