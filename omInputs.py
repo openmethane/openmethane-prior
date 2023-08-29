@@ -13,6 +13,8 @@ sectoralEmissionsPath = os.path.join("inputs", getenv("SECTORAL_EMISSIONS"))
 sectoralMappingsPath = os.path.join("inputs", getenv("SECTORAL_MAPPING"))
 ntlPath = os.path.join("inputs", getenv("NTL"))
 auShapefilePath = os.path.join("inputs", getenv("AUSF"))
+croFilePath = os.path.join("inputs", getenv("croFile"))
+dotFilePath = os.path.join("inputs", getenv("dotFile"))
 
 import pyproj
 import samgeo.common as sam
