@@ -5,6 +5,12 @@ import rioxarray as rxr
 from omInputs import domainPath, sectoralEmissionsPath, sectoralMappingsPath
 from omOutputs import landuseReprojectionPath, writeLayer
 import cdsapi
+import itertools
+import datetime
+import helper_funcs
+import os
+from shapely import geometry
+import bisect
 
 def downloadGFAS( startDate, endDate, fileName='download.nc'):
     """ download GFAS methane between two dates startDate and endDate, returns nothing"""
@@ -21,106 +27,217 @@ def downloadGFAS( startDate, endDate, fileName='download.nc'):
         ],
     },
         fileName)
-def processEmissions(startDate, endDate):
-    # download GFAS data
-    print("processEmissions for Agriculture, LULUCF and waste")
-    print("Loading land use data")
-    landUseData = rxr.open_rasterio(landuseReprojectionPath, masked=True)
 
-    # Load domain
-    print("Loading domain dataset")
-    ds = nc.Dataset(domainPath)
-    landmask = ds["LANDMASK"][:]
+def redistribute_spatially(LATshape, ind_x, ind_y, coefs, subset, areas):
+    '''Redistribute GFAS emissions horizontally and vertically - this little function does most of the work
 
-    print("Calculating sectoral emissions")
-    # Import a map of land use type numbers to emissions sectors
-    landuseSectorMap = {}
-    with open(sectoralMappingsPath, "r", newline="") as f:
-        reader = csv.reader(f)
-        next(reader)  # toss headers
+    Args:
+        LATshape: shape of the LAT variable
+        ind_x: x-indices in the GFAS domain corresponding to indices in the CMAQ domain
+        ind_y: y-indices in the GFAS domain corresponding to indices in the CMAQ domain
+        coefs: Area-weighting coefficients to redistribute the emissions
+        subset: the GFAS emissionsx
+        areas: Areas of GFAS grid-cells in units of m^2
 
-        for value, sector in reader:
-            if sector:
-                landuseSectorMap[int(value)] = sector
+    Returns: 
+        gridded: concentrations on the 2D CMAQ grid
+        
+    '''
+    
+    ##
+    gridded = np.zeros(LATshape,dtype = np.float32)
+    ij = -1
+    for i in range(LATshape[0]):
+        for j in range(LATshape[1]):
+            ij += 1
+            for k in range(len(ind_x[ij])):
+                ix      = ind_x[ij][k]
+                iy      = ind_y[ij][k]
+                gridded[i,j] += subset[iy,ix] *coefs[ij][k] * areas[iy,ix]   
+    ##
+    return gridded
 
-    # Import a map of emissions per sector, store it to hash table
-    methaneInventoryBySector = {}
-    seenHeaders = False
-    headers = []
+def processEmissions(startDate, endDate, **kwargs): # doms, GFASfolder, GFASfile, metDir, ctmDir, CMAQdir, mechCMAQ, mcipsuffix, specTableFile, forceUpdate):
+    '''Function to remap GFAS fire emissions to the CMAQ domain
 
-    with open(sectoralEmissionsPath, "r", newline="") as f:
-        reader = csv.reader(f)
-        for row in reader:
-            if not seenHeaders:
-                headers = row.copy()
-                seenHeaders = True
-            else:
-                methaneInventoryBySector = dict.fromkeys(headers, 0)
-                for i, v in enumerate(headers):
-                    methaneInventoryBySector[v] = float(row[i]) * 1000000
+    Args:
+        startDate, endDate: the date range (datetime objects)
+        kwargs, specific arguments needed for this emission
 
-    # Create a dict to count all of the instances of each sector in the land use data
-    sectorCounts = dict.fromkeys(methaneInventoryBySector, 0)
 
-    # Read the land use type data band
-    dataBand = landUseData[0].values
+    Returns:
+        Nothing
+    '''
 
-    # Count all the unique land-use types
-    unique, counts = np.unique(dataBand, return_counts=True)
-    usageCounts = dict(zip(unique, counts))
+    try:
+        forceUpdate = kwargs['forceUpdate']
+    except KeyError:
+        forceUpdate = False
+            
+    GFASfile = downloadGFAS( startDate, endDate)
+    #GFASfile = 'download.nc' # for rapid testing
+    ncin = nc.Dataset(GFASfile, 'r', format='NETCDF3')
+    latGfas  = np.around(np.float64(ncin.variables['latitude'][:]),3)
+    lonGfas  = np.around(np.float64(ncin.variables['longitude'][:]),3)
+    dlatGfas = latGfas[0] - latGfas[1]
+    dlonGfas = lonGfas[1] - lonGfas[0]
+    lonGfas_edge = np.zeros((len(lonGfas) + 1))
+    lonGfas_edge[0:-1] = lonGfas - dlonGfas/2.0
+    lonGfas_edge[-1] = lonGfas[-1] + dlonGfas/2.0
+    lonGfas_edge = np.around(lonGfas_edge,2)
+    gfasHoursSince1900 = ncin.variables['time'][:]
+    basedate = datetime.datetime(1900,1,1,0,0,0)
+    gfasTimes = nc.num2date( ncin.variables['time'][:], ncin.variables['time'].getncattr('units') )
 
-    # Filter usage counts down to the land use types we have mapped
-    usageCounts = {key: usageCounts[key] for key in landuseSectorMap.keys()}
+    latGfas_edge = np.zeros((len(latGfas) + 1))
+    latGfas_edge[0:-1] = latGfas + dlatGfas/2.0
+    latGfas_edge[-1] = latGfas[-1] - dlatGfas/2.0
+    latGfas_edge = np.around(latGfas_edge,2)
 
-    # Sum the land use counts into sector counts
-    for usageType, count in usageCounts.items():
-        sector = landuseSectorMap.get(int(usageType), False)
-        if sector:
-            sectorCounts[sector] += count
+    nlonGfas = len(lonGfas)
+    nlatGfas = len(latGfas)
 
-    # Calculate a per grid-square value for each sector
-    sectorEmissionsPerGridSquare = dict.fromkeys(methaneInventoryBySector, 0)
-    sectorsUsed = []
-    for sector, numGridSquares in sectorCounts.items():
-        if numGridSquares != 0:
-            sectorEmissionsPerGridSquare[sector] = (
-                methaneInventoryBySector[sector] / numGridSquares
-            )
-            sectorsUsed.append(sector)
+    latGfasrev = latGfas[::-1]
+    latGfasrev_edge = latGfas_edge[::-1]
 
-    _, lmy, lmx = landmask.shape
-    ww = ds.DX * lmx
-    hh = ds.DY * lmy
-    # methane = np.zeros((lmy, lmx))
-
-    methane = {}
-    for sector in sectorsUsed:
-        methane[sector] = np.zeros(ds["LANDMASK"].shape)
-
-    print("Mapping land use grid to domain grid")
-    findGrid = lambda data, totalSize, gridSize: np.floor((data + totalSize / 2) / gridSize)
-    xDomain = xarray.apply_ufunc(findGrid, landUseData.x, ww, ds.DX).values.astype(int)
-    yDomain = xarray.apply_ufunc(findGrid, landUseData.y, hh, ds.DY).values.astype(int)
-
-    print("Assigning methane layers to domain grid")
-    for landUseType, _ in usageCounts.items():
-        sector = landuseSectorMap[landUseType]
-        emission = sectorEmissionsPerGridSquare[sector]
-        sectorPixels = np.argwhere(dataBand == landUseType)
-
-        if emission > 0:
-            yDomain = xarray.apply_ufunc(findGrid, landUseData.y, hh, ds.DY).values.astype(int)
-
-            for y, x in sectorPixels:
-                try:
-                    methane[sector][0][yDomain[y]][xDomain[x]] += emission
-                except:
-                    print("ignoring out of range pixel")
     
 
-    print("Writing methane layers domain file")
-    for sector in sectorsUsed:
-        writeLayer(f"OCH4_{sector.upper()}", methane[sector])
+    print("Calculate grid cell areas for the GFAS grid")
+    areas = np.zeros((nlatGfas,nlonGfas))
+    # take advantage of  regular grid to compute areas equal for each gridbox at same latitude
+    for iy in range(nlatGfas):
+        areas[iy,:] = helper_funcs.area_of_rectangle_m2(latGfas_edge[iy],latGfas_edge[iy+1],lonGfas_edge[0],lonGfas_edge[-1])/lonGfas.size
 
-#if __name__ == '__main__':
-#    processEmissions()
+
+    indxPath = "{}/GFAS_ind_x.p.gz".format(kwargs['ctmDir'])
+    indyPath = "{}/GFAS_ind_y.p.gz".format(kwargs['ctmDir'])
+    coefsPath = "{}/GFAS_coefs.p.gz".format(kwargs['ctmDir'])
+    if os.path.exists(indxPath) and os.path.exists(indyPath) and os.path.exists(coefsPath) and (not forceUpdate):
+        ind_x = helper_funcs.load_zipped_pickle( indxPath )
+        ind_y = helper_funcs.load_zipped_pickle( indyPath )
+        coefs = helper_funcs.load_zipped_pickle( coefsPath )
+        ##
+        domShape = []
+        croFile = kwargs['croFile']
+        nccro= nc.Dataset(croFile, 'r', format='NETCDF4')
+        LAT  = nccro.variables['LAT'][:].squeeze()
+        domShape.append(LAT.shape)
+        nccro.close()
+    else:
+        ind_x = []
+        ind_y = []
+        coefs = []
+        count = []
+        domShape = []
+
+        ind_x.append([])
+        ind_y.append([])
+        coefs.append([])
+
+        ncdot= nc.Dataset(kwargs['dotFile'], 'r', format='NETCDF4')
+        nccro= nc.Dataset(kwargs['croFile'], 'r', format='NETCDF4')
+
+        LAT  = nccro.variables['LAT'][:].squeeze()
+        LON  = nccro.variables['LON'][:].squeeze()
+        LATD = ncdot.variables['LATD'][:].squeeze()
+        LOND = ncdot.variables['LOND'][:].squeeze()
+
+        domShape.append(LAT.shape)
+
+        count2  = np.zeros(LAT.shape,dtype = np.float32)
+
+        for i,j  in itertools.product(range(LAT.shape[0]), range(LAT.shape[1])):
+            IND_X = []
+            IND_Y = []
+            COEFS = []
+
+            xvals = np.array([LOND[i,  j], LOND[i,  j+1], LOND[i+1,  j], LOND[i+1,  j+1]])
+            yvals = np.array([LATD[i,  j], LATD[i,  j+1], LATD[i+1,  j], LATD[i+1,  j+1]])
+
+            xy = [[LOND[i,  j],LATD[i,  j]],[LOND[i,  j+1],LATD[i,  j+1]],[LOND[i+1,  j+1],LATD[i+1,  j+1]],[LOND[i+1,  j],LATD[i+1,  j]]]
+            CMAQ_gridcell = geometry.Polygon(xy)
+
+            xmin = np.min(xvals)
+            xmax = np.max(xvals)
+            ymin = np.min(yvals)
+            ymax = np.max(yvals)
+
+            ixminl = bisect.bisect_right(lonGfas_edge,xmin)
+            ixmaxr = bisect.bisect_right(lonGfas_edge,xmax)
+            iyminl = nlatGfas - bisect.bisect_right(latGfasrev_edge,ymax)
+            iymaxr = nlatGfas - bisect.bisect_right(latGfasrev_edge,ymin)
+
+            for ix,iy  in itertools.product(range(max(0,ixminl-1),min(nlonGfas,ixmaxr)), range(max(0,iyminl),min(nlatGfas,iymaxr+1))):
+                gfas_gridcell = geometry.box(lonGfas_edge[ix],latGfas_edge[iy],lonGfas_edge[ix+1],latGfas_edge[iy+1])
+                if CMAQ_gridcell.intersects(gfas_gridcell):
+                    intersection = CMAQ_gridcell.intersection(gfas_gridcell)
+                    weight1 = intersection.area/CMAQ_gridcell.area ## fraction of CMAQ cell covered
+                    weight2 = intersection.area/gfas_gridcell.area ## fraction of GFAS cell covered
+                    count2[ i,j] += weight2
+                    IND_X.append(ix)
+                    IND_Y.append(iy)
+                    COEFS.append(weight2)
+            ind_x.append(IND_X)
+            ind_y.append(IND_Y)
+            # COEFS = np.array(COEFS)
+            # COEFS = COEFS / COEFS.sum()
+            coefs.append(COEFS)
+        count.append(count2)
+        ncdot.close()
+        nccro.close()
+        ##
+        helper_funcs.save_zipped_pickle(ind_x, indxPath )
+        helper_funcs.save_zipped_pickle(ind_y, indyPath )
+        helper_funcs.save_zipped_pickle(coefs, coefsPath )
+        
+    result = []
+    for i in range(gfasTimes.size):
+        subset = ncin['ch4fire'][i,...]
+        result.append(redistribute_spatially(LAT.shape, ind_x, ind_y, coefs, subset, areas))
+    return np.array( result) 
+
+def testGFASEmis( startDate, endDate, **kwargs): # test totals for GFAS emissions between original and remapped
+    remapped = processEmissions( startDate, endDate, **kwargs)
+    GFASfile = 'download.nc'
+    ncin = nc.Dataset(GFASfile, 'r', format='NETCDF3')
+    latGfas  = np.around(np.float64(ncin.variables['latitude'][:]),3)
+    lonGfas  = np.around(np.float64(ncin.variables['longitude'][:]),3)
+    dlatGfas = latGfas[0] - latGfas[1]
+    dlonGfas = lonGfas[1] - lonGfas[0]
+    lonGfas_edge = np.zeros((len(lonGfas) + 1))
+    lonGfas_edge[0:-1] = lonGfas - dlonGfas/2.0
+    lonGfas_edge[-1] = lonGfas[-1] + dlonGfas/2.0
+    lonGfas_edge = np.around(lonGfas_edge,2)
+
+    latGfas_edge = np.zeros((len(latGfas) + 1))
+    latGfas_edge[0:-1] = latGfas + dlatGfas/2.0
+    latGfas_edge[-1] = latGfas[-1] - dlatGfas/2.0
+    latGfas_edge = np.around(latGfas_edge,2)
+
+    nlonGfas = len(lonGfas)
+    nlatGfas = len(latGfas)
+
+    latGfasrev = latGfas[::-1]
+    latGfasrev_edge = latGfas_edge[::-1]
+    areas = np.zeros((nlatGfas,nlonGfas))
+# take advantage of  regular grid to compute areas equal for each gridbox at same latitude
+    for iy in range(nlatGfas):
+        areas[iy,:] = helper_funcs.area_of_rectangle_m2(latGfas_edge[iy],latGfas_edge[iy+1],lonGfas_edge[0],lonGfas_edge[-1])/lonGfas.size
+    ncdot= nc.Dataset(kwargs['dotFile'], 'r', format='NETCDF4')
+    LATD = ncdot.variables['LATD'][:].squeeze()
+    LOND = ncdot.variables['LOND'][:].squeeze()
+    indLat = (latGfas > LATD.min()) &( latGfas < LATD.max())
+    indLon = (lonGfas > LOND.min()) &( lonGfas < LOND.max())
+    gfasCH4 = ncin['ch4fire'][...]
+    inds = np.ix_(indLat, indLon)
+    gfasTotals = [np.tensordot( gfasCH4[i][inds], areas[inds]) for i in range(gfasCH4.shape[0])]
+
+    remappedTotals = remapped.sum(axis=(1,2))
+    for t in zip(gfasTotals, remappedTotals): print(t)
+    return
+if __name__ == '__main__':
+    startDate = datetime.datetime(2022,7,1)
+    endDate = datetime.datetime(2022,7,2)
+    testGFASEmis(startDate, endDate, dotFile='GRIDDOT2D_1',croFile='GRIDCRO2D_1', ctmDir='.')
+
+                  
