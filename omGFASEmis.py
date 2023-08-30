@@ -27,6 +27,7 @@ def downloadGFAS( startDate, endDate, fileName='download.nc'):
         ],
     },
         fileName)
+    return fileName
 
 def redistribute_spatially(LATshape, ind_x, ind_y, coefs, subset, areas):
     '''Redistribute GFAS emissions horizontally and vertically - this little function does most of the work
