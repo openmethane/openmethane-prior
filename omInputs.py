@@ -16,6 +16,7 @@ auShapefilePath = os.path.join("inputs", getenv("AUSF"))
 croFilePath = os.path.join("inputs", getenv("croFile"))
 dotFilePath = os.path.join("inputs", getenv("dotFile"))
 termiteFilePath = os.path.join("inputs", getenv("termiteFile"))
+wetlandFilePath = os.path.join("inputs", getenv("wetlandFile"))
 
 import pyproj
 import samgeo.common as sam
