@@ -11,6 +11,7 @@ import helper_funcs
 import os
 from shapely import geometry
 import bisect
+from utils import dateTimeRange
 
 
 
@@ -43,7 +44,7 @@ def redistribute_spatially(LATshape, ind_x, ind_y, coefs, subset, fromAreas, toA
     gridded /= toAreas
     return gridded
 
-def processEmissions(startDate, endDate, **kwargs): # doms, GFASfolder, GFASfile, metDir, ctmDir, CMAQdir, mechCMAQ, mcipsuffix, specTableFile, forceUpdate):
+def makeWetlandClimatology( **kwargs): # doms, GFASfolder, GFASfile, metDir, ctmDir, CMAQdir, mechCMAQ, mcipsuffix, specTableFile, forceUpdate):
     '''Function to remap termite emissions to the CMAQ domain
 
     Args:
@@ -172,8 +173,16 @@ def processEmissions(startDate, endDate, **kwargs): # doms, GFASfolder, GFASfile
     ncin.close()
     return np.array( result) 
 
+def processEmissions(startDate, endDate, **kwargs): # doms, GFASfolder, GFASfile, metDir, ctmDir, CMAQdir, mechCMAQ, mcipsuffix, specTableFile, forceUpdate):
+    climatology = makeWetlandClimatolog( **kwargs)
+    result = []
+    delta = datetime.timedelta(days=1)
+    for d in dateTimeRange( startDate, endDate, delta): result.append( climatology[d.month -1, ...]) # d.month is 1-based
+    result.append( climatology[endDate.month -1, ...]) # we want endDate included, python doesn't
+    return np.array( result)
+
 def testWetlandEmis( startDate, endDate, **kwargs): # test totals for WETLAND emissions between original and remapped
-    remapped = processEmissions( startDate, endDate, **kwargs)
+    remapped = makeWetlandClimatology( **kwargs)
     ncin = nc.Dataset(wetlandFilePath, 'r')
     latWetland  = np.around(np.float64(ncin.variables['lat'][:]),3)
     lonWetland  = np.around(np.float64(ncin.variables['lon'][:]),3)
