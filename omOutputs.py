@@ -7,6 +7,8 @@ import omInputs
 landuseReprojectionPath = os.path.join("outputs", "land-use.tif")
 ntlReprojectionPath = os.path.join("outputs", "night-time-lights.tif")
 domainOutputPath = os.path.join("outputs", f"om-{omInputs.domainFilename}")
+geoJSONOutputPath = os.path.join("outputs", "cells.json")
+ch4JSONOutputPath = os.path.join("outputs", "methane.json")
 
 def writeLayer(layerName, layerData):
     print(f"Writing emissions data for {layerName}")

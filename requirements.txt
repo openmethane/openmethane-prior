@@ -7,3 +7,4 @@ pandas
 geopandas
 python-dotenv
 colorama
+samgeo

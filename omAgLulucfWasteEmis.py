@@ -1,7 +1,7 @@
 import csv
 import numpy as np
 import netCDF4 as nc
-import xarray
+import xarray as xr
 import rioxarray as rxr
 from omInputs import domainPath, sectoralEmissionsPath, sectoralMappingsPath, livestockDataPath
 from omOutputs import landuseReprojectionPath, writeLayer
@@ -84,8 +84,8 @@ def processEmissions():
 
     print("Mapping land use grid to domain grid")
     findGrid = lambda data, totalSize, gridSize: np.floor((data + totalSize / 2) / gridSize)
-    xDomain = xarray.apply_ufunc(findGrid, landUseData.x, ww, ds.DX).values.astype(int)
-    yDomain = xarray.apply_ufunc(findGrid, landUseData.y, hh, ds.DY).values.astype(int)
+    xDomain = xr.apply_ufunc(findGrid, landUseData.x, ww, ds.DX).values.astype(int)
+    yDomain = xr.apply_ufunc(findGrid, landUseData.y, hh, ds.DY).values.astype(int)
 
     print("Assigning methane layers to domain grid")
     for landUseType, _ in usageCounts.items():
@@ -94,8 +94,6 @@ def processEmissions():
         sectorPixels = np.argwhere(dataBand == landUseType)
 
         if emission > 0:
-            yDomain = xarray.apply_ufunc(findGrid, landUseData.y, hh, ds.DY).values.astype(int)
-
             for y, x in sectorPixels:
                 try:
                     methane[sector][0][yDomain[y]][xDomain[x]] += emission
