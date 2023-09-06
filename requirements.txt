@@ -8,3 +8,6 @@ geopandas
 python-dotenv
 colorama
 samgeo
+cdsapi
+shapely
+bisect

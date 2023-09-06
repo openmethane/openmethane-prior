@@ -14,6 +14,10 @@ sectoralMappingsPath = os.path.join("inputs", getenv("SECTORAL_MAPPING"))
 ntlPath = os.path.join("inputs", getenv("NTL"))
 auShapefilePath = os.path.join("inputs", getenv("AUSF"))
 livestockDataPath = os.path.join("inputs", getenv("LIVESTOCK_DATA"))
+croFilePath = os.path.join("inputs", getenv("croFile"))
+dotFilePath = os.path.join("inputs", getenv("dotFile"))
+termiteFilePath = os.path.join("inputs", getenv("termiteFile"))
+wetlandFilePath = os.path.join("inputs", getenv("wetlandFile"))
 
 import pyproj
 import samgeo.common as sam
