@@ -84,11 +84,12 @@ def processEmissions(startDate, endDate, **kwargs): # doms, GFASfolder, GFASfile
     for iy in range(nlatTerm):
         termAreas[iy,:] = helper_funcs.area_of_rectangle_m2(latTerm_edge[iy],latTerm_edge[iy+1],lonTerm_edge[0],lonTerm_edge[-1])/lonTerm.size
 # now collect some domain information
-    croFile = kwargs['croFile']
-    with nc.Dataset(croFile, 'r', format='NETCDF4') as nccro:
-        LAT  = nccro.variables['LAT'][:].squeeze()
-        LON  = nccro.variables['LON'][:].squeeze()
-        cmaqArea = nccro.XCELL * nccro.YCELL
+    with nc.Dataset(kwargs['domainPath'], 'r', format='NETCDF4') as domainNc:
+        LATD = domainNc.variables['LATD'][:].squeeze()
+        LOND = domainNc.variables['LOND'][:].squeeze()
+        LAT  = domainNc.variables['LAT'][:].squeeze()
+        LON  = domainNc.variables['LON'][:].squeeze()
+        cmaqArea = domainNc.XCELL * domainNc.YCELL
 
     indxPath = "{}/TERM_ind_x.p.gz".format(kwargs['ctmDir'])
     indyPath = "{}/TERM_ind_y.p.gz".format(kwargs['ctmDir'])
@@ -111,9 +112,6 @@ def processEmissions(startDate, endDate, **kwargs): # doms, GFASfolder, GFASfile
         ind_y.append([])
         coefs.append([])
 
-        ncdot= nc.Dataset(kwargs['dotFile'], 'r', format='NETCDF4')
-        LATD = ncdot.variables['LATD'][:].squeeze()
-        LOND = ncdot.variables['LOND'][:].squeeze()
 
 
         domShape.append(LAT.shape)
@@ -157,7 +155,7 @@ def processEmissions(startDate, endDate, **kwargs): # doms, GFASfolder, GFASfile
             # COEFS = COEFS / COEFS.sum()
             coefs.append(COEFS)
         count.append(count2)
-        ncdot.close()
+        domainNc.close()
         ##
         helper_funcs.save_zipped_pickle(ind_x, indxPath )
         helper_funcs.save_zipped_pickle(ind_y, indyPath )
@@ -201,22 +199,20 @@ def testTermiteEmis( startDate, endDate, **kwargs): # test totals for TERM emiss
 # take advantage of  regular grid to compute areas equal for each gridbox at same latitude
     for iy in range(nlatTerm):
         areas[iy,:] = helper_funcs.area_of_rectangle_m2(latTerm_edge[iy],latTerm_edge[iy+1],lonTerm_edge[0],lonTerm_edge[-1])/lonTerm.size
-    ncdot= nc.Dataset(kwargs['dotFile'], 'r', format='NETCDF4')
-    LATD = ncdot.variables['LATD'][:].squeeze()
-    LOND = ncdot.variables['LOND'][:].squeeze()
+    domainNc= nc.Dataset(kwargs['domainPath'], 'r', format='NETCDF4')
+    LATD = domainNc.variables['LATD'][:].squeeze()
+    LOND = domainNc.variables['LOND'][:].squeeze()
     indLat = (latTerm > LATD.min()) &( latTerm < LATD.max())
     indLon = (lonTerm > LOND.min()) &( lonTerm < LOND.max())
     TermCH4 = ncin['ch4_emissions_2010_2016.asc'][...][-1::-1,:] # reverse latitudes
 #    np.clip( TermCH4, 0., None, out=TermCH4) # remove negative values in place
     inds = np.ix_(indLat, indLon)
     TermTotals = TermCH4[inds].sum()
-    area = ncdot.XCELL*ncdot.YCELL
+    area = domainNc.XCELL*domainNc.YCELL
     remappedTotals = remapped.sum()*area/1e9 # conversion from kg to mt
     print(TermTotals, remappedTotals)
     return
 if __name__ == '__main__':
     startDate = datetime.datetime(2022,7,1)
     endDate = datetime.datetime(2022,7,2)
-    testTermiteEmis(startDate, endDate, dotFile='GRIDDOT2D_1',croFile='GRIDCRO2D_1', ctmDir='.')
-
-                  
+    testTermiteEmis(startDate, endDate, domainPath=domainPath, ctmDir='.')

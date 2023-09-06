@@ -16,13 +16,13 @@ def processEmissions():
     ds = xr.open_dataset(domainPath)
     domainProj = pyproj.Proj(proj='lcc', lat_1=ds.TRUELAT1, lat_2=ds.TRUELAT2, lat_0=ds.MOAD_CEN_LAT, lon_0=ds.STAND_LON, a=6370000, b=6370000)
 
-    landmask = ds["LANDMASK"][:]
+    landmask = ds["LANDMASK"][:].squeeze()
 
-    _, lmy, lmx = landmask.shape
+    lmy, lmx = landmask.shape
     ww = ds.DX * lmx
     hh = ds.DY * lmy
 
-    methane = np.zeros(ds["LANDMASK"].shape)
+    methane = np.zeros((1,)+landmask.shape)
 
     for facility in electricityFacilities:
         x, y = domainProj(facility["lng"], facility["lat"])
