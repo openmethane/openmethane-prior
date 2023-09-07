@@ -3,8 +3,10 @@ import numpy as np
 import netCDF4 as nc
 import xarray as xr
 import rioxarray as rxr
+import pyproj
 from omInputs import domainPath, sectoralEmissionsPath, sectoralMappingsPath, livestockDataPath
 from omOutputs import landuseReprojectionPath, writeLayer
+from utils import area_of_rectangle_m2
 
 def processEmissions():
     # Load raster land-use data
@@ -13,9 +15,73 @@ def processEmissions():
     landUseData = rxr.open_rasterio(landuseReprojectionPath, masked=True)
 
     # Load domain
-    print("Loading domain dataset")
-    ds = nc.Dataset(domainPath)
-    landmask = ds["LANDMASK"][:]
+    with xr.open_dataset(domainPath) as gmds:
+        ds = gmds.load()
+
+    ## Calculate livestock CH4
+    print("Calculating livestock CH4")
+    with xr.open_dataset(livestockDataPath) as lss:
+        ls = lss.load()
+
+    # use the landmask layer to establish the shape of the domain grid
+    landmask = ds.LANDMASK
+    _, lmy, lmx = landmask.shape
+
+    # Re-project into domain coordinates
+    # - create meshgrids of the lats and lons
+    lonmesh, latmesh = np.meshgrid(ls.lon, ls.lat)
+
+    # create a pyproj transformer
+    domainProj = pyproj.Proj(proj='lcc', lat_1=ds.TRUELAT1, lat_2=ds.TRUELAT2, lat_0=ds.MOAD_CEN_LAT, lon_0=ds.STAND_LON, a=6370000, b=6370000)
+    tx = pyproj.Transformer.from_crs("EPSG:4326", domainProj.crs)
+
+    # Transform/reproject - the output is a 2D array of x distances, and a 2D array of y distances
+    print("Reprojecting livestock data")
+    x1, y1 = tx.transform(latmesh, lonmesh)
+
+    ww = ds.DX * lmx
+    hh = ds.DY * lmy
+
+    xDomain = np.floor((x1 + ww / 2) / ds.DX).astype(int)
+    yDomain = np.floor((y1 + hh / 2) / ds.DY).astype(int)    
+
+    # calculate areas in m2 of grid cells
+    print("Calculate areas in m2 of livestock data")
+    latEnteric = ls.lat.values
+    lonEnteric = ls.lon.values
+    dlatEnteric = latEnteric[1] - latEnteric[0]
+    dlonEnteric = lonEnteric[1] - lonEnteric[0]
+    lonEnteric_edge = np.zeros((len(lonEnteric) + 1))
+    lonEnteric_edge[0:-1] = lonEnteric - dlonEnteric/2.0
+    lonEnteric_edge[-1] = lonEnteric[-1] + dlonEnteric/2.0
+    #lonEnteric_edge = np.around(lonEnteric_edge,2)
+    latEnteric_edge = np.zeros((len(latEnteric) + 1))
+    latEnteric_edge[0:-1] = latEnteric - dlatEnteric/2.0
+    latEnteric_edge[-1] = latEnteric[-1] + dlatEnteric/2.0
+    #latEnteric_edge = np.around(latEnteric_edge,2)
+
+    nlonEnteric = len(lonEnteric)
+    nlatEnteric = len(latEnteric)
+
+    areas = np.zeros((nlatEnteric,nlonEnteric))
+    # take advantage of regular grid to compute areas equal for each gridbox at same latitude
+    for iy in range(nlatEnteric):
+        areas[iy,:] = area_of_rectangle_m2(latEnteric_edge[iy],latEnteric_edge[iy+1],lonEnteric_edge[0],lonEnteric_edge[-1])/lonEnteric.size
+
+    livestockCH4 = np.zeros((lmy, lmx))
+    # unit is now kg/year/m2
+    CH4 = lss.CH4_total.values / areas
+
+    print("Distribute livestock CH4 (long process)")
+    for j in range(livestockCH4.shape[0]):
+        for i in range(livestockCH4.shape[1]):
+            mask = ((xDomain == i) & (yDomain == j))
+            livestockCH4[j,i] = CH4[mask].mean() if mask.sum() > 0 else 0.
+
+    modelAreaM2 = ds.DX * ds.DY
+    livestockCH4 = livestockCH4 / 1000
+    m2Result = livestockCH4 * modelAreaM2
+    livestockCH4Total = m2Result.sum()
 
     print("Calculating sectoral emissions")
     # Import a map of land use type numbers to emissions sectors
@@ -42,7 +108,13 @@ def processEmissions():
             else:
                 methaneInventoryBySector = dict.fromkeys(headers, 0)
                 for i, v in enumerate(headers):
-                    methaneInventoryBySector[v] = float(row[i]) * 1000000
+                    ch4 = float(row[i]) * 1000000
+
+                    # subtract the livestock ch4 from agricuture
+                    if v == "agriculture":
+                        ch4 -= livestockCH4Total
+
+                    methaneInventoryBySector[v] = ch4
 
     # Create a dict to count all of the instances of each sector in the land use data
     sectorCounts = dict.fromkeys(methaneInventoryBySector, 0)
@@ -65,7 +137,7 @@ def processEmissions():
 
     # Calculate a per grid-square value for each sector
     sectorEmissionsPerGridSquare = dict.fromkeys(methaneInventoryBySector, 0)
-    sectorsUsed = []
+    sectorsUsed = ["livestock"]
     for sector, numGridSquares in sectorCounts.items():
         if numGridSquares != 0:
             sectorEmissionsPerGridSquare[sector] = (
@@ -73,19 +145,15 @@ def processEmissions():
             )
             sectorsUsed.append(sector)
 
-    _, lmy, lmx = landmask.shape
-    ww = ds.DX * lmx
-    hh = ds.DY * lmy
-    # methane = np.zeros((lmy, lmx))
-
     methane = {}
     for sector in sectorsUsed:
-        methane[sector] = np.zeros(ds["LANDMASK"].shape)
+        methane[sector] = np.zeros(landmask.shape)
+
+    methane["livestock"][0] = livestockCH4
 
     print("Mapping land use grid to domain grid")
-    findGrid = lambda data, totalSize, gridSize: np.floor((data + totalSize / 2) / gridSize)
-    xDomain = xr.apply_ufunc(findGrid, landUseData.x, ww, ds.DX).values.astype(int)
-    yDomain = xr.apply_ufunc(findGrid, landUseData.y, hh, ds.DY).values.astype(int)
+    xDomain = np.floor((landUseData.x + ww / 2) / ds.DX).values.astype(int)
+    yDomain = np.floor((landUseData.y + hh / 2) / ds.DY).values.astype(int)
 
     print("Assigning methane layers to domain grid")
     for landUseType, _ in usageCounts.items():
