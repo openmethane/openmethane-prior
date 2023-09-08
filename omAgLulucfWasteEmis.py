@@ -4,9 +4,9 @@ import netCDF4 as nc
 import xarray as xr
 import rioxarray as rxr
 import pyproj
-from omInputs import domainPath, sectoralEmissionsPath, sectoralMappingsPath, livestockDataPath
-from omOutputs import landuseReprojectionPath, writeLayer
-from utils import area_of_rectangle_m2
+from omInputs import domainPath, sectoralEmissionsPath, sectoralMappingsPath, livestockDataPath, domainProj
+from omOutputs import landuseReprojectionPath, writeLayer, convertToTimescale
+from utils import area_of_rectangle_m2, secsPerYear
 
 def processEmissions():
     # Load raster land-use data
@@ -32,7 +32,6 @@ def processEmissions():
     lonmesh, latmesh = np.meshgrid(ls.lon, ls.lat)
 
     # create a pyproj transformer
-    domainProj = pyproj.Proj(proj='lcc', lat_1=ds.TRUELAT1, lat_2=ds.TRUELAT2, lat_0=ds.MOAD_CEN_LAT, lon_0=ds.STAND_LON, a=6370000, b=6370000)
     tx = pyproj.Transformer.from_crs("EPSG:4326", domainProj.crs)
 
     # Transform/reproject - the output is a 2D array of x distances, and a 2D array of y distances
@@ -69,7 +68,7 @@ def processEmissions():
         areas[iy,:] = area_of_rectangle_m2(latEnteric_edge[iy],latEnteric_edge[iy+1],lonEnteric_edge[0],lonEnteric_edge[-1])/lonEnteric.size
 
     livestockCH4 = np.zeros((lmy, lmx))
-    # unit is now kg/year/m2
+    # convert unit from kg/year/cell to kg/year/m2
     CH4 = lss.CH4_total.values / areas
 
     print("Distribute livestock CH4 (long process)")
@@ -79,7 +78,7 @@ def processEmissions():
             livestockCH4[j,i] = CH4[mask].mean() if mask.sum() > 0 else 0.
 
     modelAreaM2 = ds.DX * ds.DY
-    livestockCH4 = livestockCH4 / 1000
+    livestockCH4 = livestockCH4
     m2Result = livestockCH4 * modelAreaM2
     livestockCH4Total = m2Result.sum()
 
@@ -108,7 +107,7 @@ def processEmissions():
             else:
                 methaneInventoryBySector = dict.fromkeys(headers, 0)
                 for i, v in enumerate(headers):
-                    ch4 = float(row[i]) * 1000000
+                    ch4 = float(row[i]) * 1e9 # convert Mt to kgs
 
                     # subtract the livestock ch4 from agricuture
                     if v == "agriculture":
@@ -137,7 +136,7 @@ def processEmissions():
 
     # Calculate a per grid-square value for each sector
     sectorEmissionsPerGridSquare = dict.fromkeys(methaneInventoryBySector, 0)
-    sectorsUsed = ["livestock"]
+    sectorsUsed = []
     for sector, numGridSquares in sectorCounts.items():
         if numGridSquares != 0:
             sectorEmissionsPerGridSquare[sector] = (
@@ -149,7 +148,6 @@ def processEmissions():
     for sector in sectorsUsed:
         methane[sector] = np.zeros(landmask.shape)
 
-    methane["livestock"][0] = livestockCH4
 
     print("Mapping land use grid to domain grid")
     xDomain = np.floor((landUseData.x + ww / 2) / ds.DX).values.astype(int)
@@ -169,9 +167,16 @@ def processEmissions():
                     print("ignoring out of range pixel")
     
 
-    print("Writing methane layers domain file")
+    print("Writing sectoral methane layers output file")
     for sector in sectorsUsed:
-        writeLayer(f"OCH4_{sector.upper()}", methane[sector])
+        writeLayer(f"OCH4_{sector.upper()}", convertToTimescale(methane[sector]))
+
+    print("Writing livestock methane layers output file")
+    # convert the livestock data from per year to per second and write
+    livestockLayer = np.zeros(landmask.shape)
+    livestockLayer[0] = livestockCH4 / secsPerYear
+    writeLayer(f"OCH4_LIVESTOCK", livestockLayer)
+
 
 if __name__ == '__main__':
     processEmissions()

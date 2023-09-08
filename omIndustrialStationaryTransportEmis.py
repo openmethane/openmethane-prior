@@ -1,21 +1,16 @@
 import numpy as np
-import netCDF4 as nc
 import xarray as xr
 import rioxarray as rxr
-from omInputs import domainPath, sectoralEmissionsPath, auShapefilePath
-from omOutputs import ntlReprojectionPath, writeLayer
+from omInputs import sectoralEmissionsPath, auShapefilePath, domainInfo as ds, domainProj
+from omOutputs import ntlReprojectionPath, writeLayer, convertToTimescale
 import pandas as pd
 import geopandas
-import pyproj
 
 def processEmissions():
     print("processEmissions for Industrial, Staionary and Transport")
 
     sectorsUsed = ["industrial", "stationary", "transport"]
     _ntlData = rxr.open_rasterio(ntlReprojectionPath, masked=True)
-
-    ds = xr.open_dataset(domainPath)
-    domainProj = pyproj.Proj(proj='lcc', lat_1=ds.TRUELAT1, lat_2=ds.TRUELAT2, lat_0=ds.MOAD_CEN_LAT, lon_0=ds.STAND_LON, a=6370000, b=6370000)
 
     print("Clipping night-time lights data to Australian land border")
     ausf = geopandas.read_file(auShapefilePath)
@@ -32,7 +27,6 @@ def processEmissions():
     ntlTransport = ntltScalar * (sectorData["transport"]  * 1000000)
 
     # Load domain
-    ds = nc.Dataset(domainPath)
     landmask = ds["LANDMASK"][:]
 
     _, lmy, lmx = landmask.shape
@@ -60,7 +54,7 @@ def processEmissions():
             ignored += 1
 
     for sector in sectorsUsed:
-        writeLayer(f"OCH4_{sector.upper()}", methane[sector])
+        writeLayer(f"OCH4_{sector.upper()}",convertToTimescale(methane[sector]))
 
 if __name__ == '__main__':
     processEmissions()

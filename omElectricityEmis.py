@@ -1,21 +1,15 @@
 import numpy as np
-import xarray as xr
-import pyproj
-from omInputs import electricityPath, sectoralEmissionsPath, domainPath
-from omOutputs import writeLayer
+from omInputs import electricityPath, sectoralEmissionsPath, domainInfo as ds, domainProj
+from omOutputs import writeLayer, convertToTimescale
 import pandas as pd
 import math
 
 def processEmissions():
     print("processEmissions for Electricity")
 
-    electricityEmis = pd.read_csv(sectoralEmissionsPath).to_dict(orient='records')[0]["electricity"] * 1000000
+    electricityEmis = pd.read_csv(sectoralEmissionsPath).to_dict(orient='records')[0]["electricity"] * 1e9
     electricityFacilities = pd.read_csv(electricityPath, header=0).to_dict(orient='records')
     electricityEmisPerFacility = electricityEmis / len(electricityFacilities)
-
-    ds = xr.open_dataset(domainPath)
-    domainProj = pyproj.Proj(proj='lcc', lat_1=ds.TRUELAT1, lat_2=ds.TRUELAT2, lat_0=ds.MOAD_CEN_LAT, lon_0=ds.STAND_LON, a=6370000, b=6370000)
-
     landmask = ds["LANDMASK"][:]
 
     _, lmy, lmx = landmask.shape
@@ -30,7 +24,7 @@ def processEmissions():
         iy = math.floor((y + hh / 2) / ds.DY)
         methane[0][iy][ix] += electricityEmisPerFacility
 
-    writeLayer("OCH4_ELECTRICITY", methane)
+    writeLayer("OCH4_ELECTRICITY", convertToTimescale(methane))
 
 if __name__ == '__main__':
     processEmissions()
