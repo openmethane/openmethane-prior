@@ -10,6 +10,8 @@ import pprint
 import pickle
 import gzip
 
+secsPerYear = 365 * 24 * 60 * 60
+
 ## UTILS
 class NumpyEncoder(json.JSONEncoder):
     def default(self, obj):

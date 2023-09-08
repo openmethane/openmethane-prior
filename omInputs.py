@@ -13,6 +13,7 @@ sectoralEmissionsPath = os.path.join("inputs", getenv("SECTORAL_EMISSIONS"))
 sectoralMappingsPath = os.path.join("inputs", getenv("SECTORAL_MAPPING"))
 ntlPath = os.path.join("inputs", getenv("NTL"))
 auShapefilePath = os.path.join("inputs", getenv("AUSF"))
+livestockDataPath = os.path.join("inputs", getenv("LIVESTOCK_DATA"))
 croFilePath = os.path.join("inputs", getenv("croFile"))
 dotFilePath = os.path.join("inputs", getenv("dotFile"))
 termiteFilePath = os.path.join("inputs", getenv("termiteFile"))
@@ -23,9 +24,17 @@ import samgeo.common as sam
 import xarray as xr
 import omOutputs
 
-# create structure for target domain, here we do it from input file, see the file domainPath for the structure
-with xr.open_dataset( domainPath) as _:
-    domainXr = _.load()
+# list of layers that will be in the output file
+omLayers = ["agriculture","electricity","fugitive","industrial","lulucf","stationary","transport","waste","livestock","gfas","wetland","termite"]
+
+# load the domain info and define a projection once for use in other scripts
+print("Loading domain info")
+domainXr = None
+domainProj = None
+if os.path.exists(domainPath):
+    with xr.open_dataset(domainPath) as dss:
+        domainXr = dss.load()
+        domainProj = pyproj.Proj(proj='lcc', lat_1=domainXr.TRUELAT1, lat_2=domainXr.TRUELAT2, lat_0=domainXr.MOAD_CEN_LAT, lon_0=domainXr.STAND_LON, a=6370000, b=6370000)
 
 def checkInputFile(file, errorMsg, errors):
     ## Check that all required input files are present
@@ -45,6 +54,7 @@ def checkInputFiles():
     checkInputFile(sectoralEmissionsPath, f"Missing file for sectoral emissions: {sectoralEmissionsPath}", errors)
     checkInputFile(sectoralMappingsPath, f"Missing file for sectoral emissions mappings: {sectoralMappingsPath}", errors)
     checkInputFile(ntlPath, f"Missing file for night time lights: {ntlPath}", errors)
+    checkInputFile(livestockDataPath, f"Missing file for livestock data: {livestockDataPath}", errors)
 
     ## Print all errors and exit (if we have any errors)
     if len(errors) > 0:
@@ -54,8 +64,5 @@ def checkInputFiles():
 def reprojectRasterInputs():
     ## Re-project raster files to match domain
     print("### Re-projecting raster inputs...")
-    ds = xr.open_dataset(domainPath)
-    domainProj = pyproj.Proj(proj='lcc', lat_1=ds.TRUELAT1, lat_2=ds.TRUELAT2, lat_0=ds.MOAD_CEN_LAT, lon_0=ds.STAND_LON, a=6370000, b=6370000)
-
     sam.reproject(landUsePath, omOutputs.landuseReprojectionPath, domainProj.crs)
     sam.reproject(ntlPath, omOutputs.ntlReprojectionPath, domainProj.crs)
