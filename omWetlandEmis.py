@@ -2,16 +2,15 @@ import numpy as np
 import netCDF4 as nc
 import xarray
 import rioxarray as rxr
-from omInputs import domainPath, sectoralEmissionsPath, sectoralMappingsPath, wetlandFilePath
+from omInputs import domainXr, sectoralEmissionsPath, sectoralMappingsPath, wetlandFilePath
 from omOutputs import landuseReprojectionPath, writeLayer
 import cdsapi
 import itertools
 import datetime
-import helper_funcs
+import utils
 import os
 from shapely import geometry
 import bisect
-from utils import dateTimeRange
 
 
 
@@ -82,21 +81,19 @@ def makeWetlandClimatology( **kwargs): # doms, GFASfolder, GFASfile, metDir, ctm
     wetlandAreas = np.zeros((nlatWetland,nlonWetland))
     # take advantage of  regular grid to compute areas equal for each gridbox at same latitude
     for iy in range(nlatWetland):
-        wetlandAreas[iy,:] = helper_funcs.area_of_rectangle_m2(latWetland_edge[iy],latWetland_edge[iy+1],lonWetland_edge[0],lonWetland_edge[-1])/lonWetland.size
+        wetlandAreas[iy,:] = utils.area_of_rectangle_m2(latWetland_edge[iy],latWetland_edge[iy+1],lonWetland_edge[0],lonWetland_edge[-1])/lonWetland.size
 # now collect some domain information
-    croFile = kwargs['croFile']
-    with nc.Dataset(croFile, 'r', format='NETCDF4') as nccro:
-        LAT  = nccro.variables['LAT'][:].squeeze()
-        LON  = nccro.variables['LON'][:].squeeze()
-        cmaqArea = nccro.XCELL * nccro.YCELL
+    LAT  = domainXr.variables['LAT'].values.squeeze()
+    LON  = domainXr.variables['LON'].values.squeeze()
+    cmaqArea = domainXr.XCELL * domainXr.YCELL
 
     indxPath = "{}/WETLAND_ind_x.p.gz".format(kwargs['ctmDir'])
     indyPath = "{}/WETLAND_ind_y.p.gz".format(kwargs['ctmDir'])
     coefsPath = "{}/WETLAND_coefs.p.gz".format(kwargs['ctmDir'])
     if os.path.exists(indxPath) and os.path.exists(indyPath) and os.path.exists(coefsPath) and (not forceUpdate):
-        ind_x = helper_funcs.load_zipped_pickle( indxPath )
-        ind_y = helper_funcs.load_zipped_pickle( indyPath )
-        coefs = helper_funcs.load_zipped_pickle( coefsPath )
+        ind_x = utils.load_zipped_pickle( indxPath )
+        ind_y = utils.load_zipped_pickle( indyPath )
+        coefs = utils.load_zipped_pickle( coefsPath )
         ##
         domShape = []
         domShape.append(LAT.shape)
@@ -111,9 +108,8 @@ def makeWetlandClimatology( **kwargs): # doms, GFASfolder, GFASfile, metDir, ctm
         ind_y.append([])
         coefs.append([])
 
-        ncdot= nc.Dataset(kwargs['dotFile'], 'r', format='NETCDF4')
-        LATD = ncdot.variables['LATD'][:].squeeze()
-        LOND = ncdot.variables['LOND'][:].squeeze()
+        LATD = domainXr.variables['LATD'].values.squeeze()
+        LOND = domainXr.variables['LOND'].values.squeeze()
 
 
         domShape.append(LAT.shape)
@@ -157,11 +153,10 @@ def makeWetlandClimatology( **kwargs): # doms, GFASfolder, GFASfile, metDir, ctm
             # COEFS = COEFS / COEFS.sum()
             coefs.append(COEFS)
         count.append(count2)
-        ncdot.close()
         ##
-        helper_funcs.save_zipped_pickle(ind_x, indxPath )
-        helper_funcs.save_zipped_pickle(ind_y, indyPath )
-        helper_funcs.save_zipped_pickle(coefs, coefsPath )
+        utils.save_zipped_pickle(ind_x, indxPath )
+        utils.save_zipped_pickle(ind_y, indyPath )
+        utils.save_zipped_pickle(coefs, coefsPath )
     # now build monthly climatology
     flux = ncin['totflux'][...] # is masked array
     climatology=np.zeros((12,flux.shape[1], flux.shape[2])) # same spatial domain but monthly climatology
@@ -177,7 +172,7 @@ def processEmissions(startDate, endDate, **kwargs): # doms, GFASfolder, GFASfile
     climatology = makeWetlandClimatolog( **kwargs)
     result = []
     delta = datetime.timedelta(days=1)
-    for d in dateTimeRange( startDate, endDate, delta): result.append( climatology[d.month -1, ...]) # d.month is 1-based
+    for d in utils.dateTimeRange( startDate, endDate, delta): result.append( climatology[d.month -1, ...]) # d.month is 1-based
     result.append( climatology[endDate.month -1, ...]) # we want endDate included, python doesn't
     return np.array( result)
 
@@ -204,10 +199,9 @@ def testWetlandEmis( startDate, endDate, **kwargs): # test totals for WETLAND em
     areas = np.zeros((nlatWetland,nlonWetland))
 # take advantage of  regular grid to compute areas equal for each gridbox at same latitude
     for iy in range(nlatWetland):
-        areas[iy,:] = helper_funcs.area_of_rectangle_m2(latWetland_edge[iy],latWetland_edge[iy+1],lonWetland_edge[0],lonWetland_edge[-1])/lonWetland.size
-    ncdot= nc.Dataset(kwargs['dotFile'], 'r', format='NETCDF4')
-    LATD = ncdot.variables['LATD'][:].squeeze()
-    LOND = ncdot.variables['LOND'][:].squeeze()
+        areas[iy,:] = utils.area_of_rectangle_m2(latWetland_edge[iy],latWetland_edge[iy+1],lonWetland_edge[0],lonWetland_edge[-1])/lonWetland.size
+    LATD = domainXr.variables['LATD'].values.squeeze()
+    LOND = domainXr.variables['LOND'].values.squeeze()
     indLat = (latWetland > LATD.min()) &( latWetland < LATD.max())
     indLon = (lonWetland > LOND.min()) &( lonWetland < LOND.max())
     flux = ncin['totflux'][...]
@@ -218,11 +212,11 @@ def testWetlandEmis( startDate, endDate, **kwargs): # test totals for WETLAND em
 
     inds = np.ix_(indLat, indLon)
     wetlandTotals = [(areas * climatology[month])[inds].sum() for month in range(12)]
-    area = ncdot.XCELL*ncdot.YCELL
+    area = domainXr.XCELL*domainXr.YCELL
     remappedTotals = [remapped[month,...].sum()*area for month in range(12)] # conversion from kg to mt
     print(list(zip(wetlandTotals, remappedTotals)))
     return
 if __name__ == '__main__':
     startDate = datetime.datetime(2022,7,1)
     endDate = datetime.datetime(2022,7,2)
-    testWetlandEmis(startDate, endDate, dotFile='GRIDDOT2D_1',croFile='GRIDCRO2D_1', ctmDir='.')
+    testWetlandEmis(startDate, endDate, ctmDir='.')

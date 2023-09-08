@@ -23,6 +23,10 @@ import samgeo.common as sam
 import xarray as xr
 import omOutputs
 
+# create structure for target domain, here we do it from input file, see the file domainPath for the structure
+with xr.open_dataset( domainPath) as _:
+    domainXr = _.load()
+
 def checkInputFile(file, errorMsg, errors):
     ## Check that all required input files are present
     if not os.path.exists(file):

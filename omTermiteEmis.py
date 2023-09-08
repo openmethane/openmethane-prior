@@ -2,12 +2,12 @@ import numpy as np
 import netCDF4 as nc
 import xarray
 import rioxarray as rxr
-from omInputs import domainPath, sectoralEmissionsPath, sectoralMappingsPath, termiteFilePath
+from omInputs import domainXr, sectoralEmissionsPath, sectoralMappingsPath, termiteFilePath
 from omOutputs import landuseReprojectionPath, writeLayer
 import cdsapi
 import itertools
 import datetime
-import helper_funcs
+import utils
 import os
 from shapely import geometry
 import bisect
@@ -82,22 +82,21 @@ def processEmissions(startDate, endDate, **kwargs): # doms, GFASfolder, GFASfile
     termAreas = np.zeros((nlatTerm,nlonTerm))
     # take advantage of  regular grid to compute areas equal for each gridbox at same latitude
     for iy in range(nlatTerm):
-        termAreas[iy,:] = helper_funcs.area_of_rectangle_m2(latTerm_edge[iy],latTerm_edge[iy+1],lonTerm_edge[0],lonTerm_edge[-1])/lonTerm.size
-# now collect some domain information
-    with nc.Dataset(kwargs['domainPath'], 'r', format='NETCDF4') as domainNc:
-        LATD = domainNc.variables['LATD'][:].squeeze()
-        LOND = domainNc.variables['LOND'][:].squeeze()
-        LAT  = domainNc.variables['LAT'][:].squeeze()
-        LON  = domainNc.variables['LON'][:].squeeze()
-        cmaqArea = domainNc.XCELL * domainNc.YCELL
+        termAreas[iy,:] = utils.area_of_rectangle_m2(latTerm_edge[iy],latTerm_edge[iy+1],lonTerm_edge[0],lonTerm_edge[-1])/lonTerm.size
+    # now collect some domain information
+    LATD = domainXr['LATD'][:].values.squeeze()
+    LOND = domainXr['LOND'].values.squeeze()
+    LAT  = domainXr.variables['LAT'].values.squeeze()
+    LON  = domainXr.variables['LON'].values.squeeze()
+    cmaqArea = domainXr.XCELL * domainXr.YCELL
 
     indxPath = "{}/TERM_ind_x.p.gz".format(kwargs['ctmDir'])
     indyPath = "{}/TERM_ind_y.p.gz".format(kwargs['ctmDir'])
     coefsPath = "{}/TERM_coefs.p.gz".format(kwargs['ctmDir'])
     if os.path.exists(indxPath) and os.path.exists(indyPath) and os.path.exists(coefsPath) and (not forceUpdate):
-        ind_x = helper_funcs.load_zipped_pickle( indxPath )
-        ind_y = helper_funcs.load_zipped_pickle( indyPath )
-        coefs = helper_funcs.load_zipped_pickle( coefsPath )
+        ind_x = utils.load_zipped_pickle( indxPath )
+        ind_y = utils.load_zipped_pickle( indyPath )
+        coefs = utils.load_zipped_pickle( coefsPath )
         ##
         domShape = []
         domShape.append(LAT.shape)
@@ -155,11 +154,10 @@ def processEmissions(startDate, endDate, **kwargs): # doms, GFASfolder, GFASfile
             # COEFS = COEFS / COEFS.sum()
             coefs.append(COEFS)
         count.append(count2)
-        domainNc.close()
         ##
-        helper_funcs.save_zipped_pickle(ind_x, indxPath )
-        helper_funcs.save_zipped_pickle(ind_y, indyPath )
-        helper_funcs.save_zipped_pickle(coefs, coefsPath )
+        utils.save_zipped_pickle(ind_x, indxPath )
+        utils.save_zipped_pickle(ind_y, indyPath )
+        utils.save_zipped_pickle(coefs, coefsPath )
         
     subset = ncin['ch4_emissions_2010_2016.asc'][...] # is masked array
     subset=subset.data # grab value
@@ -198,21 +196,20 @@ def testTermiteEmis( startDate, endDate, **kwargs): # test totals for TERM emiss
     areas = np.zeros((nlatTerm,nlonTerm))
 # take advantage of  regular grid to compute areas equal for each gridbox at same latitude
     for iy in range(nlatTerm):
-        areas[iy,:] = helper_funcs.area_of_rectangle_m2(latTerm_edge[iy],latTerm_edge[iy+1],lonTerm_edge[0],lonTerm_edge[-1])/lonTerm.size
-    domainNc= nc.Dataset(kwargs['domainPath'], 'r', format='NETCDF4')
-    LATD = domainNc.variables['LATD'][:].squeeze()
-    LOND = domainNc.variables['LOND'][:].squeeze()
+        areas[iy,:] = utils.area_of_rectangle_m2(latTerm_edge[iy],latTerm_edge[iy+1],lonTerm_edge[0],lonTerm_edge[-1])/lonTerm.size
+    LATD = domainXr.variables['LATD'].values.squeeze()
+    LOND = domainXr.variables['LOND'].values.squeeze()
     indLat = (latTerm > LATD.min()) &( latTerm < LATD.max())
     indLon = (lonTerm > LOND.min()) &( lonTerm < LOND.max())
     TermCH4 = ncin['ch4_emissions_2010_2016.asc'][...][-1::-1,:] # reverse latitudes
 #    np.clip( TermCH4, 0., None, out=TermCH4) # remove negative values in place
     inds = np.ix_(indLat, indLon)
     TermTotals = TermCH4[inds].sum()
-    area = domainNc.XCELL*domainNc.YCELL
+    area = domainXr.XCELL*domainXr.YCELL
     remappedTotals = remapped.sum()*area/1e9 # conversion from kg to mt
     print(TermTotals, remappedTotals)
     return
 if __name__ == '__main__':
     startDate = datetime.datetime(2022,7,1)
     endDate = datetime.datetime(2022,7,2)
-    testTermiteEmis(startDate, endDate, domainPath=domainPath, ctmDir='.')
+    testTermiteEmis(startDate, endDate,  ctmDir='.')

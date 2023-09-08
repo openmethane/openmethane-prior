@@ -2,12 +2,12 @@ import numpy as np
 import netCDF4 as nc
 import xarray
 import rioxarray as rxr
-from omInputs import domainPath, sectoralEmissionsPath, sectoralMappingsPath
+from omInputs import domainXr, sectoralEmissionsPath, sectoralMappingsPath
 from omOutputs import landuseReprojectionPath, writeLayer
 import cdsapi
 import itertools
 import datetime
-import helper_funcs
+import utils
 import os
 from shapely import geometry
 import bisect
@@ -107,23 +107,20 @@ def processEmissions(startDate, endDate, **kwargs): # doms, GFASfolder, GFASfile
     areas = np.zeros((nlatGfas,nlonGfas))
     # take advantage of  regular grid to compute areas equal for each gridbox at same latitude
     for iy in range(nlatGfas):
-        areas[iy,:] = helper_funcs.area_of_rectangle_m2(latGfas_edge[iy],latGfas_edge[iy+1],lonGfas_edge[0],lonGfas_edge[-1])/lonGfas.size
+        areas[iy,:] = utils.area_of_rectangle_m2(latGfas_edge[iy],latGfas_edge[iy+1],lonGfas_edge[0],lonGfas_edge[-1])/lonGfas.size
 
 
     indxPath = "{}/GFAS_ind_x.p.gz".format(kwargs['ctmDir'])
     indyPath = "{}/GFAS_ind_y.p.gz".format(kwargs['ctmDir'])
     coefsPath = "{}/GFAS_coefs.p.gz".format(kwargs['ctmDir'])
     if os.path.exists(indxPath) and os.path.exists(indyPath) and os.path.exists(coefsPath) and (not forceUpdate):
-        ind_x = helper_funcs.load_zipped_pickle( indxPath )
-        ind_y = helper_funcs.load_zipped_pickle( indyPath )
-        coefs = helper_funcs.load_zipped_pickle( coefsPath )
+        ind_x = utils.load_zipped_pickle( indxPath )
+        ind_y = utils.load_zipped_pickle( indyPath )
+        coefs = utils.load_zipped_pickle( coefsPath )
         ##
         domShape = []
-        croFile = kwargs['croFile']
-        nccro= nc.Dataset(croFile, 'r', format='NETCDF4')
-        LAT  = nccro.variables['LAT'][:].squeeze()
+        LAT  = domainXr.variables['LAT'].values.squeeze()
         domShape.append(LAT.shape)
-        nccro.close()
     else:
         ind_x = []
         ind_y = []
@@ -135,13 +132,11 @@ def processEmissions(startDate, endDate, **kwargs): # doms, GFASfolder, GFASfile
         ind_y.append([])
         coefs.append([])
 
-        ncdot= nc.Dataset(kwargs['dotFile'], 'r', format='NETCDF4')
-        nccro= nc.Dataset(kwargs['croFile'], 'r', format='NETCDF4')
 
-        LAT  = nccro.variables['LAT'][:].squeeze()
-        LON  = nccro.variables['LON'][:].squeeze()
-        LATD = ncdot.variables['LATD'][:].squeeze()
-        LOND = ncdot.variables['LOND'][:].squeeze()
+        LAT  = domainXr.variables['LAT'].values.squeeze()
+        LON  = domainXr.variables['LON'].values.squeeze()
+        LATD = domainXr.variables['LATD'].values.squeeze()
+        LOND = domainXr.variables['LOND'].values.squeeze()
 
         domShape.append(LAT.shape)
 
@@ -184,12 +179,10 @@ def processEmissions(startDate, endDate, **kwargs): # doms, GFASfolder, GFASfile
             # COEFS = COEFS / COEFS.sum()
             coefs.append(COEFS)
         count.append(count2)
-        ncdot.close()
-        nccro.close()
         ##
-        helper_funcs.save_zipped_pickle(ind_x, indxPath )
-        helper_funcs.save_zipped_pickle(ind_y, indyPath )
-        helper_funcs.save_zipped_pickle(coefs, coefsPath )
+        utils.save_zipped_pickle(ind_x, indxPath )
+        utils.save_zipped_pickle(ind_y, indyPath )
+        utils.save_zipped_pickle(coefs, coefsPath )
         
     result = []
     for i in range(gfasTimes.size):
@@ -223,10 +216,9 @@ def testGFASEmis( startDate, endDate, **kwargs): # test totals for GFAS emission
     areas = np.zeros((nlatGfas,nlonGfas))
 # take advantage of  regular grid to compute areas equal for each gridbox at same latitude
     for iy in range(nlatGfas):
-        areas[iy,:] = helper_funcs.area_of_rectangle_m2(latGfas_edge[iy],latGfas_edge[iy+1],lonGfas_edge[0],lonGfas_edge[-1])/lonGfas.size
-    ncdot= nc.Dataset(kwargs['dotFile'], 'r', format='NETCDF4')
-    LATD = ncdot.variables['LATD'][:].squeeze()
-    LOND = ncdot.variables['LOND'][:].squeeze()
+        areas[iy,:] = utils.area_of_rectangle_m2(latGfas_edge[iy],latGfas_edge[iy+1],lonGfas_edge[0],lonGfas_edge[-1])/lonGfas.size
+    LATD = domainXr.variables['LATD'].values.squeeze()
+    LOND = domainXr.variables['LOND'].values.squeeze()
     indLat = (latGfas > LATD.min()) &( latGfas < LATD.max())
     indLon = (lonGfas > LOND.min()) &( lonGfas < LOND.max())
     gfasCH4 = ncin['ch4fire'][...]
@@ -239,6 +231,6 @@ def testGFASEmis( startDate, endDate, **kwargs): # test totals for GFAS emission
 if __name__ == '__main__':
     startDate = datetime.datetime(2022,7,1)
     endDate = datetime.datetime(2022,7,2)
-    testGFASEmis(startDate, endDate, dotFile='GRIDDOT2D_1',croFile='GRIDCRO2D_1', ctmDir='.')
+    testGFASEmis(startDate, endDate, ctmDir='.')
 
                   
