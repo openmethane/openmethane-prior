@@ -1,4 +1,4 @@
-gridDir = 'cmaq'
+gridDir = 'cmaq_example'
 geomFile = 'geo_em.d01.nc'
 dotFile = 'GRIDDOT2D_1'
 croFile = 'GRIDCRO2D_1'
@@ -17,7 +17,7 @@ with xr.open_dataset( geomPath) as geomXr:
 with xr.open_dataset( croPath) as croXr:
     for var in ['LAT','LON']:
         domainXr[var] = croXr[var]
-    domainXr['LANDMASK'] = croXr['LWMASK']
+    domainXr['LANDMASK'] = croXr['LWMASK'].squeeze(drop=True) # copy but remove 1-length coordinates
 with xr.open_dataset( dotPath) as dotXr:
     # some repetition between the geom and grid files here, XCELL=DX and YCELL=DY
     for attr in ['XCELL', 'YCELL']:
