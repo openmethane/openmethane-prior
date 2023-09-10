@@ -184,11 +184,15 @@ def processEmissions(startDate, endDate, **kwargs): # doms, GFASfolder, GFASfile
         utils.save_zipped_pickle(ind_y, indyPath )
         utils.save_zipped_pickle(coefs, coefsPath )
         
-    result = []
+    resultNd = [] # will become ndarray
+    dates = []
     for i in range(gfasTimes.size):
+        dates.append( startDate + datetime.timedelta( days=i))
         subset = ncin['ch4fire'][i,...]
-        result.append(redistribute_spatially(LAT.shape, ind_x, ind_y, coefs, subset, areas))
-    return np.array( result) 
+        resultNd.append( redistribute_spatially(LAT.shape, ind_x, ind_y, coefs, subset, areas))
+    resultNd = np.array( resultNd)
+    writeLayer('OM_FIRE', resultNd)
+    return resultNd
 
 def testGFASEmis( startDate, endDate, **kwargs): # test totals for GFAS emissions between original and remapped
     remapped = processEmissions( startDate, endDate, **kwargs)
@@ -231,6 +235,6 @@ def testGFASEmis( startDate, endDate, **kwargs): # test totals for GFAS emission
 if __name__ == '__main__':
     startDate = datetime.datetime(2022,7,1)
     endDate = datetime.datetime(2022,7,2)
-    testGFASEmis(startDate, endDate, ctmDir='.')
+    processEmissions(startDate, endDate, ctmDir='.')
 
                   

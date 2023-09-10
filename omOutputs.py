@@ -21,8 +21,12 @@ def writeLayer(layerName, layerData):
     datapath = domainOutputPath if os.path.exists(domainOutputPath) else omInputs.domainPath
     with xr.open_dataset(datapath) as dss:
         ds = dss.load()
-    ds[layerName] = (('Time', 'south_north', 'west_east'), layerData)
-    ds.to_netcdf(domainOutputPath)
+    # if this is a xr dataArray just include it
+    if isinstance( layerData, xr.DataArray):
+        ds[layerName] =  layerData
+    else:
+        ds[layerName] = (('Time', 'south_north', 'west_east'), layerData)
+    ds.to_netcdf(domainOutputPath, group='emissions')
 
 def sumLayers():
     layers = omInputs.omLayers

@@ -1,6 +1,6 @@
 import numpy as np
 import netCDF4 as nc
-import xarray
+import xarray as xr
 import rioxarray as rxr
 from omInputs import domainXr, sectoralEmissionsPath, sectoralMappingsPath, wetlandFilePath
 from omOutputs import landuseReprojectionPath, writeLayer
@@ -169,12 +169,19 @@ def makeWetlandClimatology( **kwargs): # doms, GFASfolder, GFASfile, metDir, ctm
     return np.array( result) 
 
 def processEmissions(startDate, endDate, **kwargs): # doms, GFASfolder, GFASfile, metDir, ctmDir, CMAQdir, mechCMAQ, mcipsuffix, specTableFile, forceUpdate):
-    climatology = makeWetlandClimatolog( **kwargs)
-    result = []
+    climatology = makeWetlandClimatology( **kwargs)
     delta = datetime.timedelta(days=1)
-    for d in utils.dateTimeRange( startDate, endDate, delta): result.append( climatology[d.month -1, ...]) # d.month is 1-based
-    result.append( climatology[endDate.month -1, ...]) # we want endDate included, python doesn't
-    return np.array( result)
+    resultNd = [] # will be ndarray once built
+    dates = []
+    for d in utils.dateTimeRange( startDate, endDate, delta):
+        dates.append( d)
+        resultNd.append( climatology[d.month -1, ...]) # d.month is 1-based
+    dates.append( endDate)
+    resultNd.append( climatology[endDate.month -1, ...]) # we want endDate included, python doesn't
+    resultNd = np.array( resultNd)
+    resultXr = xr.DataArray( resultNd, coords={'date':dates, 'y':np.arange( resultNd.shape[-2]), 'x':np.arange( resultNd.shape[-1])})
+    writeLayer('OCH4_WETLANDS', resultXr)
+    return resultNd
 
 def testWetlandEmis( startDate, endDate, **kwargs): # test totals for WETLAND emissions between original and remapped
     remapped = makeWetlandClimatology( **kwargs)
@@ -219,4 +226,4 @@ def testWetlandEmis( startDate, endDate, **kwargs): # test totals for WETLAND em
 if __name__ == '__main__':
     startDate = datetime.datetime(2022,7,1)
     endDate = datetime.datetime(2022,7,2)
-    testWetlandEmis(startDate, endDate, ctmDir='.')
+    processEmissions(startDate, endDate, ctmDir='.')
