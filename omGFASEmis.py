@@ -192,7 +192,7 @@ def processEmissions(startDate, endDate, **kwargs): # doms, GFASfolder, GFASfile
         resultNd.append( redistribute_spatially(LAT.shape, ind_x, ind_y, coefs, subset, areas))
     resultNd = np.array( resultNd)
     resultXr = xr.DataArray( resultNd, coords={'date':dates, 'y':np.arange( resultNd.shape[-2]), 'x':np.arange( resultNd.shape[-1])})
-    writeLayer('OCH4_FIRE', resultXr)
+    writeLayer('OCH4_FIRE', resultXr, True)
     return resultNd
 
 def testGFASEmis( startDate, endDate, **kwargs): # test totals for GFAS emissions between original and remapped

@@ -16,15 +16,15 @@ def convertToTimescale(emission):
     domainCellAreaM2 = di.DX * di.DY
     return emission * domainCellAreaM2 / secsPerYear
 
-def writeLayer(layerName, layerData):
+def writeLayer(layerName, layerData, directSet = False):
     print(f"Writing emissions data for {layerName}")
     coordNames = ['TSTEP', 'ROW', 'COL']
     datapath = domainOutputPath if os.path.exists(domainOutputPath) else omInputs.domainPath
     with xr.open_dataset(datapath) as dss:
         ds = dss.load()
     # if this is a xr dataArray just include it
-    if isinstance( layerData, xr.DataArray):
-        ds[layerName] =  layerData
+    if directSet:
+        ds[layerName] = layerData
     else:
         nDims = len(layerData.shape)
         ds[layerName] = (coordNames[-nDims:], layerData)
