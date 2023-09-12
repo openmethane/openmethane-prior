@@ -12,7 +12,8 @@ from shapely import geometry
 import bisect
 import argparse
 
-def downloadGFAS( startDate, endDate, fileName='download.nc'):
+GFASDownloadPath=os.path.join("outputs", "download.nc")
+def downloadGFAS( startDate, endDate, fileName=GFASDownloadPath):
     """ download GFAS methane between two dates startDate and endDate, returns nothing"""
     dateString = startDate.strftime('%Y-%m-%d')+'/'+endDate.strftime('%Y-%m-%d')
     c = cdsapi.Client()
