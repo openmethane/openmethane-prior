@@ -85,9 +85,10 @@ def makeWetlandClimatology( **kwargs): # doms, GFASfolder, GFASfile, metDir, ctm
     LON  = domainXr.variables['LON'].values.squeeze()
     cmaqArea = domainXr.XCELL * domainXr.YCELL
 
-    indxPath = "{}/WETLAND_ind_x.p.gz".format(kwargs['ctmDir'])
-    indyPath = "{}/WETLAND_ind_y.p.gz".format(kwargs['ctmDir'])
-    coefsPath = "{}/WETLAND_coefs.p.gz".format(kwargs['ctmDir'])
+    indxPath = "{}/WETLAND_ind_x.p.gz".format("intermediates")
+    indyPath = "{}/WETLAND_ind_y.p.gz".format("intermediates")
+    coefsPath = "{}/WETLAND_coefs.p.gz".format("intermediates")
+
     if os.path.exists(indxPath) and os.path.exists(indyPath) and os.path.exists(coefsPath) and (not forceUpdate):
         ind_x = utils.load_zipped_pickle( indxPath )
         ind_y = utils.load_zipped_pickle( indyPath )
@@ -226,4 +227,4 @@ if __name__ == '__main__':
     parser.add_argument('startDate', type=lambda s: datetime.datetime.strptime(s, "%Y-%m-%d"), help="Start date in YYYY-MM-DD format")
     parser.add_argument('endDate', type=lambda s: datetime.datetime.strptime(s, "%Y-%m-%d"), help="end date in YYYY-MM-DD format")
     args = parser.parse_args()
-    processEmissions(args.startDate, args.endDate, ctmDir='.')
+    processEmissions(args.startDate, args.endDate)

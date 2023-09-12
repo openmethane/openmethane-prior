@@ -12,7 +12,8 @@ from shapely import geometry
 import bisect
 import argparse
 
-GFASDownloadPath=os.path.join("outputs", "download.nc")
+GFASDownloadPath=os.path.join("intermediates", "gfas-download.nc")
+
 def downloadGFAS( startDate, endDate, fileName=GFASDownloadPath):
     """ download GFAS methane between two dates startDate and endDate, returns nothing"""
     dateString = startDate.strftime('%Y-%m-%d')+'/'+endDate.strftime('%Y-%m-%d')
@@ -111,9 +112,10 @@ def processEmissions(startDate, endDate, **kwargs): # doms, GFASfolder, GFASfile
         areas[iy,:] = utils.area_of_rectangle_m2(latGfas_edge[iy],latGfas_edge[iy+1],lonGfas_edge[0],lonGfas_edge[-1])/lonGfas.size
 
 
-    indxPath = "{}/GFAS_ind_x.p.gz".format(kwargs['ctmDir'])
-    indyPath = "{}/GFAS_ind_y.p.gz".format(kwargs['ctmDir'])
-    coefsPath = "{}/GFAS_coefs.p.gz".format(kwargs['ctmDir'])
+    indxPath = "{}/GFAS_ind_x.p.gz".format("intermediates")
+    indyPath = "{}/GFAS_ind_y.p.gz".format("intermediates")
+    coefsPath = "{}/GFAS_coefs.p.gz".format("intermediates")
+
     if os.path.exists(indxPath) and os.path.exists(indyPath) and os.path.exists(coefsPath) and (not forceUpdate):
         ind_x = utils.load_zipped_pickle( indxPath )
         ind_y = utils.load_zipped_pickle( indyPath )
@@ -239,6 +241,6 @@ if __name__ == '__main__':
     parser.add_argument('startDate', type=lambda s: datetime.datetime.strptime(s, "%Y-%m-%d"), help="Start date in YYYY-MM-DD format")
     parser.add_argument('endDate', type=lambda s: datetime.datetime.strptime(s, "%Y-%m-%d"), help="end date in YYYY-MM-DD format")
     args = parser.parse_args()
-    processEmissions(args.startDate, args.endDate, ctmDir='.')
+    processEmissions(args.startDate, args.endDate)
 
                   

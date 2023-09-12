@@ -86,9 +86,10 @@ def processEmissions(**kwargs): # doms, GFASfolder, GFASfile, metDir, ctmDir, CM
     LON  = domainXr.variables['LON'].values.squeeze()
     cmaqArea = domainXr.XCELL * domainXr.YCELL
 
-    indxPath = "{}/TERM_ind_x.p.gz".format(kwargs['ctmDir'])
-    indyPath = "{}/TERM_ind_y.p.gz".format(kwargs['ctmDir'])
-    coefsPath = "{}/TERM_coefs.p.gz".format(kwargs['ctmDir'])
+    indxPath = "{}/TERM_ind_x.p.gz".format("intermediates")
+    indyPath = "{}/TERM_ind_y.p.gz".format("intermediates")
+    coefsPath = "{}/TERM_coefs.p.gz".format("intermediates")
+
     if os.path.exists(indxPath) and os.path.exists(indyPath) and os.path.exists(coefsPath) and (not forceUpdate):
         ind_x = utils.load_zipped_pickle( indxPath )
         ind_y = utils.load_zipped_pickle( indyPath )
@@ -206,4 +207,4 @@ def testTermiteEmis(**kwargs): # test totals for TERM emissions between original
     print(TermTotals, remappedTotals)
     return
 if __name__ == '__main__':
-    processEmissions(ctmDir='.')
+    processEmissions()

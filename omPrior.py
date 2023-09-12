@@ -30,9 +30,9 @@ omIndustrialStationaryTransportEmis.processEmissions()
 omElectricityEmis.processEmissions()
 omFugitiveEmis.processEmissions()
 
-omTermiteEmis.processEmissions(ctmDir='.')
-omGFASEmis.processEmissions(args.startDate, args.endDate, ctmDir='.')
-omWetlandEmis.processEmissions(args.startDate, args.endDate, ctmDir='.')
+omTermiteEmis.processEmissions()
+omGFASEmis.processEmissions(args.startDate, args.endDate)
+omWetlandEmis.processEmissions(args.startDate, args.endDate)
 
 omOutputs.sumLayers()
 
