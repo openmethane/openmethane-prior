@@ -1,9 +1,8 @@
 import numpy as np
 import netCDF4 as nc
 import xarray as xr 
-import rioxarray as rxr
-from omInputs import domainXr, sectoralEmissionsPath, sectoralMappingsPath
-from omOutputs import landuseReprojectionPath, writeLayer
+from omInputs import domainXr
+from omOutputs import writeLayer
 import cdsapi
 import itertools
 import datetime
@@ -11,6 +10,7 @@ import utils
 import os
 from shapely import geometry
 import bisect
+import argparse
 
 def downloadGFAS( startDate, endDate, fileName='download.nc'):
     """ download GFAS methane between two dates startDate and endDate, returns nothing"""
@@ -234,8 +234,10 @@ def testGFASEmis( startDate, endDate, **kwargs): # test totals for GFAS emission
     for t in zip(gfasTotals, remappedTotals): print(t)
     return
 if __name__ == '__main__':
-    startDate = datetime.datetime(2022,7,1)
-    endDate = datetime.datetime(2022,7,2)
-    processEmissions(startDate, endDate, ctmDir='.')
+    parser = argparse.ArgumentParser(description="Calculate the prior methane emissions estimate for OpenMethane")
+    parser.add_argument('startDate', type=lambda s: datetime.datetime.strptime(s, "%Y-%m-%d"), help="Start date in YYYY-MM-DD format")
+    parser.add_argument('endDate', type=lambda s: datetime.datetime.strptime(s, "%Y-%m-%d"), help="end date in YYYY-MM-DD format")
+    args = parser.parse_args()
+    processEmissions(args.startDate, args.endDate, ctmDir='.')
 
                   

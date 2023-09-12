@@ -1,17 +1,15 @@
 import numpy as np
 import netCDF4 as nc
 import xarray as xr
-import rioxarray as rxr
-from omInputs import domainXr, sectoralEmissionsPath, sectoralMappingsPath, wetlandFilePath
-from omOutputs import landuseReprojectionPath, writeLayer
-import cdsapi
+from omInputs import domainXr, wetlandFilePath
+from omOutputs import writeLayer
+import argparse
 import itertools
 import datetime
 import utils
 import os
 from shapely import geometry
 import bisect
-
 
 
 def redistribute_spatially(LATshape, ind_x, ind_y, coefs, subset, fromAreas, toAreas):
@@ -224,6 +222,8 @@ def testWetlandEmis( startDate, endDate, **kwargs): # test totals for WETLAND em
     print(list(zip(wetlandTotals, remappedTotals)))
     return
 if __name__ == '__main__':
-    startDate = datetime.datetime(2022,7,1)
-    endDate = datetime.datetime(2022,7,2)
-    processEmissions(startDate, endDate, ctmDir='.')
+    parser = argparse.ArgumentParser(description="Calculate the prior methane emissions estimate for OpenMethane")
+    parser.add_argument('startDate', type=lambda s: datetime.datetime.strptime(s, "%Y-%m-%d"), help="Start date in YYYY-MM-DD format")
+    parser.add_argument('endDate', type=lambda s: datetime.datetime.strptime(s, "%Y-%m-%d"), help="end date in YYYY-MM-DD format")
+    args = parser.parse_args()
+    processEmissions(args.startDate, args.endDate, ctmDir='.')
