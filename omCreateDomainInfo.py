@@ -8,31 +8,22 @@ Unless required by applicable law or agreed to in writing, software distributed 
 See the License for the specific language governing permissions and limitations under the License.
 """
 
-gridDir = 'cmaq_example'
-geomFile = 'geo_em.d01.nc'
-dotFile = 'GRIDDOT2D_1'
-croFile = 'GRIDCRO2D_1'
-
-from omInputs import domainPath
+from omInputs import domainPath, geomFilePath, croFilePath, dotFilePath
 import xarray as xr
-import os
-
-geomPath = os.path.join( gridDir, geomFile)
-dotPath = os.path.join( gridDir, dotFile)
-croPath = os.path.join( gridDir, croFile)
 
 domainXr = xr.Dataset()
-with xr.open_dataset( geomPath) as geomXr:
+
+with xr.open_dataset( geomFilePath) as geomXr:
     for attr in ['DX', 'DY', 'TRUELAT1','TRUELAT2', 'MOAD_CEN_LAT', 'STAND_LON']:
         domainXr.attrs[attr] = geomXr.attrs[attr]
 
-with xr.open_dataset( croPath) as croXr:
+with xr.open_dataset( croFilePath) as croXr:
     for var in ['LAT','LON']:
         domainXr[var] = croXr[var]
 
     domainXr['LANDMASK'] = croXr['LWMASK'].squeeze(dim="LAY", drop=True) # copy but remove the 'LAY' dimension
 
-with xr.open_dataset( dotPath) as dotXr:
+with xr.open_dataset( dotFilePath) as dotXr:
     # some repetition between the geom and grid files here, XCELL=DX and YCELL=DY
     for attr in ['XCELL', 'YCELL']:
         domainXr.attrs[attr] = croXr.attrs[attr]

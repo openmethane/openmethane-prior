@@ -10,10 +10,9 @@ See the License for the specific language governing permissions and limitations 
 
 import numpy as np
 import netCDF4 as nc
-import xarray
-import rioxarray as rxr
-from omInputs import domainXr, sectoralEmissionsPath, sectoralMappingsPath
-from omOutputs import landuseReprojectionPath, writeLayer
+import xarray as xr 
+from omInputs import domainXr
+from omOutputs import writeLayer
 import cdsapi
 import itertools
 import datetime
@@ -21,8 +20,11 @@ import utils
 import os
 from shapely import geometry
 import bisect
+import argparse
 
-def downloadGFAS( startDate, endDate, fileName='download.nc'):
+GFASDownloadPath=os.path.join("intermediates", "gfas-download.nc")
+
+def downloadGFAS( startDate, endDate, fileName=GFASDownloadPath):
     """ download GFAS methane between two dates startDate and endDate, returns nothing"""
     dateString = startDate.strftime('%Y-%m-%d')+'/'+endDate.strftime('%Y-%m-%d')
     c = cdsapi.Client()
@@ -120,9 +122,10 @@ def processEmissions(startDate, endDate, **kwargs): # doms, GFASfolder, GFASfile
         areas[iy,:] = utils.area_of_rectangle_m2(latGfas_edge[iy],latGfas_edge[iy+1],lonGfas_edge[0],lonGfas_edge[-1])/lonGfas.size
 
 
-    indxPath = "{}/GFAS_ind_x.p.gz".format(kwargs['ctmDir'])
-    indyPath = "{}/GFAS_ind_y.p.gz".format(kwargs['ctmDir'])
-    coefsPath = "{}/GFAS_coefs.p.gz".format(kwargs['ctmDir'])
+    indxPath = "{}/GFAS_ind_x.p.gz".format("intermediates")
+    indyPath = "{}/GFAS_ind_y.p.gz".format("intermediates")
+    coefsPath = "{}/GFAS_coefs.p.gz".format("intermediates")
+
     if os.path.exists(indxPath) and os.path.exists(indyPath) and os.path.exists(coefsPath) and (not forceUpdate):
         ind_x = utils.load_zipped_pickle( indxPath )
         ind_y = utils.load_zipped_pickle( indyPath )
@@ -194,11 +197,16 @@ def processEmissions(startDate, endDate, **kwargs): # doms, GFASfolder, GFASfile
         utils.save_zipped_pickle(ind_y, indyPath )
         utils.save_zipped_pickle(coefs, coefsPath )
         
-    result = []
+    resultNd = [] # will become ndarray
+    dates = []
     for i in range(gfasTimes.size):
+        dates.append( startDate + datetime.timedelta( days=i))
         subset = ncin['ch4fire'][i,...]
-        result.append(redistribute_spatially(LAT.shape, ind_x, ind_y, coefs, subset, areas))
-    return np.array( result) 
+        resultNd.append( redistribute_spatially(LAT.shape, ind_x, ind_y, coefs, subset, areas))
+    resultNd = np.array( resultNd)
+    resultXr = xr.DataArray( resultNd, coords={'date':dates, 'y':np.arange( resultNd.shape[-2]), 'x':np.arange( resultNd.shape[-1])})
+    writeLayer('OCH4_FIRE', resultXr, True)
+    return resultNd
 
 def testGFASEmis( startDate, endDate, **kwargs): # test totals for GFAS emissions between original and remapped
     remapped = processEmissions( startDate, endDate, **kwargs)
@@ -239,8 +247,10 @@ def testGFASEmis( startDate, endDate, **kwargs): # test totals for GFAS emission
     for t in zip(gfasTotals, remappedTotals): print(t)
     return
 if __name__ == '__main__':
-    startDate = datetime.datetime(2022,7,1)
-    endDate = datetime.datetime(2022,7,2)
-    testGFASEmis(startDate, endDate, ctmDir='.')
+    parser = argparse.ArgumentParser(description="Calculate the prior methane emissions estimate for OpenMethane")
+    parser.add_argument('startDate', type=lambda s: datetime.datetime.strptime(s, "%Y-%m-%d"), help="Start date in YYYY-MM-DD format")
+    parser.add_argument('endDate', type=lambda s: datetime.datetime.strptime(s, "%Y-%m-%d"), help="end date in YYYY-MM-DD format")
+    args = parser.parse_args()
+    processEmissions(args.startDate, args.endDate)
 
                   

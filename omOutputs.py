@@ -16,9 +16,11 @@ from utils import secsPerYear
 
 landuseReprojectionPath = os.path.join("outputs", "land-use.tif")
 ntlReprojectionPath = os.path.join("outputs", "night-time-lights.tif")
-domainOutputPath = os.path.join("outputs", f"om-{omInputs.domainFilename}")
+domainOutputPath = os.path.join("outputs", f"{omInputs.domainFilename}")
 geoJSONOutputPath = os.path.join("outputs", "cells.json")
 ch4JSONOutputPath = os.path.join("outputs", "methane.json")
+
+coordNames = ['TSTEP', 'ROW', 'COL']
 
 # Convert a gridded emission in kgs/cell/year to kgs/m2/s
 def convertToTimescale(emission):
@@ -26,13 +28,19 @@ def convertToTimescale(emission):
     domainCellAreaM2 = di.DX * di.DY
     return emission * domainCellAreaM2 / secsPerYear
 
-def writeLayer(layerName, layerData):
+def writeLayer(layerName, layerData, directSet = False):
     print(f"Writing emissions data for {layerName}")
+    
     datapath = domainOutputPath if os.path.exists(domainOutputPath) else omInputs.domainPath
     with xr.open_dataset(datapath) as dss:
         ds = dss.load()
-    ds[layerName] = (('Time', 'south_north', 'west_east'), layerData)
-    ds.to_netcdf(domainOutputPath)
+    # if this is a xr dataArray just include it
+    if directSet:
+        ds[layerName] = layerData
+    else:
+        nDims = len(layerData.shape)
+        ds[layerName] = (coordNames[-nDims:], layerData)
+    ds.to_netcdf(domainOutputPath) 
 
 def sumLayers():
     layers = omInputs.omLayers
@@ -51,6 +59,7 @@ def sumLayers():
                 summed = summed + ds[layerName].values
         
         if summed is not None:
-             ds["OCH4_TOTAL"] = (('Time', 'south_north', 'west_east'), summed)
+             nDims = len(summed.shape)
+             ds["OCH4_TOTAL"] = (coordNames[-nDims:], summed)
              ds.to_netcdf(domainOutputPath)
 

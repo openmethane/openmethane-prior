@@ -10,13 +10,9 @@ See the License for the specific language governing permissions and limitations 
 
 import numpy as np
 import netCDF4 as nc
-import xarray
-import rioxarray as rxr
-from omInputs import domainXr, sectoralEmissionsPath, sectoralMappingsPath, termiteFilePath
-from omOutputs import landuseReprojectionPath, writeLayer
-import cdsapi
+from omInputs import domainXr, termiteFilePath
+from omOutputs import writeLayer
 import itertools
-import datetime
 import utils
 import os
 from shapely import geometry
@@ -53,7 +49,7 @@ def redistribute_spatially(LATshape, ind_x, ind_y, coefs, subset, fromAreas, toA
     gridded /= toAreas
     return gridded
 
-def processEmissions(startDate, endDate, **kwargs): # doms, GFASfolder, GFASfile, metDir, ctmDir, CMAQdir, mechCMAQ, mcipsuffix, specTableFile, forceUpdate):
+def processEmissions(**kwargs): # doms, GFASfolder, GFASfile, metDir, ctmDir, CMAQdir, mechCMAQ, mcipsuffix, specTableFile, forceUpdate):
     '''Function to remap termite emissions to the CMAQ domain
 
     Args:
@@ -100,9 +96,10 @@ def processEmissions(startDate, endDate, **kwargs): # doms, GFASfolder, GFASfile
     LON  = domainXr.variables['LON'].values.squeeze()
     cmaqArea = domainXr.XCELL * domainXr.YCELL
 
-    indxPath = "{}/TERM_ind_x.p.gz".format(kwargs['ctmDir'])
-    indyPath = "{}/TERM_ind_y.p.gz".format(kwargs['ctmDir'])
-    coefsPath = "{}/TERM_coefs.p.gz".format(kwargs['ctmDir'])
+    indxPath = "{}/TERM_ind_x.p.gz".format("intermediates")
+    indyPath = "{}/TERM_ind_y.p.gz".format("intermediates")
+    coefsPath = "{}/TERM_coefs.p.gz".format("intermediates")
+
     if os.path.exists(indxPath) and os.path.exists(indyPath) and os.path.exists(coefsPath) and (not forceUpdate):
         ind_x = utils.load_zipped_pickle( indxPath )
         ind_y = utils.load_zipped_pickle( indyPath )
@@ -175,13 +172,13 @@ def processEmissions(startDate, endDate, **kwargs): # doms, GFASfolder, GFASfile
     subset = subset[-1::-1,:] # reverse latitudes
     subset *= 1e9/termAreas # converting from mtCH4/gridcell to kg/m^2
     cmaqAreas = np.ones( LAT.shape) * cmaqArea   # all grid cells equal area
-    result=redistribute_spatially(LAT.shape, ind_x, ind_y, coefs, subset, termAreas, cmaqAreas)
-    # now turn these from per gridcell to per area
+    resultNd=redistribute_spatially(LAT.shape, ind_x, ind_y, coefs, subset, termAreas, cmaqAreas)
     ncin.close()
-    return np.array( result) 
+    writeLayer( 'OCH4_TERMITE', resultNd)
+    return np.array( resultNd) 
 
-def testTermiteEmis( startDate, endDate, **kwargs): # test totals for TERM emissions between original and remapped
-    remapped = processEmissions( startDate, endDate, **kwargs)
+def testTermiteEmis(**kwargs): # test totals for TERM emissions between original and remapped
+    remapped = processEmissions(**kwargs)
     ncin = nc.Dataset(termiteFilePath, 'r')
     latTerm  = np.around(np.float64(ncin.variables['lat'][:]),3)
     latTerm = latTerm[-1::-1] # reversing order, we need south first
@@ -220,6 +217,4 @@ def testTermiteEmis( startDate, endDate, **kwargs): # test totals for TERM emiss
     print(TermTotals, remappedTotals)
     return
 if __name__ == '__main__':
-    startDate = datetime.datetime(2022,7,1)
-    endDate = datetime.datetime(2022,7,2)
-    testTermiteEmis(startDate, endDate,  ctmDir='.')
+    processEmissions()

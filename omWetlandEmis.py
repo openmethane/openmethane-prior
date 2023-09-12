@@ -10,18 +10,16 @@ See the License for the specific language governing permissions and limitations 
 
 import numpy as np
 import netCDF4 as nc
-import xarray
-import rioxarray as rxr
-from omInputs import domainXr, sectoralEmissionsPath, sectoralMappingsPath, wetlandFilePath
-from omOutputs import landuseReprojectionPath, writeLayer
-import cdsapi
+import xarray as xr
+from omInputs import domainXr, wetlandFilePath
+from omOutputs import writeLayer
+import argparse
 import itertools
 import datetime
 import utils
 import os
 from shapely import geometry
 import bisect
-
 
 
 def redistribute_spatially(LATshape, ind_x, ind_y, coefs, subset, fromAreas, toAreas):
@@ -97,9 +95,10 @@ def makeWetlandClimatology( **kwargs): # doms, GFASfolder, GFASfile, metDir, ctm
     LON  = domainXr.variables['LON'].values.squeeze()
     cmaqArea = domainXr.XCELL * domainXr.YCELL
 
-    indxPath = "{}/WETLAND_ind_x.p.gz".format(kwargs['ctmDir'])
-    indyPath = "{}/WETLAND_ind_y.p.gz".format(kwargs['ctmDir'])
-    coefsPath = "{}/WETLAND_coefs.p.gz".format(kwargs['ctmDir'])
+    indxPath = "{}/WETLAND_ind_x.p.gz".format("intermediates")
+    indyPath = "{}/WETLAND_ind_y.p.gz".format("intermediates")
+    coefsPath = "{}/WETLAND_coefs.p.gz".format("intermediates")
+
     if os.path.exists(indxPath) and os.path.exists(indyPath) and os.path.exists(coefsPath) and (not forceUpdate):
         ind_x = utils.load_zipped_pickle( indxPath )
         ind_y = utils.load_zipped_pickle( indyPath )
@@ -179,12 +178,19 @@ def makeWetlandClimatology( **kwargs): # doms, GFASfolder, GFASfile, metDir, ctm
     return np.array( result) 
 
 def processEmissions(startDate, endDate, **kwargs): # doms, GFASfolder, GFASfile, metDir, ctmDir, CMAQdir, mechCMAQ, mcipsuffix, specTableFile, forceUpdate):
-    climatology = makeWetlandClimatolog( **kwargs)
-    result = []
+    climatology = makeWetlandClimatology( **kwargs)
     delta = datetime.timedelta(days=1)
-    for d in utils.dateTimeRange( startDate, endDate, delta): result.append( climatology[d.month -1, ...]) # d.month is 1-based
-    result.append( climatology[endDate.month -1, ...]) # we want endDate included, python doesn't
-    return np.array( result)
+    resultNd = [] # will be ndarray once built
+    dates = []
+    for d in utils.dateTimeRange( startDate, endDate, delta):
+        dates.append( d)
+        resultNd.append( climatology[d.month -1, ...]) # d.month is 1-based
+    dates.append( endDate)
+    resultNd.append( climatology[endDate.month -1, ...]) # we want endDate included, python doesn't
+    resultNd = np.array( resultNd)
+    resultXr = xr.DataArray( resultNd, coords={'date':dates, 'y':np.arange( resultNd.shape[-2]), 'x':np.arange( resultNd.shape[-1])})
+    writeLayer('OCH4_WETLANDS', resultXr, True)
+    return resultNd
 
 def testWetlandEmis( startDate, endDate, **kwargs): # test totals for WETLAND emissions between original and remapped
     remapped = makeWetlandClimatology( **kwargs)
@@ -227,6 +233,8 @@ def testWetlandEmis( startDate, endDate, **kwargs): # test totals for WETLAND em
     print(list(zip(wetlandTotals, remappedTotals)))
     return
 if __name__ == '__main__':
-    startDate = datetime.datetime(2022,7,1)
-    endDate = datetime.datetime(2022,7,2)
-    testWetlandEmis(startDate, endDate, ctmDir='.')
+    parser = argparse.ArgumentParser(description="Calculate the prior methane emissions estimate for OpenMethane")
+    parser.add_argument('startDate', type=lambda s: datetime.datetime.strptime(s, "%Y-%m-%d"), help="Start date in YYYY-MM-DD format")
+    parser.add_argument('endDate', type=lambda s: datetime.datetime.strptime(s, "%Y-%m-%d"), help="end date in YYYY-MM-DD format")
+    args = parser.parse_args()
+    processEmissions(args.startDate, args.endDate)

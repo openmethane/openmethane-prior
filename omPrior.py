@@ -9,6 +9,8 @@ See the License for the specific language governing permissions and limitations 
 """
 
 import argparse
+import datetime
+
 import omInputs
 import omAgLulucfWasteEmis
 import omIndustrialStationaryTransportEmis
@@ -17,8 +19,14 @@ import omFugitiveEmis
 import omOutputs
 import omPriorVerify
 
+import omGFASEmis
+import omTermiteEmis
+import omWetlandEmis
+
 # Parse args
 parser = argparse.ArgumentParser(description="Calculate the prior methane emissions estimate for OpenMethane")
+parser.add_argument('startDate', type=lambda s: datetime.datetime.strptime(s, "%Y-%m-%d"), help="Start date in YYYY-MM-DD format")
+parser.add_argument('endDate', type=lambda s: datetime.datetime.strptime(s, "%Y-%m-%d"), help="end date in YYYY-MM-DD format")
 parser.add_argument("--skip-reproject", default=False, action="store_true")
 args = parser.parse_args()
 
@@ -31,6 +39,10 @@ omAgLulucfWasteEmis.processEmissions()
 omIndustrialStationaryTransportEmis.processEmissions()
 omElectricityEmis.processEmissions()
 omFugitiveEmis.processEmissions()
+
+omTermiteEmis.processEmissions()
+omGFASEmis.processEmissions(args.startDate, args.endDate)
+omWetlandEmis.processEmissions(args.startDate, args.endDate)
 
 omOutputs.sumLayers()
 
