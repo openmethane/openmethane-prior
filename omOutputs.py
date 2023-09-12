@@ -6,7 +6,7 @@ from utils import secsPerYear
 
 landuseReprojectionPath = os.path.join("outputs", "land-use.tif")
 ntlReprojectionPath = os.path.join("outputs", "night-time-lights.tif")
-domainOutputPath = os.path.join("outputs", f"om-{omInputs.domainFilename}")
+domainOutputPath = os.path.join("outputs", f"{omInputs.domainFilename}")
 geoJSONOutputPath = os.path.join("outputs", "cells.json")
 ch4JSONOutputPath = os.path.join("outputs", "methane.json")
 
@@ -18,6 +18,7 @@ def convertToTimescale(emission):
 
 def writeLayer(layerName, layerData):
     print(f"Writing emissions data for {layerName}")
+    coordNames = ['TSTEP', 'ROW', 'COL']
     datapath = domainOutputPath if os.path.exists(domainOutputPath) else omInputs.domainPath
     with xr.open_dataset(datapath) as dss:
         ds = dss.load()
@@ -25,8 +26,9 @@ def writeLayer(layerName, layerData):
     if isinstance( layerData, xr.DataArray):
         ds[layerName] =  layerData
     else:
-        ds[layerName] = (('Time', 'south_north', 'west_east'), layerData)
-    ds.to_netcdf(domainOutputPath, group='emissions')
+        nDims = len(layerData.shape)
+        ds[layerName] = (coordNames[-nDims:], layerData)
+    ds.to_netcdf(domainOutputPath) 
 
 def sumLayers():
     layers = omInputs.omLayers
