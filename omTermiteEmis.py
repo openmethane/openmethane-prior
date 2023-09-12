@@ -165,10 +165,10 @@ def processEmissions(startDate, endDate, **kwargs): # doms, GFASfolder, GFASfile
     subset = subset[-1::-1,:] # reverse latitudes
     subset *= 1e9/termAreas # converting from mtCH4/gridcell to kg/m^2
     cmaqAreas = np.ones( LAT.shape) * cmaqArea   # all grid cells equal area
-    result=redistribute_spatially(LAT.shape, ind_x, ind_y, coefs, subset, termAreas, cmaqAreas)
-    # now turn these from per gridcell to per area
+    resultNd=redistribute_spatially(LAT.shape, ind_x, ind_y, coefs, subset, termAreas, cmaqAreas)
     ncin.close()
-    return np.array( result) 
+    writeLayer( 'OCH4_TERMITE', resultNd)
+    return np.array( resultNd) 
 
 def testTermiteEmis( startDate, endDate, **kwargs): # test totals for TERM emissions between original and remapped
     remapped = processEmissions( startDate, endDate, **kwargs)
@@ -212,4 +212,4 @@ def testTermiteEmis( startDate, endDate, **kwargs): # test totals for TERM emiss
 if __name__ == '__main__':
     startDate = datetime.datetime(2022,7,1)
     endDate = datetime.datetime(2022,7,2)
-    testTermiteEmis(startDate, endDate,  ctmDir='.')
+    processEmissions(startDate, endDate,  ctmDir='.')
