@@ -1,4 +1,12 @@
 __pycache__
 outputs
+inputs
+intermediates
+experiments
 .env
-om-domain-info.nc
+
+!outputs/README.md
+!inputs/README.md
+!intermediates/README.md
+.vscode/launch.json
+.vscode/settings.json
