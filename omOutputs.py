@@ -10,6 +10,8 @@ domainOutputPath = os.path.join("outputs", f"{omInputs.domainFilename}")
 geoJSONOutputPath = os.path.join("outputs", "cells.json")
 ch4JSONOutputPath = os.path.join("outputs", "methane.json")
 
+coordNames = ['TSTEP', 'ROW', 'COL']
+
 # Convert a gridded emission in kgs/cell/year to kgs/m2/s
 def convertToTimescale(emission):
     di = omInputs.domainXr
@@ -18,7 +20,7 @@ def convertToTimescale(emission):
 
 def writeLayer(layerName, layerData, directSet = False):
     print(f"Writing emissions data for {layerName}")
-    coordNames = ['TSTEP', 'ROW', 'COL']
+    
     datapath = domainOutputPath if os.path.exists(domainOutputPath) else omInputs.domainPath
     with xr.open_dataset(datapath) as dss:
         ds = dss.load()
@@ -47,6 +49,7 @@ def sumLayers():
                 summed = summed + ds[layerName].values
         
         if summed is not None:
-             ds["OCH4_TOTAL"] = (('Time', 'south_north', 'west_east'), summed)
+             nDims = len(summed.shape)
+             ds["OCH4_TOTAL"] = (coordNames[-nDims:], summed)
              ds.to_netcdf(domainOutputPath)
 
