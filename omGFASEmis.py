@@ -41,34 +41,7 @@ def downloadGFAS( startDate, endDate, fileName=GFASDownloadPath):
         fileName)
     return fileName
 
-def redistribute_spatially(LATshape, ind_x, ind_y, coefs, subset, areas):
-    '''Redistribute GFAS emissions horizontally and vertically - this little function does most of the work
 
-    Args:
-        LATshape: shape of the LAT variable
-        ind_x: x-indices in the GFAS domain corresponding to indices in the CMAQ domain
-        ind_y: y-indices in the GFAS domain corresponding to indices in the CMAQ domain
-        coefs: Area-weighting coefficients to redistribute the emissions
-        subset: the GFAS emissionsx
-        areas: Areas of GFAS grid-cells in units of m^2
-
-    Returns: 
-        gridded: concentrations on the 2D CMAQ grid
-        
-    '''
-    
-    ##
-    gridded = np.zeros(LATshape,dtype = np.float32)
-    ij = -1
-    for i in range(LATshape[0]):
-        for j in range(LATshape[1]):
-            ij += 1
-            for k in range(len(ind_x[ij])):
-                ix      = ind_x[ij][k]
-                iy      = ind_y[ij][k]
-                gridded[i,j] += subset[iy,ix] *coefs[ij][k] * areas[iy,ix]   
-    ##
-    return gridded
 
 def processEmissions(startDate, endDate, **kwargs): # doms, GFASfolder, GFASfile, metDir, ctmDir, CMAQdir, mechCMAQ, mcipsuffix, specTableFile, forceUpdate):
     '''Function to remap GFAS fire emissions to the CMAQ domain
@@ -88,9 +61,10 @@ def processEmissions(startDate, endDate, **kwargs): # doms, GFASfolder, GFASfile
         forceUpdate = False
             
     GFASfile = downloadGFAS( startDate, endDate)
-    #GFASfile = 'download.nc' # for rapid testing
+    #GFASfile = GFASDownloadPath
     ncin = nc.Dataset(GFASfile, 'r', format='NETCDF3')
     latGfas  = np.around(np.float64(ncin.variables['latitude'][:]),3)
+    latGfas = latGfas[::-1] # they're originally north-south, we want them south north
     lonGfas  = np.around(np.float64(ncin.variables['longitude'][:]),3)
     dlatGfas = latGfas[0] - latGfas[1]
     dlonGfas = lonGfas[1] - lonGfas[0]
@@ -110,16 +84,19 @@ def processEmissions(startDate, endDate, **kwargs): # doms, GFASfolder, GFASfile
     nlonGfas = len(lonGfas)
     nlatGfas = len(latGfas)
 
-    latGfasrev = latGfas[::-1]
-    latGfasrev_edge = latGfas_edge[::-1]
-
     
 
     print("Calculate grid cell areas for the GFAS grid")
-    areas = np.zeros((nlatGfas,nlonGfas))
+    GFASAreas = np.zeros((nlatGfas,nlonGfas))
     # take advantage of  regular grid to compute areas equal for each gridbox at same latitude
     for iy in range(nlatGfas):
-        areas[iy,:] = omUtils.area_of_rectangle_m2(latGfas_edge[iy],latGfas_edge[iy+1],lonGfas_edge[0],lonGfas_edge[-1])/lonGfas.size
+        GFASAreas[iy,:] = omUtils.area_of_rectangle_m2(latGfas_edge[iy],latGfas_edge[iy+1],lonGfas_edge[0],lonGfas_edge[-1])/lonGfas.size
+    # now collect some domain information
+    LATD = domainXr['LATD'][:].values.squeeze()
+    LOND = domainXr['LOND'].values.squeeze()
+    LAT  = domainXr.variables['LAT'].values.squeeze()
+    LON  = domainXr.variables['LON'].values.squeeze()
+    cmaqArea = domainXr.XCELL * domainXr.YCELL
 
 
     indxPath = "{}/GFAS_ind_x.p.gz".format(intermediatesPath)
@@ -132,7 +109,6 @@ def processEmissions(startDate, endDate, **kwargs): # doms, GFASfolder, GFASfile
         coefs = omUtils.load_zipped_pickle( coefsPath )
         ##
         domShape = []
-        LAT  = domainXr.variables['LAT'].values.squeeze()
         domShape.append(LAT.shape)
     else:
         ind_x = []
@@ -146,10 +122,6 @@ def processEmissions(startDate, endDate, **kwargs): # doms, GFASfolder, GFASfile
         coefs.append([])
 
 
-        LAT  = domainXr.variables['LAT'].values.squeeze()
-        LON  = domainXr.variables['LON'].values.squeeze()
-        LATD = domainXr.variables['LATD'].values.squeeze()
-        LOND = domainXr.variables['LOND'].values.squeeze()
 
         domShape.append(LAT.shape)
 
@@ -173,8 +145,8 @@ def processEmissions(startDate, endDate, **kwargs): # doms, GFASfolder, GFASfile
 
             ixminl = bisect.bisect_right(lonGfas_edge,xmin)
             ixmaxr = bisect.bisect_right(lonGfas_edge,xmax)
-            iyminl = nlatGfas - bisect.bisect_right(latGfasrev_edge,ymin)
-            iymaxr = nlatGfas - bisect.bisect_right(latGfasrev_edge,ymax)
+            iyminl =  bisect.bisect_right(latGfas_edge,ymin)
+            iymaxr =  bisect.bisect_right(latGfas_edge,ymax)
 
             for ix,iy  in itertools.product(range(max(0,ixminl-1),min(nlonGfas,ixmaxr)), range(max(0,iyminl),min(nlatGfas,iymaxr+1))):
                 gfas_gridcell = geometry.box(lonGfas_edge[ix],latGfas_edge[iy],lonGfas_edge[ix+1],latGfas_edge[iy+1])
@@ -199,10 +171,13 @@ def processEmissions(startDate, endDate, **kwargs): # doms, GFASfolder, GFASfile
         
     resultNd = [] # will become ndarray
     dates = []
+    cmaqAreas = np.ones( LAT.shape) * cmaqArea   # all grid cells equal area
+
     for i in range(gfasTimes.size):
         dates.append( startDate + datetime.timedelta( days=i))
         subset = ncin['ch4fire'][i,...]
-        resultNd.append( redistribute_spatially(LAT.shape, ind_x, ind_y, coefs, subset, areas))
+        subset = subset[::-1,:] # they're listed north-south, we want them south north
+        resultNd.append( omUtils.redistribute_spatially(LAT.shape, ind_x, ind_y, coefs, subset, GFASAreas, cmaqAreas))
     resultNd = np.array( resultNd)
     resultXr = xr.DataArray( resultNd, coords={'date':dates, 'y':np.arange( resultNd.shape[-2]), 'x':np.arange( resultNd.shape[-1])})
     writeLayer('OCH4_FIRE', resultXr, True)
