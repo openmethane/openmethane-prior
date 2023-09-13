@@ -261,3 +261,32 @@ def area_of_rectangle_m2(lat1,lat2,lon1,lon2):
     coef = 708422.8776524838 ## (np.pi/180.0) * R**2
     A = coef * np.abs(np.sin(LAT1)-np.sin(LAT2)) * np.abs(lon1-lon2) * 1e6
     return A
+
+def redistribute_spatially(LATshape, ind_x, ind_y, coefs, subset, fromAreas, toAreas):
+    '''Redistribute GFAS emissions horizontally and vertically - this little function does most of the work
+
+    Args:
+        LATshape: shape of the LAT variable
+        ind_x: x-indices in the GFAS domain corresponding to indices in the CMAQ domain
+        ind_y: y-indices in the GFAS domain corresponding to indices in the CMAQ domain
+        coefs: Area-weighting coefficients to redistribute the emissions
+        subset: the GFAS emissionsx
+        fromAreas: Areas of input grid-cells in units of m^2
+    toAreas: area of output gridcells in units of m^2
+    Returns: 
+        gridded: concentrations on the 2D CMAQ grid
+        
+    '''
+    
+    ##
+    gridded = np.zeros(LATshape,dtype = np.float32)
+    ij = 0
+    for i in range(LATshape[0]):
+        for j in range(LATshape[1]):
+            ij += 1
+            for k in range(len(ind_x[ij])):
+                ix      = ind_x[ij][k]
+                iy      = ind_y[ij][k]
+                gridded[i,j] += subset[iy,ix] *coefs[ij][k] * fromAreas[iy,ix]   
+    gridded /= toAreas
+    return gridded
