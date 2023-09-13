@@ -8,22 +8,20 @@ Unless required by applicable law or agreed to in writing, software distributed 
 See the License for the specific language governing permissions and limitations under the License.
 """
 
-import omInputs
-from omInputs import sectoralEmissionsPath
+from omInputs import sectoralEmissionsPath, livestockDataPath
+from omOutputs import domainOutputPath
 import pandas as pd
 import xarray as xr
 import numpy as np
-import os
 from colorama import Fore
 
 
 # Check ouput sector emissions to make sure they tally up to the input emissions
 def verifyEmis():
-    domainOutputPath = os.path.join("outputs", f"om-{omInputs.domainFilename}")
     sectorData = pd.read_csv(sectoralEmissionsPath).to_dict(orient="records")[0]
 
     # Load Livestock inventory and check that it doesn't exceed total agriculture inventory
-    with xr.open_dataset(omInputs.livestockDataPath) as lss:
+    with xr.open_dataset(livestockDataPath) as lss:
         ls = lss.load()
     lsVal = round(np.sum(ls["CH4_total"].values) / 1000)
     agVal = round(sectorData["agriculture"] * 1000000)

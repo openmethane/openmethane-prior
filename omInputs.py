@@ -9,26 +9,28 @@ See the License for the specific language governing permissions and limitations 
 """
 
 import os
-import dotenv
-getenv = os.environ.get
-dotenv.load_dotenv()
+from omUtils import getenv
+
+inputsPath = getenv("INPUTS")
+cmaqExamplePath = getenv("CMAQ_EXAMPLE")
 
 # Input file definitions
 domainFilename = getenv("DOMAIN")
-domainPath = os.path.join("inputs", domainFilename)
-electricityPath = os.path.join("inputs", getenv("CH4_ELECTRICITY"))
-fugitivesPath = os.path.join("inputs", getenv("CH4_FUGITIVES"))
-landUsePath = os.path.join("inputs", getenv("LAND_USE"))
-sectoralEmissionsPath = os.path.join("inputs", getenv("SECTORAL_EMISSIONS"))
-sectoralMappingsPath = os.path.join("inputs", getenv("SECTORAL_MAPPING"))
-ntlPath = os.path.join("inputs", getenv("NTL"))
-auShapefilePath = os.path.join("inputs", getenv("AUSF"))
-livestockDataPath = os.path.join("inputs", getenv("LIVESTOCK_DATA"))
-termiteFilePath = os.path.join("inputs", getenv("TERMITES"))
-wetlandFilePath = os.path.join("inputs", getenv("WETLANDS"))
-croFilePath = os.path.join("cmaq_example", getenv("CROFILE"))
-dotFilePath = os.path.join("cmaq_example", getenv("DOTFILE"))
-geomFilePath = os.path.join("cmaq_example", getenv("GEO_EM"))
+domainPath = os.path.join(inputsPath, domainFilename)
+electricityPath = os.path.join(inputsPath, getenv("CH4_ELECTRICITY"))
+fugitivesPath = os.path.join(inputsPath, getenv("CH4_FUGITIVES"))
+landUsePath = os.path.join(inputsPath, getenv("LAND_USE"))
+sectoralEmissionsPath = os.path.join(inputsPath, getenv("SECTORAL_EMISSIONS"))
+sectoralMappingsPath = os.path.join(inputsPath, getenv("SECTORAL_MAPPING"))
+ntlPath = os.path.join(inputsPath, getenv("NTL"))
+auShapefilePath = os.path.join(inputsPath, getenv("AUSF"))
+livestockDataPath = os.path.join(inputsPath, getenv("LIVESTOCK_DATA"))
+termiteFilePath = os.path.join(inputsPath, getenv("TERMITES"))
+wetlandFilePath = os.path.join(inputsPath, getenv("WETLANDS"))
+
+croFilePath = os.path.join(cmaqExamplePath, getenv("CROFILE"))
+dotFilePath = os.path.join(cmaqExamplePath, getenv("DOTFILE"))
+geomFilePath = os.path.join(cmaqExamplePath, getenv("GEO_EM"))
 
 import pyproj
 import samgeo.common as sam
@@ -58,7 +60,7 @@ def checkInputFiles():
 
     errors = []
 
-    checkInputFile(domainPath, f"Missing file for domain: {domainPath}", errors)
+    checkInputFile(domainPath, f"Missing file for domain info at {domainPath}, suggest running omCreateDomainInfo.py", errors)
     checkInputFile(electricityPath, f"Missing file for electricity facilities: {electricityPath}", errors)
     checkInputFile(fugitivesPath, f"Missing file for fugitive facilities: {fugitivesPath}", errors)
     checkInputFile(landUsePath, f"Missing file for land use: {landUsePath}", errors)
@@ -66,9 +68,12 @@ def checkInputFiles():
     checkInputFile(sectoralMappingsPath, f"Missing file for sectoral emissions mappings: {sectoralMappingsPath}", errors)
     checkInputFile(ntlPath, f"Missing file for night time lights: {ntlPath}", errors)
     checkInputFile(livestockDataPath, f"Missing file for livestock data: {livestockDataPath}", errors)
+    checkInputFile(termiteFilePath, f"Missing file for termite data: {termiteFilePath}", errors)
+    checkInputFile(wetlandFilePath, f"Missing file for wetlands data: {wetlandFilePath}", errors)
 
     ## Print all errors and exit (if we have any errors)
     if len(errors) > 0:
+        print("Some required files are missing. Suggest running omDownloadInputs.py if you're using the default input file set, and omCreateDomainInfo.py if you haven't already. See issues below.")
         print("\n".join(errors))
         exit(1)
 

@@ -14,9 +14,9 @@ import netCDF4 as nc
 import xarray as xr
 import rioxarray as rxr
 import pyproj
-from omInputs import domainPath, sectoralEmissionsPath, sectoralMappingsPath, livestockDataPath, domainProj, domainXr as ds
+from omInputs import sectoralEmissionsPath, sectoralMappingsPath, livestockDataPath, domainProj, domainXr as ds
 from omOutputs import landuseReprojectionPath, writeLayer, convertToTimescale
-from utils import area_of_rectangle_m2, secsPerYear
+from omUtils import area_of_rectangle_m2, secsPerYear
 
 def processEmissions():
     # Load raster land-use data

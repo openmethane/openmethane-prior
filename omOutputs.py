@@ -12,13 +12,16 @@ import os
 import xarray as xr
 import numpy as np
 import omInputs 
-from utils import secsPerYear
+from omUtils import secsPerYear, getenv
 
-landuseReprojectionPath = os.path.join("outputs", "land-use.tif")
-ntlReprojectionPath = os.path.join("outputs", "night-time-lights.tif")
-domainOutputPath = os.path.join("outputs", f"{omInputs.domainFilename}")
-geoJSONOutputPath = os.path.join("outputs", "cells.json")
-ch4JSONOutputPath = os.path.join("outputs", "methane.json")
+intermediatesPath = getenv("INTERMEDIATES")
+outputsPath = getenv("OUTPUTS")
+
+landuseReprojectionPath = os.path.join(intermediatesPath, "land-use.tif")
+ntlReprojectionPath = os.path.join(intermediatesPath, "night-time-lights.tif")
+domainOutputPath = os.path.join(outputsPath, "om-prior-output.nc")
+geoJSONOutputPath = os.path.join(outputsPath, "grid-cells.json")
+ch4JSONOutputPath = os.path.join(outputsPath, "methane.json")
 
 coordNames = ['TSTEP', 'ROW', 'COL']
 

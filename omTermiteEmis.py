@@ -11,13 +11,12 @@ See the License for the specific language governing permissions and limitations 
 import numpy as np
 import netCDF4 as nc
 from omInputs import domainXr, termiteFilePath
-from omOutputs import writeLayer
+from omOutputs import writeLayer, intermediatesPath
 import itertools
-import utils
+import omUtils
 import os
 from shapely import geometry
 import bisect
-
 
 
 def redistribute_spatially(LATshape, ind_x, ind_y, coefs, subset, fromAreas, toAreas):
@@ -88,7 +87,7 @@ def processEmissions(**kwargs): # doms, GFASfolder, GFASfile, metDir, ctmDir, CM
     termAreas = np.zeros((nlatTerm,nlonTerm))
     # take advantage of  regular grid to compute areas equal for each gridbox at same latitude
     for iy in range(nlatTerm):
-        termAreas[iy,:] = utils.area_of_rectangle_m2(latTerm_edge[iy],latTerm_edge[iy+1],lonTerm_edge[0],lonTerm_edge[-1])/lonTerm.size
+        termAreas[iy,:] = omUtils.area_of_rectangle_m2(latTerm_edge[iy],latTerm_edge[iy+1],lonTerm_edge[0],lonTerm_edge[-1])/lonTerm.size
     # now collect some domain information
     LATD = domainXr['LATD'][:].values.squeeze()
     LOND = domainXr['LOND'].values.squeeze()
@@ -96,14 +95,14 @@ def processEmissions(**kwargs): # doms, GFASfolder, GFASfile, metDir, ctmDir, CM
     LON  = domainXr.variables['LON'].values.squeeze()
     cmaqArea = domainXr.XCELL * domainXr.YCELL
 
-    indxPath = "{}/TERM_ind_x.p.gz".format("intermediates")
-    indyPath = "{}/TERM_ind_y.p.gz".format("intermediates")
-    coefsPath = "{}/TERM_coefs.p.gz".format("intermediates")
+    indxPath = "{}/TERM_ind_x.p.gz".format(intermediatesPath)
+    indyPath = "{}/TERM_ind_y.p.gz".format(intermediatesPath)
+    coefsPath = "{}/TERM_coefs.p.gz".format(intermediatesPath)
 
     if os.path.exists(indxPath) and os.path.exists(indyPath) and os.path.exists(coefsPath) and (not forceUpdate):
-        ind_x = utils.load_zipped_pickle( indxPath )
-        ind_y = utils.load_zipped_pickle( indyPath )
-        coefs = utils.load_zipped_pickle( coefsPath )
+        ind_x = omUtils.load_zipped_pickle( indxPath )
+        ind_y = omUtils.load_zipped_pickle( indyPath )
+        coefs = omUtils.load_zipped_pickle( coefsPath )
         ##
         domShape = []
         domShape.append(LAT.shape)
@@ -162,9 +161,9 @@ def processEmissions(**kwargs): # doms, GFASfolder, GFASfile, metDir, ctmDir, CM
             coefs.append(COEFS)
         count.append(count2)
         ##
-        utils.save_zipped_pickle(ind_x, indxPath )
-        utils.save_zipped_pickle(ind_y, indyPath )
-        utils.save_zipped_pickle(coefs, coefsPath )
+        omUtils.save_zipped_pickle(ind_x, indxPath )
+        omUtils.save_zipped_pickle(ind_y, indyPath )
+        omUtils.save_zipped_pickle(coefs, coefsPath )
         
     subset = ncin['ch4_emissions_2010_2016.asc'][...] # is masked array
     subset=subset.data # grab value
@@ -203,7 +202,7 @@ def testTermiteEmis(**kwargs): # test totals for TERM emissions between original
     areas = np.zeros((nlatTerm,nlonTerm))
 # take advantage of  regular grid to compute areas equal for each gridbox at same latitude
     for iy in range(nlatTerm):
-        areas[iy,:] = utils.area_of_rectangle_m2(latTerm_edge[iy],latTerm_edge[iy+1],lonTerm_edge[0],lonTerm_edge[-1])/lonTerm.size
+        areas[iy,:] = omUtils.area_of_rectangle_m2(latTerm_edge[iy],latTerm_edge[iy+1],lonTerm_edge[0],lonTerm_edge[-1])/lonTerm.size
     LATD = domainXr.variables['LATD'].values.squeeze()
     LOND = domainXr.variables['LOND'].values.squeeze()
     indLat = (latTerm > LATD.min()) &( latTerm < LATD.max())

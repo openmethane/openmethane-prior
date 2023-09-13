@@ -1,5 +1,5 @@
 """
-utils.py
+omUtils.py
 
 Copyright 2023 The Superpower Institute Ltd
 Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License.
@@ -10,15 +10,15 @@ See the License for the specific language governing permissions and limitations 
 
 import numpy as np
 import json
-import datetime
 import subprocess
 import os
-import re
-#import pyception
 import copy
-import pprint
 import pickle
 import gzip
+
+import dotenv
+dotenv.load_dotenv()
+getenv = os.environ.get
 
 secsPerYear = 365 * 24 * 60 * 60
 
@@ -42,8 +42,6 @@ def dateTimeRange( start, end, delta):
 
         '''Utility functions used by a number of different functions
 '''
-
-
 
 def deg2rad(deg):
     '''
