@@ -173,8 +173,8 @@ def processEmissions(startDate, endDate, **kwargs): # doms, GFASfolder, GFASfile
 
             ixminl = bisect.bisect_right(lonGfas_edge,xmin)
             ixmaxr = bisect.bisect_right(lonGfas_edge,xmax)
-            iyminl = nlatGfas - bisect.bisect_right(latGfasrev_edge,ymax)
-            iymaxr = nlatGfas - bisect.bisect_right(latGfasrev_edge,ymin)
+            iyminl = nlatGfas - bisect.bisect_right(latGfasrev_edge,ymin)
+            iymaxr = nlatGfas - bisect.bisect_right(latGfasrev_edge,ymax)
 
             for ix,iy  in itertools.product(range(max(0,ixminl-1),min(nlonGfas,ixmaxr)), range(max(0,iyminl),min(nlatGfas,iymaxr+1))):
                 gfas_gridcell = geometry.box(lonGfas_edge[ix],latGfas_edge[iy],lonGfas_edge[ix+1],latGfas_edge[iy+1])

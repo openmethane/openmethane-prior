@@ -143,8 +143,8 @@ def makeWetlandClimatology( **kwargs): # doms, GFASfolder, GFASfile, metDir, ctm
 
             ixminl = bisect.bisect_right(lonWetland_edge,xmin)
             ixmaxr = bisect.bisect_right(lonWetland_edge,xmax)
-            iyminl =  bisect.bisect_right(latWetland_edge,ymax)
-            iymaxr =  bisect.bisect_right(latWetland_edge,ymin)
+            iyminl =  bisect.bisect_right(latWetland_edge,ymin)
+            iymaxr =  bisect.bisect_right(latWetland_edge,ymax)
 
             for ix,iy  in itertools.product(range(max(0,ixminl-1),min(nlonWetland,ixmaxr+1)), range(max(0,iyminl-1),min(nlatWetland,iymaxr+1))):
                 Wetland_gridcell = geometry.box(lonWetland_edge[ix],latWetland_edge[iy],lonWetland_edge[ix-1],latWetland_edge[iy-1])
