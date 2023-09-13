@@ -10,7 +10,7 @@ See the License for the specific language governing permissions and limitations 
 
 import numpy as np
 from omInputs import fugitivesPath, sectoralEmissionsPath, domainXr as ds, domainProj
-from omOutputs import writeLayer, convertToTimescale
+from omOutputs import writeLayer, convertToTimescale, sumLayers
 import pandas as pd
 import math
 
@@ -37,3 +37,4 @@ def processEmissions():
 
 if __name__ == '__main__':
     processEmissions()
+    sumLayers()

@@ -47,13 +47,13 @@ def verifyEmis():
             layerVal = np.sum(ds[layerName][0].values * modelAreaM2 * secsPerYear)
             diff = round(layerVal - sectorVal)
             perectenageDifference = diff / sectorVal * 100
-            
+
             if abs(perectenageDifference) > 0.1:
                 print(
                     f"{Fore.RED}FAILED - Discrepency of {perectenageDifference}% in {sector} emissions"
                 )
             else:
-                print(f"{Fore.GREEN}PASSED - {sector} emissions OK, within {abs(perectenageDifference)}% of total")
+                print(f"{Fore.GREEN}PASSED - {sector} emissions OK, discrepancy is {abs(perectenageDifference)}% of total")
 
 
 if __name__ == "__main__":

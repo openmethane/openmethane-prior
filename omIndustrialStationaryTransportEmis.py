@@ -12,7 +12,7 @@ import numpy as np
 import xarray as xr
 import rioxarray as rxr
 from omInputs import sectoralEmissionsPath, auShapefilePath, domainXr as ds, domainProj
-from omOutputs import ntlReprojectionPath, writeLayer, convertToTimescale
+from omOutputs import ntlReprojectionPath, writeLayer, convertToTimescale, sumLayers
 import pandas as pd
 import geopandas
 
@@ -79,3 +79,4 @@ def processEmissions():
 
 if __name__ == '__main__':
     processEmissions()
+    sumLayers()

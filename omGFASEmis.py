@@ -12,7 +12,7 @@ import numpy as np
 import netCDF4 as nc
 import xarray as xr 
 from omInputs import domainXr
-from omOutputs import writeLayer, intermediatesPath
+from omOutputs import writeLayer, intermediatesPath, sumLayers
 import cdsapi
 import itertools
 import datetime
@@ -252,5 +252,6 @@ if __name__ == '__main__':
     parser.add_argument('endDate', type=lambda s: datetime.datetime.strptime(s, "%Y-%m-%d"), help="end date in YYYY-MM-DD format")
     args = parser.parse_args()
     processEmissions(args.startDate, args.endDate)
+    sumLayers()
 
                   
