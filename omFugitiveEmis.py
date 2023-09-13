@@ -16,7 +16,7 @@ import math
 
 def processEmissions():
     print("processEmissions for fugitives")
-    fugitiveEmis = pd.read_csv(sectoralEmissionsPath).to_dict(orient='records')[0]["fugitive"] * 1000000
+    fugitiveEmis = pd.read_csv(sectoralEmissionsPath).to_dict(orient='records')[0]["fugitive"] * 1e9
     fugitiveFacilities = pd.read_csv(fugitivesPath, header=0).to_dict(orient='records')
     fugitiveEmisPerFacility = fugitiveEmis / len(fugitiveFacilities)
     landmask = ds["LANDMASK"][:]

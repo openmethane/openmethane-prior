@@ -8,8 +8,9 @@ Unless required by applicable law or agreed to in writing, software distributed 
 See the License for the specific language governing permissions and limitations under the License.
 """
 
-from omInputs import sectoralEmissionsPath, livestockDataPath
+from omInputs import sectoralEmissionsPath, livestockDataPath, domainXr as ds
 from omOutputs import domainOutputPath
+from omUtils import secsPerYear
 import pandas as pd
 import xarray as xr
 import numpy as np
@@ -23,31 +24,36 @@ def verifyEmis():
     # Load Livestock inventory and check that it doesn't exceed total agriculture inventory
     with xr.open_dataset(livestockDataPath) as lss:
         ls = lss.load()
-    lsVal = round(np.sum(ls["CH4_total"].values) / 1000)
-    agVal = round(sectorData["agriculture"] * 1000000)
+    lsVal = round(np.sum(ls["CH4_total"].values))
+    agVal = round(sectorData["agriculture"] * 1e9)
     agDX = agVal - lsVal
 
     if agDX > 0:
-        print(f"{Fore.GREEN}PASSED - Livestock CH4 within bounds of total agriculture CH4: {agDX}")
+        print(f"{Fore.GREEN}PASSED - Livestock CH4 within bounds of total agriculture CH4: {agDX / 1e9}")
     else:
-        print(f"{Fore.RED}FAILED - Livestock CH4 exceeds bounds of total agriculture CH4: {agDX}")
+        print(f"{Fore.RED}FAILED - Livestock CH4 exceeds bounds of total agriculture CH4: {agDX / 1e9}")
 
     # Check each layer in the output sums up to the input
     with xr.open_dataset(domainOutputPath) as dss:
         ds = dss.load()
 
+    modelAreaM2 = ds.DX * ds.DY
     for sector in sectorData.keys():
         layerName = f"OCH4_{sector.upper()}"
-        sectorVal = round(sectorData[sector] * 1000000)
+        sectorVal = float(sectorData[sector]) * 1e9
 
         if layerName in ds:
-            layerVal = round(np.sum(ds[layerName].values))
-            if layerVal != sectorVal:
+            print(ds[layerName].shape)
+            layerVal = np.sum(ds[layerName][0].values * modelAreaM2 * secsPerYear)
+            diff = round(layerVal - sectorVal)
+            perectenageDifference = diff / sectorVal * 100
+            
+            if abs(perectenageDifference) > 0.1:
                 print(
-                    f"{Fore.RED}FAILED - Discrepency of {layerVal - sectorVal}t in {sector} emissions"
+                    f"{Fore.RED}FAILED - Discrepency of {perectenageDifference}% in {sector} emissions"
                 )
             else:
-                print(f"{Fore.GREEN}PASSED - {sector} emissions OK")
+                print(f"{Fore.GREEN}PASSED - {sector} emissions OK, within {abs(perectenageDifference)}% of total")
 
 
 if __name__ == "__main__":

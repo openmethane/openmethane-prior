@@ -17,7 +17,7 @@ import pandas as pd
 import geopandas
 
 def processEmissions():
-    print("processEmissions for Industrial, Staionary and Transport")
+    print("processEmissions for Industrial, Stationary and Transport")
 
     sectorsUsed = ["industrial", "stationary", "transport"]
     _ntlData = rxr.open_rasterio(ntlReprojectionPath, masked=True)
@@ -27,14 +27,20 @@ def processEmissions():
     ausf_rp = ausf.to_crs(domainProj.crs)
     ntlData = _ntlData.rio.clip(ausf_rp.geometry.values, ausf_rp.crs)
 
-    ntlt = ntlData[0] + ntlData[1] + ntlData[2]
-    ntltScalar = ntlt / np.sum(ntlt)
+    # Add together the intensity of the 3 channels for a total intensity per pixel
+    numNtltData = np.nan_to_num(ntlData)
+    ntlt = np.nan_to_num(numNtltData[0] + numNtltData[1] + numNtltData[2])
+
+    # Sum all pixel intensities
+    ntltTotal = np.sum(ntlt)
+
+    # Divide each pixel intensity by the total to get a scaled intensity per pixel
+    ntltScalar = ntlt / ntltTotal
 
     sectorData = pd.read_csv(sectoralEmissionsPath).to_dict(orient='records')[0]
-
-    ntlIndustrial = ntltScalar * (sectorData["industrial"]  * 1000000)
-    ntlStationary = ntltScalar * (sectorData["stationary"] * 1000000)
-    ntlTransport = ntltScalar * (sectorData["transport"]  * 1000000)
+    ntlIndustrial = ntltScalar * (sectorData["industrial"]  * 1e9)
+    ntlStationary = ntltScalar * (sectorData["stationary"] * 1e9)
+    ntlTransport = ntltScalar * (sectorData["transport"]  * 1e9)
 
     # Load domain
     landmask = ds["LANDMASK"][:]
@@ -48,20 +54,25 @@ def processEmissions():
     xDomain = xr.apply_ufunc(findGrid, ntlData.x, ww, ds.DX).values.astype(int)
     yDomain = xr.apply_ufunc(findGrid, ntlData.y, hh, ds.DY).values.astype(int)
 
+    # xDomain = np.floor((ntlData.x + ww / 2) / ds.DX).astype(int)
+    # yDomain = np.floor((ntlData.y + hh / 2) / ds.DY).astype(int)
+
     methane = {}
     for sector in sectorsUsed:
         methane[sector] = np.zeros(ds["LANDMASK"].shape)
 
-    litPixels = np.argwhere(ntlt.values > 0)
+    litPixels = np.argwhere(ntlt > 0)
     ignored = 0
+
     for y, x in litPixels:
         try:
             methane["industrial"][0][yDomain[y]][xDomain[x]] += ntlIndustrial[y][x]
             methane["stationary"][0][yDomain[y]][xDomain[x]] += ntlStationary[y][x]
             methane["transport"][0][yDomain[y]][xDomain[x]] += ntlTransport[y][x]
-        except:
-            # print(f"ignoring out of range pixel {yDomain[y]}, {xDomain[x]}")
+        except Exception as e:
             ignored += 1
+
+    print(f"{ignored} lit pixels were ignored")
 
     for sector in sectorsUsed:
         writeLayer(f"OCH4_{sector.upper()}", convertToTimescale(methane[sector]))

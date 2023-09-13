@@ -29,7 +29,7 @@ coordNames = ['TSTEP', 'ROW', 'COL']
 def convertToTimescale(emission):
     di = omInputs.domainXr
     domainCellAreaM2 = di.DX * di.DY
-    return emission * domainCellAreaM2 / secsPerYear
+    return emission / domainCellAreaM2 / secsPerYear
 
 def writeLayer(layerName, layerData, directSet = False):
     print(f"Writing emissions data for {layerName}")

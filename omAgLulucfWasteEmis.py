@@ -86,7 +86,7 @@ def processEmissions():
 
     modelAreaM2 = ds.DX * ds.DY
     livestockCH4 = livestockCH4
-    m2Result = livestockCH4 * modelAreaM2
+    m2Result = livestockCH4 / modelAreaM2
     livestockCH4Total = m2Result.sum()
 
     print("Calculating sectoral emissions")
