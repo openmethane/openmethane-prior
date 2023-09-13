@@ -22,34 +22,7 @@ from shapely import geometry
 import bisect
 
 
-def redistribute_spatially(LATshape, ind_x, ind_y, coefs, subset, fromAreas, toAreas):
-    '''Redistribute wetland emissions horizontally and vertically - this little function does most of the work
 
-    Args:
-        LATshape: shape of the LAT variable
-        ind_x: x-indices in the GFAS domain corresponding to indices in the CMAQ domain
-        ind_y: y-indices in the GFAS domain corresponding to indices in the CMAQ domain
-        coefs: Area-weighting coefficients to redistribute the emissions
-        subset: the GFAS emissionsx
-        fromAreas: Areas of input grid-cells in units of m^2
-    toAreas: area of output gridcells in units of m^2
-    Returns: 
-        gridded: concentrations on the 2D CMAQ grid
-        
-    '''
-    
-    ##
-    gridded = np.zeros(LATshape,dtype = np.float32)
-    ij = 0
-    for i in range(LATshape[0]):
-        for j in range(LATshape[1]):
-            ij += 1
-            for k in range(len(ind_x[ij])):
-                ix      = ind_x[ij][k]
-                iy      = ind_y[ij][k]
-                gridded[i,j] += subset[iy,ix] *coefs[ij][k] * fromAreas[iy,ix]   
-    gridded /= toAreas
-    return gridded
 
 def makeWetlandClimatology( **kwargs): # doms, GFASfolder, GFASfile, metDir, ctmDir, CMAQdir, mechCMAQ, mcipsuffix, specTableFile, forceUpdate):
     '''Function to remap termite emissions to the CMAQ domain
@@ -173,7 +146,7 @@ def makeWetlandClimatology( **kwargs): # doms, GFASfolder, GFASfile, metDir, ctm
     np.clip(climatology, 0., None, out=climatology) # negative are missing values so remove by clipping in place
     cmaqAreas = np.ones( LAT.shape) * cmaqArea   # all grid cells equal area
     result = np.zeros((12, LAT.shape[0], LAT.shape[1]))
-    for month in range(12): result[month,...]=redistribute_spatially(LAT.shape, ind_x, ind_y, coefs, climatology[month,...], wetlandAreas, cmaqAreas)
+    for month in range(12): result[month,...]= omUtils.redistribute_spatially(LAT.shape, ind_x, ind_y, coefs, climatology[month,...], wetlandAreas, cmaqAreas)
     ncin.close()
     return np.array( result) 
 
