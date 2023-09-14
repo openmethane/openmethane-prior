@@ -15,7 +15,7 @@ import xarray as xr
 import rioxarray as rxr
 import pyproj
 from omInputs import sectoralEmissionsPath, sectoralMappingsPath, livestockDataPath, domainProj, domainXr as ds
-from omOutputs import landuseReprojectionPath, writeLayer, convertToTimescale
+from omOutputs import landuseReprojectionPath, writeLayer, convertToTimescale, sumLayers
 from omUtils import area_of_rectangle_m2, secsPerYear
 
 def processEmissions():
@@ -49,7 +49,7 @@ def processEmissions():
     hh = ds.DY * lmy
 
     xDomain = np.floor((x1 + ww / 2) / ds.DX).astype(int)
-    yDomain = np.floor((y1 + hh / 2) / ds.DY).astype(int)    
+    yDomain = np.floor((y1 + hh / 2) / ds.DY).astype(int) 
 
     # calculate areas in m2 of grid cells
     print("Calculate areas in m2 of livestock data")
@@ -86,7 +86,7 @@ def processEmissions():
 
     modelAreaM2 = ds.DX * ds.DY
     livestockCH4 = livestockCH4
-    m2Result = livestockCH4 * modelAreaM2
+    m2Result = livestockCH4 / modelAreaM2
     livestockCH4Total = m2Result.sum()
 
     print("Calculating sectoral emissions")
@@ -187,3 +187,4 @@ def processEmissions():
 
 if __name__ == '__main__':
     processEmissions()
+    sumLayers()
