@@ -43,7 +43,6 @@ def verifyEmis():
         sectorVal = float(sectorData[sector]) * 1e9
 
         if layerName in ds:
-            print(ds[layerName].shape)
             layerVal = np.sum(ds[layerName][0].values * modelAreaM2 * secsPerYear)
             diff = round(layerVal - sectorVal)
             perectenageDifference = diff / sectorVal * 100
