@@ -25,7 +25,7 @@ import bisect
 
 
 def makeWetlandClimatology( **kwargs): # doms, GFASfolder, GFASfile, metDir, ctmDir, CMAQdir, mechCMAQ, mcipsuffix, specTableFile, forceUpdate):
-    '''Function to remap termite emissions to the CMAQ domain
+    '''Function to remap wetland emissions to the CMAQ domain
 
     Args:
         startDate, endDate: date limits, note that inputs are only monthly resolution so emissions will be constant within a month
@@ -143,7 +143,6 @@ def makeWetlandClimatology( **kwargs): # doms, GFASfolder, GFASfile, metDir, ctm
     flux = ncin['totflux'][...] # is masked array
     climatology=np.zeros((12,flux.shape[1], flux.shape[2])) # same spatial domain but monthly climatology
     for month in range(12): climatology[month,...] = flux[month::12,...].mean(axis=0) # average over time axis with stride 12
-    np.clip(climatology, 0., None, out=climatology) # negative are missing values so remove by clipping in place
     cmaqAreas = np.ones( LAT.shape) * cmaqArea   # all grid cells equal area
     result = np.zeros((12, LAT.shape[0], LAT.shape[1]))
     for month in range(12): result[month,...]= omUtils.redistribute_spatially(LAT.shape, ind_x, ind_y, coefs, climatology[month,...], wetlandAreas, cmaqAreas)
@@ -197,7 +196,6 @@ def testWetlandEmis( startDate, endDate, **kwargs): # test totals for WETLAND em
     # make climatology
     climatology=np.zeros((12,flux.shape[1], flux.shape[2])) # same spatial domain but monthly climatology
     for month in range(12): climatology[month,...] = flux[month::12,...].mean(axis=0) # average over time axis with stride 12
-    np.clip(climatology, 0., None, out=climatology) # negative are missing values so remove by clipping in place
 
     inds = np.ix_(indLat, indLon)
     wetlandTotals = [(areas * climatology[month])[inds].sum() for month in range(12)]
