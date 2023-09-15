@@ -145,8 +145,9 @@ def processEmissions(**kwargs): # doms, GFASfolder, GFASfile, metDir, ctmDir, CM
     subset *= 1e9/termAreas # converting from mtCH4/gridcell to kg/m^2
     cmaqAreas = np.ones( LAT.shape) * cmaqArea   # all grid cells equal area
     resultNd= omUtils.redistribute_spatially(LAT.shape, ind_x, ind_y, coefs, subset, termAreas, cmaqAreas)
-    resultNd /= secsPerYear
+    resultNd /= omUtils.secsPerYear
     ncin.close()
+    
     writeLayer( 'OCH4_TERMITE', resultNd)
     return np.array( resultNd) 
 
