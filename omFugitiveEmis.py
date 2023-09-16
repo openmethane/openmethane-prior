@@ -10,13 +10,13 @@ See the License for the specific language governing permissions and limitations 
 
 import numpy as np
 from omInputs import fugitivesPath, sectoralEmissionsPath, domainXr as ds, domainProj
-from omOutputs import writeLayer, convertToTimescale
+from omOutputs import writeLayer, convertToTimescale, sumLayers
 import pandas as pd
 import math
 
 def processEmissions():
     print("processEmissions for fugitives")
-    fugitiveEmis = pd.read_csv(sectoralEmissionsPath).to_dict(orient='records')[0]["fugitive"] * 1000000
+    fugitiveEmis = pd.read_csv(sectoralEmissionsPath).to_dict(orient='records')[0]["fugitive"] * 1e9
     fugitiveFacilities = pd.read_csv(fugitivesPath, header=0).to_dict(orient='records')
     fugitiveEmisPerFacility = fugitiveEmis / len(fugitiveFacilities)
     landmask = ds["LANDMASK"][:]
@@ -37,3 +37,4 @@ def processEmissions():
 
 if __name__ == '__main__':
     processEmissions()
+    sumLayers()

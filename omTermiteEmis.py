@@ -11,7 +11,7 @@ See the License for the specific language governing permissions and limitations 
 import numpy as np
 import netCDF4 as nc
 from omInputs import domainXr, termiteFilePath
-from omOutputs import writeLayer, intermediatesPath
+from omOutputs import writeLayer, intermediatesPath, sumLayers
 import itertools
 import omUtils
 import os
@@ -192,3 +192,4 @@ def testTermiteEmis(**kwargs): # test totals for TERM emissions between original
     return
 if __name__ == '__main__':
     processEmissions()
+    sumLayers()
