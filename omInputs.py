@@ -38,7 +38,7 @@ import xarray as xr
 import omOutputs
 
 # list of layers that will be in the output file
-omLayers = ["agriculture","electricity","fugitive","industrial","lulucf","stationary","transport","waste","livestock","gfas","wetland","termite"]
+omLayers = ["agriculture","electricity","fugitive","industrial","lulucf","stationary","transport","waste","livestock","fire","wetlands","termite"]
 
 # load the domain info and define a projection once for use in other scripts
 print("Loading domain info")
