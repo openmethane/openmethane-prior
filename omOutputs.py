@@ -52,17 +52,27 @@ def sumLayers():
         with xr.open_dataset(domainOutputPath) as dss:
             ds = dss.load()
 
+        # now check to find largest shape because we'll broadcast everything else to that
+        summedSize = 0
+        for layer in layers:
+            layerName = f"OCH4_{layer.upper()}"
+            
+            if layerName in ds:
+                if ds[ layerName].size > summedSize:
+                    summedShape = ds[layerName].shape
+                    summedSize = ds[ layerName].size
+
         summed = None
         for layer in layers:
             layerName = f"OCH4_{layer.upper()}"
             
             if layerName in ds:
                 if summed is None:
-                    summed = np.zeros(ds[layerName].shape)
-                summed = summed + ds[layerName].values
+                    summed = np.zeros( summedShape)
+                summed += ds[layerName].values # it will broadcast time dimensions of 1 correctly
         
         if summed is not None:
              nDims = len(summed.shape)
-             ds["OCH4_TOTAL"] = (coordNames[-nDims:], summed)
+             ds["OCH4_TOTAL"] = (['date']+list( coordNames[-2:]), summed)
              ds.to_netcdf(domainOutputPath)
 
