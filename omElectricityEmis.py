@@ -33,7 +33,10 @@ def processEmissions():
         x, y = domainProj(facility["lng"], facility["lat"])
         ix = math.floor((x + ww / 2) / ds.DX)
         iy = math.floor((y + hh / 2) / ds.DY)
-        methane[0][iy][ix] += electricityEmisPerFacility
+        try:
+            methane[0][iy][ix] += electricityEmisPerFacility
+        except IndexError:
+            pass # it's outside our domain
 
     writeLayer("OCH4_ELECTRICITY", convertToTimescale(methane))
 
