@@ -19,9 +19,8 @@ def processEmissions():
 
     electricityEmis = pd.read_csv(sectoralEmissionsPath).to_dict(orient='records')[0]["electricity"] * 1e9
     electricityFacilities = pd.read_csv(electricityPath, header=0).to_dict(orient='records')
-    electricityEmisPerFacility = electricityEmis / len(electricityFacilities)
+    totalCapacity = sum(item['capacity'] for item in electricityFacilities)
     landmask = ds["LANDMASK"][:]
-    print(landmask.shape)
 
     _, lmy, lmx = landmask.shape
     ww = ds.DX * lmx
@@ -34,7 +33,7 @@ def processEmissions():
         ix = math.floor((x + ww / 2) / ds.DX)
         iy = math.floor((y + hh / 2) / ds.DY)
         try:
-            methane[0][iy][ix] += electricityEmisPerFacility
+            methane[0][iy][ix] += (facility['capacity'] / totalCapacity) * electricityEmis
         except IndexError:
             pass # it's outside our domain
 
