@@ -16,10 +16,11 @@ from omUtils import secsPerYear, getenv
 
 intermediatesPath = getenv("INTERMEDIATES")
 outputsPath = getenv("OUTPUTS")
+domainFilename = getenv("DOMAIN")
 
 landuseReprojectionPath = os.path.join(intermediatesPath, "land-use.tif")
 ntlReprojectionPath = os.path.join(intermediatesPath, "night-time-lights.tif")
-domainOutputPath = os.path.join(outputsPath, "om-prior-output.nc")
+domainOutputPath = os.path.join(outputsPath, f"out-{domainFilename}")
 geoJSONOutputPath = os.path.join(outputsPath, "grid-cells.json")
 ch4JSONOutputPath = os.path.join(outputsPath, "methane.json")
 

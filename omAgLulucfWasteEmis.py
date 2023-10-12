@@ -170,8 +170,9 @@ def processEmissions():
             for y, x in sectorPixels:
                 try:
                     methane[sector][0][yDomain[y]][xDomain[x]] += emission
-                except:
-                    print("ignoring out of range pixel")
+                except IndexError:
+                    # print("ignoring out of range pixel")
+                    pass # it's outside our domain
     
 
     print("Writing sectoral methane layers output file")
