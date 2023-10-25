@@ -20,6 +20,7 @@ with xr.open_dataset( geomFilePath) as geomXr:
 with xr.open_dataset( croFilePath) as croXr:
     for var in ['LAT','LON']:
         domainXr[var] = croXr[var]
+        domainXr[var] = croXr[var].squeeze(dim="LAY", drop=True) # copy but remove the 'LAY' dimension
 
     domainXr['LANDMASK'] = croXr['LWMASK'].squeeze(dim="LAY", drop=True) # copy but remove the 'LAY' dimension
 

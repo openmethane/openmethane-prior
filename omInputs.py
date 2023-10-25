@@ -44,6 +44,7 @@ omLayers = ["agriculture","electricity","fugitive","industrial","lulucf","statio
 print("Loading domain info")
 domainXr = None
 domainProj = None
+
 if os.path.exists(domainPath):
     with xr.open_dataset(domainPath) as dss:
         domainXr = dss.load()

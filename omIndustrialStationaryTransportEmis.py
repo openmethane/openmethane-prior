@@ -11,7 +11,7 @@ See the License for the specific language governing permissions and limitations 
 import numpy as np
 import xarray as xr
 import rioxarray as rxr
-from omInputs import sectoralEmissionsPath, auShapefilePath, domainXr as ds, domainProj
+from omInputs import sectoralEmissionsPath, auShapefilePath, domainXr as ds, domainProj, reprojectRasterInputs
 from omOutputs import ntlReprojectionPath, writeLayer, convertToTimescale, sumLayers
 import pandas as pd
 import geopandas
@@ -70,6 +70,7 @@ def processEmissions():
             methane["stationary"][0][yDomain[y]][xDomain[x]] += ntlStationary[y][x]
             methane["transport"][0][yDomain[y]][xDomain[x]] += ntlTransport[y][x]
         except Exception as e:
+            print(e)
             ignored += 1
 
     print(f"{ignored} lit pixels were ignored")
@@ -78,5 +79,6 @@ def processEmissions():
         writeLayer(f"OCH4_{sector.upper()}", convertToTimescale(methane[sector]))
 
 if __name__ == '__main__':
+    # reprojectRasterInputs()
     processEmissions()
     sumLayers()
