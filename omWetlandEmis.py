@@ -160,7 +160,8 @@ def processEmissions(startDate, endDate, **kwargs): # doms, GFASfolder, GFASfile
     dates.append( endDate)
     resultNd.append( climatology[endDate.month -1, ...]) # we want endDate included, python doesn't
     resultNd = np.array( resultNd)
-    resultXr = xr.DataArray( resultNd, coords={'date':dates, 'y':np.arange( resultNd.shape[-2]), 'x':np.arange( resultNd.shape[-1])})
+    resultNd = np.expand_dims( resultNd, 1) # add dummy layer dimension
+    resultXr = xr.DataArray( resultNd, coords={'date':dates, 'LAY':domainXr.LAY, 'y':np.arange( resultNd.shape[-2]), 'x':np.arange( resultNd.shape[-1])})
     writeLayer('OCH4_WETLANDS', resultXr, True)
     return resultNd
 
