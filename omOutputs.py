@@ -24,7 +24,7 @@ domainOutputPath = os.path.join(outputsPath, f"out-{domainFilename}")
 geoJSONOutputPath = os.path.join(outputsPath, "grid-cells.json")
 ch4JSONOutputPath = os.path.join(outputsPath, "methane.json")
 
-coordNames = ['TSTEP', 'ROW', 'COL']
+coordNames = ['TSTEP', 'LAY', 'ROW', 'COL']
 
 # Convert a gridded emission in kgs/cell/year to kgs/m2/s
 def convertToTimescale(emission):
@@ -42,8 +42,11 @@ def writeLayer(layerName, layerData, directSet = False):
     if directSet:
         ds[layerName] = layerData
     else:
-        nDims = len(layerData.shape)
-        ds[layerName] = (coordNames[-nDims:], layerData)
+        # we're about to alter the input so copy first
+        copy = layerData.copy()
+        # coerce to four dimensions if it's not
+        for i in range(layerData.ndim, 4): copy = np.expand_dims( copy, 0) # should now have four dimensions
+        ds[layerName] = (coordNames[:], copy)
     ds.to_netcdf(domainOutputPath) 
 
 def sumLayers():
@@ -74,6 +77,6 @@ def sumLayers():
         
         if summed is not None:
              nDims = len(summed.shape)
-             ds["OCH4_TOTAL"] = (['date']+list( coordNames[-2:]), summed)
+             ds["OCH4_TOTAL"] = (['date','LAY']+list( coordNames[-2:]), summed)
              ds.to_netcdf(domainOutputPath)
 
