@@ -119,8 +119,8 @@ def makeWetlandClimatology( **kwargs): # doms, GFASfolder, GFASfile, metDir, ctm
             iyminl =  bisect.bisect_right(latWetland_edge,ymin)
             iymaxr =  bisect.bisect_right(latWetland_edge,ymax)
 
-            for ix,iy  in itertools.product(range(max(0,ixminl-1),min(nlonWetland,ixmaxr+1)), range(max(0,iyminl-1),min(nlatWetland,iymaxr+1))):
-                Wetland_gridcell = geometry.box(lonWetland_edge[ix],latWetland_edge[iy],lonWetland_edge[ix-1],latWetland_edge[iy-1])
+            for ix,iy  in itertools.product(range(max(0,ixminl-1),min(nlonWetland,ixmaxr)), range(max(0,iyminl-1),min(nlatWetland,iymaxr))):
+                Wetland_gridcell = geometry.box(lonWetland_edge[ix],latWetland_edge[iy],lonWetland_edge[ix+1],latWetland_edge[iy+1])
                 if CMAQ_gridcell.intersects(Wetland_gridcell):
                     intersection = CMAQ_gridcell.intersection(Wetland_gridcell)
                     weight1 = intersection.area/CMAQ_gridcell.area ## fraction of CMAQ cell covered

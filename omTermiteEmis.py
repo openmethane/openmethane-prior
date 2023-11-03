@@ -117,8 +117,8 @@ def processEmissions(**kwargs): # doms, GFASfolder, GFASfile, metDir, ctmDir, CM
             iyminl =  bisect.bisect_right(latTerm_edge,ymin)
             iymaxr =  bisect.bisect_right(latTerm_edge,ymax)
 
-            for ix,iy  in itertools.product(range(max(0,ixminl-1),min(nlonTerm,ixmaxr+1)), range(max(0,iyminl-1),min(nlatTerm,iymaxr+1))):
-                Term_gridcell = geometry.box(lonTerm_edge[ix],latTerm_edge[iy],lonTerm_edge[ix-1],latTerm_edge[iy-1])
+            for ix,iy  in itertools.product(range(max(0,ixminl-1),min(nlonTerm,ixmaxr)), range(max(0,iyminl-1),min(nlatTerm,iymaxr))):
+                Term_gridcell = geometry.box(lonTerm_edge[ix],latTerm_edge[iy],lonTerm_edge[ix+1],latTerm_edge[iy+1])
                 if CMAQ_gridcell.intersects(Term_gridcell):
                     intersection = CMAQ_gridcell.intersection(Term_gridcell)
                     weight1 = intersection.area/CMAQ_gridcell.area ## fraction of CMAQ cell covered
