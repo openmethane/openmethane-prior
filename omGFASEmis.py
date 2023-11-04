@@ -149,7 +149,7 @@ def processEmissions(startDate, endDate, **kwargs): # doms, GFASfolder, GFASfile
             iymaxr =  bisect.bisect_right(latGfas_edge,ymax)
 
             for ix,iy  in itertools.product(range(max(0,ixminl-1),min(nlonGfas,ixmaxr)), range(max(0,iyminl-1),min(nlatGfas,iymaxr))):
-                Gfas_gridcell = geometry.box(lonGfas_edge[ix],latGfas_edge[iy],lonGfas_edge[ix+1],latGfas_edge[iy+1])
+                gfas_gridcell = geometry.box(lonGfas_edge[ix],latGfas_edge[iy],lonGfas_edge[ix+1],latGfas_edge[iy+1])
                 if CMAQ_gridcell.intersects(gfas_gridcell):
                     intersection = CMAQ_gridcell.intersection(gfas_gridcell)
                     weight1 = intersection.area/CMAQ_gridcell.area ## fraction of CMAQ cell covered
