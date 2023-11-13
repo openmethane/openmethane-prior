@@ -85,9 +85,7 @@ def processEmissions():
             livestockCH4[j,i] = CH4[mask].mean() if mask.sum() > 0 else 0.
 
     modelAreaM2 = ds.DX * ds.DY
-    livestockCH4 = livestockCH4
-    m2Result = livestockCH4 / modelAreaM2
-    livestockCH4Total = m2Result.sum()
+    livestockCH4Total = (livestockCH4*modelAreaM2).sum() # total emissions in kg
 
     print("Calculating sectoral emissions")
     # Import a map of land use type numbers to emissions sectors
