@@ -6,20 +6,23 @@ load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/extval.ncl"
 ;------------------------------------------------------------------------
   
   ;Change the input emission file 
-  f_emis   =  "/g/data/lp86/ns0890/EDGAR/2018/v6.0_CH4_2018_6_WWT.0.1x0.1.nc";
+  f_emis   =  "./outputs/out-om-domain-info.nc"
   f1 = addfile(f_emis, "r") 
   
-  ;Change the follwoing lines if your variables are diferent
-  emis = f1->emi_ch4
-  la = f1->lat
-  lo = f1->lon
   
-  lat = la(:)
-  lon = lo(:)        
+  ;Change the follwoing lines if your variables are diferent
+  emis = f1->OCH4_TOTAL
+  la = f1->LAT
+  lo = f1->LON
+  
+  lat = la(0,:,:)
+  lon = lo(0,:,:)        
   
   ;change if your emis unit is diffeent  
-  hgt = emis(:,:) * 1e6  * 1000     
-  
+  hgt = dim_avg_n(emis(:,0,:,:),0) * 1e6  * 3600      
+    hgt@lat2d = lat
+  hgt@lon2d = lon
+
    ;Change the name of output file
    wks  = gsn_open_wks("png","wwt" ) 
 
@@ -59,13 +62,13 @@ load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/extval.ncl"
     
     ;Change following lines for min and max of your emis files
     tres@cnMinLevelValF              = 0.
-    tres@cnMaxLevelValF              = 8
+    tres@cnMaxLevelValF              = 10
     tres@cnLevelSpacingF             = .2
     tres@cnFillPalette               = "cmocean_deep" ; "WhViBlGrYeOrRe"   
     tres@lbOrientation         = "horizontal"
     
     ;Change the title of colour bar
-    tres@lbTitleString         = "Methane emissions (Tonnes km-2 s-1)" 
+    tres@lbTitleString         = "Methane emissions (kg km-2 hr-1)" 
     tres@lbTitleFontHeightF    = 0.015
     tres@lbLabelFontHeightF    = 0.02
     tres@lbTitleOffsetF        = -0.2
@@ -84,7 +87,7 @@ load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/extval.ncl"
     tres@mpMaxLonF             = max(lon)    
     
     ;Change the title of map       
-    tres@tiMainString = "CH4 Emis: Wastewater Handling: Jun 2018"  
+    tres@tiMainString = "total CH4 Emissions"
     tres@tiMainOffsetYF        = -0.03     
     tres@trGridType = "TriangularMesh"    
 
