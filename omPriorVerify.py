@@ -44,6 +44,10 @@ def verifyEmis():
 
         if layerName in ds:
             layerVal = np.sum(ds[layerName][0].values * modelAreaM2 * secsPerYear)
+
+            if sector == "agriculture":
+                layerVal += np.sum(ds["OCH4_LIVESTOCK"][0].values * modelAreaM2 * secsPerYear)
+
             diff = round(layerVal - sectorVal)
             perectenageDifference = diff / sectorVal * 100
 
