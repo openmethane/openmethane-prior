@@ -11,20 +11,11 @@ load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/extval.ncl"
   
   
   ;Change the follwoing lines if your variables are diferent
-  emis = f1->OCH4_TOTAL
   la = f1->LAT
   lo = f1->LON
   
   lat = la(0,:,:)
   lon = lo(0,:,:)        
-  
-  ;change if your emis unit is diffeent  
-  hgt = dim_avg_n(emis(:,0,:,:),0) * 1e6  * 3600      
-    hgt@lat2d = lat
-  hgt@lon2d = lon
-
-   ;Change the name of output file
-   wks  = gsn_open_wks("png","wwt" ) 
 
 
    ;---Set some common resources
@@ -87,9 +78,15 @@ load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/extval.ncl"
     tres@mpMaxLonF             = max(lon)    
     
     ;Change the title of map       
-    tres@tiMainString = "total CH4 Emissions"
+;    tres@tiMainString = "total CH4 Emissions"
     tres@tiMainOffsetYF        = -0.03     
     tres@trGridType = "TriangularMesh"    
+
+   wks  = gsn_open_wks("png","total" ) 
+  emis = f1->OCH4_TOTAL
+  hgt = dim_avg_n(emis(:,0,:,:),0) * 1e6  * 3600      
+    hgt@lat2d = lat
+  hgt@lon2d = lon
 
     ter_plot = gsn_csm_contour_map(wks,hgt,tres)    
     map = ter_plot
@@ -99,6 +96,46 @@ load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/extval.ncl"
     draw(map)
     frame(wks)
 
+   wks  = gsn_open_wks("png","wetlands" ) 
+  emis = f1->OCH4_WETLANDS
+  hgt = dim_avg_n(emis(:,0,:,:),0) * 1e6  * 3600      
+    hgt@lat2d = lat
+  hgt@lon2d = lon
+
+    ter_plot = gsn_csm_contour_map(wks,hgt,tres)    
+    map = ter_plot
+    lnres                  = True      ; resources for polylines
+    lnres@gsLineThicknessF = 0.3; 2.0       ; 2x as thick           
+ 
+    draw(map)
+    frame(wks)
   
-    
+   wks  = gsn_open_wks("png","livestock" ) 
+  emis2 = f1->OCH4_LIVESTOCK
+  hgt = dim_avg_n( emis2(:,0,:,:),0) * 1e6  * 3600      
+    hgt@lat2d = lat
+  hgt@lon2d = lon
+
+    ter_plot = gsn_csm_contour_map(wks,hgt,tres)    
+    map = ter_plot
+    lnres                  = True      ; resources for polylines
+    lnres@gsLineThicknessF = 0.3; 2.0       ; 2x as thick           
+ 
+    draw(map)
+    frame(wks)
+
+   wks  = gsn_open_wks("png","fugitive" ) 
+  emis2 = f1->OCH4_FUGITIVE
+  hgt = dim_avg_n(emis2(:,0,:,:),0) * 1e6  * 3600      
+    hgt@lat2d = lat
+  hgt@lon2d = lon
+
+    ter_plot = gsn_csm_contour_map(wks,hgt,tres)    
+    map = ter_plot
+    lnres                  = True      ; resources for polylines
+    lnres@gsLineThicknessF = 0.3; 2.0       ; 2x as thick           
+ 
+    draw(map)
+    frame(wks)
+
  
