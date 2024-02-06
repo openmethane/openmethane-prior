@@ -10,7 +10,7 @@ See the License for the specific language governing permissions and limitations 
 
 import numpy as np
 import netCDF4 as nc
-from omInputs import domainXr, termiteFilePath
+from omInputs import domainXr, termitePath
 from omOutputs import writeLayer, intermediatesPath, sumLayers
 import itertools
 import omUtils
@@ -38,7 +38,7 @@ def processEmissions(**kwargs): # doms, GFASfolder, GFASfile, metDir, ctmDir, CM
     except KeyError:
         forceUpdate = False
             
-    ncin = nc.Dataset(termiteFilePath, 'r')
+    ncin = nc.Dataset(termitePath, 'r')
     latTerm  = np.around(np.float64(ncin.variables['lat'][:]),3)
     latTerm = latTerm[-1::-1] # we need it south-north 
     lonTerm  = np.around(np.float64(ncin.variables['lon'][:]),3)
@@ -153,7 +153,7 @@ def processEmissions(**kwargs): # doms, GFASfolder, GFASfile, metDir, ctmDir, CM
 
 def testTermiteEmis(**kwargs): # test totals for TERM emissions between original and remapped
     remapped = processEmissions(**kwargs)
-    ncin = nc.Dataset(termiteFilePath, 'r')
+    ncin = nc.Dataset(termitePath, 'r')
     latTerm  = np.around(np.float64(ncin.variables['lat'][:]),3)
     latTerm = latTerm[-1::-1] # reversing order, we need south first
     lonTerm  = np.around(np.float64(ncin.variables['lon'][:]),3)

@@ -11,7 +11,7 @@ See the License for the specific language governing permissions and limitations 
 import numpy as np
 import netCDF4 as nc
 import xarray as xr
-from omInputs import domainXr, wetlandFilePath
+from omInputs import domainXr, wetlandPath
 from omOutputs import writeLayer, intermediatesPath, sumLayers
 import argparse
 import itertools
@@ -41,7 +41,7 @@ def makeWetlandClimatology( **kwargs): # doms, GFASfolder, GFASfile, metDir, ctm
     except KeyError:
         forceUpdate = False
             
-    ncin = nc.Dataset(wetlandFilePath, 'r')
+    ncin = nc.Dataset(wetlandPath, 'r')
     latWetland  = np.around(np.float64(ncin.variables['lat'][:]),3)
     lonWetland  = np.around(np.float64(ncin.variables['lon'][:]),3)
     dlatWetland = latWetland[0] - latWetland[1]
@@ -167,7 +167,7 @@ def processEmissions(startDate, endDate, **kwargs): # doms, GFASfolder, GFASfile
 
 def testWetlandEmis( startDate, endDate, **kwargs): # test totals for WETLAND emissions between original and remapped
     remapped = makeWetlandClimatology( **kwargs)
-    ncin = nc.Dataset(wetlandFilePath, 'r')
+    ncin = nc.Dataset(wetlandPath, 'r')
     latWetland  = np.around(np.float64(ncin.variables['lat'][:]),3)
     lonWetland  = np.around(np.float64(ncin.variables['lon'][:]),3)
     dlatWetland = latWetland[0] - latWetland[1]
