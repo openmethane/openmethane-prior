@@ -8,7 +8,7 @@ Unless required by applicable law or agreed to in writing, software distributed 
 See the License for the specific language governing permissions and limitations under the License.
 """
 
-from omInputs import electricityPath, fugitivesPath, landUsePath, sectoralEmissionsPath, sectoralMappingsPath, ntlPath, auShapefilePath, livestockDataPath, termiteFilePath, wetlandFilePath
+from omInputs import electricityPath, fugitivesPath, landUsePath, sectoralEmissionsPath, sectoralMappingsPath, ntlPath, auShapefilePath, livestockDataPath, termitePath, wetlandPath, coalPath, oilGasPath
 import requests
 import os
 from omUtils import getenv
@@ -23,20 +23,22 @@ sectoralMappingsFile = getenv("SECTORAL_MAPPING")
 ntlFile = getenv("NTL")
 auShapefileFile = getenv("AUSF")
 livestockDataFile = getenv("LIVESTOCK_DATA")
-termiteFileFile = getenv("TERMITES")
-wetlandFileFile = getenv("WETLANDS")
-
+termiteFile = getenv("TERMITES")
+wetlandFile = getenv("WETLANDS")
+coalFile = getenv("COAL")
+oilGasFile = getenv("OILGAS")
 downloads = [
     [electricityFile, electricityPath],
-    [fugitivesFile, fugitivesPath],
+    [coalFile, coalPath],
+    [oilGasFile, oilGasPath],
     [landUseFile, landUsePath],
     [sectoralEmissionsFile, sectoralEmissionsPath],
     [sectoralMappingsFile, sectoralMappingsPath],
     [ntlFile, ntlPath],
     [auShapefileFile, auShapefilePath],
     [livestockDataFile, livestockDataPath],
-    [termiteFileFile, termiteFilePath],
-    [wetlandFileFile, wetlandFilePath]
+    [termiteFile, termitePath],
+    [wetlandFile, wetlandPath]
 ]
 
 for filename, filepath in downloads:
