@@ -19,7 +19,7 @@ import math
 def processEmissions(startDate, endDate):
     print("processEmissions for fugitives")
     fugitiveEmis = pd.read_csv(sectoralEmissionsPath).to_dict(orient='records')[0]["fugitive"]  # national total from inventory
-    fugitiveEmis *= 1e6 # convert to tonnes
+    fugitiveEmis *= 1e9 # convert to kg
     # now read climate_trace facilities emissions for coal, oil and gas
     coalFacilities = pd.read_csv(coalPath)#, header=0).to_dict(orient='records')
     oilGasFacilities = pd.read_csv(oilGasPath)#, header=0).to_dict(orient='records')
