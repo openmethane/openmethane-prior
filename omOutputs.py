@@ -77,6 +77,6 @@ def sumLayers():
         
         if summed is not None:
              nDims = len(summed.shape)
-             ds["OCH4_TOTAL"] = (['Time', 'LAY']+list( coordNames[-2:]), summed)
+             ds["OCH4_TOTAL"] = (['date', 'LAY']+list( coordNames[-2:]), summed)
              ds.to_netcdf(domainOutputPath)
 

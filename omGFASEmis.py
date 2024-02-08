@@ -180,7 +180,9 @@ def processEmissions(startDate, endDate, **kwargs): # doms, GFASfolder, GFASfile
         resultNd.append( omUtils.redistribute_spatially(LAT.shape, ind_x, ind_y, coefs, subset, GFASAreas, cmaqAreas))
     resultNd = np.array( resultNd)
     resultNd = np.expand_dims( resultNd, 1) # adding dummy layer dimension 
-    resultXr = xr.DataArray( resultNd, coords={'date':dates, 'LAY':domainXr.LAY, 'y':np.arange( resultNd.shape[-2]), 'x':np.arange( resultNd.shape[-1])})
+    resultXr = xr.DataArray( resultNd, coords={'date':dates, 'LAY':np.array([1]),\
+                                               'y':np.arange( resultNd.shape[-2]), \
+                                               'x':np.arange( resultNd.shape[-1])})
     writeLayer('OCH4_FIRE', resultXr, True)
     return resultNd
 
