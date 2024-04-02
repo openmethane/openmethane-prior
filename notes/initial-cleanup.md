@@ -1,11 +1,16 @@
 # Notes
-After a read through of the codebase, I've jotted down some thought about the steps to clean up this repository.
-Broadly it is easy enough to follow where things live, but the goal is to improve the consistency of this repo
-(and other OM repos). This should make it easier to work as a team and produce extensible software in the long-run.
+After a read through of the codebase, 
+I've jotted down some thought about the steps to clean up this repository.
+Broadly it is easy enough to follow where things live, 
+but the goal is to improve the consistency of this repo (and other OM repos). 
+This should make it easier to work as a team 
+and produce extensible software in the long-run.
 
-The goal would be to make no science changes as part of this refactor, i.e. the output data should not change.
+The goal would be to make no science changes as part of this refactor, 
+i.e. the output data should not change.
 
-This clean-up might not be the #1 priority, but should go on the roadmap. Once we agree on the steps involved,
+This clean-up might not be the #1 priority, but should go on the roadmap. 
+Once we agree on the steps involved, 
 we can create a set of GH issues to track the process.
 
 ## Steps:
@@ -18,8 +23,9 @@ we can create a set of GH issues to track the process.
     * Define an interface that all layers must implement
     * Move each of the layer scripts into a common place
 * Move inputs,intermediates,outputs into a data folder
-* Migrate to the CR copier template to define the repository structure and workflows. This will add linting, CI, versioning etc
-    * This will result in some changes in the development workflow so there might be some training needed
+* Migrate to the CR copier template to define the repository structure and workflows. 
+    * This will add linting, CI, versioning etc
+    * There will be some changes in the development workflow so there might be some training needed
     * We should discuss what steps work for the rest of the team. There are part of the template that we can pick and choose
     * We've documented the technical decisions that we have made which we can share
 * Run CI periodically to double-check that the processing is always ready
