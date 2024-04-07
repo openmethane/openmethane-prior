@@ -1,5 +1,4 @@
-"""
-omUtils.py
+"""omUtils.py
 
 Copyright 2023 The Superpower Institute Ltd
 Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License.
@@ -8,15 +7,16 @@ Unless required by applicable law or agreed to in writing, software distributed 
 See the License for the specific language governing permissions and limitations under the License.
 """
 
-import numpy as np
-import json
-import subprocess
-import os
 import copy
-import pickle
 import gzip
+import json
+import os
+import pickle
+import subprocess
 
 import dotenv
+import numpy as np
+
 dotenv.load_dotenv()
 getenv = os.environ.get
 
@@ -44,36 +44,38 @@ def dateTimeRange( start, end, delta):
 '''
 
 def deg2rad(deg):
-    '''
-    Convert degrees to radians
+    """Convert degrees to radians
 
     Args:
+    ----
         deg: a number in degrees (may be a numpy array)
 
     Returns:
+    -------
         rad: the corresponding value in radians
 
-    '''
+    """
     return deg * np.pi/180.
 
 def getDistanceFromLatLonInKm(lat1,lon1,lat2,lon2):
-    '''Calculate the distance between points based on the latides and longitudes
+    """Calculate the distance between points based on the latides and longitudes
 
     Distances between multiple pairs of points can be calculated, so
     long as point 1 is a one value and point 2 is given as
     equally-sized numpy arrays of latitudes and longitudes.
 
     Args:
+    ----
         lat1: latitude of point 1
         lon1: longitude of point 1
         lat2: latitude of point(s) 2 
         lon2: longitude of point(s) 2
 
     Returns:
+    -------
         d: distance(s) between point 1 and point(s) 2
 
-    '''
-    
+    """
     R = 6371.0 ## Radius of the earth in km
     dLat = deg2rad(lat2-lat1)  ## deg2rad below
     dLon = deg2rad(lon2-lon1)
@@ -84,31 +86,31 @@ def getDistanceFromLatLonInKm(lat1,lon1,lat2,lon2):
 
 
 def compressNCfile(filename,ppc = None):
-    '''Compress a netCDF3 file to netCDF4 using ncks
+    """Compress a netCDF3 file to netCDF4 using ncks
     
-    Args: 
+    Args:
+    ----
         filename: Path to the netCDF3 file to commpress
         ppc: number of significant digits to retain (default is to retain all)
 
     Returns:
+    -------
         Nothing
-    '''
-    
+    """
     if os.path.exists(filename):
-        print("Compress file {} with ncks".format(filename))
-        command = 'ncks -4 -L4 -O {} {}'.format(filename, filename)
+        print(f"Compress file {filename} with ncks")
+        command = f'ncks -4 -L4 -O {filename} {filename}'
         print('\t'+command)
         commandList = command.split(' ')
         if ppc is None:
             ppcText = ''
+        elif not isinstance(ppc, int):
+            raise RuntimeError("Argument ppc should be an integer...")
+        elif ppc < 1 or ppc > 6:
+            raise RuntimeError("Argument ppc should be between 1 and 6...")
         else:
-            if not isinstance(ppc, int):
-                raise RuntimeError("Argument ppc should be an integer...")
-            elif ppc < 1 or ppc > 6:
-                raise RuntimeError("Argument ppc should be between 1 and 6...")
-            else:
-                ppcText = '--ppc default={}'.format(ppc)
-                commandList = [commandList[0]] + ppcText.split(' ') + commandList[1:]
+            ppcText = f'--ppc default={ppc}'
+            commandList = [commandList[0]] + ppcText.split(' ') + commandList[1:]
         ##
         ##
         p = subprocess.Popen(commandList, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -118,17 +120,20 @@ def compressNCfile(filename,ppc = None):
             print("stderr = " + stderr)
             raise RuntimeError("Error from ncks...")
     else:
-        print("File {} not found...".format(filename))
+        print(f"File {filename} not found...")
 
 def loadScripts(Scripts):
-    '''Read the contents (i.e. the lines of text) of a set of scripts into a dictionary
+    """Read the contents (i.e. the lines of text) of a set of scripts into a dictionary
     
     Args:
+    ----
         scripts: A dictionary of dictionaries, with the inner level containing the key 'path'
 
-    Returns: 
+    Returns:
+    -------
         scripts: A dictionary of dictionaries, with the inner level containing the keys 'path' and 'lines' (giving their file path and lines of text, respectively)
-    '''
+
+    """
     scripts = copy.copy(Scripts)
     ## for each of the scripts, read in the contents
     for k in list(scripts.keys()):
@@ -141,11 +146,12 @@ def loadScripts(Scripts):
         f.close()
     ##
     return scripts
-    
-def replace_and_write(lines, outfile, substitutions, strict = True, makeExecutable = False):
-    '''Make a set of substitutions from a list of strings and write to file
 
-    Args: 
+def replace_and_write(lines, outfile, substitutions, strict = True, makeExecutable = False):
+    """Make a set of substitutions from a list of strings and write to file
+
+    Args:
+    ----
         lines: List of strings
         outfile: Place to write the destination
         substitutions: List of substitutions
@@ -153,8 +159,10 @@ def replace_and_write(lines, outfile, substitutions, strict = True, makeExecutab
         makeExecutable: Make the output script an executable
 
     Returns:
+    -------
         Nothing
-    '''
+
+    """
     Lines = copy.copy(lines)
     for subst in substitutions:
         token = subst[0]
@@ -177,27 +185,33 @@ def replace_and_write(lines, outfile, substitutions, strict = True, makeExecutab
         os.chmod(outfile,0o0744)
 
 def int_array_to_comma_separated_string(arr):
-    '''Convert an list of integers to a comma-separated string
+    """Convert an list of integers to a comma-separated string
 
     Args:
+    ----
         Arr: list of integers
 
     Returns:
+    -------
         Str: comma-separated string
-    '''
+
+    """
     return ''.join(['%i, ' % i for i in arr])
 
 
 def source2(script, shell = 'bash'):
-    '''Source a shell script, list all the shell environment variables, return them as a dictionary
+    """Source a shell script, list all the shell environment variables, return them as a dictionary
    
-    Args: 
+    Args:
+    ----
         script: path to the script to source 
         shell: which shell to use (e.g. 'csh' or 'bash')
     
     Returns:
+    -------
         Env: Dictionary of shell environment variables
-    '''
+
+    """
     command = [shell, '-c', 'source %s && env' % script]
 
     proc = subprocess.Popen(command, stdout = subprocess.PIPE)
@@ -219,19 +233,22 @@ def load_zipped_pickle(filename):
     with gzip.open(filename, 'rb') as f:
         loaded_object = pickle.load(f)
     return loaded_object
-                        
+
 def area_of_rectangle_km2(lat1,lat2,lon1,lon2):
-    '''Calculate the area of a latitude/longitude rectangle, returning the result in km^2
+    """Calculate the area of a latitude/longitude rectangle, returning the result in km^2
 
     Args:
+    ----
         lat1: Latitude of one corner
         lat2: Latitude of the diagonally opposite corner
         lon1: Longitude of one corner
         lon2: Longitude of the diagonally opposite corner
 
     Returns:
+    -------
         A: area in units of km^2
-    '''
+
+    """
     LAT1 = np.pi*lat1/180.0
     LAT2 = np.pi*lat2/180.0
     # LON1 = np.pi*lon1/180.0
@@ -242,17 +259,20 @@ def area_of_rectangle_km2(lat1,lat2,lon1,lon2):
     return A
 
 def area_of_rectangle_m2(lat1,lat2,lon1,lon2):
-    '''Calculate the area of a latitude/longitude rectangle, returning the result in m^2
+    """Calculate the area of a latitude/longitude rectangle, returning the result in m^2
 
     Args:
+    ----
         lat1: Latitude of one corner
         lat2: Latitude of the diagonally opposite corner
         lon1: Longitude of one corner
         lon2: Longitude of the diagonally opposite corner
 
     Returns:
+    -------
         A: area in units of m^2
-    '''
+
+    """
     LAT1 = np.pi*lat1/180.0
     LAT2 = np.pi*lat2/180.0
     # LON1 = np.pi*lon1/180.0
@@ -263,21 +283,21 @@ def area_of_rectangle_m2(lat1,lat2,lon1,lon2):
     return A
 
 def redistribute_spatially(LATshape, ind_x, ind_y, coefs, subset, fromAreas, toAreas):
-    '''Redistribute GFAS emissions horizontally and vertically - this little function does most of the work
+    """Redistribute GFAS emissions horizontally and vertically - this little function does most of the work
 
     Args:
+    ----
         LATshape: shape of the LAT variable
         ind_x: x-indices in the GFAS domain corresponding to indices in the CMAQ domain
         ind_y: y-indices in the GFAS domain corresponding to indices in the CMAQ domain
         coefs: Area-weighting coefficients to redistribute the emissions
         subset: the GFAS emissionsx
         fromAreas: Areas of input grid-cells in units of m^2
-    toAreas: area of output gridcells in units of m^2
+        toAreas: area of output gridcells in units of m^2
+
     Returns: 
         gridded: concentrations on the 2D CMAQ grid
-        
-    '''
-    
+    """
     ##
     gridded = np.zeros(LATshape,dtype = np.float32)
     ij = 0
@@ -287,6 +307,6 @@ def redistribute_spatially(LATshape, ind_x, ind_y, coefs, subset, fromAreas, toA
             for k in range(len(ind_x[ij])):
                 ix      = ind_x[ij][k]
                 iy      = ind_y[ij][k]
-                gridded[i,j] += subset[iy,ix] *coefs[ij][k] * fromAreas[iy,ix]   
+                gridded[i,j] += subset[iy,ix] *coefs[ij][k] * fromAreas[iy,ix]
     gridded /= toAreas
     return gridded
