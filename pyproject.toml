@@ -2,8 +2,11 @@
 src = ["."] # TODO: change if using a common src/ directory
 target-version = "py311"
 # Provide some leeway for long docstring
-line-length = 110
+line-length = 100
 
+
+[tool.ruff.format]
+docstring-code-format = true
 
 [tool.ruff.lint]
 select = [

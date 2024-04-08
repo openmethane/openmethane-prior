@@ -154,7 +154,7 @@ def processEmissions(startDate, endDate, **kwargs): # doms, GFASfolder, GFASfile
     delta = datetime.timedelta(days=1)
     resultNd = [] # will be ndarray once built
     dates = []
-    for d in omUtils.dateTimeRange( startDate, endDate, delta):
+    for d in omUtils.date_time_range( startDate, endDate, delta):
         dates.append( d)
         resultNd.append( climatology[d.month -1, ...]) # d.month is 1-based
     dates.append( endDate)
@@ -204,6 +204,8 @@ def testWetlandEmis( startDate, endDate, **kwargs): # test totals for WETLAND em
     remappedTotals = [remapped[month,...].sum()*area for month in range(12)] # conversion from kg to mt
     print(list(zip(wetlandTotals, remappedTotals)))
     return
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Calculate the prior methane emissions estimate for OpenMethane")
     parser.add_argument('startDate', type=lambda s: datetime.datetime.strptime(s, "%Y-%m-%d"), help="Start date in YYYY-MM-DD format")
