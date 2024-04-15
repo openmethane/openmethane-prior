@@ -11,3 +11,7 @@ experiments
 .vscode/launch.json
 .vscode/settings.json
 domain.ipynb
+
+# Virtual environment
+venv
+.venv
