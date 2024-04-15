@@ -8,9 +8,22 @@ Unless required by applicable law or agreed to in writing, software distributed 
 See the License for the specific language governing permissions and limitations under the License.
 """
 
-from omInputs import electricityPath, fugitivesPath, landUsePath, sectoralEmissionsPath, sectoralMappingsPath, ntlPath, auShapefilePath, livestockDataPath, termitePath, wetlandPath, coalPath, oilGasPath
-import requests
 import os
+
+import requests
+from omInputs import (
+    auShapefilePath,
+    coalPath,
+    electricityPath,
+    landUsePath,
+    livestockDataPath,
+    ntlPath,
+    oilGasPath,
+    sectoralEmissionsPath,
+    sectoralMappingsPath,
+    termitePath,
+    wetlandPath,
+)
 from omUtils import getenv
 
 remote = getenv("PRIOR_REMOTE")
@@ -38,7 +51,7 @@ downloads = [
     [auShapefileFile, auShapefilePath],
     [livestockDataFile, livestockDataPath],
     [termiteFile, termitePath],
-    [wetlandFile, wetlandPath]
+    [wetlandFile, wetlandPath],
 ]
 
 for filename, filepath in downloads:
@@ -46,10 +59,11 @@ for filename, filepath in downloads:
 
     if not os.path.exists(filepath):
         print(f"Downloading {filename} to {filepath} from {url}")
+        os.makedirs(os.path.dirname(filepath), exist_ok=True)
 
         with requests.get(url, stream=True) as response:
             with open(filepath, mode="wb") as file:
                 for chunk in response.iter_content(chunk_size=10 * 1024):
                     file.write(chunk)
     else:
-        print(f"Skipping {filename} beacuse it already exists at {filepath}")
+        print(f"Skipping {filename} because it already exists at {filepath}")

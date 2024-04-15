@@ -8,8 +8,8 @@ Unless required by applicable law or agreed to in writing, software distributed 
 See the License for the specific language governing permissions and limitations under the License.
 """
 
-from omInputs import domainPath, geomFilePath, croFilePath, dotFilePath
 import xarray as xr
+from omInputs import croFilePath, domainPath, dotFilePath, geomFilePath
 
 domainXr = xr.Dataset()
 
