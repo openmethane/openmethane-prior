@@ -7,7 +7,6 @@ pandas
 geopandas
 python-dotenv
 colorama
-samgeo
+segment-geospatial
 cdsapi
 shapely
-bisect

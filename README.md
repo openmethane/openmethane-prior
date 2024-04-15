@@ -10,6 +10,14 @@ Copy the `.env.example` file to `.env` and customise the paths as you need.
 
 ### Installation
 
+To avoid conflicts with other Python projects, it is recommended to create a virtual environment for this project. To do this, run:
+
+
+```console
+python -m venv venv
+source venv/bin/activate
+```
+
 Install required modules:
 
 ```console
