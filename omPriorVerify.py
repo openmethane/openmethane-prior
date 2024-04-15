@@ -8,13 +8,13 @@ Unless required by applicable law or agreed to in writing, software distributed 
 See the License for the specific language governing permissions and limitations under the License.
 """
 
-from omInputs import sectoralEmissionsPath, livestockDataPath, domainXr as ds
-from omOutputs import domainOutputPath
-from omUtils import secsPerYear
+import numpy as np
 import pandas as pd
 import xarray as xr
-import numpy as np
 from colorama import Fore
+from omInputs import livestockDataPath, sectoralEmissionsPath
+from omOutputs import domainOutputPath
+from omUtils import secsPerYear
 
 
 # Check ouput sector emissions to make sure they tally up to the input emissions
@@ -49,14 +49,14 @@ def verifyEmis():
                 layerVal += np.sum(ds["OCH4_LIVESTOCK"][0].values * modelAreaM2 * secsPerYear)
 
             diff = round(layerVal - sectorVal)
-            perectenageDifference = diff / sectorVal * 100
+            percentage_difference = diff / sectorVal * 100
 
-            if abs(perectenageDifference) > 0.1:
-                print(
-                    f"{Fore.RED}FAILED - Discrepency of {perectenageDifference}% in {sector} emissions"
-                )
+            if abs(percentage_difference) > 0.1:
+                print(f"{Fore.RED}FAILED - Discrepancy of {percentage_difference}% in {sector} emissions")
             else:
-                print(f"{Fore.GREEN}PASSED - {sector} emissions OK, discrepancy is {abs(perectenageDifference)}% of total")
+                print(
+                    f"{Fore.GREEN}PASSED - {sector} emissions OK, discrepancy is {abs(percentage_difference)}% of total"
+                )
 
 
 if __name__ == "__main__":
