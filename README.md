@@ -8,17 +8,24 @@ This repository is matched with downloadable input data so that it will run out 
 
 Copy the `.env.example` file to `.env` and customise the paths as you need.
 
+In order to download the GFAS emissions data,
+credentials for the Copernicus Climate Data Store (CDS) API are required.
+Instructions for registering for the CDS API and setting up the credentials are provided
+at in [CDS Docs](https://cds.climate.copernicus.eu/api-how-to).
+
 ### Installation
 
-To avoid conflicts with other Python projects, it is recommended to create a virtual environment for this project. To do this, run:
-
+To avoid conflicts with other Python projects, 
+it is recommended to create a virtual environment for this project. 
+To do this, run:
 
 ```console
 python -m venv venv
 source venv/bin/activate
 ```
 
-Install required modules:
+Once the virtual environment is activated,
+you can install the required project dependencies.
 
 ```console
 pip install -r requirements.txt

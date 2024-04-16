@@ -42,6 +42,7 @@ if not args.skip_reproject:
 omAgLulucfWasteEmis.processEmissions()
 omIndustrialStationaryTransportEmis.processEmissions()
 omElectricityEmis.processEmissions()
+# x-ref #4
 # omFugitiveEmis.processEmissions(args.startDate, args.endDate)
 
 omTermiteEmis.processEmissions()
