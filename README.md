@@ -9,9 +9,18 @@ This repository is matched with downloadable input data so that it will run out 
 Copy the `.env.example` file to `.env` and customise the paths as you need.
 
 In order to download the GFAS emissions data,
-credentials for the Copernicus Climate Data Store (CDS) API are required.
-Instructions for registering for the CDS API and setting up the credentials are provided
-at in [CDS Docs](https://cds.climate.copernicus.eu/api-how-to).
+credentials for the Copernicus Atmospheric Data Store (ADS) API are required.
+Instructions for registering for the ADS API and setting up the credentials are provided
+at in [ADS Docs](https://ads.atmosphere.copernicus.eu/api-how-to).
+
+After creating an account and obtaining the credentials,
+you must also accept the 
+[license conditions for the data](https://ads.atmosphere.copernicus.eu/cdsapp/#!/terms/licence-to-use-copernicus-products)
+in order to download the data.
+
+Note: the ADS API is different from the CDS (Climate Data Store) API
+even though they are both parts of the Copernicus program
+and share the same credentials file.
 
 ### Installation
 
