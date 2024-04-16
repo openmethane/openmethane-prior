@@ -101,7 +101,7 @@ def processEmissions():
 
         # Numpy warns about taking means of missing slices
         # This happens for the cases where the xDomain is empty for the given yDomain
-        with warnings.catch_warnings(category=RuntimeWarning):
+        with warnings.catch_warnings(category=RuntimeWarning, action="ignore"):
             filtered_x_masks = x_masks[:, y_masks[j]]
             filtered_y_data = [y_data[x_mask_subset].mean() for x_mask_subset in filtered_x_masks]
 
