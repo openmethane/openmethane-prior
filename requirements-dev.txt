@@ -1,2 +1,3 @@
 licenseheaders
 ruff=0.3.7
+pytest=8.2.0
