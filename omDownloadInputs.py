@@ -22,7 +22,9 @@ Download required input files
 This downloads the input files that rarely change and can be cached between runs.
 """
 
-from omInputs import electricityPath, fugitivesPath, landUsePath, sectoralEmissionsPath, sectoralMappingsPath, ntlPath, auShapefilePath, livestockDataPath, termitePath, wetlandPath, coalPath, oilGasPath
+from omInputs import (electricityPath,
+                      # fugitivesPath,
+                      landUsePath, sectoralEmissionsPath, sectoralMappingsPath, ntlPath, auShapefilePath, livestockDataPath, termitePath, wetlandPath, coalPath, oilGasPath)
 import requests
 import os
 from omUtils import getenv
@@ -41,6 +43,7 @@ termiteFile = getenv("TERMITES")
 wetlandFile = getenv("WETLANDS")
 coalFile = getenv("COAL")
 oilGasFile = getenv("OILGAS")
+
 downloads = [
     [electricityFile, electricityPath],
     [coalFile, coalPath],

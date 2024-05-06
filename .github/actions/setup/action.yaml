@@ -1,0 +1,47 @@
+name: 'venv setup'
+description: 'configures venv, python and caches'
+
+inputs:
+  python-version:
+    description: "Python version to use"
+    required: true
+  cache-dependency-path:
+    description: "Requirement files to install. Can be a glob pattern."
+    default: '**/requirements*.txt'
+  venv-dir:
+    default: '.venv'
+  install-cmd:
+    description: 'Command to install python dependencies.'
+
+outputs:
+  cache-hit:
+    description: "A boolean value to indicate if a cache was restored"
+    value: ${{ steps.cache-venv.outputs.cache-hit }}
+
+runs:
+  using: 'composite'
+  steps:
+    - uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c  # v5.0.0
+      id: setup-python
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - run: echo '::remove-matcher owner=python::'
+      shell: bash
+
+    - uses: actions/cache@13aacd865c20de90d75de3b17ebe84f7a17d57d2  # v4.0.0
+      id: cache-venv
+      with:
+        path: ${{ inputs.venv-dir }}
+        key: setup-venv-${{ runner.os }}-py-${{ steps.setup-python.outputs.python-version }}-${{ steps.setup-python.outputs.python-path }}-${{ hashFiles(inputs.cache-dependency-path) }}-${{ inputs.install-cmd }}
+
+    - run: python3 -m venv ${{ inputs.venv-dir }}
+      if: steps.cache-venv.outputs.cache-hit != 'true'
+      shell: bash
+
+    - run: |
+        source ${{ inputs.venv-dir }}/bin/activate
+        python -m pip install -r requirements.txt
+        echo "VIRTUAL_ENV=${VIRTUAL_ENV}" >> $GITHUB_ENV
+        echo "${VIRTUAL_ENV}/bin" >> $GITHUB_PATH
+      shell: bash

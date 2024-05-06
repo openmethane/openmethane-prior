@@ -1,0 +1,84 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+    tags: ['v*']
+
+jobs:
+
+  tests:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ "ubuntu-latest" ]
+        python-version: [ "3.10" ]
+    runs-on: "${{ matrix.os }}"
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+      - uses: ./.github/actions/setup
+        with:
+          python-version: "${{ matrix.python-version }}"
+          venv-id: "tests-${{ runner.os }}"
+          poetry-dependency-install-flags: "--all-extras"
+      - name: Run tests
+        run: |
+          python pytest -r a -v tests --doctest-modules --cov=src --cov-report=term-missing --cov-report=xml
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v3
+
+  imports-without-extras:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ "ubuntu-latest" ]
+        python-version: [ "3.10" ]
+    runs-on: "${{ matrix.os }}"
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+      - uses: ./.github/actions/setup
+        with:
+          python-version: "${{ matrix.python-version }}"
+          venv-id: "imports-without-extras-${{ runner.os }}"
+          poetry-dependency-install-flags: "--only main"
+      - name: Check importable without extras
+        run: poetry run python scripts/test-install.py
+
+  check-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+      - uses: ./.github/actions/setup
+        with:
+          python-version: "3.10"
+          venv-id: "check-build-${{ runner.os }}"
+          run-poetry-install: false
+          poetry-dependency-install-flags: "not used"
+      - name: Build package
+        run: |
+          poetry build --no-interaction
+      - name: Check build
+        run: |
+          tar -tvf dist/primap_visualisation_tool-*.tar.gz --wildcards '*primap_visualisation_tool/py.typed'
+
+  check-dependency-licences:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+      - uses: ./.github/actions/setup
+        with:
+          python-version: "3.10"
+          venv-id: "licence-check"
+          poetry-dependency-install-flags: "--all-extras"
+      - name: Check licences of dependencies
+        shell: bash
+        run: |
+          TEMP_FILE=$(mktemp)
+          poetry export --without=tests --without=docs --without=dev > $TEMP_FILE
+          poetry run liccheck -r $TEMP_FILE -R licence-check.txt
+          cat licence-check.txt
