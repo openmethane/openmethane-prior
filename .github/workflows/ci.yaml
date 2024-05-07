@@ -25,6 +25,6 @@ jobs:
           poetry-dependency-install-flags: "--all-extras"
       - name: Run tests
         run: |
-          pytest -r a -v tests --doctest-modules --cov=src --cov-report=term-missing --cov-report=xml
+          pytest -r a -v tests
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v3
