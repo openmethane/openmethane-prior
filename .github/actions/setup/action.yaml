@@ -45,4 +45,5 @@ runs:
         python -m pip install -r requirements-dev.txt
         echo "VIRTUAL_ENV=${VIRTUAL_ENV}" >> $GITHUB_ENV
         echo "${VIRTUAL_ENV}/bin" >> $GITHUB_PATH
+        cp .env.example .env
       shell: bash

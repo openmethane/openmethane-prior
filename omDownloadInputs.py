@@ -46,8 +46,8 @@ oilGasFile = getenv("OILGAS")
 
 downloads = [
     [electricityFile, electricityPath],
-#    [coalFile, coalPath],
-#    [oilGasFile, oilGasPath],
+    [coalFile, coalPath],
+    [oilGasFile, oilGasPath],
     [landUseFile, landUsePath],
     [sectoralEmissionsFile, sectoralEmissionsPath],
     [sectoralMappingsFile, sectoralMappingsPath],
