@@ -19,6 +19,9 @@ outputs:
 runs:
   using: 'composite'
   steps:
+    - run: cp .env.example .env
+      shell: bash
+
     - uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c  # v5.0.0
       id: setup-python
       with:
@@ -43,5 +46,5 @@ runs:
         python -m pip install -r requirements-dev.txt
         echo "VIRTUAL_ENV=${VIRTUAL_ENV}" >> $GITHUB_ENV
         echo "${VIRTUAL_ENV}/bin" >> $GITHUB_PATH
-        cp .env.example .env
+
       shell: bash
