@@ -4,11 +4,10 @@ import sys
 # insert root directory into python module search path
 sys.path.insert(1, os.getcwd())
 
-from temporary_file_for_tests import downloads, remote
+from omDownloadInputs import root_path, downloads, remote, download_input_files
 
 import requests
 from pathlib import Path
-import subprocess
 
 ROOT_DIRECTORY = Path(__file__).parent.parent
 
@@ -42,9 +41,9 @@ def test_002_omDownloadInputs():
 
     assert os.listdir(input_folder) == EXPECTED_FILES_START, f"Folder '{input_folder}' is not empty"
 
-    script_path = os.path.join(ROOT_DIRECTORY, "omDownloadInputs.py")
-
-    subprocess.run(["python", script_path], capture_output=True, timeout=60*10, check=True)
+    download_input_files(root_path=root_path,
+                         downloads=downloads,
+                         remote=remote)
 
     downloaded_files = os.listdir(input_folder)
 

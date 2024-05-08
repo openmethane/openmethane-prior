@@ -60,17 +60,23 @@ downloads = [
     [wetlandFile, wetlandPath]
 ]
 
-for filename, filepath in downloads:
-    filepath = os.path.join(root_path, filepath)
-    print(filepath)
-    url = f"{remote}{filename}"
+def download_input_files(root_path, downloads, remote):
+    for filename, filepath in downloads:
+        filepath = os.path.join(root_path, filepath)
+        print(filepath)
+        url = f"{remote}{filename}"
 
-    if not os.path.exists(filepath):
-        print(f"Downloading {filename} to {filepath} from {url}")
+        if not os.path.exists(filepath):
+            print(f"Downloading {filename} to {filepath} from {url}")
 
-        with requests.get(url, stream=True) as response:
-            with open(filepath, mode="wb") as file:
-                for chunk in response.iter_content(chunk_size=10 * 1024):
-                    file.write(chunk)
-    else:
-        print(f"Skipping {filename} beacuse it already exists at {filepath}")
+            with requests.get(url, stream=True) as response:
+                with open(filepath, mode="wb") as file:
+                    for chunk in response.iter_content(chunk_size=10 * 1024):
+                        file.write(chunk)
+        else:
+            print(f"Skipping {filename} beacuse it already exists at {filepath}")
+
+if __name__ == '__main__':
+    download_input_files(root_path=root_path,
+                         downloads=downloads,
+                         remote=remote)
