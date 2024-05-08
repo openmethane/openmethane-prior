@@ -10,8 +10,6 @@ inputs:
     default: '**/requirements*.txt'
   venv-dir:
     default: '.venv'
-  install-cmd:
-    description: 'Command to install python dependencies.'
 
 outputs:
   cache-hit:
