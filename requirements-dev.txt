@@ -1,2 +1,2 @@
 licenseheaders
-ruff=0.3.7
+ruff==0.3.7
