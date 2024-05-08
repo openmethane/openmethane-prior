@@ -1,14 +1,11 @@
-# work around until folder structure is updated^
+# work around until folder structure is updated
 import os
 import sys
 # insert root directory into python module search path
 sys.path.insert(1, os.getcwd())
 
-# TODO: At this point there is no file that contains only the definitions needed here
-# so I copied it into a separate file. Should be changed after refactoring.
 from temporary_file_for_tests import downloads, remote
 
-import pytest
 import requests
 from pathlib import Path
 import subprocess
@@ -24,7 +21,7 @@ def test_001_response_for_download_links() :
 
 
 def test_002_omDownloadInputs():
-    # Check if the folder is empty before running the script
+
     input_folder = os.path.join(ROOT_DIRECTORY, "inputs")
 
     EXPECTED_FILES_START = ['README.md']
@@ -51,7 +48,6 @@ def test_002_omDownloadInputs():
 
     downloaded_files = os.listdir(input_folder)
 
-    # clean up folder
     for file in [i for i in downloaded_files if i != 'README.md']:
         filepath = os.path.join(input_folder, file)
         os.remove(filepath)
