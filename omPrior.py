@@ -1,5 +1,5 @@
 #
-# Copyright 2023-2024 The Superpower Institute Ltd.
+# Copyright 2023 The Superpower Institute Ltd.
 #
 # This file is part of OpenMethane.
 #
