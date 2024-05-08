@@ -22,7 +22,6 @@ jobs:
         with:
           python-version: "${{ matrix.python-version }}"
           venv-id: "tests-${{ runner.os }}"
-          poetry-dependency-install-flags: "--all-extras"
       - name: Run tests
         run: |
           pytest -r a -v tests
