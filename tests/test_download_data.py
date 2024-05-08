@@ -4,15 +4,18 @@ import sys
 # insert root directory into python module search path
 sys.path.insert(1, os.getcwd())
 
+# At this point there is no file that contains only the definitions needed here
+# so I copied it to a separate file. Should be changed after refactoring.
 from temporary_file_for_tests import downloads, remote
 import pytest
 import requests
 from pathlib import Path
 import subprocess
 
-# Are we in the root directory (for github actions)
+# TODO maybe there's a better way to do this
+# Are we in the root directory (github will execute this file from the root directory)
 if os.path.exists("tests"):
-    ROOT_DIRECTORY = Path(__file__).parent
+    ROOT_DIRECTORY = Path(__file__).parent.parent
 else:
     ROOT_DIRECTORY = Path(__file__).parent.parent
 
