@@ -29,6 +29,8 @@ import requests
 import os
 from omUtils import getenv
 
+root_path = os.path.dirname(os.path.realpath(__file__))
+
 remote = getenv("PRIOR_REMOTE")
 
 electricityFile = getenv("CH4_ELECTRICITY")
@@ -59,6 +61,8 @@ downloads = [
 ]
 
 for filename, filepath in downloads:
+    filepath = os.path.join(root_path, filepath)
+    print(filepath)
     url = f"{remote}{filename}"
 
     if not os.path.exists(filepath):

@@ -5,11 +5,16 @@ import sys
 sys.path.insert(1, os.getcwd())
 
 from temporary_file_for_tests import downloads, remote
-from definitions import ROOT_DIRECTORY
 import pytest
 import requests
 from pathlib import Path
 import subprocess
+
+# Are we in the root directory (for github actions)
+if os.path.exists("tests"):
+    ROOT_DIRECTORY = Path(__file__).parent
+else:
+    ROOT_DIRECTORY = Path(__file__).parent.parent
 
 def test_001_response_for_download_links() :
     for filename, filepath in downloads :
