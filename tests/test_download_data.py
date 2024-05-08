@@ -7,31 +7,47 @@ sys.path.insert(1, os.getcwd())
 from temporary_file_for_tests import downloads, remote
 import pytest
 import requests
+from pathlib import Path
+import subprocess
 
-@pytest.mark.xfail
-def test_response_for_download_links() :
+def test_001_response_for_download_links() :
     for filename, filepath in downloads :
         url = f"{remote}{filename}"
         with requests.get(url, stream=True) as response :
             print(f"Response code for {url}: {response.status_code}")
             assert response.status_code == 200
 
-# @pytest.mark.xfail
-# def test_download_input_files():
-#     assert False
 
-# EXPECTED_FILE_NAMES = ["file1.txt", "file2.txt", "file3.txt"]
-#
-# def test_empty_folder():
-#     # Check if the folder is empty before running the script
-#     assert not os.listdir(TEST_FOLDER), f"Folder '{TEST_FOLDER}' is not empty"
-#
-# def test_execute_script():
-#     # Execute the script
-#     subprocess.run(SCRIPT_COMMAND, shell=True, cwd=TEST_FOLDER)
-#
-# def test_generated_files():
-#     # Check if the generated files have the correct names
-#     generated_files = os.listdir(TEST_FOLDER)
-#     assert sorted(generated_files) == sorted(EXPECTED_FILE_NAMES), \
-#         f"Generated files {generated_files} do not match expected names {EXPECTED_FILE_NAMES}"
+def test_002_omDownloadInputs():
+    # Check if the folder is empty before running the script
+    input_folder = Path(__file__).parent.parent / "inputs"
+
+    EXPECTED_FILES_START = ['README.md']
+    EXPECTED_FILES_END = [
+                        "ch4-electricity.csv",
+                        "coal-mining_emissions-sources.csv",
+                        "oil-and-gas-production-and-transport_emissions-sources.csv",
+                        "NLUM_ALUMV8_250m_2015_16_alb.tif",
+                        "ch4-sectoral-emissions.csv",
+                        "landuse-sector-map.csv",
+                        "nasa-nighttime-lights.tiff",
+                        "AUS_2021_AUST_SHP_GDA2020.zip",
+                        "EntericFermentation.nc",
+                        "termite_emissions_2010-2016.nc",
+                        "DLEM_totflux_CRU_diagnostic.nc",
+                        'README.md',
+                      ]
+
+    assert os.listdir(input_folder) == EXPECTED_FILES_START, f"Folder '{input_folder}' is not empty"
+
+    subprocess.run(["python", "../omDownloadInputs.py"], capture_output=True, timeout=60*10, check=True)
+
+    downloaded_files = os.listdir(input_folder)
+
+    # clean up folder
+    for file in [i for i in downloaded_files if i != 'README.md']:
+        filepath = os.path.join(input_folder, file)
+        os.remove(filepath)
+
+    assert sorted(downloaded_files) == sorted(EXPECTED_FILES_END)
+
