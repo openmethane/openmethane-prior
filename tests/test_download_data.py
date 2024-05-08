@@ -5,6 +5,7 @@ import sys
 sys.path.insert(1, os.getcwd())
 
 from temporary_file_for_tests import downloads, remote
+from definitions import ROOT_DIRECTORY
 import pytest
 import requests
 from pathlib import Path
@@ -20,7 +21,7 @@ def test_001_response_for_download_links() :
 
 def test_002_omDownloadInputs():
     # Check if the folder is empty before running the script
-    input_folder = Path(__file__).parent.parent / "inputs"
+    input_folder = os.path.join(ROOT_DIRECTORY, "inputs")
 
     EXPECTED_FILES_START = ['README.md']
     EXPECTED_FILES_END = [
@@ -40,7 +41,9 @@ def test_002_omDownloadInputs():
 
     assert os.listdir(input_folder) == EXPECTED_FILES_START, f"Folder '{input_folder}' is not empty"
 
-    subprocess.run(["python", "../omDownloadInputs.py"], capture_output=True, timeout=60*10, check=True)
+    script_path = os.path.join(ROOT_DIRECTORY, "omDownloadInputs.py")
+
+    subprocess.run(["python", script_path], capture_output=True, timeout=60*10, check=True)
 
     downloaded_files = os.listdir(input_folder)
 
