@@ -1,0 +1,29 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+    tags: ['v*']
+
+jobs:
+
+  tests:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ "ubuntu-latest" ]
+        python-version: [ "3.10" ]
+    runs-on: "${{ matrix.os }}"
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v3
+      - uses: ./.github/actions/setup
+        with:
+          python-version: "${{ matrix.python-version }}"
+          venv-id: "tests-${{ runner.os }}"
+      - name: Run tests
+        run: |
+          pytest -r a -v tests
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v3

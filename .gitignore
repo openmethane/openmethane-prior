@@ -4,6 +4,7 @@ inputs
 intermediates
 experiments
 .env
+.idea
 
 !outputs/README.md
 !inputs/README.md

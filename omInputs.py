@@ -37,8 +37,13 @@ fossilPath = os.path.join( climateTracePath, getenv("FOSSIL"))
 domainFilename = getenv("DOMAIN")
 domainPath = os.path.join(inputsPath, domainFilename)
 electricityPath = os.path.join(inputsPath, getenv("CH4_ELECTRICITY"))
-oilGasPath = os.path.join( fossilPath, getenv("OILGAS"))
-coalPath = os.path.join( fossilPath, getenv("COAL"))
+# TODO: Changing this to match with the rest of the download file paths.
+# The originally specified directory does not exist and stops the download.
+# Maybe needs to be changed back later in the process.
+# oilGasPath = os.path.join( fossilPath, getenv("OILGAS"))
+oilGasPath = os.path.join( inputsPath, getenv("OILGAS"))
+# coalPath = os.path.join( fossilPath, getenv("COAL"))
+coalPath = os.path.join( inputsPath, getenv("COAL"))
 landUsePath = os.path.join(inputsPath, getenv("LAND_USE"))
 sectoralEmissionsPath = os.path.join(inputsPath, getenv("SECTORAL_EMISSIONS"))
 sectoralMappingsPath = os.path.join(inputsPath, getenv("SECTORAL_MAPPING"))
