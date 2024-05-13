@@ -82,7 +82,7 @@ def processEmissions():
             methane["stationary"][0][yDomain[y]][xDomain[x]] += ntlStationary[y][x]
             methane["transport"][0][yDomain[y]][xDomain[x]] += ntlTransport[y][x]
         except Exception as e:
-            print(e)
+            # print(e)
             ignored += 1
 
     print(f"{ignored} lit pixels were ignored")
