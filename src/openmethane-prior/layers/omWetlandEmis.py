@@ -74,7 +74,7 @@ def makeWetlandClimatology( **kwargs): # doms, GFASfolder, GFASfile, metDir, ctm
     wetlandAreas = np.zeros((nlatWetland,nlonWetland))
     # take advantage of  regular grid to compute areas equal for each gridbox at same latitude
     for iy in range(nlatWetland):
-        wetlandAreas[iy,:] = omUtils.area_of_rectangle_m2(latWetland_edge[iy],latWetland_edge[iy+1],lonWetland_edge[0],lonWetland_edge[-1])/lonWetland.size
+        wetlandAreas[iy,:] = omUtils.area_of_rectangle_m2(latWetland_edge[iy], latWetland_edge[iy + 1], lonWetland_edge[0], lonWetland_edge[-1]) / lonWetland.size
 # now collect some domain information
     LAT  = domainXr.variables['LAT'].values.squeeze()
     LON  = domainXr.variables['LON'].values.squeeze()
@@ -85,9 +85,9 @@ def makeWetlandClimatology( **kwargs): # doms, GFASfolder, GFASfile, metDir, ctm
     coefsPath = "{}/WETLAND_coefs.p.gz".format(intermediatesPath)
 
     if os.path.exists(indxPath) and os.path.exists(indyPath) and os.path.exists(coefsPath) and (not forceUpdate):
-        ind_x = omUtils.load_zipped_pickle( indxPath )
-        ind_y = omUtils.load_zipped_pickle( indyPath )
-        coefs = omUtils.load_zipped_pickle( coefsPath )
+        ind_x = omUtils.load_zipped_pickle(indxPath)
+        ind_y = omUtils.load_zipped_pickle(indyPath)
+        coefs = omUtils.load_zipped_pickle(coefsPath)
         ##
         domShape = []
         domShape.append(LAT.shape)
@@ -148,9 +148,9 @@ def makeWetlandClimatology( **kwargs): # doms, GFASfolder, GFASfile, metDir, ctm
             coefs.append(COEFS)
         count.append(count2)
         ##
-        omUtils.save_zipped_pickle(ind_x, indxPath )
-        omUtils.save_zipped_pickle(ind_y, indyPath )
-        omUtils.save_zipped_pickle(coefs, coefsPath )
+        omUtils.save_zipped_pickle(ind_x, indxPath)
+        omUtils.save_zipped_pickle(ind_y, indyPath)
+        omUtils.save_zipped_pickle(coefs, coefsPath)
     # now build monthly climatology
     flux = ncin['totflux'][...] # is masked array
     climatology=np.zeros((12,flux.shape[1], flux.shape[2])) # same spatial domain but monthly climatology
@@ -166,7 +166,7 @@ def processEmissions(startDate, endDate, **kwargs): # doms, GFASfolder, GFASfile
     delta = datetime.timedelta(days=1)
     resultNd = [] # will be ndarray once built
     dates = []
-    for d in omUtils.date_time_range( startDate, endDate, delta):
+    for d in omUtils.date_time_range(startDate, endDate, delta):
         dates.append( d)
         resultNd.append( climatology[d.month -1, ...]) # d.month is 1-based
     dates.append( endDate)
@@ -200,7 +200,7 @@ def testWetlandEmis( startDate, endDate, **kwargs): # test totals for WETLAND em
     areas = np.zeros((nlatWetland,nlonWetland))
 # take advantage of  regular grid to compute areas equal for each gridbox at same latitude
     for iy in range(nlatWetland):
-        areas[iy,:] = omUtils.area_of_rectangle_m2(latWetland_edge[iy],latWetland_edge[iy+1],lonWetland_edge[0],lonWetland_edge[-1])/lonWetland.size
+        areas[iy,:] = omUtils.area_of_rectangle_m2(latWetland_edge[iy], latWetland_edge[iy + 1], lonWetland_edge[0], lonWetland_edge[-1]) / lonWetland.size
     LATD = domainXr.variables['LATD'].values.squeeze()
     LOND = domainXr.variables['LOND'].values.squeeze()
     indLat = (latWetland > LATD.min()) &( latWetland < LATD.max())

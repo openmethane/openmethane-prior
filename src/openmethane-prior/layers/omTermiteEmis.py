@@ -72,7 +72,7 @@ def processEmissions(**kwargs): # doms, GFASfolder, GFASfile, metDir, ctmDir, CM
     termAreas = np.zeros((nlatTerm,nlonTerm))
     # take advantage of  regular grid to compute areas equal for each gridbox at same latitude
     for iy in range(nlatTerm):
-        termAreas[iy,:] = omUtils.area_of_rectangle_m2(latTerm_edge[iy],latTerm_edge[iy+1],lonTerm_edge[0],lonTerm_edge[-1])/lonTerm.size
+        termAreas[iy,:] = omUtils.area_of_rectangle_m2(latTerm_edge[iy], latTerm_edge[iy + 1], lonTerm_edge[0], lonTerm_edge[-1]) / lonTerm.size
     # now collect some domain information
     LATD = domainXr['LATD'][:].values.squeeze()
     LOND = domainXr['LOND'].values.squeeze()
@@ -85,9 +85,9 @@ def processEmissions(**kwargs): # doms, GFASfolder, GFASfile, metDir, ctmDir, CM
     coefsPath = "{}/TERM_coefs.p.gz".format(intermediatesPath)
 
     if os.path.exists(indxPath) and os.path.exists(indyPath) and os.path.exists(coefsPath) and (not forceUpdate):
-        ind_x = omUtils.load_zipped_pickle( indxPath )
-        ind_y = omUtils.load_zipped_pickle( indyPath )
-        coefs = omUtils.load_zipped_pickle( coefsPath )
+        ind_x = omUtils.load_zipped_pickle(indxPath)
+        ind_y = omUtils.load_zipped_pickle(indyPath)
+        coefs = omUtils.load_zipped_pickle(coefsPath)
         ##
         domShape = []
         domShape.append(LAT.shape)
@@ -146,9 +146,9 @@ def processEmissions(**kwargs): # doms, GFASfolder, GFASfile, metDir, ctmDir, CM
             coefs.append(COEFS)
         count.append(count2)
         ##
-        omUtils.save_zipped_pickle(ind_x, indxPath )
-        omUtils.save_zipped_pickle(ind_y, indyPath )
-        omUtils.save_zipped_pickle(coefs, coefsPath )
+        omUtils.save_zipped_pickle(ind_x, indxPath)
+        omUtils.save_zipped_pickle(ind_y, indyPath)
+        omUtils.save_zipped_pickle(coefs, coefsPath)
         
     subset = ncin['ch4_emissions_2010_2016.asc'][...] # is masked array
     subset=subset.data # grab value
@@ -189,7 +189,7 @@ def testTermiteEmis(**kwargs): # test totals for TERM emissions between original
     areas = np.zeros((nlatTerm,nlonTerm))
 # take advantage of  regular grid to compute areas equal for each gridbox at same latitude
     for iy in range(nlatTerm):
-        areas[iy,:] = omUtils.area_of_rectangle_m2(latTerm_edge[iy],latTerm_edge[iy+1],lonTerm_edge[0],lonTerm_edge[-1])/lonTerm.size
+        areas[iy,:] = omUtils.area_of_rectangle_m2(latTerm_edge[iy], latTerm_edge[iy + 1], lonTerm_edge[0], lonTerm_edge[-1]) / lonTerm.size
     LATD = domainXr.variables['LATD'].values.squeeze()
     LOND = domainXr.variables['LOND'].values.squeeze()
     indLat = (latTerm > LATD.min()) &( latTerm < LATD.max())
