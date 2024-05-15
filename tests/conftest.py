@@ -1,4 +1,3 @@
-# Arrange
 import pytest
 from pathlib import Path
 
