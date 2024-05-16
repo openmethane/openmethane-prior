@@ -43,4 +43,5 @@ with xr.open_dataset( dotFilePath) as dotXr:
     for var in ['LATD','LOND']:
         domainXr[var] = dotXr[var].rename({'COL':'COL_D', 'ROW':'ROW_D'})
 
+print(domainPath)
 domainXr.to_netcdf(domainPath)

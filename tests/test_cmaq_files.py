@@ -3,8 +3,7 @@ import os
 import dotenv
 import xarray as xr
 
-@pytest.mark.xfail()
-def test_CRO_and_domain_files_are_consistent(root_dir, monkeypatch):
+def test_grid_size_for_cmaq_files(root_dir, monkeypatch):
 
     expected_cell_size = 10000
 
@@ -18,6 +17,9 @@ def test_CRO_and_domain_files_are_consistent(root_dir, monkeypatch):
     croFilePath = os.path.join(cmaqExamplePath, getenv("CROFILE"))
     dotFilePath = os.path.join(cmaqExamplePath, getenv("DOTFILE"))
     geomFilePath = os.path.join(cmaqExamplePath, getenv("GEO_EM"))
+
+    filepath_ds = os.path.join(root_dir, "outputs/out-om-domain-info.nc")
+    out_om_domain = xr.load_dataset(filepath_ds)
 
     with xr.open_dataset(geomFilePath) as geomXr :
         assert geomXr.DX == expected_cell_size
