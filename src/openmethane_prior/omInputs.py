@@ -27,6 +27,7 @@ See the License for the specific language governing permissions and limitations 
 
 import os
 from openmethane_prior.omUtils import getenv
+from openmethane_prior import omOutputs
 
 inputsPath = getenv("INPUTS")
 cmaqExamplePath = getenv("CMAQ_EXAMPLE")
