@@ -27,12 +27,12 @@ the required credentials.
 import numpy as np
 import netCDF4 as nc
 import xarray as xr 
-from omInputs import domainXr
-from omOutputs import writeLayer, intermediatesPath, sumLayers
+from ..omInputs import domainXr
+from ..omOutputs import writeLayer, intermediatesPath, sumLayers
 import cdsapi
 import itertools
 import datetime
-import omUtils
+from ..omUtils import *
 import os
 from shapely import geometry
 import bisect

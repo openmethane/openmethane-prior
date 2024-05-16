@@ -23,17 +23,17 @@ Main entry point for running the openmethane-prior
 import argparse
 import datetime
 
-import omInputs
-import omAgLulucfWasteEmis
-import omIndustrialStationaryTransportEmis
-import omElectricityEmis
-import omFugitiveEmis
-import omOutputs
-import omPriorVerify
+from openmethane_prior import omInputs
+from openmethane_prior.layers import omAgLulucfWasteEmis
+from openmethane_prior.layers import omIndustrialStationaryTransportEmis
+from openmethane_prior.layers import omElectricityEmis
+from openmethane_prior.layers import omFugitiveEmis
+from openmethane_prior import omOutputs
+from openmethane_prior import omPriorVerify
 
-import omGFASEmis
-import omTermiteEmis
-import omWetlandEmis
+from openmethane_prior.layers import omGFASEmis
+from openmethane_prior.layers import omTermiteEmis
+from openmethane_prior.layers import omWetlandEmis
 
 # Parse args
 parser = argparse.ArgumentParser(description="Calculate the prior methane emissions estimate for OpenMethane")

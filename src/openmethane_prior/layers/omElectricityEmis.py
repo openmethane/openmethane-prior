@@ -21,8 +21,8 @@ Process emissions from the electricity sector
 """
 
 import numpy as np
-from omInputs import electricityPath, sectoralEmissionsPath, domainXr as ds, domainProj
-from omOutputs import writeLayer, convertToTimescale, sumLayers
+from ..omInputs import electricityPath, sectoralEmissionsPath, domainXr as ds, domainProj
+from ..omOutputs import writeLayer, convertToTimescale, sumLayers
 import pandas as pd
 import math
 

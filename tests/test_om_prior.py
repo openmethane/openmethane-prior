@@ -10,11 +10,11 @@ def test_full_process(num_regression, root_dir, monkeypatch):
 
     monkeypatch.chdir(root_dir)
 
-    subprocess.run(["python", "omDownloadInputs.py"])
+    subprocess.run(["python", "scripts/omDownloadInputs.py"])
 
-    subprocess.run(["python", "omCreateDomainInfo.py"])
+    subprocess.run(["python", "scripts/omCreateDomainInfo.py"])
 
-    subprocess.run(["python", "omPrior.py", "2022-07-01", "2022-07-02"])
+    subprocess.run(["python", "scripts/omPrior.py", "2022-07-01", "2022-07-02"])
 
     filepath_ds = os.path.join(root_dir, "outputs/out-om-domain-info.nc")
     test_ds = xr.load_dataset(filepath_ds)

@@ -22,14 +22,17 @@ Download required input files
 This downloads the input files that rarely change and can be cached between runs.
 """
 
-from omInputs import (electricityPath,
+from openmethane_prior.omInputs import (electricityPath,
                       # fugitivesPath,
                       landUsePath, sectoralEmissionsPath, sectoralMappingsPath, ntlPath, auShapefilePath, livestockDataPath, termitePath, wetlandPath, coalPath, oilGasPath)
 import requests
 import os
-from omUtils import getenv
+from openmethane_prior.omUtils import getenv
 
 root_path = os.path.dirname(os.path.realpath(__file__))
+# go one up because this file now lives in the scripts folde
+# TODO! We could also use Pathlib for this step.
+root_path = os.path.abspath(os.path.join(root_path, os.pardir))
 
 remote = getenv("PRIOR_REMOTE")
 
