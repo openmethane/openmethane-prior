@@ -28,7 +28,7 @@ See the License for the specific language governing permissions and limitations 
 import os
 import xarray as xr
 import numpy as np
-import openmethane_prior.omInputs
+from openmethane_prior import omInputs
 from openmethane_prior.omUtils import secsPerYear, getenv
 
 intermediatesPath = getenv("INTERMEDIATES")
