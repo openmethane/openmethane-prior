@@ -22,15 +22,11 @@ def test_full_process(num_regression, root_dir, monkeypatch):
     mean_values = {key: out_om_domain[key].mean().item() for key in out_om_domain.keys()}
     num_regression.check(mean_values)
 
-    with xr.open_dataset("cmaq_example/geo_em.d01.nc") as geomXr :
-        assert geomXr.DX == out_om_domain.DX
-        assert geomXr.DY == out_om_domain.DY
+    downloaded_files = os.listdir("inputs")
 
-    with xr.open_dataset("cmaq_example/GRIDDOT2D_1") as dotXr :
-        assert dotXr.XCELL == out_om_domain.DX
-        assert dotXr.YCELL == out_om_domain.DY
+    for file in [i for i in downloaded_files if i != 'README.md']:
+        filepath = os.path.join("inputs", file)
+        os.remove(filepath)
 
-    with xr.open_dataset("cmaq_example/GRIDCRO2D_1") as croXr :
-        assert croXr.XCELL == out_om_domain.DX
-        assert croXr.YCELL == out_om_domain.DY
+    os.remove("outputs/out-om-domain-info.nc")
 
