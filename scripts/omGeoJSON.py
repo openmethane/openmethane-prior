@@ -40,9 +40,9 @@ def processGeoJSON():
     print("Loading output file")
     ds = nc.Dataset(domainOutputPath)
     landmask = ds["LANDMASK"][:]
-    lats = ds["XLAT_C"][:]
-    longs = ds["XLONG_C"][:]
-    ch4 = ds["OCH4_TOTAL"][:][0]
+    lats = ds["LATD"][:][0]
+    longs = ds["LOND"][:][0]
+    ch4 = ds["OCH4_TOTAL"][:][0][0]
     maxEmission = np.amax(ch4)
 
     # Add GeoJSON Polygon feature for each grid location
