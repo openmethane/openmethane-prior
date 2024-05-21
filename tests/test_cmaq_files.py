@@ -14,8 +14,6 @@ def test_grid_size_for_cmaq_files(root_dir, monkeypatch):
 
     monkeypatch.chdir(root_dir)
 
-    subprocess.run(["python", "omCreateDomainInfo.py"])
-
     dotenv.load_dotenv()
     getenv = os.environ.get
 
