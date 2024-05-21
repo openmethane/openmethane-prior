@@ -25,9 +25,6 @@ def test_grid_size_for_cmaq_files(root_dir, monkeypatch):
     dotFilePath = os.path.join(cmaqExamplePath, getenv("DOTFILE"))
     geomFilePath = os.path.join(cmaqExamplePath, getenv("GEO_EM"))
 
-    filepath_ds = os.path.join(root_dir, "inputs/om-domain-info.nc")
-    out_om_domain = xr.load_dataset(filepath_ds)
-
     with xr.open_dataset(geomFilePath) as geomXr :
         assert geomXr.DX == expected_cell_size
         assert geomXr.DY == expected_cell_size
