@@ -2,12 +2,19 @@ import pytest
 import os
 import dotenv
 import xarray as xr
+import subprocess
 
+# TODO Update this test when file structure is clear.
+# This test ensures that the grid size for all input files is 10 km.
+# When we re-arrange the files and scripts there may be other
+# thing we want to test as well.
 def test_grid_size_for_cmaq_files(root_dir, monkeypatch):
 
     expected_cell_size = 10000
 
     monkeypatch.chdir(root_dir)
+
+    subprocess.run(["python", "omCreateDomainInfo.py"])
 
     dotenv.load_dotenv()
     getenv = os.environ.get
@@ -18,7 +25,7 @@ def test_grid_size_for_cmaq_files(root_dir, monkeypatch):
     dotFilePath = os.path.join(cmaqExamplePath, getenv("DOTFILE"))
     geomFilePath = os.path.join(cmaqExamplePath, getenv("GEO_EM"))
 
-    filepath_ds = os.path.join(root_dir, "outputs/out-om-domain-info.nc")
+    filepath_ds = os.path.join(root_dir, "inputs/om-domain-info.nc")
     out_om_domain = xr.load_dataset(filepath_ds)
 
     with xr.open_dataset(geomFilePath) as geomXr :
