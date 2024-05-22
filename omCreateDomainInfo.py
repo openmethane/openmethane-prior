@@ -22,26 +22,29 @@ Generate domain file from example domain
 
 from omInputs import domainPath, geomFilePath, croFilePath, dotFilePath
 import xarray as xr
+import os
+
+root_path = os.path.dirname(os.path.realpath(__file__))
 
 domainXr = xr.Dataset()
 
-with xr.open_dataset( geomFilePath) as geomXr:
+with xr.open_dataset( os.path.join(root_path, geomFilePath)) as geomXr:
     for attr in ['DX', 'DY', 'TRUELAT1','TRUELAT2', 'MOAD_CEN_LAT', 'STAND_LON']:
         domainXr.attrs[attr] = geomXr.attrs[attr]
 
-with xr.open_dataset( croFilePath) as croXr:
+with xr.open_dataset( os.path.join(root_path, croFilePath)) as croXr:
     for var in ['LAT','LON']:
         domainXr[var] = croXr[var]
         domainXr[var] = croXr[var].squeeze(dim="LAY", drop=True) # copy but remove the 'LAY' dimension
 
     domainXr['LANDMASK'] = croXr['LWMASK'].squeeze(dim="LAY", drop=True) # copy but remove the 'LAY' dimension
 
-with xr.open_dataset( dotFilePath) as dotXr:
+with xr.open_dataset( os.path.join(root_path, dotFilePath)) as dotXr:
     # some repetition between the geom and grid files here, XCELL=DX and YCELL=DY
     for attr in ['XCELL', 'YCELL']:
         domainXr.attrs[attr] = croXr.attrs[attr]
     for var in ['LATD','LOND']:
         domainXr[var] = dotXr[var].rename({'COL':'COL_D', 'ROW':'ROW_D'})
 
-print(domainPath)
-domainXr.to_netcdf(domainPath)
+print(os.path.join(root_path, domainPath))
+domainXr.to_netcdf(os.path.join(root_path, domainPath))
