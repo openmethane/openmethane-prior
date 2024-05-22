@@ -17,9 +17,9 @@ from omDownloadInputs import download_input_files, sectoralEmissionsPath, remote
 from omUtils import getenv, secsPerYear
 from omInputs import sectoralEmissionsPath, livestockDataPath
 
-@pytest.fixture
-def output_domain_file(root_dir, monkeypatch):
 
+@pytest.fixture(scope="module")
+def output_domain_file(root_dir, monkeypatch) :
     monkeypatch.chdir(root_dir)
 
     print(f"Run {os.path.join(root_dir, 'omDownloadInputs.py')}")
@@ -46,13 +46,9 @@ def output_domain_file(root_dir, monkeypatch):
     os.remove("outputs/out-om-domain-info.nc")
 
 
-
-
-
-
-@pytest.fixture
-def input_files(root_dir):
-
+# Fixture to download and later remove all input files
+@pytest.fixture(scope="module")
+def input_files(root_dir) :
     download_input_files(root_path=root_dir,
                          downloads=downloads,
                          remote=remote)
@@ -67,15 +63,16 @@ def input_files(root_dir):
         filepath = os.path.join(input_folder, file)
         os.remove(filepath)
 
-@pytest.fixture
-def livestock_data(root_dir):
 
+# Fixture to download and later remove only input file for agriculture
+@pytest.fixture(scope="module")
+def livestock_data(root_dir) :
     livestockDataFile = getenv("LIVESTOCK_DATA")
 
     download_input_files(root_path=root_dir,
                          downloads=[
-                                [livestockDataFile, livestockDataPath],
-                                ],
+                             [livestockDataFile, livestockDataPath],
+                         ],
                          remote=remote)
 
     filepath = os.path.join(root_dir, livestockDataPath)
@@ -86,15 +83,15 @@ def livestock_data(root_dir):
 
     os.remove(filepath)
 
-@pytest.fixture
-def sector_data(root_dir):
-
+# Fixture to download and later remove only input file for sectoral emissions file
+@pytest.fixture(scope="module")
+def sector_data(root_dir) :
     sectoralEmissionsFile = getenv("SECTORAL_EMISSIONS")
 
     download_input_files(root_path=root_dir,
                          downloads=[
-        [sectoralEmissionsFile, sectoralEmissionsPath],
-    ],
+                             [sectoralEmissionsFile, sectoralEmissionsPath],
+                         ],
                          remote=remote)
 
     filepath = os.path.join(root_dir, sectoralEmissionsPath)
@@ -105,6 +102,7 @@ def sector_data(root_dir):
 
     os.remove(filepath)
 
+
 def test_001_response_for_download_links() :
     for filename, filepath in downloads :
         url = f"{remote}{filename}"
@@ -112,14 +110,16 @@ def test_001_response_for_download_links() :
             print(f"Response code for {url}: {response.status_code}")
             assert response.status_code == 200
 
-def test_002_inputs_folder_is_empty(root_dir):
+
+def test_002_inputs_folder_is_empty(root_dir) :
     input_folder = os.path.join(root_dir, "inputs")
 
     EXPECTED_FILES = ['README.md']
 
     assert os.listdir(input_folder) == EXPECTED_FILES, f"Folder '{input_folder}' is not empty"
-def test_003_omDownloadInputs(root_dir, input_files) :
 
+
+def test_003_omDownloadInputs(root_dir, input_files) :
     EXPECTED_FILES = [
         "ch4-electricity.csv",
         "coal-mining_emissions-sources.csv",
@@ -137,20 +137,20 @@ def test_003_omDownloadInputs(root_dir, input_files) :
 
     assert sorted(input_files) == sorted(EXPECTED_FILES)
 
-def test_003_agriculture_emissions(root_dir, livestock_data, sector_data) :
 
+def test_003_agriculture_emissions(root_dir, livestock_data, sector_data) :
     lsVal = round(np.sum(livestock_data["CH4_total"].values))
     agVal = round(sector_data["agriculture"] * 1e9)
     agDX = agVal - lsVal
 
     assert agDX > 0, f"Livestock CH4 exceeds bounds of total agriculture CH4: {agDX / 1e9}"
 
+
 # TODO Update this test when file structure is clear.
 # This test ensures that the grid size for all input files is 10 km.
 # When we re-arrange the files and scripts there may be other
 # thing we want to test as well.
-def test_004_grid_size_for_geo_files(root_dir, monkeypatch):
-
+def test_004_grid_size_for_geo_files(root_dir, monkeypatch) :
     expected_cell_size = 10000
 
     monkeypatch.chdir(root_dir)
@@ -173,44 +173,29 @@ def test_004_grid_size_for_geo_files(root_dir, monkeypatch):
         assert croXr.XCELL == expected_cell_size
         assert croXr.YCELL == expected_cell_size
 
-def test_005_output_domain_file(output_domain_file, num_regression, root_dir, monkeypatch):
 
-    mean_values = {key: output_domain_file[key].mean().item() for key in output_domain_file.keys()}
+def test_005_output_domain_file(output_domain_file, num_regression, root_dir, monkeypatch) :
+    mean_values = {key : output_domain_file[key].mean().item() for key in output_domain_file.keys()}
 
     num_regression.check(mean_values)
 
-#
-# def test_002_emission_discrepancy(root_dir):
-#     # Check each layer in the output sums up to the input
-#     with xr.open_dataset(domainOutputPath) as dss :
-#         ds = dss.load()
-#
-#     sectoralEmissionsFile = getenv("SECTORAL_EMISSIONS")
-#
-#     downloads = [
-#         [sectoralEmissionsFile, sectoralEmissionsPath],
-#     ]
-#
-#     download_input_files(root_path=root_dir,
-#                          downloads=downloads,
-#                          remote=remote)
-#
-#     sectorData = pd.read_csv(sectoralEmissionsPath).to_dict(orient="records")[0]
-#
-#     modelAreaM2 = ds.DX * ds.DY
-#     for sector in sectorData.keys() :
-#         layerName = f"OCH4_{sector.upper()}"
-#         sectorVal = float(sectorData[sector]) * 1e9
-#
-#         if layerName in ds :
-#             layerVal = np.sum(ds[layerName][0].values * modelAreaM2 * secsPerYear)
-#
-#             if sector == "agriculture" :
-#                 layerVal += np.sum(ds["OCH4_LIVESTOCK"][0].values * modelAreaM2 * secsPerYear)
-#
-#             diff = round(layerVal - sectorVal)
-#             perectenageDifference = diff / sectorVal * 100
-#
-#             assert abs(perectenageDifference) < 0.1, f"Discrepency of {perectenageDifference}% in {sector} emissions"
-#
-#     os.remove("outputs/out-om-domain-info.nc")
+
+def test_006_emission_discrepancy(root_dir, output_domain_file, sector_data):
+    # Check each layer in the output sums up to the input
+
+
+    modelAreaM2 = output_domain_file.DX * output_domain_file.DY
+    for sector in sector_data.keys() :
+        layerName = f"OCH4_{sector.upper()}"
+        sectorVal = float(sector_data[sector]) * 1e9
+
+        if layerName in output_domain_file :
+            layerVal = np.sum(output_domain_file[layerName][0].values * modelAreaM2 * secsPerYear)
+
+            if sector == "agriculture" :
+                layerVal += np.sum(output_domain_file["OCH4_LIVESTOCK"][0].values * modelAreaM2 * secsPerYear)
+
+            diff = round(layerVal - sectorVal)
+            perectenageDifference = diff / sectorVal * 100
+
+            assert abs(perectenageDifference) < 0.1, f"Discrepency of {perectenageDifference}% in {sector} emissions"
