@@ -138,7 +138,7 @@ def test_003_omDownloadInputs(root_dir, input_files) :
     assert sorted(input_files) == sorted(EXPECTED_FILES)
 
 
-def test_003_agriculture_emissions(root_dir, livestock_data, sector_data) :
+def test_004_agriculture_emissions(root_dir, livestock_data, sector_data) :
     lsVal = round(np.sum(livestock_data["CH4_total"].values))
     agVal = round(sector_data["agriculture"] * 1e9)
     agDX = agVal - lsVal
@@ -150,7 +150,7 @@ def test_003_agriculture_emissions(root_dir, livestock_data, sector_data) :
 # This test ensures that the grid size for all input files is 10 km.
 # When we re-arrange the files and scripts there may be other
 # thing we want to test as well.
-def test_004_grid_size_for_geo_files(root_dir, monkeypatch) :
+def test_005_grid_size_for_geo_files(root_dir, monkeypatch) :
     expected_cell_size = 10000
 
     monkeypatch.chdir(root_dir)
@@ -174,13 +174,13 @@ def test_004_grid_size_for_geo_files(root_dir, monkeypatch) :
         assert croXr.YCELL == expected_cell_size
 
 
-def test_005_output_domain_file(output_domain_file, num_regression, root_dir, monkeypatch) :
+def test_006_output_domain_file(output_domain_file, num_regression, root_dir, monkeypatch) :
     mean_values = {key : output_domain_file[key].mean().item() for key in output_domain_file.keys()}
 
     num_regression.check(mean_values)
 
 
-def test_006_emission_discrepancy(root_dir, output_domain_file, sector_data):
+def test_007_emission_discrepancy(root_dir, output_domain_file, sector_data):
     # Check each layer in the output sums up to the input
 
 
