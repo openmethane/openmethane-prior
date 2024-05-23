@@ -11,24 +11,24 @@ import xarray as xr
 import numpy as np
 import pandas as pd
 import requests
+import datetime
 
 from omOutputs import domainOutputPath
 from omDownloadInputs import download_input_files, sectoralEmissionsPath, remote, downloads
 from omUtils import getenv, secsPerYear
 from omInputs import sectoralEmissionsPath, livestockDataPath
+import cdsapi
+from omGFASEmis import downloadGFAS
 
 
 @pytest.fixture
 def output_domain_file(root_dir, monkeypatch) :
     monkeypatch.chdir(root_dir)
 
-    print(f"Run {os.path.join(root_dir, 'omDownloadInputs.py')}")
     subprocess.run(["python", os.path.join(root_dir, "omDownloadInputs.py")], check=True)
 
-    print(f"Run {os.path.join(root_dir, 'omCreateDomainInfo.py')}")
     subprocess.run(["python", os.path.join(root_dir, "omCreateDomainInfo.py")], check=True)
 
-    print(f"Run {os.path.join(root_dir, 'omPrior.py')}")
     subprocess.run(["python", os.path.join(root_dir, "omPrior.py"), "2022-07-01", "2022-07-02"], check=True)
 
     filepath_ds = os.path.join(root_dir, "outputs/out-om-domain-info.nc")
@@ -83,6 +83,7 @@ def livestock_data(root_dir) :
 
     os.remove(filepath)
 
+
 # Fixture to download and later remove only input file for sectoral emissions file
 @pytest.fixture
 def sector_data(root_dir) :
@@ -111,7 +112,20 @@ def test_001_response_for_download_links() :
             assert response.status_code == 200
 
 
-def test_002_inputs_folder_is_empty(root_dir) :
+def test_002_cdsapi_connection(root_dir) :
+    # TODO use a temporary directory instead
+    filepath = os.path.join(root_dir, "tests/test_download_cdsapi.nc")
+    startDate = datetime.datetime.strptime("2022-07-01", "%Y-%m-%d")
+    endDate = datetime.datetime.strptime("2022-07-02", "%Y-%m-%d")
+
+    downloadGFAS(startDate=startDate, endDate=endDate, fileName=filepath)
+
+    assert os.path.exists(filepath)
+
+    os.remove(filepath)
+
+
+def test_003_inputs_folder_is_empty(root_dir) :
     input_folder = os.path.join(root_dir, "inputs")
 
     EXPECTED_FILES = ['README.md']
@@ -119,7 +133,7 @@ def test_002_inputs_folder_is_empty(root_dir) :
     assert os.listdir(input_folder) == EXPECTED_FILES, f"Folder '{input_folder}' is not empty"
 
 
-def test_003_omDownloadInputs(root_dir, input_files) :
+def test_004_omDownloadInputs(root_dir, input_files) :
     EXPECTED_FILES = [
         "ch4-electricity.csv",
         "coal-mining_emissions-sources.csv",
@@ -138,7 +152,7 @@ def test_003_omDownloadInputs(root_dir, input_files) :
     assert sorted(input_files) == sorted(EXPECTED_FILES)
 
 
-def test_004_agriculture_emissions(root_dir, livestock_data, sector_data) :
+def test_005_agriculture_emissions(root_dir, livestock_data, sector_data) :
     lsVal = round(np.sum(livestock_data["CH4_total"].values))
     agVal = round(sector_data["agriculture"] * 1e9)
     agDX = agVal - lsVal
@@ -150,7 +164,7 @@ def test_004_agriculture_emissions(root_dir, livestock_data, sector_data) :
 # This test ensures that the grid size for all input files is 10 km.
 # When we re-arrange the files and scripts there may be other
 # thing we want to test as well.
-def test_005_grid_size_for_geo_files(root_dir, monkeypatch) :
+def test_006_grid_size_for_geo_files(root_dir, monkeypatch) :
     expected_cell_size = 10000
 
     monkeypatch.chdir(root_dir)
@@ -174,21 +188,20 @@ def test_005_grid_size_for_geo_files(root_dir, monkeypatch) :
         assert croXr.YCELL == expected_cell_size
 
 
-def test_006_output_domain_file(output_domain_file, num_regression, root_dir, monkeypatch) :
+def test_007_output_domain_file(output_domain_file, num_regression, root_dir, monkeypatch) :
     mean_values = {key : output_domain_file[key].mean().item() for key in output_domain_file.keys()}
 
     num_regression.check(mean_values)
 
 
-def test_007_emission_discrepancy(root_dir, output_domain_file, sector_data):
-    # Check each layer in the output sums up to the input
-
-
+def test_008_emission_discrepancy(root_dir, output_domain_file, sector_data) :
     modelAreaM2 = output_domain_file.DX * output_domain_file.DY
     for sector in sector_data.keys() :
+
         layerName = f"OCH4_{sector.upper()}"
         sectorVal = float(sector_data[sector]) * 1e9
 
+        # Check each layer in the output sums up to the input
         if layerName in output_domain_file :
             layerVal = np.sum(output_domain_file[layerName][0].values * modelAreaM2 * secsPerYear)
 
