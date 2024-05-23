@@ -18,7 +18,7 @@ from omUtils import getenv, secsPerYear
 from omInputs import sectoralEmissionsPath, livestockDataPath
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 def output_domain_file(root_dir, monkeypatch) :
     monkeypatch.chdir(root_dir)
 
@@ -47,7 +47,7 @@ def output_domain_file(root_dir, monkeypatch) :
 
 
 # Fixture to download and later remove all input files
-@pytest.fixture(scope="session")
+@pytest.fixture
 def input_files(root_dir) :
     download_input_files(root_path=root_dir,
                          downloads=downloads,
@@ -65,7 +65,7 @@ def input_files(root_dir) :
 
 
 # Fixture to download and later remove only input file for agriculture
-@pytest.fixture(scope="session")
+@pytest.fixture
 def livestock_data(root_dir) :
     livestockDataFile = getenv("LIVESTOCK_DATA")
 
@@ -84,7 +84,7 @@ def livestock_data(root_dir) :
     os.remove(filepath)
 
 # Fixture to download and later remove only input file for sectoral emissions file
-@pytest.fixture(scope="session")
+@pytest.fixture
 def sector_data(root_dir) :
     sectoralEmissionsFile = getenv("SECTORAL_EMISSIONS")
 
