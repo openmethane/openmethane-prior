@@ -44,7 +44,7 @@ runs:
         source ${{ inputs.venv-dir }}/bin/activate
         python -m pip install -r requirements.txt
         python -m pip install -r requirements-dev.txt
-        python pip install -e .
+        python -m pip install -e .
         echo "VIRTUAL_ENV=${VIRTUAL_ENV}" >> $GITHUB_ENV
         echo "${VIRTUAL_ENV}/bin" >> $GITHUB_PATH
 
