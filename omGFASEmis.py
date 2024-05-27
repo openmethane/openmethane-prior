@@ -75,9 +75,9 @@ def processEmissions(startDate, endDate, **kwargs): # doms, GFASfolder, GFASfile
         forceUpdate = kwargs['forceUpdate']
     except KeyError:
         forceUpdate = False
-    # TODO: Switch back to downloading GFASfile. Only fo testing purposes
-    # GFASfile = downloadGFAS( startDate, endDate)
-    GFASfile = GFASDownloadPath
+            
+    GFASfile = downloadGFAS( startDate, endDate)
+    #GFASfile = GFASDownloadPath
     ncin = nc.Dataset(GFASfile, 'r', format='NETCDF3')
     latGfas  = np.around(np.float64(ncin.variables['latitude'][:]),3)
     latGfas = latGfas[::-1] # they're originally north-south, we want them south north

@@ -9,7 +9,6 @@ experiments
 !outputs/README.md
 !inputs/README.md
 !intermediates/README.md
-!intermediates/gfas-download.nc
 .vscode/launch.json
 .vscode/settings.json
 domain.ipynb
