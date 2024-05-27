@@ -48,3 +48,8 @@ runs:
         echo "${VIRTUAL_ENV}/bin" >> $GITHUB_PATH
 
       shell: bash
+
+    - run: echo "$CDSAPIRC" > ~/.cdsapirc
+      env:
+        CDSAPIRC: ${{ secrets.CDSAPIRC }}
+      shell: bash

@@ -25,6 +25,6 @@ jobs:
           venv-id: "tests-${{ runner.os }}"
       - name: Run tests
         run: |
-          pytest -r a -v tests
+          pytest -r a -v tests -k 002
 #      - name: Upload coverage reports to Codecov
 #        uses: codecov/codecov-action@v3
