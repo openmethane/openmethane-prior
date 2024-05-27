@@ -28,6 +28,6 @@ jobs:
         shell: bash
       - name: Run tests
         run: |
-          pytest -r a -v tests -k 007
+          pytest -r a -v tests
 #      - name: Upload coverage reports to Codecov
 #        uses: codecov/codecov-action@v3
