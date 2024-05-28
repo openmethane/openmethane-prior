@@ -27,10 +27,10 @@ import numpy as np
 import pyproj
 import rioxarray as rxr
 import xarray as xr
-from omInputs import domainProj, livestockDataPath, sectoralEmissionsPath, sectoralMappingsPath
-from omInputs import domainXr as ds
-from omOutputs import convertToTimescale, landuseReprojectionPath, sumLayers, writeLayer
-from omUtils import area_of_rectangle_m2, secsPerYear
+from openmethane_prior.omInputs import domainProj, livestockDataPath, sectoralEmissionsPath, sectoralMappingsPath
+from openmethane_prior.omInputs import domainXr as ds
+from openmethane_prior.omOutputs import convertToTimescale, landuseReprojectionPath, sumLayers, writeLayer
+from openmethane_prior.omUtils import area_of_rectangle_m2, secsPerYear
 from tqdm import tqdm
 
 

@@ -27,12 +27,12 @@ the required credentials.
 import numpy as np
 import netCDF4 as nc
 import xarray as xr 
-from omInputs import domainXr
-from omOutputs import writeLayer, intermediatesPath, sumLayers
+from openmethane_prior.omInputs import domainXr
+from openmethane_prior.omOutputs import writeLayer, intermediatesPath, sumLayers
 import cdsapi
 import itertools
 import datetime
-import omUtils
+from openmethane_prior.omUtils import area_of_rectangle_m2, redistribute_spatially, load_zipped_pickle, save_zipped_pickle
 import os
 from shapely import geometry
 import bisect
@@ -106,7 +106,7 @@ def processEmissions(startDate, endDate, **kwargs): # doms, GFASfolder, GFASfile
     GFASAreas = np.zeros((nlatGfas,nlonGfas))
     # take advantage of  regular grid to compute areas equal for each gridbox at same latitude
     for iy in range(nlatGfas):
-        GFASAreas[iy,:] = omUtils.area_of_rectangle_m2(latGfas_edge[iy],latGfas_edge[iy+1],lonGfas_edge[0],lonGfas_edge[-1])/lonGfas.size
+        GFASAreas[iy,:] = area_of_rectangle_m2(latGfas_edge[iy], latGfas_edge[iy + 1], lonGfas_edge[0], lonGfas_edge[-1]) / lonGfas.size
     # now collect some domain information
     LATD = domainXr['LATD'][:].values.squeeze()
     LOND = domainXr['LOND'].values.squeeze()
@@ -120,9 +120,9 @@ def processEmissions(startDate, endDate, **kwargs): # doms, GFASfolder, GFASfile
     coefsPath = "{}/GFAS_coefs.p.gz".format(intermediatesPath)
 
     if os.path.exists(indxPath) and os.path.exists(indyPath) and os.path.exists(coefsPath) and (not forceUpdate):
-        ind_x = omUtils.load_zipped_pickle( indxPath )
-        ind_y = omUtils.load_zipped_pickle( indyPath )
-        coefs = omUtils.load_zipped_pickle( coefsPath )
+        ind_x = load_zipped_pickle(indxPath)
+        ind_y = load_zipped_pickle(indyPath)
+        coefs = load_zipped_pickle(coefsPath)
         ##
         domShape = []
         domShape.append(LAT.shape)
@@ -181,9 +181,9 @@ def processEmissions(startDate, endDate, **kwargs): # doms, GFASfolder, GFASfile
             coefs.append(COEFS)
         count.append(count2)
         ##
-        omUtils.save_zipped_pickle(ind_x, indxPath )
-        omUtils.save_zipped_pickle(ind_y, indyPath )
-        omUtils.save_zipped_pickle(coefs, coefsPath )
+        save_zipped_pickle(ind_x, indxPath)
+        save_zipped_pickle(ind_y, indyPath)
+        save_zipped_pickle(coefs, coefsPath)
         
     resultNd = [] # will become ndarray
     dates = []
@@ -193,7 +193,7 @@ def processEmissions(startDate, endDate, **kwargs): # doms, GFASfolder, GFASfile
         dates.append( startDate + datetime.timedelta( days=i))
         subset = ncin['ch4fire'][i,...]
         subset = subset[::-1,:] # they're listed north-south, we want them south north
-        resultNd.append( omUtils.redistribute_spatially(LAT.shape, ind_x, ind_y, coefs, subset, GFASAreas, cmaqAreas))
+        resultNd.append(redistribute_spatially(LAT.shape, ind_x, ind_y, coefs, subset, GFASAreas, cmaqAreas))
     resultNd = np.array( resultNd)
     resultNd = np.expand_dims( resultNd, 1) # adding dummy layer dimension 
     resultXr = xr.DataArray( resultNd, coords={'date':dates, 'LAY':np.array([1]),\
@@ -228,7 +228,7 @@ def testGFASEmis( startDate, endDate, **kwargs): # test totals for GFAS emission
     areas = np.zeros((nlatGfas,nlonGfas))
 # take advantage of  regular grid to compute areas equal for each gridbox at same latitude
     for iy in range(nlatGfas):
-        areas[iy,:] = omUtils.area_of_rectangle_m2(latGfas_edge[iy],latGfas_edge[iy+1],lonGfas_edge[0],lonGfas_edge[-1])/lonGfas.size
+        areas[iy,:] = area_of_rectangle_m2(latGfas_edge[iy], latGfas_edge[iy + 1], lonGfas_edge[0], lonGfas_edge[-1]) / lonGfas.size
     LATD = domainXr.variables['LATD'].values.squeeze()
     LOND = domainXr.variables['LOND'].values.squeeze()
     indLat = (latGfas > LATD.min()) &( latGfas < LATD.max())

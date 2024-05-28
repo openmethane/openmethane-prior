@@ -22,10 +22,10 @@ Processing termite Methane emissions
 
 import numpy as np
 import netCDF4 as nc
-from omInputs import domainXr, termitePath
-from omOutputs import writeLayer, intermediatesPath, sumLayers
+from openmethane_prior.omInputs import domainXr, termitePath
+from openmethane_prior.omOutputs import writeLayer, intermediatesPath, sumLayers
 import itertools
-import omUtils
+from openmethane_prior.omUtils import area_of_rectangle_m2, load_zipped_pickle, save_zipped_pickle, secsPerYear, redistribute_spatially
 import os
 from shapely import geometry
 import bisect
@@ -72,7 +72,7 @@ def processEmissions(**kwargs): # doms, GFASfolder, GFASfile, metDir, ctmDir, CM
     termAreas = np.zeros((nlatTerm,nlonTerm))
     # take advantage of  regular grid to compute areas equal for each gridbox at same latitude
     for iy in range(nlatTerm):
-        termAreas[iy,:] = omUtils.area_of_rectangle_m2(latTerm_edge[iy],latTerm_edge[iy+1],lonTerm_edge[0],lonTerm_edge[-1])/lonTerm.size
+        termAreas[iy,:] = area_of_rectangle_m2(latTerm_edge[iy], latTerm_edge[iy + 1], lonTerm_edge[0], lonTerm_edge[-1]) / lonTerm.size
     # now collect some domain information
     LATD = domainXr['LATD'][:].values.squeeze()
     LOND = domainXr['LOND'].values.squeeze()
@@ -85,9 +85,9 @@ def processEmissions(**kwargs): # doms, GFASfolder, GFASfile, metDir, ctmDir, CM
     coefsPath = "{}/TERM_coefs.p.gz".format(intermediatesPath)
 
     if os.path.exists(indxPath) and os.path.exists(indyPath) and os.path.exists(coefsPath) and (not forceUpdate):
-        ind_x = omUtils.load_zipped_pickle( indxPath )
-        ind_y = omUtils.load_zipped_pickle( indyPath )
-        coefs = omUtils.load_zipped_pickle( coefsPath )
+        ind_x = load_zipped_pickle(indxPath)
+        ind_y = load_zipped_pickle(indyPath)
+        coefs = load_zipped_pickle(coefsPath)
         ##
         domShape = []
         domShape.append(LAT.shape)
@@ -146,9 +146,9 @@ def processEmissions(**kwargs): # doms, GFASfolder, GFASfile, metDir, ctmDir, CM
             coefs.append(COEFS)
         count.append(count2)
         ##
-        omUtils.save_zipped_pickle(ind_x, indxPath )
-        omUtils.save_zipped_pickle(ind_y, indyPath )
-        omUtils.save_zipped_pickle(coefs, coefsPath )
+        save_zipped_pickle(ind_x, indxPath)
+        save_zipped_pickle(ind_y, indyPath)
+        save_zipped_pickle(coefs, coefsPath)
         
     subset = ncin['ch4_emissions_2010_2016.asc'][...] # is masked array
     subset=subset.data # grab value
@@ -156,8 +156,8 @@ def processEmissions(**kwargs): # doms, GFASfolder, GFASfile, metDir, ctmDir, CM
     subset = subset[-1::-1,:] # reverse latitudes
     subset *= 1e9/termAreas # converting from mtCH4/gridcell to kg/m^2
     cmaqAreas = np.ones( LAT.shape) * cmaqArea   # all grid cells equal area
-    resultNd= omUtils.redistribute_spatially(LAT.shape, ind_x, ind_y, coefs, subset, termAreas, cmaqAreas)
-    resultNd /= omUtils.secsPerYear
+    resultNd= redistribute_spatially(LAT.shape, ind_x, ind_y, coefs, subset, termAreas, cmaqAreas)
+    resultNd /= secsPerYear
     ncin.close()
     
     writeLayer( 'OCH4_TERMITE', resultNd)
@@ -189,7 +189,7 @@ def testTermiteEmis(**kwargs): # test totals for TERM emissions between original
     areas = np.zeros((nlatTerm,nlonTerm))
 # take advantage of  regular grid to compute areas equal for each gridbox at same latitude
     for iy in range(nlatTerm):
-        areas[iy,:] = omUtils.area_of_rectangle_m2(latTerm_edge[iy],latTerm_edge[iy+1],lonTerm_edge[0],lonTerm_edge[-1])/lonTerm.size
+        areas[iy,:] = area_of_rectangle_m2(latTerm_edge[iy], latTerm_edge[iy + 1], lonTerm_edge[0], lonTerm_edge[-1]) / lonTerm.size
     LATD = domainXr.variables['LATD'].values.squeeze()
     LOND = domainXr.variables['LOND'].values.squeeze()
     indLat = (latTerm > LATD.min()) &( latTerm < LATD.max())

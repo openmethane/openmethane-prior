@@ -3,6 +3,8 @@ outputs
 inputs
 intermediates
 experiments
+dist
+src/openmethane_prior.egg-info/
 .env
 .idea
 

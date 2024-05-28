@@ -20,9 +20,9 @@
 Utilities for verifying the generated output file
 """
 
-from omInputs import sectoralEmissionsPath, livestockDataPath, domainXr as ds
-from omOutputs import domainOutputPath
-from omUtils import secsPerYear
+from openmethane_prior.omInputs import sectoralEmissionsPath, livestockDataPath, domainXr as ds
+from openmethane_prior.omOutputs import domainOutputPath
+from openmethane_prior.omUtils import secsPerYear
 import pandas as pd
 import xarray as xr
 import numpy as np
