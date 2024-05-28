@@ -23,8 +23,9 @@ Generate domain file from example domain
 from openmethane_prior.omInputs import domainPath, geomFilePath, croFilePath, dotFilePath
 import xarray as xr
 import os
+from pathlib import Path
 
-root_path = os.path.dirname(os.path.realpath(__file__))
+root_path = Path(__file__).parent.parent
 
 domainXr = xr.Dataset()
 

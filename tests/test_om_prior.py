@@ -1,10 +1,5 @@
 import sys
 import os
-
-# TODO With the new folder structure, the next lines will become obsolete
-# insert root directory into python module search path
-sys.path.insert(1, os.getcwd())
-
 import subprocess
 import pytest
 import xarray as xr
@@ -12,24 +7,32 @@ import numpy as np
 import pandas as pd
 import requests
 import datetime
+from pathlib import Path
 
-from omOutputs import domainOutputPath
+from openmethane_prior.omUtils import getenv, secsPerYear
+from openmethane_prior.omInputs import sectoralEmissionsPath, livestockDataPath
+from openmethane_prior.layers.omGFASEmis import downloadGFAS
+
+# TODO Why can I not access my pytest fixture `root_dir` here?
+root_path = Path(__file__).parent.parent
+# TODO: This seems messy. Is there another way?
+# insert scripts directory into python module search path
+sys.path.insert(1, os.path.join(root_path, "scripts"))
 from omDownloadInputs import download_input_files, sectoralEmissionsPath, remote, downloads
-from omUtils import getenv, secsPerYear
-from omInputs import sectoralEmissionsPath, livestockDataPath
-import cdsapi
-from omGFASEmis import downloadGFAS
 
 
-@pytest.fixture
-def output_domain_file(root_dir, monkeypatch) :
-    monkeypatch.chdir(root_dir)
+@pytest.fixture(scope="session")
+def output_domain_file(root_dir,
+                       # monkeypatch,
+                       ) :
 
-    subprocess.run(["python", os.path.join(root_dir, "omDownloadInputs.py")], check=True)
+    # monkeypatch.chdir(root_dir)
 
-    subprocess.run(["python", os.path.join(root_dir, "omCreateDomainInfo.py")], check=True)
+    subprocess.run(["python", os.path.join(root_dir, "scripts/omDownloadInputs.py")], check=True)
 
-    subprocess.run(["python", os.path.join(root_dir, "omPrior.py"), "2022-07-01", "2022-07-02"], check=True)
+    subprocess.run(["python", os.path.join(root_dir, "scripts/omCreateDomainInfo.py")], check=True)
+
+    subprocess.run(["python", os.path.join(root_dir, "scripts/omPrior.py"), "2022-07-01", "2022-07-02"], check=True)
 
     filepath_ds = os.path.join(root_dir, "outputs/out-om-domain-info.nc")
 
@@ -47,7 +50,7 @@ def output_domain_file(root_dir, monkeypatch) :
 
 
 # Fixture to download and later remove all input files
-@pytest.fixture
+@pytest.fixture(scope="session")
 def input_files(root_dir) :
     download_input_files(root_path=root_dir,
                          downloads=downloads,
@@ -65,7 +68,7 @@ def input_files(root_dir) :
 
 
 # Fixture to download and later remove only input file for agriculture
-@pytest.fixture
+@pytest.fixture(scope="session")
 def livestock_data(root_dir) :
     livestockDataFile = getenv("LIVESTOCK_DATA")
 
@@ -85,7 +88,7 @@ def livestock_data(root_dir) :
 
 
 # Fixture to download and later remove only input file for sectoral emissions file
-@pytest.fixture
+@pytest.fixture(scope="session")
 def sector_data(root_dir) :
     sectoralEmissionsFile = getenv("SECTORAL_EMISSIONS")
 
