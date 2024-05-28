@@ -29,10 +29,10 @@ import requests
 import os
 from openmethane_prior.omUtils import getenv
 
-root_path = os.path.dirname(os.path.realpath(__file__))
-# go one up because this file now lives in the scripts folde
+scripts_path = os.path.dirname(os.path.realpath(__file__))
+# go one up because this file now lives in the scripts folder
 # TODO! We could also use Pathlib for this step.
-root_path = os.path.abspath(os.path.join(root_path, os.pardir))
+root_path = os.path.abspath(os.path.join(scripts_path, os.pardir))
 
 remote = getenv("PRIOR_REMOTE")
 
