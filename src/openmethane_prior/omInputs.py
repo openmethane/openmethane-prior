@@ -26,7 +26,8 @@ See the License for the specific language governing permissions and limitations 
 """
 
 import os
-from omUtils import getenv
+from openmethane_prior.omUtils import getenv
+from openmethane_prior import omOutputs
 
 inputsPath = getenv("INPUTS")
 cmaqExamplePath = getenv("CMAQ_EXAMPLE")
@@ -60,7 +61,7 @@ geomFilePath = os.path.join(cmaqExamplePath, getenv("GEO_EM"))
 import pyproj
 import samgeo.common as sam
 import xarray as xr
-import omOutputs
+import openmethane_prior.omOutputs
 
 # list of layers that will be in the output file
 omLayers = ["agriculture","electricity","fugitive","industrial","lulucf","stationary","transport","waste","livestock","fire","wetlands","termite"]

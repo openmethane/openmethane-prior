@@ -4,7 +4,7 @@ import sys
 # insert root directory into python module search path
 sys.path.insert(1, os.getcwd())
 
-from omDownloadInputs import root_path, downloads, remote, download_input_files
+from scripts.omDownloadInputs import root_path, downloads, remote, download_input_files
 
 import requests
 from pathlib import Path

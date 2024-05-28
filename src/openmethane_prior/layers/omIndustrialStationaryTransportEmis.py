@@ -23,8 +23,8 @@ Processing industrual stationary transport emissions
 import numpy as np
 import xarray as xr
 import rioxarray as rxr
-from omInputs import sectoralEmissionsPath, auShapefilePath, domainXr as ds, domainProj, reprojectRasterInputs
-from omOutputs import ntlReprojectionPath, writeLayer, convertToTimescale, sumLayers
+from openmethane_prior.omInputs import sectoralEmissionsPath, auShapefilePath, domainXr as ds, domainProj
+from openmethane_prior.omOutputs import ntlReprojectionPath, writeLayer, convertToTimescale, sumLayers
 import pandas as pd
 import geopandas
 

@@ -20,7 +20,7 @@
 Generate domain file from example domain
 """
 
-from omInputs import domainPath, geomFilePath, croFilePath, dotFilePath
+from openmethane_prior.omInputs import domainPath, geomFilePath, croFilePath, dotFilePath
 import xarray as xr
 
 domainXr = xr.Dataset()

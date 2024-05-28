@@ -21,8 +21,8 @@ Process fugitive Methane emissions
 """
 
 import numpy as np
-from omInputs import coalPath, oilGasPath, sectoralEmissionsPath, domainXr as ds, domainProj
-from omOutputs import writeLayer, convertToTimescale, sumLayers
+from openmethane_prior.omInputs import coalPath, oilGasPath, sectoralEmissionsPath, domainXr as ds, domainProj
+from openmethane_prior.omOutputs import writeLayer, convertToTimescale, sumLayers
 import argparse
 import datetime
 import pandas as pd

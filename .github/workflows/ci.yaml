@@ -7,8 +7,8 @@ on:
     tags: ['v*']
 
 jobs:
-
   tests:
+    timeout-minutes: 10
     strategy:
       fail-fast: false
       matrix:
@@ -22,6 +22,10 @@ jobs:
         with:
           python-version: "${{ matrix.python-version }}"
           venv-id: "tests-${{ runner.os }}"
+      - run: echo "$CDSAPIRC" > ~/.cdsapirc
+        env:
+          CDSAPIRC: ${{ secrets.CDSAPIRC }}
+        shell: bash
       - name: Run tests
         run: |
           pytest -r a -v tests
