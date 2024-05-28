@@ -68,43 +68,43 @@ def input_files(root_dir) :
 
 
 # Fixture to download and later remove only input file for agriculture
-@pytest.fixture(scope="session")
-def livestock_data(root_dir) :
-    livestockDataFile = getenv("LIVESTOCK_DATA")
-
-    download_input_files(root_path=root_dir,
-                         downloads=[
-                             [livestockDataFile, livestockDataPath],
-                         ],
-                         remote=remote)
-
-    filepath = os.path.join(root_dir, livestockDataPath)
-
-    livestock_data_xr = xr.open_dataset(filepath)
-
-    yield livestock_data_xr
-
-    os.remove(filepath)
-
-
-# Fixture to download and later remove only input file for sectoral emissions file
-@pytest.fixture(scope="session")
-def sector_data(root_dir) :
-    sectoralEmissionsFile = getenv("SECTORAL_EMISSIONS")
-
-    download_input_files(root_path=root_dir,
-                         downloads=[
-                             [sectoralEmissionsFile, sectoralEmissionsPath],
-                         ],
-                         remote=remote)
-
-    filepath = os.path.join(root_dir, sectoralEmissionsPath)
-
-    sector_data_pd = pd.read_csv(filepath).to_dict(orient="records")[0]
-
-    yield sector_data_pd
-
-    os.remove(filepath)
+# @pytest.fixture(scope="session")
+# def livestock_data(root_dir) :
+#     livestockDataFile = getenv("LIVESTOCK_DATA")
+#
+#     download_input_files(root_path=root_dir,
+#                          downloads=[
+#                              [livestockDataFile, livestockDataPath],
+#                          ],
+#                          remote=remote)
+#
+#     filepath = os.path.join(root_dir, livestockDataPath)
+#
+#     livestock_data_xr = xr.open_dataset(filepath)
+#
+#     yield livestock_data_xr
+#
+#     os.remove(filepath)
+#
+#
+# # Fixture to download and later remove only input file for sectoral emissions file
+# @pytest.fixture(scope="session")
+# def sector_data(root_dir) :
+#     sectoralEmissionsFile = getenv("SECTORAL_EMISSIONS")
+#
+#     download_input_files(root_path=root_dir,
+#                          downloads=[
+#                              [sectoralEmissionsFile, sectoralEmissionsPath],
+#                          ],
+#                          remote=remote)
+#
+#     filepath = os.path.join(root_dir, sectoralEmissionsPath)
+#
+#     sector_data_pd = pd.read_csv(filepath).to_dict(orient="records")[0]
+#
+#     yield sector_data_pd
+#
+#     os.remove(filepath)
 
 
 def test_001_response_for_download_links() :
@@ -155,7 +155,14 @@ def test_004_omDownloadInputs(root_dir, input_files) :
     assert sorted(input_files) == sorted(EXPECTED_FILES)
 
 
-def test_005_agriculture_emissions(root_dir, livestock_data, sector_data) :
+def test_005_agriculture_emissions(root_dir, input_files) :
+
+    filepath_livestock = os.path.join(root_dir, livestockDataPath)
+    livestock_data = xr.open_dataset(filepath_livestock)
+
+    filepath_sector = os.path.join(root_dir, sectoralEmissionsPath)
+    sector_data = pd.read_csv(filepath_sector).to_dict(orient="records")[0]
+
     lsVal = round(np.sum(livestock_data["CH4_total"].values))
     agVal = round(sector_data["agriculture"] * 1e9)
     agDX = agVal - lsVal
