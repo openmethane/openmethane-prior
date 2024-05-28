@@ -15,6 +15,7 @@ from openmethane_prior.layers.omGFASEmis import downloadGFAS
 
 # TODO Why can I not access my pytest fixture `root_dir` here?
 root_path = Path(__file__).parent.parent
+
 # TODO: This seems messy. Is there another way?
 # insert scripts directory into python module search path
 sys.path.insert(1, os.path.join(root_path, "scripts"))
@@ -206,8 +207,12 @@ def test_007_output_domain_file(output_domain_file, num_regression, root_dir, mo
     num_regression.check(mean_values)
 
 
-def test_008_emission_discrepancy(root_dir, output_domain_file, sector_data) :
+def test_008_emission_discrepancy(root_dir, output_domain_file, input_files) :
     modelAreaM2 = output_domain_file.DX * output_domain_file.DY
+
+    filepath_sector = os.path.join(root_dir, sectoralEmissionsPath)
+    sector_data = pd.read_csv(filepath_sector).to_dict(orient="records")[0]
+
     for sector in sector_data.keys() :
 
         layerName = f"OCH4_{sector.upper()}"
