@@ -62,7 +62,9 @@ def input_files(root_dir) :
 
     yield downloaded_files
 
-    for file in [i for i in downloaded_files if i != 'README.md'] :
+    downloaded_files_to_delete = os.listdir(input_folder)
+
+    for file in [i for i in downloaded_files_to_delete if i != 'README.md'] :
         filepath = os.path.join(input_folder, file)
         os.remove(filepath)
 
