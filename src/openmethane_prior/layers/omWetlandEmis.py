@@ -23,12 +23,12 @@ Processing wetland emissions
 import numpy as np
 import netCDF4 as nc
 import xarray as xr
-from ..omInputs import domainXr, wetlandPath
-from ..omOutputs import writeLayer, intermediatesPath, sumLayers
+from openmethane_prior.omInputs import domainXr, wetlandPath
+from openmethane_prior.omOutputs import writeLayer, intermediatesPath, sumLayers
 import argparse
 import itertools
 import datetime
-from ..omUtils import area_of_rectangle_m2, load_zipped_pickle, save_zipped_pickle, redistribute_spatially, \
+from openmethane_prior.omUtils import area_of_rectangle_m2, load_zipped_pickle, save_zipped_pickle, redistribute_spatially, \
     date_time_range
 import os
 from shapely import geometry

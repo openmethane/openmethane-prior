@@ -22,10 +22,10 @@ Processing termite Methane emissions
 
 import numpy as np
 import netCDF4 as nc
-from ..omInputs import domainXr, termitePath
-from ..omOutputs import writeLayer, intermediatesPath, sumLayers
+from openmethane_prior.omInputs import domainXr, termitePath
+from openmethane_prior.omOutputs import writeLayer, intermediatesPath, sumLayers
 import itertools
-from ..omUtils import area_of_rectangle_m2, load_zipped_pickle, save_zipped_pickle, secsPerYear, redistribute_spatially
+from openmethane_prior.omUtils import area_of_rectangle_m2, load_zipped_pickle, save_zipped_pickle, secsPerYear, redistribute_spatially
 import os
 from shapely import geometry
 import bisect

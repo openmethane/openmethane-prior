@@ -27,12 +27,12 @@ the required credentials.
 import numpy as np
 import netCDF4 as nc
 import xarray as xr 
-from ..omInputs import domainXr
-from ..omOutputs import writeLayer, intermediatesPath, sumLayers
+from openmethane_prior.omInputs import domainXr
+from openmethane_prior.omOutputs import writeLayer, intermediatesPath, sumLayers
 import cdsapi
 import itertools
 import datetime
-from ..omUtils import area_of_rectangle_m2, redistribute_spatially, load_zipped_pickle, save_zipped_pickle
+from openmethane_prior.omUtils import area_of_rectangle_m2, redistribute_spatially, load_zipped_pickle, save_zipped_pickle
 import os
 from shapely import geometry
 import bisect
