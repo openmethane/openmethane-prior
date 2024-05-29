@@ -25,10 +25,10 @@ from openmethane_prior.omInputs import domainXr, domainProj
 from openmethane_prior.omOutputs import domainJSONOutputPath
 import json
 
-def makePoint(x, y):
+def make_point(x, y):
     return ([float(x), float(y)])
 
-def writeDomainJSON():
+def write_domain_json(output_file):
     # Load raster land-use data
     print("converting domain grid details to JSON")
 
@@ -59,18 +59,18 @@ def writeDomainJSON():
             "projection_x_coordinate": int(x),
             "projection_y_coordinate": int(y),
             "landmask": int(domainXr["LANDMASK"].item(0, y, x)),
-            "center_latlon": makePoint(domainXr["LAT"].item(0, y, x), domainXr["LON"].item(0, y, x)),
+            "center_latlon": make_point(domainXr["LAT"].item(0, y, x), domainXr["LON"].item(0, y, x)),
             "corner_latlons": [
-              makePoint(domainXr["LATD"].item(0, 0, y, x),         domainXr["LOND"].item(0, 0, y, x)),
-              makePoint(domainXr["LATD"].item(0, 0, y, x + 1),     domainXr["LOND"].item(0, 0, y, x + 1)),
-              makePoint(domainXr["LATD"].item(0, 0, y + 1, x + 1), domainXr["LOND"].item(0, 0, y + 1, x + 1)),
-              makePoint(domainXr["LATD"].item(0, 0, y + 1, x),     domainXr["LOND"].item(0, 0, y + 1, x)),
+              make_point(domainXr["LATD"].item(0, 0, y, x),         domainXr["LOND"].item(0, 0, y, x)),
+              make_point(domainXr["LATD"].item(0, 0, y, x + 1),     domainXr["LOND"].item(0, 0, y, x + 1)),
+              make_point(domainXr["LATD"].item(0, 0, y + 1, x + 1), domainXr["LOND"].item(0, 0, y + 1, x + 1)),
+              make_point(domainXr["LATD"].item(0, 0, y + 1, x),     domainXr["LOND"].item(0, 0, y + 1, x)),
             ],
         }
         domain["grid_cells"].append(cell_properties);
 
-    with open(domainJSONOutputPath, "w") as fp:
-        json.dump(domain, fp)
+    json.dump(domain, output_file)
 
 if __name__ == '__main__':
-    writeDomainJSON()
+    with open(domainJSONOutputPath, "w") as fp:
+        write_domain_json(fp)
