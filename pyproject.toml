@@ -1,20 +1,44 @@
-[project]
+[tool.poetry]
 name = "openmethane_prior"
 version = "0.0.1"
-authors = [
-  { name="Placeholder Author", email="placeholder@example.com" },
-]
 description = "Method to calculate a gridded, prior emissions estimate for methane across Australia."
+authors = [
+     "Peter Rayner <peter.rayner@superpowerinstitute.com.au>",
+     "Gerard Mason <gerard.mason@superpowerinstitute.com.au>",
+     "Jared Lewis <jared.lewis@climate-resource.com>",
+     "Daniel Busch <daniel.busch@climate-resource.com>",
+]
 readme = "README.md"
-requires-python = ">=3.10, <3.11"
-classifiers = [
-    "Programming Language :: Python :: 3",
-    "Operating System :: OS Independent",
+packages = [
+    {include = "openmethane_prior", from = "src"},
 ]
 
+[tool.poetry.dependencies]
+python = ">=3.11,<3.12"
+numpy = "^1.26.4"
+netcdf4 = "^1.6.5"
+xarray = "^2024.5.0"
+rioxarray = "^0.15.5"
+pyproj = "^3.6.1"
+pandas = "^2.2.2"
+geopandas = "^0.14.4"
+python-dotenv = "^1.0.1"
+colorama = "^0.4.6"
+segment-geospatial = "^0.10.6"
+cdsapi = "^0.7.0"
+shapely = "^2.0.4"
+
+[tool.poetry.group.tests.dependencies]
+pytest = "^8.2.1"
+pytest-regressions = "^2.5.0"
+
+[tool.poetry.group.dev.dependencies]
+licenseheaders = "^0.8.8"
+ruff = "^0.4.6"
+
 [build-system]
-requires = ["setuptools>=61.0"]
-build-backend = "setuptools.build_meta"
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
 
 [tool.ruff]
 src = ["."] # TODO: change if using a common src/ directory
