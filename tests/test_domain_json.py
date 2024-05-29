@@ -1,0 +1,61 @@
+# work around until folder structure is updated
+import os
+import sys
+# insert root directory into python module search path
+sys.path.insert(1, os.getcwd())
+
+from io import StringIO
+import json
+from pathlib import Path
+
+from openmethane_prior.omInputs import domainPath
+from scripts.omDomainJSON import write_domain_json
+
+ROOT_DIRECTORY = Path(__file__).parent.parent
+
+def test_001_domain_file() :
+    # domain file has to have been created with omCreateDomainInfo.py
+    # before the domain JSON script will work
+    assert os.path.isfile(domainPath)
+
+def test_002_json_structure() :
+    outfile = StringIO()
+    
+    # generate the JSON, writing to a memory buffer
+    write_domain_json(outfile)
+
+    outfile.seek(0);
+    domain = json.load(outfile)
+
+    # spot check some known values
+    assert domain["crs"] == {
+        "projection_type": "lambert_conformal_conic",
+        "standard_parallel": -15.0,
+        "standard_parallel_2": -40.0,
+        "longitude_of_central_meridian": 133.302001953125,
+        "latitude_of_projection_origin": -27.643997192382812,
+        "proj4": "+proj=lcc +lat_0=-27.6439971923828 +lon_0=133.302001953125 +lat_1=-15 +lat_2=-40 +x_0=0 +y_0=0 +R=6370000 +units=m +no_defs"
+    }
+    assert domain["grid_properties"] == {
+        "rows": 430,
+        "cols": 454,
+        "cell_x_size": 10000.0,
+        "cell_y_size": 10000.0,
+    }
+
+    # Check the number of cells
+    assert len(domain["grid_cells"]) == domain["grid_properties"]["rows"] * domain["grid_properties"]["cols"];
+
+    # check a single grid cell for known values
+    assert domain["grid_cells"][0] == {
+        "projection_x_coordinate": 0,
+        "projection_y_coordinate": 0,
+        "landmask": 0,
+        "center_latlon": [-44.73386001586914, 105.03723907470703],
+        "corner_latlons": [
+            [-44.76662826538086, 104.96293640136719],
+            [-44.78663635253906, 105.08344268798828],
+            [-44.70106506347656, 105.11154174804688],
+            [-44.681068420410156, 104.99114990234375],
+        ]
+    }
