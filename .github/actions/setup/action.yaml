@@ -20,6 +20,9 @@ inputs:
 runs:
   using: "composite"
   steps:
+    - name: Copy example environment file
+      run: cp .env.example .env
+      shell: bash
     - name: Set up Python ${{ inputs.python-version }}
       id: setup-python
       uses: actions/setup-python@v5
