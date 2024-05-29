@@ -20,11 +20,11 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Set up Python ${{ inputs.python-version }}
+    - name: Set up Python 3.11.2# ${{ inputs.python-version }}
       id: setup-python
       uses: actions/setup-python@v5
       with:
-        python-version: ${{ inputs.python-version }}
+        python-version: 3.11.2 # ${{ inputs.python-version }}
     - name: Load cached Poetry installation
       id: cached-poetry
       uses: actions/cache@v4
