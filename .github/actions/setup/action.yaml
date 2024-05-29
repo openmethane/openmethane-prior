@@ -20,11 +20,11 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Set up Python 3.11.2# ${{ inputs.python-version }}
+    - name: Set up Python ${{ inputs.python-version }}
       id: setup-python
       uses: actions/setup-python@v5
       with:
-        python-version: 3.11.2 # ${{ inputs.python-version }}
+        python-version: ${{ inputs.python-version }}
     - name: Load cached Poetry installation
       id: cached-poetry
       uses: actions/cache@v4
@@ -40,7 +40,7 @@ runs:
       uses: actions/cache@v4
       with:
         path: .venv
-        key: "venv-${{ inputs.venv-id }}-3.11.2-${{ hashFiles('**/poetry.lock') }}"
+        key: "venv-${{ inputs.venv-id }}-${{ inputs.python-version }}-${{ hashFiles('**/poetry.lock') }}"
     # Install dependencies first so that our package doesn't appear in the cache by accident
     - name: Install dependencies
       if: ${{ inputs.run-poetry-install == 'true' }}
