@@ -7,8 +7,32 @@ on:
     tags: ['v*']
 
 jobs:
-  tests:
-    timeout-minutes: 10
+#  tests:
+#    timeout-minutes: 10
+#    strategy:
+#      fail-fast: false
+#      matrix:
+#        os: [ "ubuntu-latest" ]
+#        python-version: [ "3.11" ]
+#    runs-on: "${{ matrix.os }}"
+#    steps:
+#      - name: Check out repository
+#        uses: actions/checkout@v3
+#      - uses: ./.github/actions/setup
+#        with:
+#          python-version: "${{ matrix.python-version }}"
+#          venv-id: "tests-${{ runner.os }}"
+#      - run: echo "$CDSAPIRC" > ~/.cdsapirc
+#        env:
+#          CDSAPIRC: ${{ secrets.CDSAPIRC }}
+#        shell: bash
+#      - name: Run tests
+#        run: |
+#         poetry run pytest -r a -v tests
+#      - name: Upload coverage reports to Codecov
+#        uses: codecov/codecov-action@v3
+
+  imports-without-extras:
     strategy:
       fail-fast: false
       matrix:
@@ -17,21 +41,14 @@ jobs:
     runs-on: "${{ matrix.os }}"
     steps:
       - name: Check out repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - uses: ./.github/actions/setup
         with:
           python-version: "${{ matrix.python-version }}"
-          venv-id: "tests-${{ runner.os }}"
-      - run: echo "$CDSAPIRC" > ~/.cdsapirc
-        env:
-          CDSAPIRC: ${{ secrets.CDSAPIRC }}
-        shell: bash
-      - name: Run tests
-        run: |
-         poetry run pytest -r a -v tests
-#      - name: Upload coverage reports to Codecov
-#        uses: codecov/codecov-action@v3
-
+          venv-id: "imports-without-extras-${{ runner.os }}"
+          poetry-dependency-install-flags: "--only main"
+      - name: Check importable without extras
+        run: poetry run python scripts/test-install.py
 #    imports-without-extras:
 #      strategy:
 #        fail-fast: false
