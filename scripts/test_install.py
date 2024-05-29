@@ -25,4 +25,5 @@ def import_submodules(package_name):
 
 
 import_submodules("openmethane_prior")
+# This line breaks the script. I'm not sure it's needed
 print(openmethane_prior.__version__)
