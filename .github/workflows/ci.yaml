@@ -22,8 +22,8 @@ jobs:
         with:
           python-version: "${{ matrix.python-version }}"
           venv-id: "tests-${{ runner.os }}"
-      - run: -e CDSAPI_KEY=${{ secrets.CDSAPI_KEY }}
-        shell: bash
+#      - run: -e CDSAPI_KEY=${{ secrets.CDSAPI_KEY }}
+#        shell: bash
 #      - run: echo "$CDSAPIRC" > ~/.cdsapirc
 #        env:
 #          CDSAPIRC: ${{ secrets.CDSAPIRC }}
@@ -31,6 +31,9 @@ jobs:
       - name: Run tests
         run: |
          poetry run pytest -r a -v tests
+        env:
+          CDSAPI_KEY: ${{ secrets.CDSAPI_KEY }}
+          CDSAPI_URL: https://ads.atmosphere.copernicus.eu/api/v2
 
   imports-without-extras:
     strategy:
