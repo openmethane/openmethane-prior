@@ -71,7 +71,7 @@ def write_domain_json(output_file):
               make_point(domainXr["LATD"].item(0, 0, y + 1, x),     domainXr["LOND"].item(0, 0, y + 1, x)),
             ],
         }
-        domain["grid_cells"].append(cell_properties);
+        domain["grid_cells"].append(cell_properties)
 
     json.dump(domain, output_file)
 
