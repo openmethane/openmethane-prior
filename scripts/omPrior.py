@@ -57,5 +57,4 @@ omGFASEmis.processEmissions(args.startDate, args.endDate)
 omWetlandEmis.processEmissions(args.startDate, args.endDate)
 
 omOutputs.sumLayers()
-
 omPriorVerify.verifyEmis()
