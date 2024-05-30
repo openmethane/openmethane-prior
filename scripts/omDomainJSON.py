@@ -40,6 +40,8 @@ def write_domain_json(output_file):
             "standard_parallel_2": float(domainXr.attrs['TRUELAT2']),
             "longitude_of_central_meridian": float(domainXr.attrs['STAND_LON']),
             "latitude_of_projection_origin": float(domainXr.attrs['MOAD_CEN_LAT']),
+            "projection_origin_x": float(domainXr.attrs['XORIG']),
+            "projection_origin_y": float(domainXr.attrs['YORIG']),
             "proj4": domainProj.to_proj4(),
         },
         "grid_properties": {
@@ -47,6 +49,7 @@ def write_domain_json(output_file):
             "cols": domainXr.sizes['COL'],
             "cell_x_size": float(domainXr.attrs['DX']),
             "cell_y_size": float(domainXr.attrs['DY']),
+            "center_latlon": make_point(domainXr.attrs['XCENT'], domainXr.attrs['YCENT']),
         },
         "grid_cells": [],
     };
