@@ -10,8 +10,8 @@ Copy the `.env.example` file to `.env` and customise the paths as you need.
 
 ### Installation
 
-To get started, you will need to make sure that poetry is installed.
-Open methane prior can be installed from source with:
+To get started, you will need to make sure that [poetry](https://python-poetry.org/docs/) is installed.
+The Open Methane prior can be installed from source with:
 
 ```bash
 poetry install --all-extras
