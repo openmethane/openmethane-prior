@@ -10,3 +10,7 @@ virtual-environment:  ## update virtual environment, create a new one if it does
 	poetry install --all-extras
 	# TODO: Add last line back in when pre-commit is set up
 	# poetry run pre-commit install
+
+.PHONY: clean
+clean:
+	find inputs intermediates outputs -type f ! -name 'README.md' -delete
