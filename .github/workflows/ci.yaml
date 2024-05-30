@@ -8,12 +8,12 @@ on:
 
 jobs:
   tests:
-    timeout-minutes: 10
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
         os: [ "ubuntu-latest" ]
-        python-version: [ "3.10" ]
+        python-version: [ "3.11" ]
     runs-on: "${{ matrix.os }}"
     steps:
       - name: Check out repository
@@ -22,12 +22,45 @@ jobs:
         with:
           python-version: "${{ matrix.python-version }}"
           venv-id: "tests-${{ runner.os }}"
-      - run: echo "$CDSAPIRC" > ~/.cdsapirc
-        env:
-          CDSAPIRC: ${{ secrets.CDSAPIRC }}
-        shell: bash
       - name: Run tests
         run: |
-          pytest -r a -v tests
-#      - name: Upload coverage reports to Codecov
-#        uses: codecov/codecov-action@v3
+         poetry run pytest -r a -v tests
+        env:
+          CDSAPI_KEY: ${{ secrets.CDSAPI_ADS_KEY }}
+          CDSAPI_URL: https://ads.atmosphere.copernicus.eu/api/v2
+
+  imports-without-extras:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ "ubuntu-latest" ]
+        python-version: [ "3.11" ]
+    runs-on: "${{ matrix.os }}"
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+        with:
+          python-version: "${{ matrix.python-version }}"
+          venv-id: "imports-without-extras-${{ runner.os }}"
+          poetry-dependency-install-flags: "--only main"
+      - name: Check importable without extras
+        run: poetry run python scripts/test_install.py
+
+  check-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+        with:
+          python-version: "3.11"
+          venv-id: "check-build-${{ runner.os }}"
+          run-poetry-install: false
+          poetry-dependency-install-flags: "not used"
+      - name: Build package
+        run: |
+          poetry build --no-interaction
+      - name: Check build
+        run: |
+          tar -tvf dist/openmethane_prior-*.tar.gz --wildcards '*openmethane_prior/py.typed'
