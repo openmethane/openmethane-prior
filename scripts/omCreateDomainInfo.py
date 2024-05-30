@@ -42,7 +42,10 @@ with xr.open_dataset( os.path.join(root_path, croFilePath)) as croXr:
 
 with xr.open_dataset( os.path.join(root_path, dotFilePath)) as dotXr:
     # some repetition between the geom and grid files here, XCELL=DX and YCELL=DY
-    for attr in ['XCELL', 'YCELL']:
+    # - XCELL, YCELL: size of a single cell in m
+    # - XCENT, YCENT: lat/long of grid centre point
+    # - XORIG, YORIG: position of 0,0 cell in grid coordinates (in m)
+    for attr in ['XCELL', 'YCELL', 'XCENT', 'YCENT', 'XORIG', 'YORIG']:
         domainXr.attrs[attr] = croXr.attrs[attr]
     for var in ['LATD','LOND']:
         domainXr[var] = dotXr[var].rename({'COL':'COL_D', 'ROW':'ROW_D'})
