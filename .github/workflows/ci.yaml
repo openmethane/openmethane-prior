@@ -66,4 +66,4 @@ jobs:
           poetry build --no-interaction
       - name: Check build
         run: |
-          tar -tvf dist/primap_visualisation_tool_stateless_app-*.tar.gz --wildcards '*primap_visualisation_tool_stateless_app/py.typed'
+          tar -tvf dist/openmethane_prior-*.tar.gz --wildcards '*openmethane_prior/py.typed'
