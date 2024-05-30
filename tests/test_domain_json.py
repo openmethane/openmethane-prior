@@ -7,18 +7,16 @@ sys.path.insert(1, os.getcwd())
 from io import StringIO
 import json
 from pathlib import Path
+import pytest
 
 from openmethane_prior.omInputs import domainPath
 from scripts.omDomainJSON import write_domain_json
 
 ROOT_DIRECTORY = Path(__file__).parent.parent
 
-def test_001_domain_file() :
-    # domain file has to have been created with omCreateDomainInfo.py
-    # before the domain JSON script will work
-    assert os.path.isfile(domainPath)
-
-def test_002_json_structure() :
+@pytest.mark.skipif(os.path.isfile(domainPath) != True,
+                    reason="test requires omCreateDomainInfo.py to have been run")
+def test_001_json_structure() :
     outfile = StringIO()
     
     # generate the JSON, writing to a memory buffer
