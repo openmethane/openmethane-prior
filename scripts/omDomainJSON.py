@@ -55,7 +55,7 @@ def write_domain_json(output_file):
     };
 
     if domainXr.sizes['ROW_D'] != domainXr.sizes['ROW'] + 1 or domainXr.sizes['COL_D'] != domainXr.sizes['COL'] + 1:
-      raise Exception('Cell corners dimension must be one greater than number of cells')
+      raise RuntimeError('Cell corners dimension must be one greater than number of cells')
 
     # Add projection coordinates and WGS84 lat/lon for each grid cell
     for (y, x), _ in np.ndenumerate(domainXr["LANDMASK"][0]):
