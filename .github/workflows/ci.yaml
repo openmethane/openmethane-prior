@@ -8,7 +8,7 @@ on:
 
 jobs:
   tests:
-    timeout-minutes: 10
+    timeout-minutes: 12
     strategy:
       fail-fast: false
       matrix:
@@ -29,8 +29,6 @@ jobs:
       - name: Run tests
         run: |
          poetry run pytest -r a -v tests
-      - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v3
 
   imports-without-extras:
     strategy:
