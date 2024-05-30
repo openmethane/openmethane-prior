@@ -25,10 +25,10 @@ and share the same credentials file.
 ### Installation
 
 To get started, you will need to make sure that [poetry](https://python-poetry.org/docs/) is installed.
-The Open Methane prior can be installed from source with:
+The Open Methane prior can be installed from source into a virtual environment with:
 
 ```bash
-poetry install --all-extras
+make virtual-environment
 ```
 
 ### Input Data
