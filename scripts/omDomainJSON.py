@@ -56,18 +56,19 @@ def write_domain_json(output_file):
     if domainXr.sizes['ROW_D'] != domainXr.sizes['ROW'] + 1 or domainXr.sizes['COL_D'] != domainXr.sizes['COL'] + 1:
       raise RuntimeError('Cell corners dimension must be one greater than number of cells')
 
+    domain_slice = domainXr.sel(TSTEP=0, LAY=0)
     # Add projection coordinates and WGS84 lat/lon for each grid cell
-    for (y, x), _ in np.ndenumerate(domainXr["LANDMASK"][0]):
+    for (y, x), _ in np.ndenumerate(domain_slice["LANDMASK"]):
         cell_properties = {
             "projection_x_coordinate": int(x),
             "projection_y_coordinate": int(y),
-            "landmask": int(domainXr["LANDMASK"].item(0, y, x)),
-            "center_latlon": make_point(domainXr["LAT"].item(0, y, x), domainXr["LON"].item(0, y, x)),
+            "landmask": int(domain_slice["LANDMASK"].item(y, x)),
+            "center_latlon": make_point(domain_slice["LAT"].item(y, x), domain_slice["LON"].item(y, x)),
             "corner_latlons": [
-              make_point(domainXr["LATD"].item(0, 0, y, x),         domainXr["LOND"].item(0, 0, y, x)),
-              make_point(domainXr["LATD"].item(0, 0, y, x + 1),     domainXr["LOND"].item(0, 0, y, x + 1)),
-              make_point(domainXr["LATD"].item(0, 0, y + 1, x + 1), domainXr["LOND"].item(0, 0, y + 1, x + 1)),
-              make_point(domainXr["LATD"].item(0, 0, y + 1, x),     domainXr["LOND"].item(0, 0, y + 1, x)),
+              make_point(domain_slice["LATD"].item(y, x),         domain_slice["LOND"].item(y, x)),
+              make_point(domain_slice["LATD"].item(y, x + 1),     domain_slice["LOND"].item(y, x + 1)),
+              make_point(domain_slice["LATD"].item(y + 1, x + 1), domain_slice["LOND"].item(y + 1, x + 1)),
+              make_point(domain_slice["LATD"].item(y + 1, x),     domain_slice["LOND"].item(y + 1, x)),
             ],
         }
         domain["grid_cells"].append(cell_properties)
