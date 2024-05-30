@@ -73,7 +73,7 @@ To skip re-projecting raster layers (you only need to do this once for every tim
 You can run and re-run individual layers one-by-one. Just run each file on it's own (GFAS and Wetlands require a start and end date as below):
 
 ```console
-poetry run python scripts/omWetlandEmis.py 2022-07-01 2022-07-02
+poetry run python src/openmethane_prior/layers/omWetlandEmis.py 2022-07-01 2022-07-02
 ```
 
 ## Outputs
