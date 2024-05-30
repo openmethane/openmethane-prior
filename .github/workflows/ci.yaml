@@ -32,7 +32,7 @@ jobs:
         run: |
          poetry run pytest -r a -v tests
         env:
-          CDSAPI_KEY: ${{ secrets.CDSAPI_KEY }}
+          CDSAPI_KEY: ${{ secrets.CDSAPI_ADS_KEY }}
           CDSAPI_URL: https://ads.atmosphere.copernicus.eu/api/v2
 
   imports-without-extras:
