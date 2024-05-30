@@ -10,18 +10,11 @@ Copy the `.env.example` file to `.env` and customise the paths as you need.
 
 ### Installation
 
-To avoid conflicts with other Python projects, it is recommended to create a virtual environment for this project. To do this, run:
+To get started, you will need to make sure that poetry is installed.
+Open methane prior can be installed from source with:
 
-
-```console
-python -m venv venv
-source venv/bin/activate
-```
-
-Install required modules:
-
-```console
-pip install -r requirements.txt
+```bash
+poetry install --all-extras
 ```
 
 ### Input Data
@@ -29,7 +22,7 @@ pip install -r requirements.txt
 To download all the required input files, run:
 
 ```console
-python omDownloadInputs.py
+poetry run python scripts/omDownloadInputs.py
 ```
 
 This will download input files that match the data in .env.example, so you have a working set to get started with
@@ -39,7 +32,7 @@ This will download input files that match the data in .env.example, so you have 
 To generate the domain information needed for grid resolution etc run
 
 ```console
-python omCreateDomainInfo.py
+poetry run python scripts/omCreateDomainInfo.py
 ```
 
 The current version is set up for CMAQ and uses three files from the
@@ -54,7 +47,7 @@ domainXr variable in omCreateDomainInfo.py
 To calculate emissions for all layers, run `omPrior.py` with a start and end date:
 
 ```console
-python omPrior.py 2022-07-01 2022-07-02
+poetry run python scripts/omPrior.py 2022-07-01 2022-07-02
 ```
 
 This takes a while to process (~10 minutes) with the vast majority of that time spent on the layers in `omAgLulucfWasteEmis.py`.
@@ -66,7 +59,7 @@ To skip re-projecting raster layers (you only need to do this once for every tim
 You can run and re-run individual layers one-by-one. Just run each file on it's own (GFAS and Wetlands require a start and end date as below):
 
 ```console
-python omWetlandEmis.py 2022-07-01 2022-07-02
+poetry run python scripts/omWetlandEmis.py 2022-07-01 2022-07-02
 ```
 
 ## Outputs
