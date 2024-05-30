@@ -21,7 +21,6 @@ Generate a JSON file describing the domain and grid.
 """
 
 import numpy as np
-import netCDF4 as nc
 from openmethane_prior.omInputs import domainXr, domainProj
 from openmethane_prior.omOutputs import domainJSONOutputPath
 import json
