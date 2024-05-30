@@ -15,8 +15,7 @@ from openmethane_prior.omUtils import getenv, secsPerYear
 
 root_path = Path(__file__).parent.parent
 sys.path.insert(1, os.path.join(root_path, "scripts"))
-from omDownloadInputs import downloads, remote, sectoralEmissionsPath, download_input_files
-
+from omDownloadInputs import download_input_files, downloads, remote, sectoralEmissionsPath
 
 
 @pytest.fixture(scope="session")
@@ -25,11 +24,13 @@ def cro_xr(root_dir) :
     croFilePath = os.path.join(root_dir, cmaqExamplePath, getenv("CROFILE"))
     return xr.open_dataset(croFilePath)
 
+
 @pytest.fixture(scope="session")
 def dot_xr(root_dir) :
     cmaqExamplePath = getenv("CMAQ_EXAMPLE")
     dotFilePath = os.path.join(root_dir, cmaqExamplePath, getenv("DOTFILE"))
     return xr.open_dataset(dotFilePath)
+
 
 @pytest.fixture(scope="session")
 def geom_xr(root_dir) :
@@ -55,6 +56,7 @@ def input_files(root_dir) :
         filepath = os.path.join(input_folder, file)
         os.remove(filepath)
 
+
 @pytest.fixture(scope="session")
 def input_domain_xr(root_dir, input_files) :
     subprocess.run(["python", os.path.join(root_dir, "scripts/omCreateDomainInfo.py")], check=True)
@@ -77,6 +79,7 @@ def output_domain_xr(root_dir, input_domain_xr) :
     yield xr.load_dataset(filepath_out_domain)
 
     os.remove(filepath_out_domain)
+
 
 def test_001_response_for_download_links() :
     for filename, filepath in downloads :
@@ -153,22 +156,20 @@ def test_006_grid_size_for_geo_files(cro_xr, geom_xr, dot_xr) :
     assert dot_xr.YCELL == expected_cell_size
 
 
-def test_007_compare_in_domain_with_cro_dot_files(input_domain_xr, cro_xr, dot_xr):
-
+def test_007_compare_in_domain_with_cro_dot_files(input_domain_xr, cro_xr, dot_xr) :
     assert dot_xr.NCOLS == input_domain_xr.COL_D.size
     assert dot_xr.NROWS == input_domain_xr.ROW_D.size
 
     assert cro_xr.NCOLS == input_domain_xr.COL.size
     assert cro_xr.NROWS == input_domain_xr.ROW.size
 
-def test_008_compare_out_domain_with_cro_dot_files(input_domain_xr, output_domain_xr, cro_xr, dot_xr):
 
+def test_008_compare_out_domain_with_cro_dot_files(output_domain_xr, cro_xr, dot_xr) :
     assert dot_xr.NCOLS == output_domain_xr.COL_D.size
     assert dot_xr.NROWS == output_domain_xr.ROW_D.size
 
     assert cro_xr.NCOLS == output_domain_xr.COL.size
     assert cro_xr.NROWS == output_domain_xr.ROW.size
-
 
 
 def test_009_output_domain_xr(output_domain_xr, num_regression) :
