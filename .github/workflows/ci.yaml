@@ -22,12 +22,6 @@ jobs:
         with:
           python-version: "${{ matrix.python-version }}"
           venv-id: "tests-${{ runner.os }}"
-#      - run: -e CDSAPI_KEY=${{ secrets.CDSAPI_KEY }}
-#        shell: bash
-#      - run: echo "$CDSAPIRC" > ~/.cdsapirc
-#        env:
-#          CDSAPIRC: ${{ secrets.CDSAPIRC }}
-#        shell: bash
       - name: Run tests
         run: |
          poetry run pytest -r a -v tests
