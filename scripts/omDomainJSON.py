@@ -52,7 +52,7 @@ def write_domain_json(output_file):
             "center_latlon": make_point(domainXr.attrs['XCENT'], domainXr.attrs['YCENT']),
         },
         "grid_cells": [],
-    };
+    }
 
     if domainXr.sizes['ROW_D'] != domainXr.sizes['ROW'] + 1 or domainXr.sizes['COL_D'] != domainXr.sizes['COL'] + 1:
       raise RuntimeError('Cell corners dimension must be one greater than number of cells')
