@@ -41,7 +41,7 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.ruff]
-src = ["."] # TODO: change if using a common src/ directory
+src = ["src"]
 target-version = "py311"
 # Provide some leeway for long docstring
 line-length = 100
