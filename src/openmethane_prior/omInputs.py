@@ -80,8 +80,9 @@ if os.path.exists(domainPath):
             lat_2=domainXr.TRUELAT2,
             lat_0=domainXr.MOAD_CEN_LAT,
             lon_0=domainXr.STAND_LON,
-            x_0=domainXr.XORIG,
-            y_0=domainXr.YORIG,
+            # https://github.com/openmethane/openmethane-prior/issues/24
+            # x_0=domainXr.XORIG,
+            # y_0=domainXr.YORIG,
             a=6370000,
             b=6370000,
         )

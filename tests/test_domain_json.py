@@ -34,7 +34,7 @@ def test_001_json_structure() :
         "latitude_of_projection_origin": -27.643997192382812,
         "projection_origin_x": -2270000,
         "projection_origin_y": -2165629.25,
-        "proj4": "+proj=lcc +lat_0=-27.6439971923828 +lon_0=133.302001953125 +lat_1=-15 +lat_2=-40 +x_0=-2270000 +y_0=-2165629.25 +R=6370000 +units=m +no_defs"
+        "proj4": "+proj=lcc +lat_0=-27.6439971923828 +lon_0=133.302001953125 +lat_1=-15 +lat_2=-40 +x_0=0 +y_0=0 +R=6370000 +units=m +no_defs"
     }
     assert domain["grid_properties"] == {
         "rows": 430,
