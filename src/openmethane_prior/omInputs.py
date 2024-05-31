@@ -74,7 +74,18 @@ domainProj = None
 if os.path.exists(domainPath):
     with xr.open_dataset(domainPath) as dss:
         domainXr = dss.load()
-        domainProj = pyproj.Proj(proj='lcc', lat_1=domainXr.TRUELAT1, lat_2=domainXr.TRUELAT2, lat_0=domainXr.MOAD_CEN_LAT, lon_0=domainXr.STAND_LON, a=6370000, b=6370000)
+        domainProj = pyproj.Proj(
+            proj='lcc',
+            lat_1=domainXr.TRUELAT1,
+            lat_2=domainXr.TRUELAT2,
+            lat_0=domainXr.MOAD_CEN_LAT,
+            lon_0=domainXr.STAND_LON,
+            # https://github.com/openmethane/openmethane-prior/issues/24
+            # x_0=domainXr.XORIG,
+            # y_0=domainXr.YORIG,
+            a=6370000,
+            b=6370000,
+        )
 
 def checkInputFile(file, errorMsg, errors):
     ## Check that all required input files are present
