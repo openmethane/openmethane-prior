@@ -14,9 +14,11 @@ Instructions for registering for the ADS API and setting up the credentials are 
 at in [ADS Docs](https://ads.atmosphere.copernicus.eu/api-how-to).
 
 After creating an account and obtaining the credentials,
-you must also accept the 
+you must also accept the general
 [license conditions for the data](https://ads.atmosphere.copernicus.eu/cdsapp/#!/terms/licence-to-use-copernicus-products)
 in order to download the data.
+The "Licence to use Copericus Products" field should be checked in the "Terms of use" section
+when visiting the [GFAS data set](https://ads.atmosphere.copernicus.eu/cdsapp#!/dataset/cams-global-fire-emissions-gfas?tab=form).
 
 Note: the ADS API is different from the CDS (Climate Data Store) API
 even though they are both parts of the Copernicus program
