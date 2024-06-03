@@ -16,15 +16,15 @@
 # limitations under the License.
 #
 
-"""
-Utilities related to GEOJSON files
+"""Utilities related to GEOJSON files
 """
 
-import numpy as np
-import netCDF4 as nc
-from omOutputs import domainOutputPath, geoJSONOutputPath, ch4JSONOutputPath
 import json
-from geojson import Feature, Polygon, FeatureCollection, dumps
+
+import netCDF4 as nc
+import numpy as np
+from geojson import Feature, FeatureCollection, Polygon, dumps
+from omOutputs import ch4JSONOutputPath, domainOutputPath, geoJSONOutputPath
 
 
 class NumpyEncoder(json.JSONEncoder):

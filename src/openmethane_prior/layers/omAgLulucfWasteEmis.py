@@ -16,8 +16,7 @@
 # limitations under the License.
 #
 
-"""
-Process livestock methane emissions
+"""Process livestock methane emissions
 """
 
 import csv
@@ -27,6 +26,8 @@ import numpy as np
 import pyproj
 import rioxarray as rxr
 import xarray as xr
+from tqdm import tqdm
+
 from openmethane_prior.omInputs import (
     domainProj,
     livestockDataPath,
@@ -41,7 +42,6 @@ from openmethane_prior.omOutputs import (
     writeLayer,
 )
 from openmethane_prior.omUtils import area_of_rectangle_m2, secsPerYear
-from tqdm import tqdm
 
 
 def processEmissions():

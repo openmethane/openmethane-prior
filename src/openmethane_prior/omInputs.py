@@ -15,8 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-"""
-omInputs.py
+"""omInputs.py
 
 Copyright 2023 The Superpower Institute Ltd
 Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License.
@@ -26,8 +25,9 @@ See the License for the specific language governing permissions and limitations 
 """
 
 import os
-from openmethane_prior.omUtils import getenv
+
 from openmethane_prior import omOutputs
+from openmethane_prior.omUtils import getenv
 
 inputsPath = getenv("INPUTS")
 cmaqExamplePath = getenv("CMAQ_EXAMPLE")
@@ -61,7 +61,6 @@ geomFilePath = os.path.join(cmaqExamplePath, getenv("GEO_EM"))
 import pyproj
 import samgeo.common as sam
 import xarray as xr
-import openmethane_prior.omOutputs
 
 # list of layers that will be in the output file
 omLayers = [

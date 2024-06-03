@@ -16,24 +16,22 @@
 # limitations under the License.
 #
 
-"""
-Main entry point for running the openmethane-prior
+"""Main entry point for running the openmethane-prior
 """
 
 import argparse
 import datetime
 
-from openmethane_prior import omInputs
-from openmethane_prior.layers import omAgLulucfWasteEmis
-from openmethane_prior.layers import omIndustrialStationaryTransportEmis
-from openmethane_prior.layers import omElectricityEmis
-from openmethane_prior.layers import omFugitiveEmis
-from openmethane_prior import omOutputs
-from openmethane_prior import omPriorVerify
-
-from openmethane_prior.layers import omGFASEmis
-from openmethane_prior.layers import omTermiteEmis
-from openmethane_prior.layers import omWetlandEmis
+from openmethane_prior import omInputs, omOutputs, omPriorVerify
+from openmethane_prior.layers import (
+    omAgLulucfWasteEmis,
+    omElectricityEmis,
+    omFugitiveEmis,
+    omGFASEmis,
+    omIndustrialStationaryTransportEmis,
+    omTermiteEmis,
+    omWetlandEmis,
+)
 
 # Parse args
 parser = argparse.ArgumentParser(

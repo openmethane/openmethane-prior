@@ -16,23 +16,26 @@
 # limitations under the License.
 #
 
-"""
-Process fugitive Methane emissions
+"""Process fugitive Methane emissions
 """
 
-import numpy as np
-from openmethane_prior.omInputs import (
-    coalPath,
-    oilGasPath,
-    sectoralEmissionsPath,
-    domainXr as ds,
-    domainProj,
-)
-from openmethane_prior.omOutputs import writeLayer, convertToTimescale, sumLayers
 import argparse
 import datetime
-import pandas as pd
 import math
+
+import numpy as np
+import pandas as pd
+
+from openmethane_prior.omInputs import (
+    coalPath,
+    domainProj,
+    oilGasPath,
+    sectoralEmissionsPath,
+)
+from openmethane_prior.omInputs import (
+    domainXr as ds,
+)
+from openmethane_prior.omOutputs import convertToTimescale, sumLayers, writeLayer
 
 
 def processEmissions(startDate, endDate):

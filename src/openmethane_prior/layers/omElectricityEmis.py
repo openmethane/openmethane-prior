@@ -16,20 +16,23 @@
 # limitations under the License.
 #
 
-"""
-Process emissions from the electricity sector
+"""Process emissions from the electricity sector
 """
 
+import math
+
 import numpy as np
+import pandas as pd
+
 from openmethane_prior.omInputs import (
+    domainProj,
     electricityPath,
     sectoralEmissionsPath,
-    domainXr as ds,
-    domainProj,
 )
-from openmethane_prior.omOutputs import writeLayer, convertToTimescale, sumLayers
-import pandas as pd
-import math
+from openmethane_prior.omInputs import (
+    domainXr as ds,
+)
+from openmethane_prior.omOutputs import convertToTimescale, sumLayers, writeLayer
 
 
 def processEmissions():

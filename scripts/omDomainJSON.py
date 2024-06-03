@@ -16,14 +16,15 @@
 # limitations under the License.
 #
 
-"""
-Generate a JSON file describing the domain and grid.
+"""Generate a JSON file describing the domain and grid.
 """
 
-import numpy as np
-from openmethane_prior.omInputs import domainXr, domainProj
-from openmethane_prior.omOutputs import domainJSONOutputPath
 import json
+
+import numpy as np
+
+from openmethane_prior.omInputs import domainProj, domainXr
+from openmethane_prior.omOutputs import domainJSONOutputPath
 
 
 def make_point(x, y):

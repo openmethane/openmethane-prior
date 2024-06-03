@@ -9,6 +9,7 @@ import pandas as pd
 import pytest
 import requests
 import xarray as xr
+
 from openmethane_prior.layers.omGFASEmis import downloadGFAS
 from openmethane_prior.omInputs import livestockDataPath, sectoralEmissionsPath
 from openmethane_prior.omUtils import getenv, secsPerYear

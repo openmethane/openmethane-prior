@@ -16,28 +16,29 @@
 # limitations under the License.
 #
 
-"""
-Processing wetland emissions
+"""Processing wetland emissions
 """
 
-import numpy as np
-import netCDF4 as nc
-import xarray as xr
-from openmethane_prior.omInputs import domainXr, wetlandPath
-from openmethane_prior.omOutputs import writeLayer, intermediatesPath, sumLayers
 import argparse
-import itertools
+import bisect
 import datetime
+import itertools
+import os
+
+import netCDF4 as nc
+import numpy as np
+import xarray as xr
+from shapely import geometry
+
+from openmethane_prior.omInputs import domainXr, wetlandPath
+from openmethane_prior.omOutputs import intermediatesPath, sumLayers, writeLayer
 from openmethane_prior.omUtils import (
     area_of_rectangle_m2,
-    load_zipped_pickle,
-    save_zipped_pickle,
-    redistribute_spatially,
     date_time_range,
+    load_zipped_pickle,
+    redistribute_spatially,
+    save_zipped_pickle,
 )
-import os
-from shapely import geometry
-import bisect
 
 
 def makeWetlandClimatology(
@@ -46,14 +47,16 @@ def makeWetlandClimatology(
     """Function to remap wetland emissions to the CMAQ domain
 
     Args:
+    ----
         startDate, endDate: date limits, note that inputs are only monthly resolution so emissions will be constant within a month
         kwargs, specific arguments needed for this emission
 
 
     Returns:
+    -------
         Nothing
-    """
 
+    """
     try:
         forceUpdate = kwargs["forceUpdate"]
     except KeyError:
@@ -64,12 +67,12 @@ def makeWetlandClimatology(
     lonWetland = np.around(np.float64(ncin.variables["lon"][:]), 3)
     dlatWetland = latWetland[0] - latWetland[1]
     dlonWetland = lonWetland[1] - lonWetland[0]
-    lonWetland_edge = np.zeros((len(lonWetland) + 1))
+    lonWetland_edge = np.zeros(len(lonWetland) + 1)
     lonWetland_edge[0:-1] = lonWetland - dlonWetland / 2.0
     lonWetland_edge[-1] = lonWetland[-1] + dlonWetland / 2.0
     lonWetland_edge = np.around(lonWetland_edge, 2)
 
-    latWetland_edge = np.zeros((len(latWetland) + 1))
+    latWetland_edge = np.zeros(len(latWetland) + 1)
     latWetland_edge[0:-1] = latWetland + dlatWetland / 2.0
     latWetland_edge[-1] = latWetland[-1] - dlatWetland / 2.0
     latWetland_edge = np.around(latWetland_edge, 2)
@@ -94,9 +97,9 @@ def makeWetlandClimatology(
     LON = domainXr.variables["LON"].values.squeeze()
     cmaqArea = domainXr.XCELL * domainXr.YCELL
 
-    indxPath = "{}/WETLAND_ind_x.p.gz".format(intermediatesPath)
-    indyPath = "{}/WETLAND_ind_y.p.gz".format(intermediatesPath)
-    coefsPath = "{}/WETLAND_coefs.p.gz".format(intermediatesPath)
+    indxPath = f"{intermediatesPath}/WETLAND_ind_x.p.gz"
+    indyPath = f"{intermediatesPath}/WETLAND_ind_y.p.gz"
+    coefsPath = f"{intermediatesPath}/WETLAND_coefs.p.gz"
 
     if (
         os.path.exists(indxPath)
@@ -241,12 +244,12 @@ def testWetlandEmis(
     lonWetland = np.around(np.float64(ncin.variables["lon"][:]), 3)
     dlatWetland = latWetland[0] - latWetland[1]
     dlonWetland = lonWetland[1] - lonWetland[0]
-    lonWetland_edge = np.zeros((len(lonWetland) + 1))
+    lonWetland_edge = np.zeros(len(lonWetland) + 1)
     lonWetland_edge[0:-1] = lonWetland - dlonWetland / 2.0
     lonWetland_edge[-1] = lonWetland[-1] + dlonWetland / 2.0
     lonWetland_edge = np.around(lonWetland_edge, 2)
 
-    latWetland_edge = np.zeros((len(latWetland) + 1))
+    latWetland_edge = np.zeros(len(latWetland) + 1)
     latWetland_edge[0:-1] = latWetland + dlatWetland / 2.0
     latWetland_edge[-1] = latWetland[-1] - dlatWetland / 2.0
     latWetland_edge = np.around(latWetland_edge, 2)
@@ -287,7 +290,6 @@ def testWetlandEmis(
         remapped[month, ...].sum() * area for month in range(12)
     ]  # conversion from kg to mt
     print(list(zip(wetlandTotals, remappedTotals)))
-    return
 
 
 if __name__ == "__main__":

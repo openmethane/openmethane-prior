@@ -16,27 +16,28 @@
 # limitations under the License.
 #
 
-"""
-Download required input files
+"""Download required input files
 
 This downloads the input files that rarely change and can be cached between runs.
 """
 
+import os
+
+import requests
+
 from openmethane_prior.omInputs import (
+    auShapefilePath,
+    coalPath,
     electricityPath,
     landUsePath,
+    livestockDataPath,
+    ntlPath,
+    oilGasPath,
     sectoralEmissionsPath,
     sectoralMappingsPath,
-    ntlPath,
-    auShapefilePath,
-    livestockDataPath,
     termitePath,
     wetlandPath,
-    coalPath,
-    oilGasPath,
 )
-import requests
-import os
 from openmethane_prior.omUtils import getenv
 
 scripts_path = os.path.dirname(os.path.realpath(__file__))

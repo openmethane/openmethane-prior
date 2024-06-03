@@ -16,14 +16,15 @@
 # limitations under the License.
 #
 
-"""
-Generate domain file from example domain
+"""Generate domain file from example domain
 """
 
-from openmethane_prior.omInputs import domainPath, geomFilePath, croFilePath, dotFilePath
-import xarray as xr
 import os
 from pathlib import Path
+
+import xarray as xr
+
+from openmethane_prior.omInputs import croFilePath, domainPath, dotFilePath, geomFilePath
 
 root_path = Path(__file__).parent.parent
 

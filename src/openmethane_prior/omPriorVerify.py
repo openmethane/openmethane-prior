@@ -16,17 +16,17 @@
 # limitations under the License.
 #
 
-"""
-Utilities for verifying the generated output file
+"""Utilities for verifying the generated output file
 """
 
-from openmethane_prior.omInputs import sectoralEmissionsPath, livestockDataPath, domainXr as ds
-from openmethane_prior.omOutputs import domainOutputPath
-from openmethane_prior.omUtils import secsPerYear
+import numpy as np
 import pandas as pd
 import xarray as xr
-import numpy as np
 from colorama import Fore
+
+from openmethane_prior.omInputs import livestockDataPath, sectoralEmissionsPath
+from openmethane_prior.omOutputs import domainOutputPath
+from openmethane_prior.omUtils import secsPerYear
 
 
 # Check ouput sector emissions to make sure they tally up to the input emissions

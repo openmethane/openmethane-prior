@@ -16,8 +16,7 @@
 # limitations under the License.
 #
 
-"""
-General utilties
+"""General utilties
 """
 
 import datetime

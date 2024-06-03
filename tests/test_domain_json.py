@@ -5,13 +5,14 @@ import sys
 # insert root directory into python module search path
 sys.path.insert(1, os.getcwd())
 
-from io import StringIO
 import json
+from io import StringIO
 from pathlib import Path
+
 import pytest
+from scripts.omDomainJSON import write_domain_json
 
 from openmethane_prior.omInputs import domainPath
-from scripts.omDomainJSON import write_domain_json
 
 ROOT_DIRECTORY = Path(__file__).parent.parent
 

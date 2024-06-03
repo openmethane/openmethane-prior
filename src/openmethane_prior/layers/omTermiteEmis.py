@@ -16,25 +16,26 @@
 # limitations under the License.
 #
 
-"""
-Processing termite Methane emissions
+"""Processing termite Methane emissions
 """
 
-import numpy as np
-import netCDF4 as nc
-from openmethane_prior.omInputs import domainXr, termitePath
-from openmethane_prior.omOutputs import writeLayer, intermediatesPath, sumLayers
+import bisect
 import itertools
+import os
+
+import netCDF4 as nc
+import numpy as np
+from shapely import geometry
+
+from openmethane_prior.omInputs import domainXr, termitePath
+from openmethane_prior.omOutputs import intermediatesPath, sumLayers, writeLayer
 from openmethane_prior.omUtils import (
     area_of_rectangle_m2,
     load_zipped_pickle,
+    redistribute_spatially,
     save_zipped_pickle,
     secsPerYear,
-    redistribute_spatially,
 )
-import os
-from shapely import geometry
-import bisect
 
 
 def processEmissions(
@@ -43,14 +44,16 @@ def processEmissions(
     """Function to remap termite emissions to the CMAQ domain
 
     Args:
+    ----
         startDate, endDate: currently ignored
         kwargs, specific arguments needed for this emission
 
 
     Returns:
+    -------
         Nothing
-    """
 
+    """
     try:
         forceUpdate = kwargs["forceUpdate"]
     except KeyError:
@@ -62,12 +65,12 @@ def processEmissions(
     lonTerm = np.around(np.float64(ncin.variables["lon"][:]), 3)
     dlatTerm = latTerm[0] - latTerm[1]
     dlonTerm = lonTerm[1] - lonTerm[0]
-    lonTerm_edge = np.zeros((len(lonTerm) + 1))
+    lonTerm_edge = np.zeros(len(lonTerm) + 1)
     lonTerm_edge[0:-1] = lonTerm - dlonTerm / 2.0
     lonTerm_edge[-1] = lonTerm[-1] + dlonTerm / 2.0
     lonTerm_edge = np.around(lonTerm_edge, 2)
 
-    latTerm_edge = np.zeros((len(latTerm) + 1))
+    latTerm_edge = np.zeros(len(latTerm) + 1)
     latTerm_edge[0:-1] = latTerm + dlatTerm / 2.0
     latTerm_edge[-1] = latTerm[-1] - dlatTerm / 2.0
     latTerm_edge = np.around(latTerm_edge, 2)
@@ -91,9 +94,9 @@ def processEmissions(
     LON = domainXr.variables["LON"].values.squeeze()
     cmaqArea = domainXr.XCELL * domainXr.YCELL
 
-    indxPath = "{}/TERM_ind_x.p.gz".format(intermediatesPath)
-    indyPath = "{}/TERM_ind_y.p.gz".format(intermediatesPath)
-    coefsPath = "{}/TERM_coefs.p.gz".format(intermediatesPath)
+    indxPath = f"{intermediatesPath}/TERM_ind_x.p.gz"
+    indyPath = f"{intermediatesPath}/TERM_ind_y.p.gz"
+    coefsPath = f"{intermediatesPath}/TERM_coefs.p.gz"
 
     if (
         os.path.exists(indxPath)
@@ -202,12 +205,12 @@ def testTermiteEmis(**kwargs):  # test totals for TERM emissions between origina
     lonTerm = np.around(np.float64(ncin.variables["lon"][:]), 3)
     dlatTerm = latTerm[0] - latTerm[1]
     dlonTerm = lonTerm[1] - lonTerm[0]
-    lonTerm_edge = np.zeros((len(lonTerm) + 1))
+    lonTerm_edge = np.zeros(len(lonTerm) + 1)
     lonTerm_edge[0:-1] = lonTerm - dlonTerm / 2.0
     lonTerm_edge[-1] = lonTerm[-1] + dlonTerm / 2.0
     lonTerm_edge = np.around(lonTerm_edge, 2)
 
-    latTerm_edge = np.zeros((len(latTerm) + 1))
+    latTerm_edge = np.zeros(len(latTerm) + 1)
     latTerm_edge[0:-1] = latTerm + dlatTerm / 2.0
     latTerm_edge[-1] = latTerm[-1] - dlatTerm / 2.0
     latTerm_edge = np.around(latTerm_edge, 2)
@@ -237,7 +240,6 @@ def testTermiteEmis(**kwargs):  # test totals for TERM emissions between origina
     area = domainXr.XCELL * domainXr.YCELL
     remappedTotals = remapped.sum() * area / 1e9  # conversion from kg to mt
     print(TermTotals, remappedTotals)
-    return
 
 
 if __name__ == "__main__":

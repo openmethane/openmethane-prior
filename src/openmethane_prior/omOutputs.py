@@ -15,15 +15,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-"""
-omOutputs.py
+"""omOutputs.py
 """
 
 import os
-import xarray as xr
+
 import numpy as np
+import xarray as xr
+
 from openmethane_prior import omInputs
-from openmethane_prior.omUtils import secsPerYear, getenv
+from openmethane_prior.omUtils import getenv, secsPerYear
 
 intermediatesPath = getenv("INTERMEDIATES")
 outputsPath = getenv("OUTPUTS")

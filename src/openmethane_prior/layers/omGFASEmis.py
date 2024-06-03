@@ -16,38 +16,39 @@
 # limitations under the License.
 #
 
-"""
-Download and process GFAS data
+"""Download and process GFAS data
 
 This downloads files from [ADS](https://atmosphere.copernicus.eu/data).
 See the project readme for more information about configuring
 the required credentials.
 """
 
-import numpy as np
-import netCDF4 as nc
-import xarray as xr
-from openmethane_prior.omInputs import domainXr
-from openmethane_prior.omOutputs import writeLayer, intermediatesPath, sumLayers
-import cdsapi
-import itertools
+import argparse
+import bisect
 import datetime
+import itertools
+import os
+
+import cdsapi
+import netCDF4 as nc
+import numpy as np
+import xarray as xr
+from shapely import geometry
+
+from openmethane_prior.omInputs import domainXr
+from openmethane_prior.omOutputs import intermediatesPath, sumLayers, writeLayer
 from openmethane_prior.omUtils import (
     area_of_rectangle_m2,
-    redistribute_spatially,
     load_zipped_pickle,
+    redistribute_spatially,
     save_zipped_pickle,
 )
-import os
-from shapely import geometry
-import bisect
-import argparse
 
 GFASDownloadPath = os.path.join(intermediatesPath, "gfas-download.nc")
 
 
 def downloadGFAS(startDate, endDate, fileName=GFASDownloadPath):
-    """download GFAS methane between two dates startDate and endDate, returns nothing"""
+    """Download GFAS methane between two dates startDate and endDate, returns nothing"""
     dateString = startDate.strftime("%Y-%m-%d") + "/" + endDate.strftime("%Y-%m-%d")
     c = cdsapi.Client()
 
@@ -71,14 +72,16 @@ def processEmissions(
     """Function to remap GFAS fire emissions to the CMAQ domain
 
     Args:
+    ----
         startDate, endDate: the date range (datetime objects)
         kwargs, specific arguments needed for this emission
 
 
     Returns:
+    -------
         Nothing
-    """
 
+    """
     try:
         forceUpdate = kwargs["forceUpdate"]
     except KeyError:
@@ -92,7 +95,7 @@ def processEmissions(
     lonGfas = np.around(np.float64(ncin.variables["longitude"][:]), 3)
     dlatGfas = latGfas[0] - latGfas[1]
     dlonGfas = lonGfas[1] - lonGfas[0]
-    lonGfas_edge = np.zeros((len(lonGfas) + 1))
+    lonGfas_edge = np.zeros(len(lonGfas) + 1)
     lonGfas_edge[0:-1] = lonGfas - dlonGfas / 2.0
     lonGfas_edge[-1] = lonGfas[-1] + dlonGfas / 2.0
     lonGfas_edge = np.around(lonGfas_edge, 2)
@@ -100,7 +103,7 @@ def processEmissions(
     basedate = datetime.datetime(1900, 1, 1, 0, 0, 0)
     gfasTimes = nc.num2date(ncin.variables["time"][:], ncin.variables["time"].getncattr("units"))
 
-    latGfas_edge = np.zeros((len(latGfas) + 1))
+    latGfas_edge = np.zeros(len(latGfas) + 1)
     latGfas_edge[0:-1] = latGfas + dlatGfas / 2.0
     latGfas_edge[-1] = latGfas[-1] - dlatGfas / 2.0
     latGfas_edge = np.around(latGfas_edge, 2)
@@ -125,9 +128,9 @@ def processEmissions(
     LON = domainXr.variables["LON"].values.squeeze()
     cmaqArea = domainXr.XCELL * domainXr.YCELL
 
-    indxPath = "{}/GFAS_ind_x.p.gz".format(intermediatesPath)
-    indyPath = "{}/GFAS_ind_y.p.gz".format(intermediatesPath)
-    coefsPath = "{}/GFAS_coefs.p.gz".format(intermediatesPath)
+    indxPath = f"{intermediatesPath}/GFAS_ind_x.p.gz"
+    indyPath = f"{intermediatesPath}/GFAS_ind_y.p.gz"
+    coefsPath = f"{intermediatesPath}/GFAS_coefs.p.gz"
 
     if (
         os.path.exists(indxPath)
@@ -248,12 +251,12 @@ def testGFASEmis(
     lonGfas = np.around(np.float64(ncin.variables["longitude"][:]), 3)
     dlatGfas = latGfas[0] - latGfas[1]
     dlonGfas = lonGfas[1] - lonGfas[0]
-    lonGfas_edge = np.zeros((len(lonGfas) + 1))
+    lonGfas_edge = np.zeros(len(lonGfas) + 1)
     lonGfas_edge[0:-1] = lonGfas - dlonGfas / 2.0
     lonGfas_edge[-1] = lonGfas[-1] + dlonGfas / 2.0
     lonGfas_edge = np.around(lonGfas_edge, 2)
 
-    latGfas_edge = np.zeros((len(latGfas) + 1))
+    latGfas_edge = np.zeros(len(latGfas) + 1)
     latGfas_edge[0:-1] = latGfas + dlatGfas / 2.0
     latGfas_edge[-1] = latGfas[-1] - dlatGfas / 2.0
     latGfas_edge = np.around(latGfas_edge, 2)
@@ -283,7 +286,6 @@ def testGFASEmis(
     remappedTotals = remapped.sum(axis=(1, 2))
     for t in zip(gfasTotals, remappedTotals):
         print(t)
-    return
 
 
 if __name__ == "__main__":

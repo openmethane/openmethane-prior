@@ -16,27 +16,29 @@
 # limitations under the License.
 #
 
-"""
-Processing industrual stationary transport emissions
+"""Processing industrual stationary transport emissions
 """
 
+import geopandas
 import numpy as np
-import xarray as xr
+import pandas as pd
 import rioxarray as rxr
+import xarray as xr
+
 from openmethane_prior.omInputs import (
-    sectoralEmissionsPath,
     auShapefilePath,
-    domainXr as ds,
     domainProj,
+    sectoralEmissionsPath,
+)
+from openmethane_prior.omInputs import (
+    domainXr as ds,
 )
 from openmethane_prior.omOutputs import (
-    ntlReprojectionPath,
-    writeLayer,
     convertToTimescale,
+    ntlReprojectionPath,
     sumLayers,
+    writeLayer,
 )
-import pandas as pd
-import geopandas
 
 
 def processEmissions():
