@@ -16,8 +16,7 @@
 # limitations under the License.
 #
 
-"""Process emissions from the electricity sector
-"""
+"""Process emissions from the electricity sector"""
 
 import math
 
@@ -32,10 +31,15 @@ from openmethane_prior.omInputs import (
 from openmethane_prior.omInputs import (
     domainXr as ds,
 )
-from openmethane_prior.omOutputs import convertToTimescale, sumLayers, writeLayer
+from openmethane_prior.omOutputs import convert_to_timescale, sumLayers, write_layer
 
 
 def processEmissions():
+    """
+    Process emissions from the electricity sector
+
+    Adds `OCH4_ELECTRICITY` layer to the output file
+    """
     print("processEmissions for Electricity")
 
     electricityEmis = (
@@ -60,7 +64,7 @@ def processEmissions():
         except IndexError:
             pass  # it's outside our domain
 
-    writeLayer("OCH4_ELECTRICITY", convertToTimescale(methane))
+    write_layer("OCH4_ELECTRICITY", convert_to_timescale(methane))
 
 
 if __name__ == "__main__":

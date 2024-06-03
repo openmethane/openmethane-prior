@@ -16,8 +16,7 @@
 # limitations under the License.
 #
 
-"""Processing wetland emissions
-"""
+"""Processing wetland emissions"""
 
 import argparse
 import bisect
@@ -31,7 +30,7 @@ import xarray as xr
 from shapely import geometry
 
 from openmethane_prior.omInputs import domainXr, wetlandPath
-from openmethane_prior.omOutputs import intermediatesPath, sumLayers, writeLayer
+from openmethane_prior.omOutputs import intermediatesPath, sumLayers, write_layer
 from openmethane_prior.omUtils import (
     area_of_rectangle_m2,
     date_time_range,
@@ -41,27 +40,19 @@ from openmethane_prior.omUtils import (
 )
 
 
-def makeWetlandClimatology(
-    **kwargs,
-):  # doms, GFASfolder, GFASfile, metDir, ctmDir, CMAQdir, mechCMAQ, mcipsuffix, specTableFile, forceUpdate):
-    """Function to remap wetland emissions to the CMAQ domain
-
-    Args:
-    ----
-        startDate, endDate: date limits, note that inputs are only monthly resolution so emissions will be constant within a month
-        kwargs, specific arguments needed for this emission
-
-
-    Returns:
-    -------
-        Nothing
-
+def make_wetland_climatology(forceUpdate: bool = False):  # noqa: PLR0915
     """
-    try:
-        forceUpdate = kwargs["forceUpdate"]
-    except KeyError:
-        forceUpdate = False
+    Remap wetland emissions to the CMAQ domain
 
+    Parameters
+    ----------
+    forceUpdate
+        If True, always recalculate grid mapping indices
+
+    Returns
+    -------
+        Array containing the processed results
+    """
     ncin = nc.Dataset(wetlandPath, "r")
     latWetland = np.around(np.float64(ncin.variables["lat"][:]), 3)
     lonWetland = np.around(np.float64(ncin.variables["lon"][:]), 3)
@@ -94,7 +85,6 @@ def makeWetlandClimatology(
         )
     # now collect some domain information
     LAT = domainXr.variables["LAT"].values.squeeze()
-    LON = domainXr.variables["LON"].values.squeeze()
     cmaqArea = domainXr.XCELL * domainXr.YCELL
 
     indxPath = f"{intermediatesPath}/WETLAND_ind_x.p.gz"
@@ -169,16 +159,13 @@ def makeWetlandClimatology(
                 )
                 if CMAQ_gridcell.intersects(Wetland_gridcell):
                     intersection = CMAQ_gridcell.intersection(Wetland_gridcell)
-                    weight1 = (
-                        intersection.area / CMAQ_gridcell.area
-                    )  ## fraction of CMAQ cell covered
-                    weight2 = (
+                    wetland_frac = (
                         intersection.area / Wetland_gridcell.area
                     )  ## fraction of WETLAND cell covered
-                    count2[i, j] += weight2
+                    count2[i, j] += wetland_frac
                     IND_X.append(ix)
                     IND_Y.append(iy)
-                    COEFS.append(weight2)
+                    COEFS.append(wetland_frac)
             ind_x.append(IND_X)
             ind_y.append(IND_Y)
             # COEFS = np.array(COEFS)
@@ -208,10 +195,20 @@ def makeWetlandClimatology(
     return np.array(result)
 
 
-def processEmissions(
-    startDate, endDate, **kwargs
-):  # doms, GFASfolder, GFASfile, metDir, ctmDir, CMAQdir, mechCMAQ, mcipsuffix, specTableFile, forceUpdate):
-    climatology = makeWetlandClimatology(**kwargs)
+def processEmissions(startDate, endDate, **kwargs):
+    """
+    Process wetland emissions for the given date range
+
+    Parameters
+    ----------
+    startDate
+        Start date to process
+    endDate
+        End date to process
+    kwargs
+        Additional kwargs
+    """
+    climatology = make_wetland_climatology(**kwargs)
     delta = datetime.timedelta(days=1)
     resultNd = []  # will be ndarray once built
     dates = []
@@ -231,65 +228,8 @@ def processEmissions(
             "x": np.arange(resultNd.shape[-1]),
         },
     )
-    writeLayer("OCH4_WETLANDS", resultXr, True)
+    write_layer("OCH4_WETLANDS", resultXr, True)
     return resultNd
-
-
-def testWetlandEmis(
-    startDate, endDate, **kwargs
-):  # test totals for WETLAND emissions between original and remapped
-    remapped = makeWetlandClimatology(**kwargs)
-    ncin = nc.Dataset(wetlandPath, "r")
-    latWetland = np.around(np.float64(ncin.variables["lat"][:]), 3)
-    lonWetland = np.around(np.float64(ncin.variables["lon"][:]), 3)
-    dlatWetland = latWetland[0] - latWetland[1]
-    dlonWetland = lonWetland[1] - lonWetland[0]
-    lonWetland_edge = np.zeros(len(lonWetland) + 1)
-    lonWetland_edge[0:-1] = lonWetland - dlonWetland / 2.0
-    lonWetland_edge[-1] = lonWetland[-1] + dlonWetland / 2.0
-    lonWetland_edge = np.around(lonWetland_edge, 2)
-
-    latWetland_edge = np.zeros(len(latWetland) + 1)
-    latWetland_edge[0:-1] = latWetland + dlatWetland / 2.0
-    latWetland_edge[-1] = latWetland[-1] - dlatWetland / 2.0
-    latWetland_edge = np.around(latWetland_edge, 2)
-
-    nlonWetland = len(lonWetland)
-    nlatWetland = len(latWetland)
-
-    areas = np.zeros((nlatWetland, nlonWetland))
-    # take advantage of  regular grid to compute areas equal for each gridbox at same latitude
-    for iy in range(nlatWetland):
-        areas[iy, :] = (
-            area_of_rectangle_m2(
-                latWetland_edge[iy],
-                latWetland_edge[iy + 1],
-                lonWetland_edge[0],
-                lonWetland_edge[-1],
-            )
-            / lonWetland.size
-        )
-    LATD = domainXr.variables["LATD"].values.squeeze()
-    LOND = domainXr.variables["LOND"].values.squeeze()
-    indLat = (latWetland > LATD.min()) & (latWetland < LATD.max())
-    indLon = (lonWetland > LOND.min()) & (lonWetland < LOND.max())
-    flux = ncin["totflux"][...]
-    # make climatology
-    climatology = np.zeros(
-        (12, flux.shape[1], flux.shape[2])
-    )  # same spatial domain but monthly climatology
-    for month in range(12):
-        climatology[month, ...] = flux[month::12, ...].mean(
-            axis=0
-        )  # average over time axis with stride 12
-
-    inds = np.ix_(indLat, indLon)
-    wetlandTotals = [(areas * climatology[month])[inds].sum() for month in range(12)]
-    area = domainXr.XCELL * domainXr.YCELL
-    remappedTotals = [
-        remapped[month, ...].sum() * area for month in range(12)
-    ]  # conversion from kg to mt
-    print(list(zip(wetlandTotals, remappedTotals)))
 
 
 if __name__ == "__main__":

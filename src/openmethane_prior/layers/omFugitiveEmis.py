@@ -16,8 +16,7 @@
 # limitations under the License.
 #
 
-"""Process fugitive Methane emissions
-"""
+"""Process fugitive Methane emissions"""
 
 import argparse
 import datetime
@@ -35,10 +34,22 @@ from openmethane_prior.omInputs import (
 from openmethane_prior.omInputs import (
     domainXr as ds,
 )
-from openmethane_prior.omOutputs import convertToTimescale, sumLayers, writeLayer
+from openmethane_prior.omOutputs import convert_to_timescale, sumLayers, write_layer
 
 
 def processEmissions(startDate, endDate):
+    """
+    Process the fugitive methane emissions
+
+    Adds the OCH4_FUGITIVE layer to the output
+
+    Parameters
+    ----------
+    startDate
+        The year used to calculate the emissions
+    endDate
+        Ignored
+    """
     print("processEmissions for fugitives")
     fugitiveEmis = pd.read_csv(sectoralEmissionsPath).to_dict(orient="records")[0][
         "fugitive"
@@ -81,7 +92,7 @@ def processEmissions(startDate, endDate):
         except IndexError:
             pass  # it's outside our domain
 
-    writeLayer("OCH4_FUGITIVE", convertToTimescale(methane))
+    write_layer("OCH4_FUGITIVE", convert_to_timescale(methane))
 
 
 if __name__ == "__main__":

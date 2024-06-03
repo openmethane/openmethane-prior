@@ -16,8 +16,7 @@
 # limitations under the License.
 #
 
-"""Main entry point for running the openmethane-prior
-"""
+"""Main entry point for running the openmethane-prior"""
 
 import argparse
 import datetime
@@ -50,7 +49,7 @@ parser.add_argument(
 parser.add_argument("--skip-reproject", default=False, action="store_true")
 args = parser.parse_args()
 
-omInputs.checkInputFiles()
+omInputs.check_input_files()
 
 if not args.skip_reproject:
     omInputs.reprojectRasterInputs()

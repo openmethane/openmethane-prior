@@ -16,8 +16,7 @@
 # limitations under the License.
 #
 
-"""Utilities related to GEOJSON files
-"""
+"""Utilities related to GEOJSON files"""
 
 import json
 
@@ -28,14 +27,16 @@ from omOutputs import ch4JSONOutputPath, domainOutputPath, geoJSONOutputPath
 
 
 class NumpyEncoder(json.JSONEncoder):
-    def default(self, obj):
+    """Numpy encoder for JSON serialization"""
+
+    def default(self, obj):  # noqa: D102
         if isinstance(obj, np.ndarray):
             return obj.tolist()
         return json.JSONEncoder.default(self, obj)
 
 
 def processGeoJSON():
-    # Load raster land-use data
+    """Convert the gridded prior to GeoJSON format"""
     print("converting gridded prior to GeoJSON")
 
     # Load domain
@@ -48,7 +49,6 @@ def processGeoJSON():
     maxEmission = np.amax(ch4)
 
     # Add GeoJSON Polygon feature for each grid location
-
     methane = np.zeros((landmask.shape[1], landmask.shape[2]), dtype=np.int32)
     features = []
 
@@ -56,16 +56,17 @@ def processGeoJSON():
         methane[y][x] = ch4[y][x]
         features.append(
             Feature(
+                # TODO: check if this it too nested
                 geometry=Polygon(
-                    [
+                    (
                         [
                             (float(longs[0][y][x]), float(lats[0][y][x])),
                             (float(longs[0][y][x + 1]), float(lats[0][y][x + 1])),
                             (float(longs[0][y + 1][x + 1]), float(lats[0][y + 1][x + 1])),
                             (float(longs[0][y + 1][x]), float(lats[0][y + 1][x])),
                             (float(longs[0][y][x]), float(lats[0][y][x])),
-                        ]
-                    ]
+                        ],
+                    )
                 ),
                 properties={
                     "x": x,

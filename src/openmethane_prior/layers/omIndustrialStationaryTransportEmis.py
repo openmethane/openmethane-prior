@@ -16,8 +16,7 @@
 # limitations under the License.
 #
 
-"""Processing industrual stationary transport emissions
-"""
+"""Processing industrial stationary transport emissions"""
 
 import geopandas
 import numpy as np
@@ -30,18 +29,25 @@ from openmethane_prior.omInputs import (
     domainProj,
     sectoralEmissionsPath,
 )
-from openmethane_prior.omInputs import (
-    domainXr as ds,
-)
+from openmethane_prior.omInputs import domainXr as ds
 from openmethane_prior.omOutputs import (
-    convertToTimescale,
+    convert_to_timescale,
     ntlReprojectionPath,
     sumLayers,
-    writeLayer,
+    write_layer,
 )
+
+
+def _find_grid(data, totalSize, gridSize):
+    return np.floor((data + totalSize / 2) / gridSize)
 
 
 def processEmissions():
+    """
+    Process emissions for Industrial, Stationary and Transport
+
+    Writes layers into the output file
+    """
     print("processEmissions for Industrial, Stationary and Transport")
 
     sectorsUsed = ["industrial", "stationary", "transport"]
@@ -75,9 +81,8 @@ def processEmissions():
     hh = ds.DY * lmy
 
     print("Mapping night-time lights grid to domain grid")
-    findGrid = lambda data, totalSize, gridSize: np.floor((data + totalSize / 2) / gridSize)
-    xDomain = xr.apply_ufunc(findGrid, ntlData.x, ww, ds.DX).values.astype(int)
-    yDomain = xr.apply_ufunc(findGrid, ntlData.y, hh, ds.DY).values.astype(int)
+    xDomain = xr.apply_ufunc(_find_grid, ntlData.x, ww, ds.DX).values.astype(int)
+    yDomain = xr.apply_ufunc(_find_grid, ntlData.y, hh, ds.DY).values.astype(int)
 
     # xDomain = np.floor((ntlData.x + ww / 2) / ds.DX).astype(int)
     # yDomain = np.floor((ntlData.y + hh / 2) / ds.DY).astype(int)
@@ -101,7 +106,7 @@ def processEmissions():
     print(f"{ignored} lit pixels were ignored")
 
     for sector in sectorsUsed:
-        writeLayer(f"OCH4_{sector.upper()}", convertToTimescale(methane[sector]))
+        write_layer(f"OCH4_{sector.upper()}", convert_to_timescale(methane[sector]))
 
 
 if __name__ == "__main__":

@@ -76,15 +76,27 @@ downloads = [
 
 
 def download_input_files(root_path, downloads, remote):
-    for filename, filepath in downloads:
-        filepath = os.path.join(root_path, filepath)
+    """
+    Download all input files.
+
+    Parameters
+    ----------
+    root_path
+        Path to download files to
+    downloads
+        List of files to download and their relative paths
+    remote
+        Remote base URL to download from
+    """
+    for filename, download_path in downloads:
+        filepath = os.path.join(root_path, download_path)
         print(filepath)
         url = f"{remote}{filename}"
 
         if not os.path.exists(filepath):
             print(f"Downloading {filename} to {filepath} from {url}")
 
-            with requests.get(url, stream=True) as response:
+            with requests.get(url, stream=True, timeout=30) as response:
                 with open(filepath, mode="wb") as file:
                     for chunk in response.iter_content(chunk_size=10 * 1024):
                         file.write(chunk)

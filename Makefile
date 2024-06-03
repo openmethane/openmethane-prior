@@ -30,5 +30,7 @@ run:  download ## Run the project for an example period
 
 .PHONY: ruff-fixes
 ruff-fixes:  # Run ruff on the project
+ 	# Run the formatting first to ensure that is applied even if the checks fail
 	poetry run ruff format .
 	poetry run ruff check --fix .
+	poetry run ruff format .

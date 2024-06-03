@@ -16,8 +16,7 @@
 # limitations under the License.
 #
 
-"""Generate a JSON file describing the domain and grid.
-"""
+"""Generate a JSON file describing the domain and grid."""
 
 import json
 
@@ -27,11 +26,30 @@ from openmethane_prior.omInputs import domainProj, domainXr
 from openmethane_prior.omOutputs import domainJSONOutputPath
 
 
-def make_point(x, y):
+def _make_point(x, y):
     return [float(x), float(y)]
 
 
 def write_domain_json(output_file):
+    """
+    Write a JSON file describing the domain and grid.
+
+    The JSON file contains the following information:
+    * CRS description
+    * Grid properties (number of rows, columns, cell size, and center lat/lon)
+    * List of grid cells, each with the following properties:
+        * Projection x and y coordinates
+        * Landmask value
+        * Center lat/lon
+        * Corner lat/lon values
+
+    This file is ingested by the frontend and is static for a given domain.
+
+    Parameters
+    ----------
+    output_file
+        File to read
+    """
     # Load raster land-use data
     print("converting domain grid details to JSON")
 
@@ -51,7 +69,7 @@ def write_domain_json(output_file):
             "cols": domainXr.sizes["COL"],
             "cell_x_size": float(domainXr.attrs["DX"]),
             "cell_y_size": float(domainXr.attrs["DY"]),
-            "center_latlon": make_point(domainXr.attrs["XCENT"], domainXr.attrs["YCENT"]),
+            "center_latlon": _make_point(domainXr.attrs["XCENT"], domainXr.attrs["YCENT"]),
         },
         "grid_cells": [],
     }
@@ -69,18 +87,18 @@ def write_domain_json(output_file):
             "projection_x_coordinate": int(x),
             "projection_y_coordinate": int(y),
             "landmask": int(domain_slice["LANDMASK"].item(y, x)),
-            "center_latlon": make_point(
+            "center_latlon": _make_point(
                 domain_slice["LAT"].item(y, x), domain_slice["LON"].item(y, x)
             ),
             "corner_latlons": [
-                make_point(domain_slice["LATD"].item(y, x), domain_slice["LOND"].item(y, x)),
-                make_point(
+                _make_point(domain_slice["LATD"].item(y, x), domain_slice["LOND"].item(y, x)),
+                _make_point(
                     domain_slice["LATD"].item(y, x + 1), domain_slice["LOND"].item(y, x + 1)
                 ),
-                make_point(
+                _make_point(
                     domain_slice["LATD"].item(y + 1, x + 1), domain_slice["LOND"].item(y + 1, x + 1)
                 ),
-                make_point(
+                _make_point(
                     domain_slice["LATD"].item(y + 1, x), domain_slice["LOND"].item(y + 1, x)
                 ),
             ],

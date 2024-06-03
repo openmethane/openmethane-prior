@@ -36,7 +36,7 @@ import xarray as xr
 from shapely import geometry
 
 from openmethane_prior.omInputs import domainXr
-from openmethane_prior.omOutputs import intermediatesPath, sumLayers, writeLayer
+from openmethane_prior.omOutputs import intermediatesPath, sumLayers, write_layer
 from openmethane_prior.omUtils import (
     area_of_rectangle_m2,
     load_zipped_pickle,
@@ -66,10 +66,8 @@ def downloadGFAS(startDate, endDate, fileName=GFASDownloadPath):
     return fileName
 
 
-def processEmissions(
-    startDate, endDate, **kwargs
-):  # doms, GFASfolder, GFASfile, metDir, ctmDir, CMAQdir, mechCMAQ, mcipsuffix, specTableFile, forceUpdate):
-    """Function to remap GFAS fire emissions to the CMAQ domain
+def processEmissions(startDate, endDate, forceUpdate: bool = False, **kwargs):  # noqa: PLR0915
+    """Remap GFAS fire emissions to the CMAQ domain
 
     Args:
     ----
@@ -77,16 +75,11 @@ def processEmissions(
         kwargs, specific arguments needed for this emission
 
 
-    Returns:
+    Returns
     -------
         Nothing
 
     """
-    try:
-        forceUpdate = kwargs["forceUpdate"]
-    except KeyError:
-        forceUpdate = False
-
     GFASfile = downloadGFAS(startDate, endDate)
     # GFASfile = GFASDownloadPath
     ncin = nc.Dataset(GFASfile, "r", format="NETCDF3")
@@ -99,8 +92,6 @@ def processEmissions(
     lonGfas_edge[0:-1] = lonGfas - dlonGfas / 2.0
     lonGfas_edge[-1] = lonGfas[-1] + dlonGfas / 2.0
     lonGfas_edge = np.around(lonGfas_edge, 2)
-    gfasHoursSince1900 = ncin.variables["time"][:]
-    basedate = datetime.datetime(1900, 1, 1, 0, 0, 0)
     gfasTimes = nc.num2date(ncin.variables["time"][:], ncin.variables["time"].getncattr("units"))
 
     latGfas_edge = np.zeros(len(latGfas) + 1)
@@ -125,7 +116,6 @@ def processEmissions(
     LATD = domainXr["LATD"][:].values.squeeze()
     LOND = domainXr["LOND"].values.squeeze()
     LAT = domainXr.variables["LAT"].values.squeeze()
-    LON = domainXr.variables["LON"].values.squeeze()
     cmaqArea = domainXr.XCELL * domainXr.YCELL
 
     indxPath = f"{intermediatesPath}/GFAS_ind_x.p.gz"
@@ -194,9 +184,6 @@ def processEmissions(
                 )
                 if CMAQ_gridcell.intersects(gfas_gridcell):
                     intersection = CMAQ_gridcell.intersection(gfas_gridcell)
-                    weight1 = (
-                        intersection.area / CMAQ_gridcell.area
-                    )  ## fraction of CMAQ cell covered
                     weight2 = (
                         intersection.area / gfas_gridcell.area
                     )  ## fraction of GFAS cell covered
@@ -237,55 +224,8 @@ def processEmissions(
             "x": np.arange(resultNd.shape[-1]),
         },
     )
-    writeLayer("OCH4_FIRE", resultXr, True)
+    write_layer("OCH4_FIRE", resultXr, True)
     return resultNd
-
-
-def testGFASEmis(
-    startDate, endDate, **kwargs
-):  # test totals for GFAS emissions between original and remapped
-    remapped = processEmissions(startDate, endDate, **kwargs)
-    GFASfile = "download.nc"
-    ncin = nc.Dataset(GFASfile, "r", format="NETCDF3")
-    latGfas = np.around(np.float64(ncin.variables["latitude"][:]), 3)
-    lonGfas = np.around(np.float64(ncin.variables["longitude"][:]), 3)
-    dlatGfas = latGfas[0] - latGfas[1]
-    dlonGfas = lonGfas[1] - lonGfas[0]
-    lonGfas_edge = np.zeros(len(lonGfas) + 1)
-    lonGfas_edge[0:-1] = lonGfas - dlonGfas / 2.0
-    lonGfas_edge[-1] = lonGfas[-1] + dlonGfas / 2.0
-    lonGfas_edge = np.around(lonGfas_edge, 2)
-
-    latGfas_edge = np.zeros(len(latGfas) + 1)
-    latGfas_edge[0:-1] = latGfas + dlatGfas / 2.0
-    latGfas_edge[-1] = latGfas[-1] - dlatGfas / 2.0
-    latGfas_edge = np.around(latGfas_edge, 2)
-
-    nlonGfas = len(lonGfas)
-    nlatGfas = len(latGfas)
-
-    latGfasrev = latGfas[::-1]
-    latGfasrev_edge = latGfas_edge[::-1]
-    areas = np.zeros((nlatGfas, nlonGfas))
-    # take advantage of  regular grid to compute areas equal for each gridbox at same latitude
-    for iy in range(nlatGfas):
-        areas[iy, :] = (
-            area_of_rectangle_m2(
-                latGfas_edge[iy], latGfas_edge[iy + 1], lonGfas_edge[0], lonGfas_edge[-1]
-            )
-            / lonGfas.size
-        )
-    LATD = domainXr.variables["LATD"].values.squeeze()
-    LOND = domainXr.variables["LOND"].values.squeeze()
-    indLat = (latGfas > LATD.min()) & (latGfas < LATD.max())
-    indLon = (lonGfas > LOND.min()) & (lonGfas < LOND.max())
-    gfasCH4 = ncin["ch4fire"][...]
-    inds = np.ix_(indLat, indLon)
-    gfasTotals = [np.tensordot(gfasCH4[i][inds], areas[inds]) for i in range(gfasCH4.shape[0])]
-
-    remappedTotals = remapped.sum(axis=(1, 2))
-    for t in zip(gfasTotals, remappedTotals):
-        print(t)
 
 
 if __name__ == "__main__":

@@ -16,8 +16,7 @@
 # limitations under the License.
 #
 
-"""Generate domain file from example domain
-"""
+"""Generate domain file from example domain."""
 
 import os
 from pathlib import Path

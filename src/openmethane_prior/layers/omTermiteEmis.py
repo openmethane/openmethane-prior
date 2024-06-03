@@ -16,8 +16,7 @@
 # limitations under the License.
 #
 
-"""Processing termite Methane emissions
-"""
+"""Processing termite Methane emissions"""
 
 import bisect
 import itertools
@@ -28,7 +27,7 @@ import numpy as np
 from shapely import geometry
 
 from openmethane_prior.omInputs import domainXr, termitePath
-from openmethane_prior.omOutputs import intermediatesPath, sumLayers, writeLayer
+from openmethane_prior.omOutputs import intermediatesPath, sumLayers, write_layer
 from openmethane_prior.omUtils import (
     area_of_rectangle_m2,
     load_zipped_pickle,
@@ -38,27 +37,19 @@ from openmethane_prior.omUtils import (
 )
 
 
-def processEmissions(
+def processEmissions(  # noqa: PLR0915
+    forceUpdate: bool = False,
     **kwargs,
-):  # doms, GFASfolder, GFASfile, metDir, ctmDir, CMAQdir, mechCMAQ, mcipsuffix, specTableFile, forceUpdate):
-    """Function to remap termite emissions to the CMAQ domain
+):
+    """Remap termite emissions to the CMAQ domain
 
     Args:
     ----
-        startDate, endDate: currently ignored
-        kwargs, specific arguments needed for this emission
-
-
-    Returns:
-    -------
-        Nothing
-
+        forceUpdate
+            If True, always recalculate grid mapping indices
+        startDate, endDate
+            Currently ignored
     """
-    try:
-        forceUpdate = kwargs["forceUpdate"]
-    except KeyError:
-        forceUpdate = False
-
     ncin = nc.Dataset(termitePath, "r")
     latTerm = np.around(np.float64(ncin.variables["lat"][:]), 3)
     latTerm = latTerm[-1::-1]  # we need it south-north
@@ -91,7 +82,6 @@ def processEmissions(
     LATD = domainXr["LATD"][:].values.squeeze()
     LOND = domainXr["LOND"].values.squeeze()
     LAT = domainXr.variables["LAT"].values.squeeze()
-    LON = domainXr.variables["LON"].values.squeeze()
     cmaqArea = domainXr.XCELL * domainXr.YCELL
 
     indxPath = f"{intermediatesPath}/TERM_ind_x.p.gz"
@@ -160,9 +150,7 @@ def processEmissions(
                 )
                 if CMAQ_gridcell.intersects(Term_gridcell):
                     intersection = CMAQ_gridcell.intersection(Term_gridcell)
-                    weight1 = (
-                        intersection.area / CMAQ_gridcell.area
-                    )  ## fraction of CMAQ cell covered
+                    (intersection.area / CMAQ_gridcell.area)  ## fraction of CMAQ cell covered
                     weight2 = (
                         intersection.area / Term_gridcell.area
                     )  ## fraction of TERM cell covered
@@ -193,53 +181,8 @@ def processEmissions(
     resultNd /= secsPerYear
     ncin.close()
 
-    writeLayer("OCH4_TERMITE", resultNd)
+    write_layer("OCH4_TERMITE", resultNd)
     return np.array(resultNd)
-
-
-def testTermiteEmis(**kwargs):  # test totals for TERM emissions between original and remapped
-    remapped = processEmissions(**kwargs)
-    ncin = nc.Dataset(termitePath, "r")
-    latTerm = np.around(np.float64(ncin.variables["lat"][:]), 3)
-    latTerm = latTerm[-1::-1]  # reversing order, we need south first
-    lonTerm = np.around(np.float64(ncin.variables["lon"][:]), 3)
-    dlatTerm = latTerm[0] - latTerm[1]
-    dlonTerm = lonTerm[1] - lonTerm[0]
-    lonTerm_edge = np.zeros(len(lonTerm) + 1)
-    lonTerm_edge[0:-1] = lonTerm - dlonTerm / 2.0
-    lonTerm_edge[-1] = lonTerm[-1] + dlonTerm / 2.0
-    lonTerm_edge = np.around(lonTerm_edge, 2)
-
-    latTerm_edge = np.zeros(len(latTerm) + 1)
-    latTerm_edge[0:-1] = latTerm + dlatTerm / 2.0
-    latTerm_edge[-1] = latTerm[-1] - dlatTerm / 2.0
-    latTerm_edge = np.around(latTerm_edge, 2)
-
-    nlonTerm = len(lonTerm)
-    nlatTerm = len(latTerm)
-
-    latTermrev = latTerm[::-1]
-    latTermrev_edge = latTerm_edge[::-1]
-    areas = np.zeros((nlatTerm, nlonTerm))
-    # take advantage of  regular grid to compute areas equal for each gridbox at same latitude
-    for iy in range(nlatTerm):
-        areas[iy, :] = (
-            area_of_rectangle_m2(
-                latTerm_edge[iy], latTerm_edge[iy + 1], lonTerm_edge[0], lonTerm_edge[-1]
-            )
-            / lonTerm.size
-        )
-    LATD = domainXr.variables["LATD"].values.squeeze()
-    LOND = domainXr.variables["LOND"].values.squeeze()
-    indLat = (latTerm > LATD.min()) & (latTerm < LATD.max())
-    indLon = (lonTerm > LOND.min()) & (lonTerm < LOND.max())
-    TermCH4 = ncin["ch4_emissions_2010_2016.asc"][...][-1::-1, :]  # reverse latitudes
-    #    np.clip( TermCH4, 0., None, out=TermCH4) # remove negative values in place
-    inds = np.ix_(indLat, indLon)
-    TermTotals = TermCH4[inds].sum()
-    area = domainXr.XCELL * domainXr.YCELL
-    remappedTotals = remapped.sum() * area / 1e9  # conversion from kg to mt
-    print(TermTotals, remappedTotals)
 
 
 if __name__ == "__main__":
