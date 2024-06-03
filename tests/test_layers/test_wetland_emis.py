@@ -6,7 +6,7 @@ from openmethane_prior.omInputs import domainXr, wetlandPath
 from openmethane_prior.omUtils import area_of_rectangle_m2
 
 
-def test_wetland_emis():
+def test_wetland_emis(input_files, input_domain_xr):
     # TODO: convert into an actual test
     """Test totals for WETLAND emissions between original and remapped"""
     remapped = make_wetland_climatology(forceUpdate=True)
