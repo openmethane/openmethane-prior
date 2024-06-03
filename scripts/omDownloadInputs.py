@@ -22,9 +22,19 @@ Download required input files
 This downloads the input files that rarely change and can be cached between runs.
 """
 
-from openmethane_prior.omInputs import (electricityPath,
-                      # fugitivesPath,
-                      landUsePath, sectoralEmissionsPath, sectoralMappingsPath, ntlPath, auShapefilePath, livestockDataPath, termitePath, wetlandPath, coalPath, oilGasPath)
+from openmethane_prior.omInputs import (
+    electricityPath,
+    landUsePath,
+    sectoralEmissionsPath,
+    sectoralMappingsPath,
+    ntlPath,
+    auShapefilePath,
+    livestockDataPath,
+    termitePath,
+    wetlandPath,
+    coalPath,
+    oilGasPath,
+)
 import requests
 import os
 from openmethane_prior.omUtils import getenv
@@ -60,8 +70,9 @@ downloads = [
     [auShapefileFile, auShapefilePath],
     [livestockDataFile, livestockDataPath],
     [termiteFile, termitePath],
-    [wetlandFile, wetlandPath]
+    [wetlandFile, wetlandPath],
 ]
+
 
 def download_input_files(root_path, downloads, remote):
     for filename, filepath in downloads:
@@ -79,7 +90,6 @@ def download_input_files(root_path, downloads, remote):
         else:
             print(f"Skipping {filename} beacuse it already exists at {filepath}")
 
-if __name__ == '__main__':
-    download_input_files(root_path=root_path,
-                         downloads=downloads,
-                         remote=remote)
+
+if __name__ == "__main__":
+    download_input_files(root_path=root_path, downloads=downloads, remote=remote)

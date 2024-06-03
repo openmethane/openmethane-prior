@@ -23,10 +23,21 @@ Processing industrual stationary transport emissions
 import numpy as np
 import xarray as xr
 import rioxarray as rxr
-from openmethane_prior.omInputs import sectoralEmissionsPath, auShapefilePath, domainXr as ds, domainProj
-from openmethane_prior.omOutputs import ntlReprojectionPath, writeLayer, convertToTimescale, sumLayers
+from openmethane_prior.omInputs import (
+    sectoralEmissionsPath,
+    auShapefilePath,
+    domainXr as ds,
+    domainProj,
+)
+from openmethane_prior.omOutputs import (
+    ntlReprojectionPath,
+    writeLayer,
+    convertToTimescale,
+    sumLayers,
+)
 import pandas as pd
 import geopandas
+
 
 def processEmissions():
     print("processEmissions for Industrial, Stationary and Transport")
@@ -49,10 +60,10 @@ def processEmissions():
     # Divide each pixel intensity by the total to get a scaled intensity per pixel
     ntltScalar = ntlt / ntltTotal
 
-    sectorData = pd.read_csv(sectoralEmissionsPath).to_dict(orient='records')[0]
-    ntlIndustrial = ntltScalar * (sectorData["industrial"]  * 1e9)
+    sectorData = pd.read_csv(sectoralEmissionsPath).to_dict(orient="records")[0]
+    ntlIndustrial = ntltScalar * (sectorData["industrial"] * 1e9)
     ntlStationary = ntltScalar * (sectorData["stationary"] * 1e9)
-    ntlTransport = ntltScalar * (sectorData["transport"]  * 1e9)
+    ntlTransport = ntltScalar * (sectorData["transport"] * 1e9)
 
     # Load domain
     landmask = ds["LANDMASK"][:]
@@ -90,7 +101,8 @@ def processEmissions():
     for sector in sectorsUsed:
         writeLayer(f"OCH4_{sector.upper()}", convertToTimescale(methane[sector]))
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     # reprojectRasterInputs()
     processEmissions()
     sumLayers()

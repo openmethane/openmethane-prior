@@ -21,17 +21,25 @@ Process emissions from the electricity sector
 """
 
 import numpy as np
-from openmethane_prior.omInputs import electricityPath, sectoralEmissionsPath, domainXr as ds, domainProj
+from openmethane_prior.omInputs import (
+    electricityPath,
+    sectoralEmissionsPath,
+    domainXr as ds,
+    domainProj,
+)
 from openmethane_prior.omOutputs import writeLayer, convertToTimescale, sumLayers
 import pandas as pd
 import math
 
+
 def processEmissions():
     print("processEmissions for Electricity")
 
-    electricityEmis = pd.read_csv(sectoralEmissionsPath).to_dict(orient='records')[0]["electricity"] * 1e9
-    electricityFacilities = pd.read_csv(electricityPath, header=0).to_dict(orient='records')
-    totalCapacity = sum(item['capacity'] for item in electricityFacilities)
+    electricityEmis = (
+        pd.read_csv(sectoralEmissionsPath).to_dict(orient="records")[0]["electricity"] * 1e9
+    )
+    electricityFacilities = pd.read_csv(electricityPath, header=0).to_dict(orient="records")
+    totalCapacity = sum(item["capacity"] for item in electricityFacilities)
     landmask = ds["LANDMASK"][:]
 
     _, lmy, lmx = landmask.shape
@@ -45,12 +53,13 @@ def processEmissions():
         ix = math.floor((x + ww / 2) / ds.DX)
         iy = math.floor((y + hh / 2) / ds.DY)
         try:
-            methane[0][iy][ix] += (facility['capacity'] / totalCapacity) * electricityEmis
+            methane[0][iy][ix] += (facility["capacity"] / totalCapacity) * electricityEmis
         except IndexError:
-            pass # it's outside our domain
+            pass  # it's outside our domain
 
     writeLayer("OCH4_ELECTRICITY", convertToTimescale(methane))
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     processEmissions()
     sumLayers()

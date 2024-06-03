@@ -97,7 +97,7 @@ def area_of_rectangle_m2(lat1, lat2, lon1, lon2):
     return A
 
 
-def redistribute_spatially(LATshape, ind_x, ind_y, coefs, subset, fromAreas, toAreas): # noqa: PLR0913
+def redistribute_spatially(LATshape, ind_x, ind_y, coefs, subset, fromAreas, toAreas):  # noqa: PLR0913
     """Redistribute GFAS emissions horizontally and vertically.
 
     This little function does most of the work.

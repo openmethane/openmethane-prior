@@ -27,3 +27,8 @@ download: ## Download the data for the project
 run:  download ## Run the project for an example period
 	poetry run python scripts/omCreateDomainInfo.py
 	poetry run python scripts/omPrior.py 2022-07-01 2022-07-02
+
+.PHONY: ruff-fixes
+ruff-fixes:  # Run ruff on the project
+	poetry run ruff format .
+	poetry run ruff check --fix .

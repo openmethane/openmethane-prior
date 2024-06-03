@@ -41,9 +41,13 @@ def verifyEmis():
     agDX = agVal - lsVal
 
     if agDX > 0:
-        print(f"{Fore.GREEN}PASSED - Livestock CH4 within bounds of total agriculture CH4: {agDX / 1e9}")
+        print(
+            f"{Fore.GREEN}PASSED - Livestock CH4 within bounds of total agriculture CH4: {agDX / 1e9}"
+        )
     else:
-        print(f"{Fore.RED}FAILED - Livestock CH4 exceeds bounds of total agriculture CH4: {agDX / 1e9}")
+        print(
+            f"{Fore.RED}FAILED - Livestock CH4 exceeds bounds of total agriculture CH4: {agDX / 1e9}"
+        )
 
     # Check each layer in the output sums up to the input
     with xr.open_dataset(domainOutputPath) as dss:
@@ -68,7 +72,9 @@ def verifyEmis():
                     f"{Fore.RED}FAILED - Discrepency of {perectenageDifference}% in {sector} emissions"
                 )
             else:
-                print(f"{Fore.GREEN}PASSED - {sector} emissions OK, discrepancy is {abs(perectenageDifference)}% of total")
+                print(
+                    f"{Fore.GREEN}PASSED - {sector} emissions OK, discrepancy is {abs(perectenageDifference)}% of total"
+                )
 
 
 if __name__ == "__main__":

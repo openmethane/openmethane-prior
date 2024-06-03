@@ -31,8 +31,8 @@ from openmethane_prior import omOutputs
 
 inputsPath = getenv("INPUTS")
 cmaqExamplePath = getenv("CMAQ_EXAMPLE")
-climateTracePath = os.path.join( inputsPath, getenv("CLIMATETRACE"))
-fossilPath = os.path.join( climateTracePath, getenv("FOSSIL"))
+climateTracePath = os.path.join(inputsPath, getenv("CLIMATETRACE"))
+fossilPath = os.path.join(climateTracePath, getenv("FOSSIL"))
 
 # Input file definitions
 domainFilename = getenv("DOMAIN")
@@ -42,9 +42,9 @@ electricityPath = os.path.join(inputsPath, getenv("CH4_ELECTRICITY"))
 # The originally specified directory does not exist and stops the download.
 # Maybe needs to be changed back later in the process.
 # oilGasPath = os.path.join( fossilPath, getenv("OILGAS"))
-oilGasPath = os.path.join( inputsPath, getenv("OILGAS"))
+oilGasPath = os.path.join(inputsPath, getenv("OILGAS"))
 # coalPath = os.path.join( fossilPath, getenv("COAL"))
-coalPath = os.path.join( inputsPath, getenv("COAL"))
+coalPath = os.path.join(inputsPath, getenv("COAL"))
 landUsePath = os.path.join(inputsPath, getenv("LAND_USE"))
 sectoralEmissionsPath = os.path.join(inputsPath, getenv("SECTORAL_EMISSIONS"))
 sectoralMappingsPath = os.path.join(inputsPath, getenv("SECTORAL_MAPPING"))
@@ -64,7 +64,20 @@ import xarray as xr
 import openmethane_prior.omOutputs
 
 # list of layers that will be in the output file
-omLayers = ["agriculture","electricity","fugitive","industrial","lulucf","stationary","transport","waste","livestock","fire","wetlands","termite"]
+omLayers = [
+    "agriculture",
+    "electricity",
+    "fugitive",
+    "industrial",
+    "lulucf",
+    "stationary",
+    "transport",
+    "waste",
+    "livestock",
+    "fire",
+    "wetlands",
+    "termite",
+]
 
 # load the domain info and define a projection once for use in other scripts
 print("Loading domain info")
@@ -75,7 +88,7 @@ if os.path.exists(domainPath):
     with xr.open_dataset(domainPath) as dss:
         domainXr = dss.load()
         domainProj = pyproj.Proj(
-            proj='lcc',
+            proj="lcc",
             lat_1=domainXr.TRUELAT1,
             lat_2=domainXr.TRUELAT2,
             lat_0=domainXr.MOAD_CEN_LAT,
@@ -87,10 +100,12 @@ if os.path.exists(domainPath):
             b=6370000,
         )
 
+
 def checkInputFile(file, errorMsg, errors):
     ## Check that all required input files are present
     if not os.path.exists(file):
         errors.append(errorMsg)
+
 
 def checkInputFiles():
     ## Check that all required input files are present
@@ -98,23 +113,42 @@ def checkInputFiles():
 
     errors = []
 
-    checkInputFile(domainPath, f"Missing file for domain info at {domainPath}, suggest running omCreateDomainInfo.py", errors)
-    checkInputFile(electricityPath, f"Missing file for electricity facilities: {electricityPath}", errors)
+    checkInputFile(
+        domainPath,
+        f"Missing file for domain info at {domainPath}, suggest running omCreateDomainInfo.py",
+        errors,
+    )
+    checkInputFile(
+        electricityPath, f"Missing file for electricity facilities: {electricityPath}", errors
+    )
     checkInputFile(coalPath, f"Missing file for Coal facilities: {coalPath}", errors)
     checkInputFile(oilGasPath, f"Missing file for Oilgas facilities: {oilGasPath}", errors)
     checkInputFile(landUsePath, f"Missing file for land use: {landUsePath}", errors)
-    checkInputFile(sectoralEmissionsPath, f"Missing file for sectoral emissions: {sectoralEmissionsPath}", errors)
-    checkInputFile(sectoralMappingsPath, f"Missing file for sectoral emissions mappings: {sectoralMappingsPath}", errors)
+    checkInputFile(
+        sectoralEmissionsPath,
+        f"Missing file for sectoral emissions: {sectoralEmissionsPath}",
+        errors,
+    )
+    checkInputFile(
+        sectoralMappingsPath,
+        f"Missing file for sectoral emissions mappings: {sectoralMappingsPath}",
+        errors,
+    )
     checkInputFile(ntlPath, f"Missing file for night time lights: {ntlPath}", errors)
-    checkInputFile(livestockDataPath, f"Missing file for livestock data: {livestockDataPath}", errors)
-    checkInputFile( termitePath, f"Missing file for termite data: {termitePath}", errors)
-    checkInputFile( wetlandPath, f"Missing file for wetlands data: {wetlandPath}", errors)
+    checkInputFile(
+        livestockDataPath, f"Missing file for livestock data: {livestockDataPath}", errors
+    )
+    checkInputFile(termitePath, f"Missing file for termite data: {termitePath}", errors)
+    checkInputFile(wetlandPath, f"Missing file for wetlands data: {wetlandPath}", errors)
 
     ## Print all errors and exit (if we have any errors)
     if len(errors) > 0:
-        print("Some required files are missing. Suggest running omDownloadInputs.py if you're using the default input file set, and omCreateDomainInfo.py if you haven't already. See issues below.")
+        print(
+            "Some required files are missing. Suggest running omDownloadInputs.py if you're using the default input file set, and omCreateDomainInfo.py if you haven't already. See issues below."
+        )
         print("\n".join(errors))
         exit(1)
+
 
 def reprojectRasterInputs():
     ## Re-project raster files to match domain

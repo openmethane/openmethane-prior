@@ -36,9 +36,19 @@ from openmethane_prior.layers import omTermiteEmis
 from openmethane_prior.layers import omWetlandEmis
 
 # Parse args
-parser = argparse.ArgumentParser(description="Calculate the prior methane emissions estimate for OpenMethane")
-parser.add_argument('startDate', type=lambda s: datetime.datetime.strptime(s, "%Y-%m-%d"), help="Start date in YYYY-MM-DD format")
-parser.add_argument('endDate', type=lambda s: datetime.datetime.strptime(s, "%Y-%m-%d"), help="end date in YYYY-MM-DD format")
+parser = argparse.ArgumentParser(
+    description="Calculate the prior methane emissions estimate for OpenMethane"
+)
+parser.add_argument(
+    "startDate",
+    type=lambda s: datetime.datetime.strptime(s, "%Y-%m-%d"),
+    help="Start date in YYYY-MM-DD format",
+)
+parser.add_argument(
+    "endDate",
+    type=lambda s: datetime.datetime.strptime(s, "%Y-%m-%d"),
+    help="end date in YYYY-MM-DD format",
+)
 parser.add_argument("--skip-reproject", default=False, action="store_true")
 args = parser.parse_args()
 

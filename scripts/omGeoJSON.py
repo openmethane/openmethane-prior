@@ -26,12 +26,14 @@ from omOutputs import domainOutputPath, geoJSONOutputPath, ch4JSONOutputPath
 import json
 from geojson import Feature, Polygon, FeatureCollection, dumps
 
+
 class NumpyEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, np.ndarray):
             return obj.tolist()
         return json.JSONEncoder.default(self, obj)
-    
+
+
 def processGeoJSON():
     # Load raster land-use data
     print("converting gridded prior to GeoJSON")
@@ -69,13 +71,10 @@ def processGeoJSON():
                     "x": x,
                     "y": y,
                     "m": float(methane[y][x]),
-                    "rm": float(methane[y][x] / maxEmission * 100)
-                    if methane[y][x] >= 0
-                    else 0,
+                    "rm": float(methane[y][x] / maxEmission * 100) if methane[y][x] >= 0 else 0,
                 },
             )
         )
-
 
     feature_collection = FeatureCollection(features)
     with open(geoJSONOutputPath, "w") as fp:
@@ -85,5 +84,5 @@ def processGeoJSON():
         json.dump(methane, fp, cls=NumpyEncoder)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     processGeoJSON()
