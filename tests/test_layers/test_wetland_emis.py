@@ -1,6 +1,7 @@
 import netCDF4 as nc
 import numpy as np
 import pytest
+
 from openmethane_prior.layers.omWetlandEmis import make_wetland_climatology
 from openmethane_prior.omInputs import domainXr, wetlandPath
 from openmethane_prior.omUtils import area_of_rectangle_m2
