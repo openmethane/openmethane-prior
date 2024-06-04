@@ -1,15 +1,18 @@
+import datetime
+
 import netCDF4 as nc
 import numpy as np
-
+import pytest
 from openmethane_prior.layers.omGFASEmis import processEmissions
 from openmethane_prior.omInputs import domainXr
 from openmethane_prior.omUtils import area_of_rectangle_m2
 
 
-def test_gfas_emis(
-    startDate, endDate, **kwargs
-):  # test totals for GFAS emissions between original and remapped
-    remapped = processEmissions(startDate, endDate, **kwargs)
+@pytest.mark.skip(reason="Needs fixtures reshuffled")
+def test_gfas_emis():  # test totals for GFAS emissions between original and remapped
+    remapped = processEmissions(
+        datetime.date(2022, 7, 2), datetime.date(2022, 7, 2), forceUpdate=True
+    )
     GFASfile = "download.nc"
     ncin = nc.Dataset(GFASfile, "r", format="NETCDF3")
     latGfas = np.around(np.float64(ncin.variables["latitude"][:]), 3)

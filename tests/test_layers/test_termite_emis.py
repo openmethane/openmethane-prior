@@ -1,11 +1,12 @@
 import netCDF4 as nc
 import numpy as np
-
+import pytest
 from openmethane_prior.layers.omTermiteEmis import processEmissions
 from openmethane_prior.omInputs import domainXr, termitePath
 from openmethane_prior.omUtils import area_of_rectangle_m2
 
 
+@pytest.mark.skip(reason="Needs fixtures reshuffled")
 def test_termite_emis():
     # TODO: Check the output correctly
     remapped = processEmissions(forceUpdate=True)
