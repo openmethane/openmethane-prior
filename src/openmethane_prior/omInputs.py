@@ -28,7 +28,6 @@ from openmethane_prior import omOutputs
 from openmethane_prior.omUtils import getenv
 
 inputsPath = getenv("INPUTS")
-cmaqExamplePath = getenv("CMAQ_EXAMPLE")
 climateTracePath = os.path.join(inputsPath, getenv("CLIMATETRACE"))
 fossilPath = os.path.join(climateTracePath, getenv("FOSSIL"))
 
@@ -52,9 +51,9 @@ livestockDataPath = os.path.join(inputsPath, getenv("LIVESTOCK_DATA"))
 termitePath = os.path.join(inputsPath, getenv("TERMITES"))
 wetlandPath = os.path.join(inputsPath, getenv("WETLANDS"))
 
-croFilePath = os.path.join(cmaqExamplePath, getenv("CROFILE"))
-dotFilePath = os.path.join(cmaqExamplePath, getenv("DOTFILE"))
-geomFilePath = os.path.join(cmaqExamplePath, getenv("GEO_EM"))
+croFilePath = getenv("CROFILE")
+dotFilePath = getenv("DOTFILE")
+geomFilePath = getenv("GEO_EM")
 
 
 # list of layers that will be in the output file
