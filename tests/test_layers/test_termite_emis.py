@@ -6,7 +6,7 @@ from openmethane_prior.omInputs import domainXr, termitePath
 from openmethane_prior.omUtils import area_of_rectangle_m2
 
 
-def test_termite_emis(input_files, input_domain_xr):
+def test_termite_emis():
     # TODO: Check the output correctly
     remapped = processEmissions(forceUpdate=True)
     ncin = nc.Dataset(termitePath, "r")
