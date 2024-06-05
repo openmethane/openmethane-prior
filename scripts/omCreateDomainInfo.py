@@ -25,7 +25,7 @@ import xarray as xr
 
 from openmethane_prior.omInputs import croFilePath, domainPath, dotFilePath, geomFilePath
 
-root_path = Path(__file__).parents[2]
+root_path = Path(__file__).parents[1]
 # Root directory to use if relative paths are provided
 
 
