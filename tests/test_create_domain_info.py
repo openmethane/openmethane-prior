@@ -1,4 +1,8 @@
 import os
+import sys
+
+# insert root directory into python module search path
+sys.path.insert(1, os.getcwd())
 
 import pytest
 import xarray as xr
@@ -53,11 +57,3 @@ def test_compare_in_domain_with_cro_dot_files(input_domain_xr, cro_xr, dot_xr):
 
     assert cro_xr.NCOLS == input_domain_xr.COL.size
     assert cro_xr.NROWS == input_domain_xr.ROW.size
-
-
-def test_compare_out_domain_with_cro_dot_files(output_domain_xr, cro_xr, dot_xr):
-    assert dot_xr.NCOLS == output_domain_xr.COL_D.size
-    assert dot_xr.NROWS == output_domain_xr.ROW_D.size
-
-    assert cro_xr.NCOLS == output_domain_xr.COL.size
-    assert cro_xr.NROWS == output_domain_xr.ROW.size

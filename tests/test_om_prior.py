@@ -158,3 +158,11 @@ def test_010_emission_discrepancy(root_dir, output_domain_xr, input_files):
             assert (
                 abs(perectenageDifference) < 0.1
             ), f"Discrepency of {perectenageDifference}% in {sector} emissions"
+
+
+def test_compare_out_domain_with_cro_dot_files(output_domain_xr, cro_xr, dot_xr):
+    assert dot_xr.NCOLS == output_domain_xr.COL_D.size
+    assert dot_xr.NROWS == output_domain_xr.ROW_D.size
+
+    assert cro_xr.NCOLS == output_domain_xr.COL.size
+    assert cro_xr.NROWS == output_domain_xr.ROW.size
