@@ -24,7 +24,6 @@ import math
 
 import numpy as np
 import pandas as pd
-
 from openmethane_prior.omInputs import (
     coalPath,
     domainProj,
@@ -56,8 +55,8 @@ def processEmissions(startDate, endDate):
     ]  # national total from inventory
     fugitiveEmis *= 1e9  # convert to kg
     # now read climate_trace facilities emissions for coal, oil and gas
-    coalFacilities = pd.read_csv(coalPath)  # , header=0).to_dict(orient='records')
-    oilGasFacilities = pd.read_csv(oilGasPath)  # , header=0).to_dict(orient='records')
+    coalFacilities = pd.read_csv(coalPath)
+    oilGasFacilities = pd.read_csv(oilGasPath)
     fugitiveFacilities = pd.concat((coalFacilities, oilGasFacilities))
 
     # select gas and year
