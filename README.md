@@ -14,7 +14,7 @@ Instructions for registering for the ADS API and setting up the credentials are 
 at in [ADS Docs](https://ads.atmosphere.copernicus.eu/api-how-to).
 
 After creating an account and obtaining the credentials,
-you must also accept the 
+you must also accept the general
 [license conditions for the data](https://ads.atmosphere.copernicus.eu/cdsapp/#!/terms/licence-to-use-copernicus-products)
 in order to download the data.
 You can check whether the license terms have been accepted by visiting the 
@@ -30,10 +30,10 @@ and share the same credentials file.
 ### Installation
 
 To get started, you will need to make sure that [poetry](https://python-poetry.org/docs/) is installed.
-The Open Methane prior can be installed from source with:
+The Open Methane prior can be installed from source into a virtual environment with:
 
 ```bash
-poetry install --all-extras
+make virtual-environment
 ```
 
 ### Input Data

@@ -16,17 +16,28 @@
 # limitations under the License.
 #
 
-"""
-Download required input files
+"""Download required input files
 
 This downloads the input files that rarely change and can be cached between runs.
 """
 
-from openmethane_prior.omInputs import (electricityPath,
-                      # fugitivesPath,
-                      landUsePath, sectoralEmissionsPath, sectoralMappingsPath, ntlPath, auShapefilePath, livestockDataPath, termitePath, wetlandPath, coalPath, oilGasPath)
-import requests
 import os
+
+import requests
+
+from openmethane_prior.omInputs import (
+    auShapefilePath,
+    coalPath,
+    electricityPath,
+    landUsePath,
+    livestockDataPath,
+    ntlPath,
+    oilGasPath,
+    sectoralEmissionsPath,
+    sectoralMappingsPath,
+    termitePath,
+    wetlandPath,
+)
 from openmethane_prior.omUtils import getenv
 
 scripts_path = os.path.dirname(os.path.realpath(__file__))
@@ -60,26 +71,38 @@ downloads = [
     [auShapefileFile, auShapefilePath],
     [livestockDataFile, livestockDataPath],
     [termiteFile, termitePath],
-    [wetlandFile, wetlandPath]
+    [wetlandFile, wetlandPath],
 ]
 
+
 def download_input_files(root_path, downloads, remote):
-    for filename, filepath in downloads:
-        filepath = os.path.join(root_path, filepath)
+    """
+    Download all input files.
+
+    Parameters
+    ----------
+    root_path
+        Path to download files to
+    downloads
+        List of files to download and their relative paths
+    remote
+        Remote base URL to download from
+    """
+    for filename, download_path in downloads:
+        filepath = os.path.join(root_path, download_path)
         print(filepath)
         url = f"{remote}{filename}"
 
         if not os.path.exists(filepath):
             print(f"Downloading {filename} to {filepath} from {url}")
 
-            with requests.get(url, stream=True) as response:
+            with requests.get(url, stream=True, timeout=30) as response:
                 with open(filepath, mode="wb") as file:
                     for chunk in response.iter_content(chunk_size=10 * 1024):
                         file.write(chunk)
         else:
             print(f"Skipping {filename} beacuse it already exists at {filepath}")
 
-if __name__ == '__main__':
-    download_input_files(root_path=root_path,
-                         downloads=downloads,
-                         remote=remote)
+
+if __name__ == "__main__":
+    download_input_files(root_path=root_path, downloads=downloads, remote=remote)

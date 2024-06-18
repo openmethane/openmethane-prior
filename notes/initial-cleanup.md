@@ -14,14 +14,7 @@ Once we agree on the steps involved,
 we can create a set of GH issues to track the process.
 
 ## Steps:
-* Add an integration test
-    * Might need to use an environment variable to run in "reduced complexity mode"
-    * Run through from start to finish and verify that we get the same result.
 * Run ruff over the codebase. This will coalesce on a common variable/function naming conventions
-* Refactor code into a package. Working name `om_prior`
-    * Split out the processing steps from the utilities
-    * Define an interface that all layers must implement
-    * Move each of the layer scripts into a common place
 * Move inputs,intermediates,outputs into a data folder
 * Migrate to the CR copier template to define the repository structure and workflows. 
     * This will add linting, CI, versioning etc
@@ -29,21 +22,9 @@ we can create a set of GH issues to track the process.
     * We should discuss what steps work for the rest of the team. There are part of the template that we can pick and choose
     * We've documented the technical decisions that we have made which we can share
 * Run CI periodically to double-check that the processing is always ready
-* Add licenseheaders to automate the generation of the license headers in all source files
 
 ## Questions for Peter
-* How does the downloading of inputs work? I see that data is fetched from `https://prior.openmethane.org`. How does data get there?
 * What do you do with the outputs? Are they uploaded to `https://prior.openmethane.org`?
-* There is a mix of scripts and library code here. Broadly the scripts as I understand are as follows:
-    * omDownloadInputs.py
-    * omCreateDomainInfo.py
-    * omPrior.py
-    * omPriorVerify.py
-    * each of the layer generation files can be run independently
-* What should we test?
-    * Running the whole pipeline (10 minutes) might be too slow, but we might be able to run a reduced complexity version for the slow step
-    * How to handle downloading inputs and caching between runs? How much data is there?
-* Is this normally run locally or on NCI?
 * Do you envision the need for more layers or different sources in future? The level of flux here may change how much structure is needed.
 * Will type hints be useful anywhere?
     * We typically use type hints to provide some additional context for future contributor and some additional guardrails. These type hints are then checked as part of the CI.

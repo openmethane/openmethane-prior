@@ -16,22 +16,37 @@
 # limitations under the License.
 #
 
-"""
-Process emissions from the electricity sector
-"""
+"""Process emissions from the electricity sector"""
 
-import numpy as np
-from openmethane_prior.omInputs import electricityPath, sectoralEmissionsPath, domainXr as ds, domainProj
-from openmethane_prior.omOutputs import writeLayer, convertToTimescale, sumLayers
-import pandas as pd
 import math
 
+import numpy as np
+import pandas as pd
+
+from openmethane_prior.omInputs import (
+    domainProj,
+    electricityPath,
+    sectoralEmissionsPath,
+)
+from openmethane_prior.omInputs import (
+    domainXr as ds,
+)
+from openmethane_prior.omOutputs import convert_to_timescale, sumLayers, write_layer
+
+
 def processEmissions():
+    """
+    Process emissions from the electricity sector
+
+    Adds `OCH4_ELECTRICITY` layer to the output file
+    """
     print("processEmissions for Electricity")
 
-    electricityEmis = pd.read_csv(sectoralEmissionsPath).to_dict(orient='records')[0]["electricity"] * 1e9
-    electricityFacilities = pd.read_csv(electricityPath, header=0).to_dict(orient='records')
-    totalCapacity = sum(item['capacity'] for item in electricityFacilities)
+    electricityEmis = (
+        pd.read_csv(sectoralEmissionsPath).to_dict(orient="records")[0]["electricity"] * 1e9
+    )
+    electricityFacilities = pd.read_csv(electricityPath, header=0).to_dict(orient="records")
+    totalCapacity = sum(item["capacity"] for item in electricityFacilities)
     landmask = ds["LANDMASK"][:]
 
     _, lmy, lmx = landmask.shape
@@ -45,12 +60,13 @@ def processEmissions():
         ix = math.floor((x + ww / 2) / ds.DX)
         iy = math.floor((y + hh / 2) / ds.DY)
         try:
-            methane[0][iy][ix] += (facility['capacity'] / totalCapacity) * electricityEmis
+            methane[0][iy][ix] += (facility["capacity"] / totalCapacity) * electricityEmis
         except IndexError:
-            pass # it's outside our domain
+            pass  # it's outside our domain
 
-    writeLayer("OCH4_ELECTRICITY", convertToTimescale(methane))
+    write_layer("OCH4_ELECTRICITY", convert_to_timescale(methane))
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     processEmissions()
     sumLayers()

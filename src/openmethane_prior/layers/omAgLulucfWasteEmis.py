@@ -16,9 +16,7 @@
 # limitations under the License.
 #
 
-"""
-Process livestock methane emissions
-"""
+"""Process livestock methane emissions"""
 
 import csv
 import warnings
@@ -27,14 +25,26 @@ import numpy as np
 import pyproj
 import rioxarray as rxr
 import xarray as xr
-from openmethane_prior.omInputs import domainProj, livestockDataPath, sectoralEmissionsPath, sectoralMappingsPath
-from openmethane_prior.omInputs import domainXr as ds
-from openmethane_prior.omOutputs import convertToTimescale, landuseReprojectionPath, sumLayers, writeLayer
-from openmethane_prior.omUtils import area_of_rectangle_m2, secsPerYear
 from tqdm import tqdm
 
+from openmethane_prior.omInputs import (
+    domainProj,
+    livestockDataPath,
+    sectoralEmissionsPath,
+    sectoralMappingsPath,
+)
+from openmethane_prior.omInputs import domainXr as ds
+from openmethane_prior.omOutputs import (
+    convert_to_timescale,
+    landuseReprojectionPath,
+    sumLayers,
+    write_layer,
+)
+from openmethane_prior.omUtils import area_of_rectangle_m2, secsPerYear
 
-def processEmissions():
+
+def processEmissions():  # noqa: PLR0912, PLR0915
+    """Process Agriculture LULUCF and Waste emissions"""
     # Load raster land-use data
     print("processEmissions for Agriculture, LULUCF and waste")
     print("Loading land use data")
@@ -89,7 +99,10 @@ def processEmissions():
     for iy in range(nlatEnteric):
         areas[iy, :] = (
             area_of_rectangle_m2(
-                latEnteric_edge[iy], latEnteric_edge[iy + 1], lonEnteric_edge[0], lonEnteric_edge[-1]
+                latEnteric_edge[iy],
+                latEnteric_edge[iy + 1],
+                lonEnteric_edge[0],
+                lonEnteric_edge[-1],
             )
             / lonEnteric.size
         )
@@ -117,7 +130,6 @@ def processEmissions():
             warnings.simplefilter(category=RuntimeWarning, action="ignore")
             filtered_x_masks = x_masks[:, y_masks[j]]
             filtered_y_data = [y_data[x_mask_subset].mean() for x_mask_subset in filtered_x_masks]
-
         assert len(filtered_y_data) == lmx
 
         livestockCH4[j, :] = np.nan_to_num(filtered_y_data, nan=0)
@@ -209,13 +221,13 @@ def processEmissions():
 
     print("Writing sectoral methane layers output file")
     for sector in sectorsUsed:
-        writeLayer(f"OCH4_{sector.upper()}", convertToTimescale(methane[sector]))
+        write_layer(f"OCH4_{sector.upper()}", convert_to_timescale(methane[sector]))
 
     print("Writing livestock methane layers output file")
     # convert the livestock data from per year to per second and write
     livestockLayer = np.zeros(landmask.shape)
     livestockLayer[0] = livestockCH4 / secsPerYear
-    writeLayer("OCH4_LIVESTOCK", livestockLayer)
+    write_layer("OCH4_LIVESTOCK", livestockLayer)
 
 
 if __name__ == "__main__":

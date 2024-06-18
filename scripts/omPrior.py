@@ -16,33 +16,40 @@
 # limitations under the License.
 #
 
-"""
-Main entry point for running the openmethane-prior
-"""
+"""Main entry point for running the openmethane-prior"""
 
 import argparse
 import datetime
 
-from openmethane_prior import omInputs
-from openmethane_prior.layers import omAgLulucfWasteEmis
-from openmethane_prior.layers import omIndustrialStationaryTransportEmis
-from openmethane_prior.layers import omElectricityEmis
-from openmethane_prior.layers import omFugitiveEmis
-from openmethane_prior import omOutputs
-from openmethane_prior import omPriorVerify
-
-from openmethane_prior.layers import omGFASEmis
-from openmethane_prior.layers import omTermiteEmis
-from openmethane_prior.layers import omWetlandEmis
+from openmethane_prior import omInputs, omOutputs, omPriorVerify
+from openmethane_prior.layers import (
+    omAgLulucfWasteEmis,
+    omElectricityEmis,
+    omFugitiveEmis,
+    omGFASEmis,
+    omIndustrialStationaryTransportEmis,
+    omTermiteEmis,
+    omWetlandEmis,
+)
 
 # Parse args
-parser = argparse.ArgumentParser(description="Calculate the prior methane emissions estimate for OpenMethane")
-parser.add_argument('startDate', type=lambda s: datetime.datetime.strptime(s, "%Y-%m-%d"), help="Start date in YYYY-MM-DD format")
-parser.add_argument('endDate', type=lambda s: datetime.datetime.strptime(s, "%Y-%m-%d"), help="end date in YYYY-MM-DD format")
+parser = argparse.ArgumentParser(
+    description="Calculate the prior methane emissions estimate for OpenMethane"
+)
+parser.add_argument(
+    "startDate",
+    type=lambda s: datetime.datetime.strptime(s, "%Y-%m-%d"),
+    help="Start date in YYYY-MM-DD format",
+)
+parser.add_argument(
+    "endDate",
+    type=lambda s: datetime.datetime.strptime(s, "%Y-%m-%d"),
+    help="end date in YYYY-MM-DD format",
+)
 parser.add_argument("--skip-reproject", default=False, action="store_true")
 args = parser.parse_args()
 
-omInputs.checkInputFiles()
+omInputs.check_input_files()
 
 if not args.skip_reproject:
     omInputs.reprojectRasterInputs()

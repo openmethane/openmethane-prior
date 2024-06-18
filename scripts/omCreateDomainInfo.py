@@ -16,39 +16,43 @@
 # limitations under the License.
 #
 
-"""
-Generate domain file from example domain
-"""
+"""Generate domain file from example domain."""
 
-from openmethane_prior.omInputs import domainPath, geomFilePath, croFilePath, dotFilePath
-import xarray as xr
 import os
 from pathlib import Path
+
+import xarray as xr
+
+from openmethane_prior.omInputs import croFilePath, domainPath, dotFilePath, geomFilePath
 
 root_path = Path(__file__).parent.parent
 
 domainXr = xr.Dataset()
 
-with xr.open_dataset( os.path.join(root_path, geomFilePath)) as geomXr:
-    for attr in ['DX', 'DY', 'TRUELAT1','TRUELAT2', 'MOAD_CEN_LAT', 'STAND_LON']:
+with xr.open_dataset(os.path.join(root_path, geomFilePath)) as geomXr:
+    for attr in ["DX", "DY", "TRUELAT1", "TRUELAT2", "MOAD_CEN_LAT", "STAND_LON"]:
         domainXr.attrs[attr] = geomXr.attrs[attr]
 
-with xr.open_dataset( os.path.join(root_path, croFilePath)) as croXr:
-    for var in ['LAT','LON']:
+with xr.open_dataset(os.path.join(root_path, croFilePath)) as croXr:
+    for var in ["LAT", "LON"]:
         domainXr[var] = croXr[var]
-        domainXr[var] = croXr[var].squeeze(dim="LAY", drop=True) # copy but remove the 'LAY' dimension
+        domainXr[var] = croXr[var].squeeze(
+            dim="LAY", drop=True
+        )  # copy but remove the 'LAY' dimension
 
-    domainXr['LANDMASK'] = croXr['LWMASK'].squeeze(dim="LAY", drop=True) # copy but remove the 'LAY' dimension
+    domainXr["LANDMASK"] = croXr["LWMASK"].squeeze(
+        dim="LAY", drop=True
+    )  # copy but remove the 'LAY' dimension
 
-with xr.open_dataset( os.path.join(root_path, dotFilePath)) as dotXr:
+with xr.open_dataset(os.path.join(root_path, dotFilePath)) as dotXr:
     # some repetition between the geom and grid files here, XCELL=DX and YCELL=DY
     # - XCELL, YCELL: size of a single cell in m
     # - XCENT, YCENT: lat/long of grid centre point
     # - XORIG, YORIG: position of 0,0 cell in grid coordinates (in m)
-    for attr in ['XCELL', 'YCELL', 'XCENT', 'YCENT', 'XORIG', 'YORIG']:
+    for attr in ["XCELL", "YCELL", "XCENT", "YCENT", "XORIG", "YORIG"]:
         domainXr.attrs[attr] = croXr.attrs[attr]
-    for var in ['LATD','LOND']:
-        domainXr[var] = dotXr[var].rename({'COL':'COL_D', 'ROW':'ROW_D'})
+    for var in ["LATD", "LOND"]:
+        domainXr[var] = dotXr[var].rename({"COL": "COL_D", "ROW": "ROW_D"})
 
 print(os.path.join(root_path, domainPath))
 domainXr.to_netcdf(os.path.join(root_path, domainPath))

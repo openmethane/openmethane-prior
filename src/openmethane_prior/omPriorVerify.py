@@ -16,21 +16,22 @@
 # limitations under the License.
 #
 
-"""
-Utilities for verifying the generated output file
-"""
+"""Utilities for verifying the generated output file"""
 
-from openmethane_prior.omInputs import sectoralEmissionsPath, livestockDataPath, domainXr as ds
-from openmethane_prior.omOutputs import domainOutputPath
-from openmethane_prior.omUtils import secsPerYear
+import numpy as np
 import pandas as pd
 import xarray as xr
-import numpy as np
 from colorama import Fore
 
+from openmethane_prior.omInputs import livestockDataPath, sectoralEmissionsPath
+from openmethane_prior.omOutputs import domainOutputPath
+from openmethane_prior.omUtils import secsPerYear
 
-# Check ouput sector emissions to make sure they tally up to the input emissions
-def verifyEmis():
+MAX_ABS_DIFF = 0.1
+
+
+def verifyEmis(atol: float = MAX_ABS_DIFF):
+    """Check output sector emissions to make sure they tally up to the input emissions"""
     sectorData = pd.read_csv(sectoralEmissionsPath).to_dict(orient="records")[0]
 
     # Load Livestock inventory and check that it doesn't exceed total agriculture inventory
@@ -41,9 +42,15 @@ def verifyEmis():
     agDX = agVal - lsVal
 
     if agDX > 0:
-        print(f"{Fore.GREEN}PASSED - Livestock CH4 within bounds of total agriculture CH4: {agDX / 1e9}")
+        print(
+            f"{Fore.GREEN}PASSED - "
+            f"Livestock CH4 within bounds of total agriculture CH4: {agDX / 1e9}"
+        )
     else:
-        print(f"{Fore.RED}FAILED - Livestock CH4 exceeds bounds of total agriculture CH4: {agDX / 1e9}")
+        print(
+            f"{Fore.RED}FAILED - "
+            f"Livestock CH4 exceeds bounds of total agriculture CH4: {agDX / 1e9}"
+        )
 
     # Check each layer in the output sums up to the input
     with xr.open_dataset(domainOutputPath) as dss:
@@ -61,14 +68,15 @@ def verifyEmis():
                 layerVal += np.sum(ds["OCH4_LIVESTOCK"][0].values * modelAreaM2 * secsPerYear)
 
             diff = round(layerVal - sectorVal)
-            perectenageDifference = diff / sectorVal * 100
+            pct_diff = diff / sectorVal * 100
 
-            if abs(perectenageDifference) > 0.1:
-                print(
-                    f"{Fore.RED}FAILED - Discrepency of {perectenageDifference}% in {sector} emissions"
-                )
+            if abs(pct_diff) > atol:
+                print(f"{Fore.RED}FAILED - " f"Discrepancy of {pct_diff}% in {sector} emissions")
             else:
-                print(f"{Fore.GREEN}PASSED - {sector} emissions OK, discrepancy is {abs(perectenageDifference)}% of total")
+                print(
+                    f"{Fore.GREEN}PASSED - "
+                    f"{sector} emissions OK, discrepancy is {abs(pct_diff)}% of total"
+                )
 
 
 if __name__ == "__main__":

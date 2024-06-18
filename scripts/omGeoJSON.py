@@ -16,24 +16,27 @@
 # limitations under the License.
 #
 
-"""
-Utilities related to GEOJSON files
-"""
+"""Utilities related to GEOJSON files"""
 
-import numpy as np
-import netCDF4 as nc
-from omOutputs import domainOutputPath, geoJSONOutputPath, ch4JSONOutputPath
 import json
-from geojson import Feature, Polygon, FeatureCollection, dumps
+
+import netCDF4 as nc
+import numpy as np
+from geojson import Feature, FeatureCollection, Polygon, dumps
+from omOutputs import ch4JSONOutputPath, domainOutputPath, geoJSONOutputPath
+
 
 class NumpyEncoder(json.JSONEncoder):
-    def default(self, obj):
+    """Numpy encoder for JSON serialization"""
+
+    def default(self, obj):  # noqa: D102
         if isinstance(obj, np.ndarray):
             return obj.tolist()
         return json.JSONEncoder.default(self, obj)
-    
+
+
 def processGeoJSON():
-    # Load raster land-use data
+    """Convert the gridded prior to GeoJSON format"""
     print("converting gridded prior to GeoJSON")
 
     # Load domain
@@ -46,7 +49,6 @@ def processGeoJSON():
     maxEmission = np.amax(ch4)
 
     # Add GeoJSON Polygon feature for each grid location
-
     methane = np.zeros((landmask.shape[1], landmask.shape[2]), dtype=np.int32)
     features = []
 
@@ -54,28 +56,26 @@ def processGeoJSON():
         methane[y][x] = ch4[y][x]
         features.append(
             Feature(
+                # TODO: check if this it too nested
                 geometry=Polygon(
-                    [
+                    (
                         [
                             (float(longs[0][y][x]), float(lats[0][y][x])),
                             (float(longs[0][y][x + 1]), float(lats[0][y][x + 1])),
                             (float(longs[0][y + 1][x + 1]), float(lats[0][y + 1][x + 1])),
                             (float(longs[0][y + 1][x]), float(lats[0][y + 1][x])),
                             (float(longs[0][y][x]), float(lats[0][y][x])),
-                        ]
-                    ]
+                        ],
+                    )
                 ),
                 properties={
                     "x": x,
                     "y": y,
                     "m": float(methane[y][x]),
-                    "rm": float(methane[y][x] / maxEmission * 100)
-                    if methane[y][x] >= 0
-                    else 0,
+                    "rm": float(methane[y][x] / maxEmission * 100) if methane[y][x] >= 0 else 0,
                 },
             )
         )
-
 
     feature_collection = FeatureCollection(features)
     with open(geoJSONOutputPath, "w") as fp:
@@ -85,5 +85,5 @@ def processGeoJSON():
         json.dump(methane, fp, cls=NumpyEncoder)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     processGeoJSON()
