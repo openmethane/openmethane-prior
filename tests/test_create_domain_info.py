@@ -1,14 +1,9 @@
 import os
-import sys
-
-# insert root directory into python module search path
-sys.path.insert(1, os.getcwd())
 
 import pytest
 import xarray as xr
-from scripts.omCreateDomainInfo import create_domain_info
-
 from openmethane_prior.omUtils import getenv
+from scripts.omCreateDomainInfo import create_domain_info
 
 
 @pytest.fixture()
