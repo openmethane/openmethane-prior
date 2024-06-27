@@ -13,18 +13,6 @@ def geom_xr(root_dir):
 
 
 @pytest.fixture()
-def cro_xr(root_dir):
-    cro_file_path = os.path.join(root_dir, getenv("CROFILE"))
-    return xr.open_dataset(cro_file_path)
-
-
-@pytest.fixture()
-def dot_xr(root_dir):
-    dot_file_path = os.path.join(root_dir, getenv("DOTFILE"))
-    return xr.open_dataset(dot_file_path)
-
-
-@pytest.fixture()
 def input_domain_xr(root_dir):
     return create_domain_info(
         geometry_file=os.path.join(root_dir, getenv("GEO_EM")),
