@@ -24,7 +24,7 @@ jobs:
           venv-id: "tests-${{ runner.os }}"
       - name: Run tests
         run: |
-         make tests
+         make test
         env:
           CDSAPI_KEY: ${{ secrets.CDSAPI_ADS_KEY }}
           CDSAPI_URL: https://ads.atmosphere.copernicus.eu/api/v2
