@@ -24,15 +24,14 @@ import math
 
 import numpy as np
 import pandas as pd
+
 from openmethane_prior.omInputs import (
     coalPath,
     domainProj,
     oilGasPath,
     sectoralEmissionsPath,
 )
-from openmethane_prior.omInputs import (
-    domainXr as ds,
-)
+from openmethane_prior.omInputs import domainXr as ds
 from openmethane_prior.omOutputs import convert_to_timescale, sumLayers, write_layer
 
 

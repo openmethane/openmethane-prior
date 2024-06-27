@@ -1,8 +1,6 @@
 import datetime
 import os
 import subprocess
-import sys
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -13,10 +11,7 @@ import xarray as xr
 from openmethane_prior.layers.omGFASEmis import downloadGFAS
 from openmethane_prior.omInputs import livestockDataPath, sectoralEmissionsPath
 from openmethane_prior.omUtils import getenv, secsPerYear
-
-root_path = Path(__file__).parent.parent
-sys.path.insert(1, os.path.join(root_path, "scripts"))
-from omDownloadInputs import download_input_files, downloads, remote  # noqa: E402
+from scripts.omDownloadInputs import download_input_files, downloads, remote
 
 
 @pytest.fixture(scope="session")
