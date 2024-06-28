@@ -34,3 +34,7 @@ ruff-fixes:  # Run ruff on the project
 	poetry run ruff format .
 	poetry run ruff check --fix .
 	poetry run ruff format .
+
+.PHONY: test
+test:  ## Run the tests
+	poetry run python -m pytest -r a -v tests
