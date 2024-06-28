@@ -25,34 +25,66 @@ import xarray as xr
 
 from openmethane_prior.omInputs import croFilePath, domainPath, dotFilePath, geomFilePath
 
-root_path = Path(__file__).parent.parent
+root_path = Path(__file__).parents[1]
+# Root directory to use if relative paths are provided
 
-domainXr = xr.Dataset()
 
-with xr.open_dataset(os.path.join(root_path, geomFilePath)) as geomXr:
-    for attr in ["DX", "DY", "TRUELAT1", "TRUELAT2", "MOAD_CEN_LAT", "STAND_LON"]:
-        domainXr.attrs[attr] = geomXr.attrs[attr]
+def create_domain_info(
+    geometry_file: str,
+    cross_file: str,
+    dot_file: str,
+) -> xr.Dataset:
+    """
+    Create a new domain from the input WRF domain and subsets it to match the CMAQ domain
 
-with xr.open_dataset(os.path.join(root_path, croFilePath)) as croXr:
-    for var in ["LAT", "LON"]:
-        domainXr[var] = croXr[var]
-        domainXr[var] = croXr[var].squeeze(
+    Parameters
+    ----------
+    geometry_file
+        Path to the WRF geometry file
+    cross_file
+        Path to the MCIP cross file
+    dot_file
+        Path to the MCIP dot file
+
+    Returns
+    -------
+        The regridded domain information as an xarray dataset
+    """
+    domainXr = xr.Dataset()
+
+    with xr.open_dataset(geometry_file) as geomXr:
+        for attr in ["DX", "DY", "TRUELAT1", "TRUELAT2", "MOAD_CEN_LAT", "STAND_LON"]:
+            domainXr.attrs[attr] = geomXr.attrs[attr]
+
+    with xr.open_dataset(cross_file) as croXr:
+        for var in ["LAT", "LON"]:
+            domainXr[var] = croXr[var]
+            domainXr[var] = croXr[var].squeeze(
+                dim="LAY", drop=True
+            )  # copy but remove the 'LAY' dimension
+
+        domainXr["LANDMASK"] = croXr["LWMASK"].squeeze(
             dim="LAY", drop=True
         )  # copy but remove the 'LAY' dimension
 
-    domainXr["LANDMASK"] = croXr["LWMASK"].squeeze(
-        dim="LAY", drop=True
-    )  # copy but remove the 'LAY' dimension
+    with xr.open_dataset(dot_file) as dotXr:
+        # some repetition between the geom and grid files here, XCELL=DX and YCELL=DY
+        # - XCELL, YCELL: size of a single cell in m
+        # - XCENT, YCENT: lat/long of grid centre point
+        # - XORIG, YORIG: position of 0,0 cell in grid coordinates (in m)
+        for attr in ["XCELL", "YCELL", "XCENT", "YCENT", "XORIG", "YORIG"]:
+            domainXr.attrs[attr] = croXr.attrs[attr]
+        for var in ["LATD", "LOND"]:
+            domainXr[var] = dotXr[var].rename({"COL": "COL_D", "ROW": "ROW_D"})
 
-with xr.open_dataset(os.path.join(root_path, dotFilePath)) as dotXr:
-    # some repetition between the geom and grid files here, XCELL=DX and YCELL=DY
-    # - XCELL, YCELL: size of a single cell in m
-    # - XCENT, YCENT: lat/long of grid centre point
-    # - XORIG, YORIG: position of 0,0 cell in grid coordinates (in m)
-    for attr in ["XCELL", "YCELL", "XCENT", "YCENT", "XORIG", "YORIG"]:
-        domainXr.attrs[attr] = croXr.attrs[attr]
-    for var in ["LATD", "LOND"]:
-        domainXr[var] = dotXr[var].rename({"COL": "COL_D", "ROW": "ROW_D"})
+    return domainXr
 
-print(os.path.join(root_path, domainPath))
-domainXr.to_netcdf(os.path.join(root_path, domainPath))
+
+if __name__ == "__main__":
+    domain = create_domain_info(
+        geometry_file=os.path.join(root_path, geomFilePath),
+        cross_file=os.path.join(root_path, croFilePath),
+        dot_file=os.path.join(root_path, dotFilePath),
+    )
+    print(f"Writing domain to {os.path.join(root_path, domainPath)}")
+    domain.to_netcdf(os.path.join(root_path, domainPath))

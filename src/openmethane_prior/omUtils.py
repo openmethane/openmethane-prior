@@ -24,13 +24,11 @@ import os
 import pickle
 import typing
 
-import dotenv
 import numpy as np
 from numpy.typing import ArrayLike
 
 T = typing.TypeVar("T", bound=ArrayLike | float)
 
-dotenv.load_dotenv()
 getenv = os.environ.get
 
 secsPerYear = 365 * 24 * 60 * 60
