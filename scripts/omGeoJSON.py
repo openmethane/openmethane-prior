@@ -91,7 +91,7 @@ def processGeoJSON():
             # raw values
             properties[layer_name] = float(ds_slice[layer_name][y][x])
             # relative to max
-            properties[f"{layer_name}_R"] =  float(ds_slice[layer_name][y][x] / max_values[layer_name]),
+            properties[f"{layer_name}_R"] = float(ds_slice[layer_name][y][x] / max_values[layer_name])
 
         features.append(
             Feature(
