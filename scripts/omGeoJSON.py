@@ -68,11 +68,13 @@ def processGeoJSON():
     }
 
     max_values = {}
+    max_values_float = {}
     for layer_name in prior_layers:
         # extract the meaningful dimensions from the NetCDF variables
         ds_slice[layer_name] = ds[layer_name][:][0][0]
         # find the max emission value in a single cell for each layer
         max_values[layer_name] = np.max(ds_slice[layer_name])
+        max_values_float[layer_name] = float(max_values[layer_name])
 
     # Add GeoJSON Polygon feature for each grid location
     features = []
@@ -88,10 +90,7 @@ def processGeoJSON():
             "rm": float(ds_slice["OCH4_TOTAL"][y][x] / max_values["OCH4_TOTAL"]),
         }
         for layer_name in prior_layers:
-            # raw values
             properties[layer_name] = float(ds_slice[layer_name][y][x])
-            # relative to max
-            properties[f"{layer_name}_R"] = float(ds_slice[layer_name][y][x] / max_values[layer_name])
 
         features.append(
             Feature(
@@ -109,8 +108,11 @@ def processGeoJSON():
                 properties=properties,
             )
         )
-
+    
     feature_collection = FeatureCollection(features)
+    feature_collection.metadata = {
+        "max_values": max_values_float,
+    }
 
     print("Writing output to", geoJSONOutputPath)
     with open(geoJSONOutputPath, "w") as fp:
