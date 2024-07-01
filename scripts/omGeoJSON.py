@@ -72,7 +72,7 @@ def processGeoJSON():
         # extract the meaningful dimensions from the NetCDF variables
         ds_slice[layer_name] = ds[layer_name][:][0][0]
         # find the max emission value in a single cell for each layer
-        max_values[layer_name] = np.amax(ds_slice[layer_name])
+        max_values[layer_name] = np.max(ds_slice[layer_name])
 
     # Add GeoJSON Polygon feature for each grid location
     features = []
