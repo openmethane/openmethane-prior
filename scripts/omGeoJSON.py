@@ -25,6 +25,21 @@ import numpy as np
 from geojson import Feature, FeatureCollection, Polygon, dumps
 from openmethane_prior.omOutputs import domainOutputPath, geoJSONOutputPath
 
+prior_layers = [
+    "OCH4_AGRICULTURE",
+    "OCH4_LULUCF",
+    "OCH4_WASTE",
+    "OCH4_LIVESTOCK",
+    "OCH4_INDUSTRIAL",
+    "OCH4_STATIONARY",
+    "OCH4_TRANSPORT",
+    "OCH4_ELECTRICITY",
+    "OCH4_FUGITIVE",
+    "OCH4_TERMITE",
+    "OCH4_FIRE",
+    "OCH4_WETLANDS",
+    "OCH4_TOTAL",
+]
 
 class NumpyEncoder(json.JSONEncoder):
     """Numpy encoder for JSON serialization"""
@@ -50,44 +65,34 @@ def processGeoJSON():
         "LANDMASK": ds["LANDMASK"][:][0],
         "LATD": ds["LATD"][:][0][0],
         "LOND": ds["LOND"][:][0][0],
-
-        "OCH4_AGRICULTURE": ds["OCH4_AGRICULTURE"][:][0][0],
-        "OCH4_LULUCF": ds["OCH4_LULUCF"][:][0][0],
-        "OCH4_WASTE": ds["OCH4_WASTE"][:][0][0],
-        "OCH4_LIVESTOCK": ds["OCH4_LIVESTOCK"][:][0][0],
-        "OCH4_INDUSTRIAL": ds["OCH4_INDUSTRIAL"][:][0][0],
-        "OCH4_STATIONARY": ds["OCH4_STATIONARY"][:][0][0],
-        "OCH4_TRANSPORT": ds["OCH4_TRANSPORT"][:][0][0],
-        "OCH4_ELECTRICITY": ds["OCH4_ELECTRICITY"][:][0][0],
-        "OCH4_FUGITIVE": ds["OCH4_FUGITIVE"][:][0][0],
-        "OCH4_TERMITE": ds["OCH4_TERMITE"][:][0][0],
-        "OCH4_FIRE": ds["OCH4_FIRE"][:][0][0],
-        "OCH4_WETLANDS": ds["OCH4_WETLANDS"][:][0][0],
-        "OCH4_TOTAL": ds["OCH4_TOTAL"][:][0][0],
     }
 
-    print("Finding max emission for each layer")
-    max_values = {
-        "OCH4_AGRICULTURE": np.amax(ds_slice["OCH4_AGRICULTURE"]),
-        "OCH4_LULUCF": np.amax(ds_slice["OCH4_LULUCF"]),
-        "OCH4_WASTE": np.amax(ds_slice["OCH4_WASTE"]),
-        "OCH4_LIVESTOCK": np.amax(ds_slice["OCH4_LIVESTOCK"]),
-        "OCH4_INDUSTRIAL": np.amax(ds_slice["OCH4_INDUSTRIAL"]),
-        "OCH4_STATIONARY": np.amax(ds_slice["OCH4_STATIONARY"]),
-        "OCH4_TRANSPORT": np.amax(ds_slice["OCH4_TRANSPORT"]),
-        "OCH4_ELECTRICITY": np.amax(ds_slice["OCH4_ELECTRICITY"]),
-        "OCH4_FUGITIVE": np.amax(ds_slice["OCH4_FUGITIVE"]),
-        "OCH4_TERMITE": np.amax(ds_slice["OCH4_TERMITE"]),
-        "OCH4_FIRE": np.amax(ds_slice["OCH4_FIRE"]),
-        "OCH4_WETLANDS": np.amax(ds_slice["OCH4_WETLANDS"]),
-        "OCH4_TOTAL": np.amax(ds_slice["OCH4_TOTAL"]),
-    }
+    max_values = {}
+    for layer_name in prior_layers:
+        # extract the meaningful dimensions from the NetCDF variables
+        ds_slice[layer_name] = ds[layer_name][:][0][0]
+        # find the max emission value in a single cell for each layer
+        max_values[layer_name] = np.amax(ds_slice[layer_name])
 
     # Add GeoJSON Polygon feature for each grid location
     features = []
 
     print("Gathering cell data")
     for (y, x), _ in np.ndenumerate(ds_slice["LANDMASK"]):
+        properties={
+            "x": x,
+            "y": y,
+            "landmask": int(ds_slice["LANDMASK"][y][x]),
+            # left for backward compatibility with previous format
+            "m": float(ds_slice["OCH4_TOTAL"][y][x]),
+            "rm": float(ds_slice["OCH4_TOTAL"][y][x] / max_values["OCH4_TOTAL"]),
+        }
+        for layer_name in prior_layers:
+            # raw values
+            properties[layer_name] = float(ds_slice[layer_name][y][x])
+            # relative to max
+            properties[f"{layer_name}_R"] =  float(ds_slice[layer_name][y][x] / max_values[layer_name]),
+
         features.append(
             Feature(
                 geometry=Polygon(
@@ -101,43 +106,7 @@ def processGeoJSON():
                         ],
                     )
                 ),
-                properties={
-                    "x": x,
-                    "y": y,
-                    "landmask": int(ds_slice["LANDMASK"][y][x]),
-                    
-                    # raw values
-                    "OCH4_AGRICULTURE": float(ds_slice["OCH4_AGRICULTURE"][y][x]),
-                    "OCH4_LULUCF": float(ds_slice["OCH4_LULUCF"][y][x]),
-                    "OCH4_WASTE": float(ds_slice["OCH4_WASTE"][y][x]),
-                    "OCH4_LIVESTOCK": float(ds_slice["OCH4_LIVESTOCK"][y][x]),
-                    "OCH4_INDUSTRIAL": float(ds_slice["OCH4_INDUSTRIAL"][y][x]),
-                    "OCH4_STATIONARY": float(ds_slice["OCH4_STATIONARY"][y][x]),
-                    "OCH4_TRANSPORT": float(ds_slice["OCH4_TRANSPORT"][y][x]),
-                    "OCH4_ELECTRICITY": float(ds_slice["OCH4_ELECTRICITY"][y][x]),
-                    "OCH4_FUGITIVE": float(ds_slice["OCH4_FUGITIVE"][y][x]),
-                    "OCH4_TERMITE": float(ds_slice["OCH4_TERMITE"][y][x]),
-                    "OCH4_FIRE": float(ds_slice["OCH4_FIRE"][y][x]),
-                    "OCH4_WETLANDS": float(ds_slice["OCH4_WETLANDS"][y][x]),
-                    "OCH4_TOTAL": float(ds_slice["OCH4_TOTAL"][y][x]),
-                    "m": float(ds_slice["OCH4_TOTAL"][y][x]),
-
-                    # relative to max
-                    "OCH4_AGRICULTURE_R": float(ds_slice["OCH4_AGRICULTURE"][y][x] / max_values["OCH4_AGRICULTURE"]),
-                    "OCH4_LULUCF_R": float(ds_slice["OCH4_LULUCF"][y][x] / max_values["OCH4_LULUCF"]),
-                    "OCH4_WASTE_R": float(ds_slice["OCH4_WASTE"][y][x] / max_values["OCH4_WASTE"]),
-                    "OCH4_LIVESTOCK_R": float(ds_slice["OCH4_LIVESTOCK"][y][x] / max_values["OCH4_LIVESTOCK"]),
-                    "OCH4_INDUSTRIAL_R": float(ds_slice["OCH4_INDUSTRIAL"][y][x] / max_values["OCH4_INDUSTRIAL"]),
-                    "OCH4_STATIONARY_R": float(ds_slice["OCH4_STATIONARY"][y][x] / max_values["OCH4_STATIONARY"]),
-                    "OCH4_TRANSPORT_R": float(ds_slice["OCH4_TRANSPORT"][y][x] / max_values["OCH4_TRANSPORT"]),
-                    "OCH4_ELECTRICITY_R": float(ds_slice["OCH4_ELECTRICITY"][y][x] / max_values["OCH4_ELECTRICITY"]),
-                    "OCH4_FUGITIVE_R": float(ds_slice["OCH4_FUGITIVE"][y][x] / max_values["OCH4_FUGITIVE"]),
-                    "OCH4_TERMITE_R": float(ds_slice["OCH4_TERMITE"][y][x] / max_values["OCH4_TERMITE"]),
-                    "OCH4_FIRE_R": float(ds_slice["OCH4_FIRE"][y][x] / max_values["OCH4_FIRE"]),
-                    "OCH4_WETLANDS_R": float(ds_slice["OCH4_WETLANDS"][y][x] / max_values["OCH4_WETLANDS"]),
-                    "OCH4_TOTAL_R": float(ds_slice["OCH4_TOTAL"][y][x] / max_values["OCH4_TOTAL"]),
-                    "rm": float(ds_slice["OCH4_TOTAL"][y][x] / max_values["OCH4_TOTAL"]),
-                },
+                properties=properties,
             )
         )
 
