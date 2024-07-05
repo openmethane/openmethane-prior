@@ -24,6 +24,8 @@ import os
 
 import netCDF4 as nc
 import numpy as np
+from shapely import geometry
+
 from openmethane_prior.config import PriorConfig, load_config_from_env
 from openmethane_prior.outputs import sum_layers, write_layer
 from openmethane_prior.utils import (
@@ -33,10 +35,9 @@ from openmethane_prior.utils import (
     redistribute_spatially,
     save_zipped_pickle,
 )
-from shapely import geometry
 
 
-def processEmissions(
+def processEmissions(  # noqa: PLR0915
     config: PriorConfig,
     forceUpdate: bool = False,
     **kwargs,

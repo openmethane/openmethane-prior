@@ -21,6 +21,7 @@ import os
 import sys
 
 import samgeo.common as sam
+
 from openmethane_prior.config import PriorConfig
 
 
@@ -36,7 +37,8 @@ def check_input_files(config: PriorConfig):
 
     if not config.input_domain_file.exists():
         errors.append(
-            f"Missing file for domain info at {config.input_domain_file}, suggest running omCreateDomainInfo.py"
+            f"Missing file for domain info at {config.input_domain_file}, "
+            f"suggest running scripts/omCreateDomainInfo.py"
         )
 
     checks = (

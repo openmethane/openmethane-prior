@@ -25,6 +25,8 @@ import numpy as np
 import pyproj
 import rioxarray as rxr
 import xarray as xr
+from tqdm import tqdm
+
 from openmethane_prior.config import PriorConfig, load_config_from_env
 from openmethane_prior.outputs import (
     convert_to_timescale,
@@ -32,7 +34,6 @@ from openmethane_prior.outputs import (
     write_layer,
 )
 from openmethane_prior.utils import SECS_PER_YEAR, area_of_rectangle_m2
-from tqdm import tqdm
 
 
 def processEmissions(config: PriorConfig):  # noqa: PLR0912, PLR0915

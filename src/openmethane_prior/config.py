@@ -9,6 +9,12 @@ from environs import Env
 
 @attrs.frozen()
 class LayerInputs:
+    """
+    Filename fragments for the files required to generate the layers.
+
+    These files are downloaded to the `input_path` directory via `scripts/omDownloadInputs.py`.
+    """
+
     electricity_path: pathlib.Path
     oil_gas_path: pathlib.Path
     coal_path: pathlib.Path

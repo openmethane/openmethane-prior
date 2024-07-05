@@ -34,12 +34,21 @@ class NumpyEncoder(json.JSONEncoder):
     """Numpy encoder for JSON serialization"""
 
     def default(self, obj):
+        """Convert numpy arrays to lists"""
         if isinstance(obj, np.ndarray):
             return obj.tolist()
         return json.JSONEncoder.default(self, obj)
 
 
 def processGeoJSON(config: PriorConfig):
+    """
+    Process the gridded prior to produce a GeoJSON file for the frontend.
+
+    Parameters
+    ----------
+    config
+        Application configuration
+    """
     geojson_output_path = config.output_path / "om-prior.json"
 
     """Convert the gridded prior to GeoJSON format"""

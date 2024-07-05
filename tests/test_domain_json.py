@@ -3,6 +3,7 @@ import json
 from io import StringIO
 
 import pytest
+
 from scripts.omDomainJSON import write_domain_json
 
 
