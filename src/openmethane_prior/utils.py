@@ -58,6 +58,7 @@ def date_time_range(start: datetime.date, end: datetime.date, delta: datetime.ti
 
 def save_zipped_pickle(obj, filename: str | pathlib.Path, protocol=-1):
     """Save a compressed pickle file."""
+    pathlib.Path(filename).parent.mkdir(parents=True, exist_ok=True)
     with gzip.open(filename, "wb") as f:
         pickle.dump(obj, f, protocol)
 

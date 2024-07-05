@@ -6,7 +6,6 @@ import attrs
 import dotenv
 import pytest
 import xarray as xr
-
 from openmethane_prior.config import PriorConfig, load_config_from_env
 from scripts.omCreateDomainInfo import create_domain_info, write_domain_info
 from scripts.omDownloadInputs import download_input_files
@@ -33,15 +32,13 @@ def env(monkeypatch, root_dir):
 
 
 @pytest.fixture()
-def cro_xr(root_dir, env):
-    cro_file_path = os.path.join(root_dir, os.environ["CROFILE"])
-    return xr.open_dataset(cro_file_path)
+def cro_xr(config):
+    return xr.open_dataset(config.cro_file)
 
 
 @pytest.fixture()
-def dot_xr(root_dir, env):
-    dot_file_path = os.path.join(root_dir, os.environ["DOTFILE"])
-    return xr.open_dataset(dot_file_path)
+def dot_xr(config):
+    return xr.open_dataset(config.dot_file)
 
 
 @pytest.fixture()
@@ -101,4 +98,5 @@ def input_domain(root_dir):
 
     yield domain
 
-    os.remove(config.input_domain_file)
+    if config.input_domain_file.exists():
+        os.remove(config.input_domain_file)

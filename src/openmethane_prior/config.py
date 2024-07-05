@@ -40,23 +40,27 @@ class PriorConfig:
     geometry_file: pathlib.Path
 
     def as_input_file(self, name: str | pathlib.Path) -> pathlib.Path:
+        """Return the full path to an input file"""
         return self.input_path / name
 
     def as_intermediate_file(self, name: str | pathlib.Path) -> pathlib.Path:
+        """Return the full path to an intermediate file"""
         return self.intermediates_path / name
 
     def as_output_file(self, name: str | pathlib.Path) -> pathlib.Path:
+        """Return the full path to an output file"""
         return self.output_path / name
 
     @cache
     def domain_dataset(self):
-        expected_filename = self.as_input_file(self.domain)
-        if not expected_filename.exists():
-            raise ValueError(f"Missing domain file: {expected_filename}")
-        return xr.load_dataset(expected_filename)
+        """Load the input domain dataset"""
+        if not self.output_domain_file.exists():
+            raise ValueError(f"Missing domain file: {self.output_domain_file}")
+        return xr.load_dataset(self.output_domain_file)
 
     @cache
     def domain_projection(self):
+        """Query the projection used by the input domain"""
         ds = self.domain_dataset()
 
         return pyproj.Proj(
@@ -74,23 +78,36 @@ class PriorConfig:
 
     @property
     def crs(self):
+        """Return the CRS used by the domain dataset"""
         return self.domain_projection().crs
 
     @property
     def domain_cell_area(self):
+        """Calculate the cell area for each cell"""
         ds = self.domain_dataset()
         return ds.DX * ds.DY
 
     @property
     def input_domain_file(self):
+        """Get the filename of the input domain"""
         return self.as_input_file(self.domain)
 
     @property
     def output_domain_file(self):
+        """Get the filename of the output domain"""
         return self.as_output_file(f"out-{self.domain}")
 
 
 def load_config_from_env() -> PriorConfig:
+    """
+    Load the configuration from the environment variables
+
+    This also loads environment variables from a local `.env` file.
+
+    Returns
+    -------
+        Application configuration
+    """
     env = Env(
         expand_vars=True,
     )
