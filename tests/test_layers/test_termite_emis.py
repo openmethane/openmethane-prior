@@ -1,7 +1,7 @@
 import netCDF4 as nc
 import numpy as np
 from openmethane_prior.layers.omTermiteEmis import processEmissions
-from openmethane_prior.omUtils import area_of_rectangle_m2
+from openmethane_prior.utils import area_of_rectangle_m2
 
 
 def test_termite_emis(config):

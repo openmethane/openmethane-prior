@@ -4,7 +4,7 @@ Layer processing
 Each module targets a different layer
 """
 
-layers = (
+layer_names = (
     "agriculture",
     "electricity",
     "fugitive",

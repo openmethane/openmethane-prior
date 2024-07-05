@@ -21,8 +21,8 @@
 import argparse
 import datetime
 
-from openmethane_prior import omInputs, omOutputs, omPriorVerify
 from openmethane_prior.config import load_config_from_env
+from openmethane_prior.inputs import check_input_files, reproject_raster_inputs
 from openmethane_prior.layers import (
     omAgLulucfWasteEmis,
     omElectricityEmis,
@@ -32,6 +32,8 @@ from openmethane_prior.layers import (
     omTermiteEmis,
     omWetlandEmis,
 )
+from openmethane_prior.outputs import sum_layers
+from openmethane_prior.verification import verify_emis
 
 
 def run_prior(start_date: datetime.date, end_date: datetime.date, skip_reproject: bool):
@@ -49,10 +51,10 @@ def run_prior(start_date: datetime.date, end_date: datetime.date, skip_reproject
     """
     config = load_config_from_env()
 
-    omInputs.check_input_files(config)
+    check_input_files(config)
 
     if not skip_reproject:
-        omInputs.reproject_raster_inputs(config)
+        reproject_raster_inputs(config)
 
     omAgLulucfWasteEmis.processEmissions(config)
     omIndustrialStationaryTransportEmis.processEmissions(config)
@@ -63,8 +65,8 @@ def run_prior(start_date: datetime.date, end_date: datetime.date, skip_reproject
     omGFASEmis.processEmissions(config, start_date, end_date)
     omWetlandEmis.processEmissions(config, start_date, end_date)
 
-    omOutputs.sum_layers()
-    omPriorVerify.verify_emis()
+    sum_layers(config.output_domain_file)
+    verify_emis(config)
 
 
 if __name__ == "__main__":

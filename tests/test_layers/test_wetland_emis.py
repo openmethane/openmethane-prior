@@ -1,10 +1,11 @@
 import netCDF4 as nc
 import numpy as np
+
 from openmethane_prior.layers.omWetlandEmis import make_wetland_climatology
-from openmethane_prior.omUtils import area_of_rectangle_m2
+from openmethane_prior.utils import area_of_rectangle_m2
 
 
-def test_wetland_emis(config):
+def test_wetland_emis(config, input_files):
     # TODO: convert into an actual test
     """Test totals for WETLAND emissions between original and remapped"""
     remapped = make_wetland_climatology(config=config, forceUpdate=True)

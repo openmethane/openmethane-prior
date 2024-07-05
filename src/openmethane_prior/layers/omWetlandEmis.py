@@ -30,8 +30,8 @@ import xarray as xr
 from shapely import geometry
 
 from openmethane_prior.config import PriorConfig, load_config_from_env
-from openmethane_prior.omOutputs import sum_layers, write_layer
-from openmethane_prior.omUtils import (
+from openmethane_prior.outputs import sum_layers, write_layer
+from openmethane_prior.utils import (
     area_of_rectangle_m2,
     date_time_range,
     load_zipped_pickle,

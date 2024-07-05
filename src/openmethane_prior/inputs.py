@@ -21,13 +21,7 @@ import os
 import sys
 
 import samgeo.common as sam
-
 from openmethane_prior.config import PriorConfig
-
-# Input file definitions
-
-
-# list of layers that will be in the output file
 
 
 def check_input_files(config: PriorConfig):

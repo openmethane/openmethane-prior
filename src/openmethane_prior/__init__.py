@@ -1,4 +1,4 @@
-"""Open methane prior."""
+"""OpenMethane prior."""
 
 import importlib.metadata
 

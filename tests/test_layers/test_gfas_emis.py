@@ -4,7 +4,7 @@ import netCDF4 as nc
 import numpy as np
 import pytest
 from openmethane_prior.layers.omGFASEmis import processEmissions
-from openmethane_prior.omUtils import area_of_rectangle_m2
+from openmethane_prior.utils import area_of_rectangle_m2
 
 
 @pytest.mark.skip(reason="Needs an example GFAS file")

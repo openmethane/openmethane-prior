@@ -24,17 +24,16 @@ import os
 
 import netCDF4 as nc
 import numpy as np
-from shapely import geometry
-
 from openmethane_prior.config import PriorConfig, load_config_from_env
-from openmethane_prior.omOutputs import sum_layers, write_layer
-from openmethane_prior.omUtils import (
+from openmethane_prior.outputs import sum_layers, write_layer
+from openmethane_prior.utils import (
     SECS_PER_YEAR,
     area_of_rectangle_m2,
     load_zipped_pickle,
     redistribute_spatially,
     save_zipped_pickle,
 )
+from shapely import geometry
 
 
 def processEmissions(

@@ -17,7 +17,6 @@
 #
 """Output handling"""
 
-import os
 import pathlib
 
 import numpy as np
@@ -25,13 +24,8 @@ import numpy.typing as npt
 import xarray as xr
 
 from openmethane_prior.config import PriorConfig
-from openmethane_prior.layers import layers
-from openmethane_prior.omUtils import SECS_PER_YEAR, getenv
-
-outputsPath = getenv("OUTPUTS")
-domainFilename = getenv("DOMAIN")
-
-domainOutputPath = os.path.join(outputsPath, f"out-{domainFilename}")
+from openmethane_prior.layers import layer_names
+from openmethane_prior.utils import SECS_PER_YEAR
 
 coordNames = ["TSTEP", "LAY", "ROW", "COL"]
 
@@ -100,7 +94,7 @@ def sum_layers(output_path: pathlib.Path):
 
     # now check to find largest shape because we'll broadcast everything else to that
     summedSize = 0
-    for layer in layers:
+    for layer in layer_names:
         layerName = f"OCH4_{layer.upper()}"
 
         if layerName in ds:
@@ -109,7 +103,7 @@ def sum_layers(output_path: pathlib.Path):
                 summedSize = ds[layerName].size
 
     summed = None
-    for layer in layers:
+    for layer in layer_names:
         layerName = f"OCH4_{layer.upper()}"
 
         if layerName in ds:

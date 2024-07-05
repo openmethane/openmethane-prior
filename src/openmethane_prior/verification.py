@@ -22,9 +22,8 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 from colorama import Fore
-
 from openmethane_prior.config import PriorConfig, load_config_from_env
-from openmethane_prior.omUtils import SECS_PER_YEAR
+from openmethane_prior.utils import SECS_PER_YEAR
 
 MAX_ABS_DIFF = 0.1
 

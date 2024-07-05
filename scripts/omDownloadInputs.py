@@ -22,33 +22,43 @@ This downloads the input files that rarely change and can be cached between runs
 """
 
 import os
+import pathlib
+from collections.abc import Iterable
 
 import attrs
 import requests
 
-from openmethane_prior.config import PriorConfig, load_config_from_env
-from openmethane_prior.omUtils import getenv
-
-remote = getenv("PRIOR_REMOTE")
+from openmethane_prior.config import load_config_from_env
 
 
-def download_input_files(config: PriorConfig, remote: str):
+def download_input_files(
+    download_path: pathlib.Path, fragments: Iterable[str], remote: str
+) -> list[pathlib.Path]:
     """
-    Download all input files.
+    Download input files from a remote location
 
     Parameters
     ----------
-    config
-        Prior configuration
+    download_path
+        Path to download the files to
+    fragments
+        Collection of path fragments to download.
+
+        This fragments are combined with the remote URL
+        to create the full URL to download the file from.
     remote
-        Remote base URL to download from
+        URL prefix to download the files from
+
+    Returns
+    -------
+        List of input files that have been fetched or found locally.
+
     """
-    os.makedirs(config.input_path, exist_ok=True)
+    download_path.mkdir(parents=True, exist_ok=True)
 
-    for item in attrs.asdict(config.layer_inputs).values():
-        fragment = str(item)
-
-        filepath = config.as_input_file(fragment)
+    downloads = []
+    for fragment in fragments:
+        filepath = download_path / fragment
 
         print(filepath)
         url = f"{remote}{fragment}"
@@ -62,9 +72,12 @@ def download_input_files(config: PriorConfig, remote: str):
                         file.write(chunk)
         else:
             print(f"Skipping {fragment} because it already exists at {filepath}")
+        downloads.append(filepath)
+    return downloads
 
 
 if __name__ == "__main__":
     config = load_config_from_env()
 
-    download_input_files(config, remote=remote)
+    fragments = [str(frag) for frag in attrs.asdict(config.layer_inputs).values()]
+    download_input_files(download_path=config.input_path, fragments=fragments, remote=config.remote)

@@ -23,9 +23,8 @@ import numpy as np
 import pandas as pd
 import rioxarray as rxr
 import xarray as xr
-
 from openmethane_prior.config import PriorConfig, load_config_from_env
-from openmethane_prior.omOutputs import (
+from openmethane_prior.outputs import (
     convert_to_timescale,
     sum_layers,
     write_layer,

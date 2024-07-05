@@ -27,6 +27,7 @@ class PriorConfig:
     """Configuration used to describe the prior data sources and the output directories."""
 
     domain: str
+    remote: str
     input_path: pathlib.Path
     output_path: pathlib.Path
     intermediates_path: pathlib.Path
@@ -97,9 +98,10 @@ def load_config_from_env() -> PriorConfig:
 
     return PriorConfig(
         domain=env("DOMAIN"),
+        remote=env("PRIOR_REMOTE"),
         input_path=env.path("INPUT_PATH", "data/inputs"),
         output_path=env.path("OUTPUT_PATH", "data/outputs"),
-        intermediates_path=env.path("INTERMEDIATES_PATH", "data/inputs"),
+        intermediates_path=env.path("INTERMEDIATES_PATH", "data/processed"),
         layer_inputs=LayerInputs(
             electricity_path=env.path("ELECTRICITY_PATH"),
             oil_gas_path=env.path("OIL_GAS_PATH"),

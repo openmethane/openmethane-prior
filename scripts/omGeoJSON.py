@@ -25,22 +25,9 @@ import numpy as np
 from geojson import Feature, FeatureCollection, Polygon, dumps
 
 from openmethane_prior.config import PriorConfig, load_config_from_env
+from openmethane_prior.layers import layer_names
 
-prior_layers = [
-    "OCH4_AGRICULTURE",
-    "OCH4_LULUCF",
-    "OCH4_WASTE",
-    "OCH4_LIVESTOCK",
-    "OCH4_INDUSTRIAL",
-    "OCH4_STATIONARY",
-    "OCH4_TRANSPORT",
-    "OCH4_ELECTRICITY",
-    "OCH4_FUGITIVE",
-    "OCH4_TERMITE",
-    "OCH4_FIRE",
-    "OCH4_WETLANDS",
-    "OCH4_TOTAL",
-]
+prior_layers = [f"OCH4_{layer.upper()}" for layer in [*layer_names, "total"]]
 
 
 class NumpyEncoder(json.JSONEncoder):

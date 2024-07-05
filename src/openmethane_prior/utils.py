@@ -16,11 +16,10 @@
 # limitations under the License.
 #
 
-"""General utilties"""
+"""General utilities"""
 
 import datetime
 import gzip
-import os
 import pathlib
 import pickle
 import typing
@@ -30,7 +29,6 @@ from numpy.typing import ArrayLike
 
 T = typing.TypeVar("T", bound=ArrayLike | float)
 
-getenv = os.environ.get
 
 SECS_PER_YEAR = 365 * 24 * 60 * 60
 
