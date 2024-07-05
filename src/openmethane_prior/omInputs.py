@@ -20,102 +20,17 @@
 import os
 import sys
 
-import pyproj
 import samgeo.common as sam
-import xarray as xr
 
-from openmethane_prior import omOutputs
-from openmethane_prior.omUtils import getenv
-
-inputsPath = getenv("INPUTS")
-climateTracePath = os.path.join(inputsPath, getenv("CLIMATETRACE"))
-fossilPath = os.path.join(climateTracePath, getenv("FOSSIL"))
+from openmethane_prior.config import PriorConfig
 
 # Input file definitions
-domainFilename = getenv("DOMAIN")
-domainPath = os.path.join(inputsPath, domainFilename)
-electricityPath = os.path.join(inputsPath, getenv("CH4_ELECTRICITY"))
-# TODO: Changing this to match with the rest of the download file paths.
-# The originally specified directory does not exist and stops the download.
-# Maybe needs to be changed back later in the process.
-# oilGasPath = os.path.join( fossilPath, getenv("OILGAS"))
-oilGasPath = os.path.join(inputsPath, getenv("OILGAS"))
-# coalPath = os.path.join( fossilPath, getenv("COAL"))
-coalPath = os.path.join(inputsPath, getenv("COAL"))
-landUsePath = os.path.join(inputsPath, getenv("LAND_USE"))
-sectoralEmissionsPath = os.path.join(inputsPath, getenv("SECTORAL_EMISSIONS"))
-sectoralMappingsPath = os.path.join(inputsPath, getenv("SECTORAL_MAPPING"))
-ntlPath = os.path.join(inputsPath, getenv("NTL"))
-auShapefilePath = os.path.join(inputsPath, getenv("AUSF"))
-livestockDataPath = os.path.join(inputsPath, getenv("LIVESTOCK_DATA"))
-termitePath = os.path.join(inputsPath, getenv("TERMITES"))
-wetlandPath = os.path.join(inputsPath, getenv("WETLANDS"))
-
-croFilePath = getenv("CROFILE")
-dotFilePath = getenv("DOTFILE")
-geomFilePath = getenv("GEO_EM")
 
 
 # list of layers that will be in the output file
-omLayers = [
-    "agriculture",
-    "electricity",
-    "fugitive",
-    "industrial",
-    "lulucf",
-    "stationary",
-    "transport",
-    "waste",
-    "livestock",
-    "fire",
-    "wetlands",
-    "termite",
-]
-
-# load the domain info and define a projection once for use in other scripts
-print("Loading domain info")
-domainXr = None
-domainProj = None
-
-if os.path.exists(domainPath):
-    with xr.open_dataset(domainPath) as dss:
-        domainXr = dss.load()
-        domainProj = pyproj.Proj(
-            proj="lcc",
-            lat_1=domainXr.TRUELAT1,
-            lat_2=domainXr.TRUELAT2,
-            lat_0=domainXr.MOAD_CEN_LAT,
-            lon_0=domainXr.STAND_LON,
-            # https://github.com/openmethane/openmethane-prior/issues/24
-            # x_0=domainXr.XORIG,
-            # y_0=domainXr.YORIG,
-            a=6370000,
-            b=6370000,
-        )
 
 
-def check_input_file(filename: str, error_msg: str, errors: list[str]):
-    """
-    Check that a required input file is present
-
-    Parameters
-    ----------
-    filename
-        Path of the required file
-    error_msg
-        Message to include if the file is missing
-    errors
-        List of current errors
-
-        If the required file is missing,
-        an extra value of `error_msg` is added to the list
-    """
-    ##
-    if not os.path.exists(filename):
-        errors.append(error_msg)
-
-
-def check_input_files():
+def check_input_files(config: PriorConfig):
     """
     Check that all required input files are present
 
@@ -125,33 +40,27 @@ def check_input_files():
 
     errors = []
 
-    check_input_file(
-        domainPath,
-        f"Missing file for domain info at {domainPath}, suggest running omCreateDomainInfo.py",
-        errors,
+    if not config.input_domain_file.exists():
+        errors.append(
+            f"Missing file for domain info at {config.input_domain_file}, suggest running omCreateDomainInfo.py"
+        )
+
+    checks = (
+        (config.layer_inputs.electricity_path, "electricity facilities"),
+        (config.layer_inputs.coal_path, "Coal facilities"),
+        (config.layer_inputs.oil_gas_path, "Oilgas facilities"),
+        (config.layer_inputs.land_use_path, "land use"),
+        (config.layer_inputs.sectoral_emissions_path, "sectoral emissions"),
+        (config.layer_inputs.sectoral_mapping_path, "sectoral emissions mappings"),
+        (config.layer_inputs.ntl_path, "night time lights"),
+        (config.layer_inputs.livestock_path, "livestock data"),
+        (config.layer_inputs.termite_path, "termite data"),
+        (config.layer_inputs.wetland_path, "wetlands data"),
     )
-    check_input_file(
-        electricityPath, f"Missing file for electricity facilities: {electricityPath}", errors
-    )
-    check_input_file(coalPath, f"Missing file for Coal facilities: {coalPath}", errors)
-    check_input_file(oilGasPath, f"Missing file for Oilgas facilities: {oilGasPath}", errors)
-    check_input_file(landUsePath, f"Missing file for land use: {landUsePath}", errors)
-    check_input_file(
-        sectoralEmissionsPath,
-        f"Missing file for sectoral emissions: {sectoralEmissionsPath}",
-        errors,
-    )
-    check_input_file(
-        sectoralMappingsPath,
-        f"Missing file for sectoral emissions mappings: {sectoralMappingsPath}",
-        errors,
-    )
-    check_input_file(ntlPath, f"Missing file for night time lights: {ntlPath}", errors)
-    check_input_file(
-        livestockDataPath, f"Missing file for livestock data: {livestockDataPath}", errors
-    )
-    check_input_file(termitePath, f"Missing file for termite data: {termitePath}", errors)
-    check_input_file(wetlandPath, f"Missing file for wetlands data: {wetlandPath}", errors)
+
+    for path, desc in checks:
+        if not os.path.exists(path):
+            errors.append(f"Missing file for {desc} at {path}")
 
     ## Print all errors and exit (if we have any errors)
     if len(errors) > 0:
@@ -164,8 +73,16 @@ def check_input_files():
         sys.exit(1)
 
 
-def reprojectRasterInputs():
+def reproject_raster_inputs(config: PriorConfig):
     """Re-project raster files to match domain"""
     print("### Re-projecting raster inputs...")
-    sam.reproject(landUsePath, omOutputs.landuseReprojectionPath, domainProj.crs)
-    sam.reproject(ntlPath, omOutputs.ntlReprojectionPath, domainProj.crs)
+    sam.reproject(
+        str(config.as_input_file(config.layer_inputs.land_use_path)),
+        str(config.as_intermediate_file(config.layer_inputs.land_use_path)),
+        config.crs,
+    )
+    sam.reproject(
+        str(config.as_input_file(config.layer_inputs.ntl_path)),
+        str(config.as_intermediate_file(config.layer_inputs.ntl_path)),
+        config.crs,
+    )

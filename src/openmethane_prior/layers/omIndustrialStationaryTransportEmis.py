@@ -24,16 +24,10 @@ import pandas as pd
 import rioxarray as rxr
 import xarray as xr
 
-from openmethane_prior.omInputs import (
-    auShapefilePath,
-    domainProj,
-    sectoralEmissionsPath,
-)
-from openmethane_prior.omInputs import domainXr as ds
+from openmethane_prior.config import PriorConfig, load_config_from_env
 from openmethane_prior.omOutputs import (
     convert_to_timescale,
-    ntlReprojectionPath,
-    sumLayers,
+    sum_layers,
     write_layer,
 )
 
@@ -42,7 +36,7 @@ def _find_grid(data, totalSize, gridSize):
     return np.floor((data + totalSize / 2) / gridSize)
 
 
-def processEmissions():
+def processEmissions(config: PriorConfig):
     """
     Process emissions for Industrial, Stationary and Transport
 
@@ -51,11 +45,14 @@ def processEmissions():
     print("processEmissions for Industrial, Stationary and Transport")
 
     sectorsUsed = ["industrial", "stationary", "transport"]
-    _ntlData = rxr.open_rasterio(ntlReprojectionPath, masked=True)
+
+    _ntlData = rxr.open_rasterio(
+        config.as_intermediate_file(config.layer_inputs.ntl_path), masked=True
+    )
 
     print("Clipping night-time lights data to Australian land border")
-    ausf = geopandas.read_file(auShapefilePath)
-    ausf_rp = ausf.to_crs(domainProj.crs)
+    ausf = geopandas.read_file(config.as_input_file(config.layer_inputs.aus_shapefile_path))
+    ausf_rp = ausf.to_crs(config.crs)
     ntlData = _ntlData.rio.clip(ausf_rp.geometry.values, ausf_rp.crs)
 
     # Add together the intensity of the 3 channels for a total intensity per pixel
@@ -68,28 +65,31 @@ def processEmissions():
     # Divide each pixel intensity by the total to get a scaled intensity per pixel
     ntltScalar = ntlt / ntltTotal
 
-    sectorData = pd.read_csv(sectoralEmissionsPath).to_dict(orient="records")[0]
+    sectorData = pd.read_csv(
+        config.as_input_file(config.layer_inputs.sectoral_emissions_path)
+    ).to_dict(orient="records")[0]
     ntlIndustrial = ntltScalar * (sectorData["industrial"] * 1e9)
     ntlStationary = ntltScalar * (sectorData["stationary"] * 1e9)
     ntlTransport = ntltScalar * (sectorData["transport"] * 1e9)
 
     # Load domain
-    landmask = ds["LANDMASK"][:]
+    domain_ds = config.domain_dataset()
+    landmask = domain_ds["LANDMASK"][:]
 
     _, lmy, lmx = landmask.shape
-    ww = ds.DX * lmx
-    hh = ds.DY * lmy
+    ww = domain_ds.DX * lmx
+    hh = domain_ds.DY * lmy
 
     print("Mapping night-time lights grid to domain grid")
-    xDomain = xr.apply_ufunc(_find_grid, ntlData.x, ww, ds.DX).values.astype(int)
-    yDomain = xr.apply_ufunc(_find_grid, ntlData.y, hh, ds.DY).values.astype(int)
+    xDomain = xr.apply_ufunc(_find_grid, ntlData.x, ww, domain_ds.DX).values.astype(int)
+    yDomain = xr.apply_ufunc(_find_grid, ntlData.y, hh, domain_ds.DY).values.astype(int)
 
-    # xDomain = np.floor((ntlData.x + ww / 2) / ds.DX).astype(int)
-    # yDomain = np.floor((ntlData.y + hh / 2) / ds.DY).astype(int)
+    # xDomain = np.floor((ntlData.x + ww / 2) / domain_ds.DX).astype(int)
+    # yDomain = np.floor((ntlData.y + hh / 2) / domain_ds.DY).astype(int)
 
     methane = {}
     for sector in sectorsUsed:
-        methane[sector] = np.zeros(ds["LANDMASK"].shape)
+        methane[sector] = np.zeros(domain_ds["LANDMASK"].shape)
 
     litPixels = np.argwhere(ntlt > 0)
     ignored = 0
@@ -106,10 +106,14 @@ def processEmissions():
     print(f"{ignored} lit pixels were ignored")
 
     for sector in sectorsUsed:
-        write_layer(f"OCH4_{sector.upper()}", convert_to_timescale(methane[sector]))
+        write_layer(
+            config,
+            f"OCH4_{sector.upper()}",
+            convert_to_timescale(methane[sector], config.domain_cell_area),
+        )
 
 
 if __name__ == "__main__":
-    # reprojectRasterInputs()
-    processEmissions()
-    sumLayers()
+    config = load_config_from_env()
+    processEmissions(config)
+    sum_layers(config.output_domain_file)

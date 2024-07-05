@@ -1,17 +1,13 @@
 import netCDF4 as nc
 import numpy as np
-import pytest
-
 from openmethane_prior.layers.omTermiteEmis import processEmissions
-from openmethane_prior.omInputs import domainXr, termitePath
 from openmethane_prior.omUtils import area_of_rectangle_m2
 
 
-@pytest.mark.skip(reason="Needs fixtures reshuffled")
-def test_termite_emis():
+def test_termite_emis(config):
     # TODO: Check the output correctly
-    remapped = processEmissions(forceUpdate=True)
-    ncin = nc.Dataset(termitePath, "r")
+    remapped = processEmissions(config=config, forceUpdate=True)
+    ncin = nc.Dataset(config.as_input_file(config.layer_inputs.termite_path), "r")
     latTerm = np.around(np.float64(ncin.variables["lat"][:]), 3)
     latTerm = latTerm[-1::-1]  # reversing order, we need south first
     lonTerm = np.around(np.float64(ncin.variables["lon"][:]), 3)
@@ -39,14 +35,16 @@ def test_termite_emis():
             )
             / lonTerm.size
         )
-    LATD = domainXr.variables["LATD"].values.squeeze()
-    LOND = domainXr.variables["LOND"].values.squeeze()
+
+    domain_ds = config.domain_dataset()
+    LATD = domain_ds.variables["LATD"].values.squeeze()
+    LOND = domain_ds.variables["LOND"].values.squeeze()
     indLat = (latTerm > LATD.min()) & (latTerm < LATD.max())
     indLon = (lonTerm > LOND.min()) & (lonTerm < LOND.max())
     TermCH4 = ncin["ch4_emissions_2010_2016.asc"][...][-1::-1, :]  # reverse latitudes
     #    np.clip( TermCH4, 0., None, out=TermCH4) # remove negative values in place
     inds = np.ix_(indLat, indLon)
     TermTotals = TermCH4[inds].sum()
-    area = domainXr.XCELL * domainXr.YCELL
+    area = domain_ds.XCELL * domain_ds.YCELL
     remappedTotals = remapped.sum() * area / 1e9  # conversion from kg to mt
     print(TermTotals, remappedTotals)

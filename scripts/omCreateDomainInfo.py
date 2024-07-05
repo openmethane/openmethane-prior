@@ -16,23 +16,28 @@
 # limitations under the License.
 #
 
-"""Generate domain file from example domain."""
+"""
+Generate domain file from example domain.
+
+TODO: Migrate this to the `openmethane` repository as that is where the required
+files are generated.
+"""
 
 import os
+import pathlib
 from pathlib import Path
 
 import xarray as xr
-
-from openmethane_prior.omInputs import croFilePath, domainPath, dotFilePath, geomFilePath
+from openmethane_prior.config import load_config_from_env
 
 root_path = Path(__file__).parents[1]
 # Root directory to use if relative paths are provided
 
 
 def create_domain_info(
-    geometry_file: str,
-    cross_file: str,
-    dot_file: str,
+    geometry_file: pathlib.Path,
+    cross_file: pathlib.Path,
+    dot_file: pathlib.Path,
 ) -> xr.Dataset:
     """
     Create a new domain from the input WRF domain and subsets it to match the CMAQ domain
@@ -81,10 +86,13 @@ def create_domain_info(
 
 
 if __name__ == "__main__":
+    config = load_config_from_env()
+    domain_path = config.input_domain_file
+
     domain = create_domain_info(
-        geometry_file=os.path.join(root_path, geomFilePath),
-        cross_file=os.path.join(root_path, croFilePath),
-        dot_file=os.path.join(root_path, dotFilePath),
+        geometry_file=root_path / config.geometry_file,
+        cross_file=root_path / config.cro_file,
+        dot_file=root_path / config.dot_file,
     )
-    print(f"Writing domain to {os.path.join(root_path, domainPath)}")
-    domain.to_netcdf(os.path.join(root_path, domainPath))
+    print(f"Writing domain to {os.path.join(root_path, domain_path)}")
+    domain.to_netcdf(os.path.join(root_path, domain_path))

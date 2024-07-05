@@ -29,8 +29,8 @@ import numpy as np
 import xarray as xr
 from shapely import geometry
 
-from openmethane_prior.omInputs import domainXr, wetlandPath
-from openmethane_prior.omOutputs import intermediatesPath, sumLayers, write_layer
+from openmethane_prior.config import PriorConfig, load_config_from_env
+from openmethane_prior.omOutputs import sum_layers, write_layer
 from openmethane_prior.omUtils import (
     area_of_rectangle_m2,
     date_time_range,
@@ -40,7 +40,7 @@ from openmethane_prior.omUtils import (
 )
 
 
-def make_wetland_climatology(forceUpdate: bool = False):  # noqa: PLR0915
+def make_wetland_climatology(config: PriorConfig, forceUpdate: bool = False):  # noqa: PLR0915
     """
     Remap wetland emissions to the CMAQ domain
 
@@ -53,7 +53,7 @@ def make_wetland_climatology(forceUpdate: bool = False):  # noqa: PLR0915
     -------
         Array containing the processed results
     """
-    ncin = nc.Dataset(wetlandPath, "r")
+    ncin = nc.Dataset(config.as_input_file(config.layer_inputs.wetland_path), "r")
     latWetland = np.around(np.float64(ncin.variables["lat"][:]), 3)
     lonWetland = np.around(np.float64(ncin.variables["lon"][:]), 3)
     dlatWetland = latWetland[0] - latWetland[1]
@@ -84,12 +84,13 @@ def make_wetland_climatology(forceUpdate: bool = False):  # noqa: PLR0915
             / lonWetland.size
         )
     # now collect some domain information
-    LAT = domainXr.variables["LAT"].values.squeeze()
-    cmaqArea = domainXr.XCELL * domainXr.YCELL
+    domain_ds = config.domain_dataset()
+    LAT = domain_ds.variables["LAT"].values.squeeze()
+    cmaqArea = domain_ds.XCELL * domain_ds.YCELL
 
-    indxPath = f"{intermediatesPath}/WETLAND_ind_x.p.gz"
-    indyPath = f"{intermediatesPath}/WETLAND_ind_y.p.gz"
-    coefsPath = f"{intermediatesPath}/WETLAND_coefs.p.gz"
+    indxPath = config.as_intermediate_file("WETLAND_ind_x.p.gz")
+    indyPath = config.as_intermediate_file("WETLAND_ind_y.p.gz")
+    coefsPath = config.as_intermediate_file("WETLAND_ind_coefs.p.gz")
 
     if (
         os.path.exists(indxPath)
@@ -114,8 +115,8 @@ def make_wetland_climatology(forceUpdate: bool = False):  # noqa: PLR0915
         ind_y.append([])
         coefs.append([])
 
-        LATD = domainXr.variables["LATD"].values.squeeze()
-        LOND = domainXr.variables["LOND"].values.squeeze()
+        LATD = domain_ds.variables["LATD"].values.squeeze()
+        LOND = domain_ds.variables["LOND"].values.squeeze()
 
         domShape.append(LAT.shape)
 
@@ -195,7 +196,9 @@ def make_wetland_climatology(forceUpdate: bool = False):  # noqa: PLR0915
     return np.array(result)
 
 
-def processEmissions(startDate, endDate, **kwargs):
+def processEmissions(
+    config: PriorConfig, startDate: datetime.date, endDate: datetime.date, **kwargs
+):
     """
     Process wetland emissions for the given date range
 
@@ -228,7 +231,7 @@ def processEmissions(startDate, endDate, **kwargs):
             "x": np.arange(resultNd.shape[-1]),
         },
     )
-    write_layer("OCH4_WETLANDS", resultXr, True)
+    write_layer(config, "OCH4_WETLANDS", resultXr, True)
     return resultNd
 
 
@@ -247,5 +250,6 @@ if __name__ == "__main__":
         help="end date in YYYY-MM-DD format",
     )
     args = parser.parse_args()
-    processEmissions(args.startDate, args.endDate)
-    sumLayers()
+    config = load_config_from_env()
+    processEmissions(config, args.startDate, args.endDate)
+    sum_layers(config.output_domain_file)

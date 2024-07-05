@@ -23,7 +23,8 @@ import json
 import netCDF4 as nc
 import numpy as np
 from geojson import Feature, FeatureCollection, Polygon, dumps
-from openmethane_prior.omOutputs import domainOutputPath, geoJSONOutputPath
+
+from openmethane_prior.config import PriorConfig, load_config_from_env
 
 prior_layers = [
     "OCH4_AGRICULTURE",
@@ -41,22 +42,26 @@ prior_layers = [
     "OCH4_TOTAL",
 ]
 
+
 class NumpyEncoder(json.JSONEncoder):
     """Numpy encoder for JSON serialization"""
 
-    def default(self, obj):  # noqa: D102
+    def default(self, obj):
         if isinstance(obj, np.ndarray):
             return obj.tolist()
         return json.JSONEncoder.default(self, obj)
 
 
-def processGeoJSON():
+def processGeoJSON(config: PriorConfig):
+    geojson_output_path = config.output_path / "om-prior.json"
+
     """Convert the gridded prior to GeoJSON format"""
     print("converting gridded prior to GeoJSON")
 
     # Load domain
     print("Loading output file")
-    ds = nc.Dataset(domainOutputPath)
+
+    ds = nc.Dataset()
 
     # There is a better way to do this but this will work for now
     # Using xarray wasn't straightforward because the layers don't use
@@ -81,7 +86,7 @@ def processGeoJSON():
 
     print("Gathering cell data")
     for (y, x), _ in np.ndenumerate(ds_slice["LANDMASK"]):
-        properties={
+        properties = {
             "x": x,
             "y": y,
             "landmask": int(ds_slice["LANDMASK"][y][x]),
@@ -99,7 +104,10 @@ def processGeoJSON():
                         [
                             (float(ds_slice["LOND"][y][x]), float(ds_slice["LATD"][y][x])),
                             (float(ds_slice["LOND"][y][x + 1]), float(ds_slice["LATD"][y][x + 1])),
-                            (float(ds_slice["LOND"][y + 1][x + 1]), float(ds_slice["LATD"][y + 1][x + 1])),
+                            (
+                                float(ds_slice["LOND"][y + 1][x + 1]),
+                                float(ds_slice["LATD"][y + 1][x + 1]),
+                            ),
                             (float(ds_slice["LOND"][y + 1][x]), float(ds_slice["LATD"][y + 1][x])),
                             (float(ds_slice["LOND"][y][x]), float(ds_slice["LATD"][y][x])),
                         ],
@@ -108,16 +116,18 @@ def processGeoJSON():
                 properties=properties,
             )
         )
-    
+
     feature_collection = FeatureCollection(features)
     feature_collection.metadata = {
         "max_values": max_values_float,
     }
 
-    print("Writing output to", geoJSONOutputPath)
-    with open(geoJSONOutputPath, "w") as fp:
+    print("Writing output to", geojson_output_path)
+    with open(geojson_output_path, "w") as fp:
         fp.write(dumps(feature_collection))
 
 
 if __name__ == "__main__":
-    processGeoJSON()
+    config = load_config_from_env()
+
+    processGeoJSON(config)

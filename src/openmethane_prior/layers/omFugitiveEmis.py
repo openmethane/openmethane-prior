@@ -25,17 +25,11 @@ import math
 import numpy as np
 import pandas as pd
 
-from openmethane_prior.omInputs import (
-    coalPath,
-    domainProj,
-    oilGasPath,
-    sectoralEmissionsPath,
-)
-from openmethane_prior.omInputs import domainXr as ds
-from openmethane_prior.omOutputs import convert_to_timescale, sumLayers, write_layer
+from openmethane_prior.config import PriorConfig, load_config_from_env
+from openmethane_prior.omOutputs import convert_to_timescale, sum_layers, write_layer
 
 
-def processEmissions(startDate, endDate):
+def processEmissions(config: PriorConfig, startDate, endDate):
     """
     Process the fugitive methane emissions
 
@@ -49,13 +43,13 @@ def processEmissions(startDate, endDate):
         Ignored
     """
     print("processEmissions for fugitives")
-    fugitiveEmis = pd.read_csv(sectoralEmissionsPath).to_dict(orient="records")[0][
-        "fugitive"
-    ]  # national total from inventory
+    fugitiveEmis = pd.read_csv(
+        config.as_input_file(config.layer_inputs.sectoral_emissions_path)
+    ).to_dict(orient="records")[0]["fugitive"]  # national total from inventory
     fugitiveEmis *= 1e9  # convert to kg
     # now read climate_trace facilities emissions for coal, oil and gas
-    coalFacilities = pd.read_csv(coalPath)
-    oilGasFacilities = pd.read_csv(oilGasPath)
+    coalFacilities = pd.read_csv(config.as_input_file(config.layer_inputs.coal_path))
+    oilGasFacilities = pd.read_csv(config.as_input_file(config.layer_inputs.oil_gas_path))
     fugitiveFacilities = pd.concat((coalFacilities, oilGasFacilities))
 
     # select gas and year
@@ -73,24 +67,29 @@ def processEmissions(startDate, endDate):
     fugitiveYear.loc[:, "emissions_quantity"] *= (
         fugitiveEmis / fugitiveYear["emissions_quantity"].sum()
     )
-    landmask = ds["LANDMASK"][:]
+
+    domain_ds = config.domain_dataset()
+
+    landmask = domain_ds["LANDMASK"][:]
 
     _, lmy, lmx = landmask.shape
-    ww = ds.DX * lmx
-    hh = ds.DY * lmy
+    ww = domain_ds.DX * lmx
+    hh = domain_ds.DY * lmy
 
     methane = np.zeros(landmask.shape)
 
+    domain_proj = config.domain_projection()
+
     for _, facility in fugitiveYear.iterrows():
-        x, y = domainProj(facility["lon"], facility["lat"])
-        ix = math.floor((x + ww / 2) / ds.DX)
-        iy = math.floor((y + hh / 2) / ds.DY)
+        x, y = domain_proj(facility["lon"], facility["lat"])
+        ix = math.floor((x + ww / 2) / domain_ds.DX)
+        iy = math.floor((y + hh / 2) / domain_ds.DY)
         try:
             methane[0][iy][ix] += facility["emissions_quantity"]
         except IndexError:
             pass  # it's outside our domain
 
-    write_layer("OCH4_FUGITIVE", convert_to_timescale(methane))
+    write_layer(config, "OCH4_FUGITIVE", convert_to_timescale(methane, config.domain_cell_area))
 
 
 if __name__ == "__main__":
@@ -107,6 +106,8 @@ if __name__ == "__main__":
         type=lambda s: datetime.datetime.strptime(s, "%Y-%m-%d"),
         help="end date in YYYY-MM-DD format",
     )
+    config = load_config_from_env()
+
     args = parser.parse_args()
-    processEmissions(args.startDate, args.endDate)
-    sumLayers()
+    processEmissions(config, args.startDate, args.endDate)
+    sum_layers(config.output_domain_file)

@@ -22,6 +22,7 @@ import argparse
 import datetime
 
 from openmethane_prior import omInputs, omOutputs, omPriorVerify
+from openmethane_prior.config import load_config_from_env
 from openmethane_prior.layers import (
     omAgLulucfWasteEmis,
     omElectricityEmis,
@@ -32,36 +33,55 @@ from openmethane_prior.layers import (
     omWetlandEmis,
 )
 
-# Parse args
-parser = argparse.ArgumentParser(
-    description="Calculate the prior methane emissions estimate for OpenMethane"
-)
-parser.add_argument(
-    "startDate",
-    type=lambda s: datetime.datetime.strptime(s, "%Y-%m-%d"),
-    help="Start date in YYYY-MM-DD format",
-)
-parser.add_argument(
-    "endDate",
-    type=lambda s: datetime.datetime.strptime(s, "%Y-%m-%d"),
-    help="end date in YYYY-MM-DD format",
-)
-parser.add_argument("--skip-reproject", default=False, action="store_true")
-args = parser.parse_args()
 
-omInputs.check_input_files()
+def run_prior(start_date: datetime.date, end_date: datetime.date, skip_reproject: bool):
+    """
+    Calculate the prior methane emissions estimate for OpenMethane
 
-if not args.skip_reproject:
-    omInputs.reprojectRasterInputs()
+    Parameters
+    ----------
+    start_date
+        Date to start the prior calculation (UTC timezone)
+    end_date
+        Date to end the prior calculation (UTC timezone)
+    skip_reproject
+        If true, don't reproject the raster datasets onto the domain
+    """
+    config = load_config_from_env()
 
-omAgLulucfWasteEmis.processEmissions()
-omIndustrialStationaryTransportEmis.processEmissions()
-omElectricityEmis.processEmissions()
-omFugitiveEmis.processEmissions(args.startDate, args.endDate)
+    omInputs.check_input_files(config)
 
-omTermiteEmis.processEmissions()
-omGFASEmis.processEmissions(args.startDate, args.endDate)
-omWetlandEmis.processEmissions(args.startDate, args.endDate)
+    if not skip_reproject:
+        omInputs.reproject_raster_inputs(config)
 
-omOutputs.sumLayers()
-omPriorVerify.verifyEmis()
+    omAgLulucfWasteEmis.processEmissions(config)
+    omIndustrialStationaryTransportEmis.processEmissions(config)
+    omElectricityEmis.processEmissions(config)
+    omFugitiveEmis.processEmissions(config, start_date, end_date)
+
+    omTermiteEmis.processEmissions(config)
+    omGFASEmis.processEmissions(config, start_date, end_date)
+    omWetlandEmis.processEmissions(config, start_date, end_date)
+
+    omOutputs.sum_layers()
+    omPriorVerify.verify_emis()
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        description="Calculate the prior methane emissions estimate for OpenMethane"
+    )
+    parser.add_argument(
+        "startDate",
+        type=lambda s: datetime.datetime.strptime(s, "%Y-%m-%d"),
+        help="Start date in YYYY-MM-DD format",
+    )
+    parser.add_argument(
+        "endDate",
+        type=lambda s: datetime.datetime.strptime(s, "%Y-%m-%d"),
+        help="end date in YYYY-MM-DD format",
+    )
+    parser.add_argument("--skip-reproject", default=False, action="store_true")
+    args = parser.parse_args()
+
+    run_prior(start_date=args.startDate, end_date=args.endDate, skip_reproject=args.skip_reproject)

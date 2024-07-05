@@ -2,30 +2,31 @@ import datetime
 import os
 import subprocess
 
+import attrs
 import numpy as np
 import pandas as pd
 import pytest
 import requests
 import xarray as xr
-from openmethane_prior.layers.omGFASEmis import downloadGFAS
-from openmethane_prior.omInputs import livestockDataPath, sectoralEmissionsPath
-from openmethane_prior.omUtils import secsPerYear
-from scripts.omDownloadInputs import download_input_files, downloads, remote
+from openmethane_prior.config import load_config_from_env
+from openmethane_prior.layers.omGFASEmis import download_GFAS
+from openmethane_prior.omUtils import SECS_PER_YEAR
+from scripts.omDownloadInputs import download_input_files, remote
 
 
 # Fixture to download and later remove all input files
 @pytest.fixture(scope="session")
 def input_files(root_dir):
-    download_input_files(root_path=root_dir, downloads=downloads, remote=remote)
+    config = load_config_from_env()
 
-    input_folder = os.path.join(root_dir, "inputs")
+    download_input_files(config=config, remote=remote)
 
-    downloaded_files = os.listdir(input_folder)
+    downloaded_files = os.listdir(config.input_path)
 
     yield downloaded_files
 
     for file in [i for i in downloaded_files if i != "README.md"]:
-        filepath = os.path.join(input_folder, file)
+        filepath = config.input_path / file
         os.remove(filepath)
 
 
@@ -57,9 +58,10 @@ def output_domain_xr(root_dir, input_domain_xr):
     os.remove(filepath_out_domain)
 
 
-def test_001_response_for_download_links():
-    for filename, filepath in downloads:
-        url = f"{remote}{filename}"
+def test_001_response_for_download_links(config):
+    layer_info = attrs.asdict(config.layer_inputs)
+    for file_fragment in layer_info.values():
+        url = f"{remote}{file_fragment}"
         with requests.get(url, stream=True, timeout=30) as response:
             print(f"Response code for {url}: {response.status_code}")
             assert response.status_code == 200
@@ -68,10 +70,10 @@ def test_001_response_for_download_links():
 def test_002_cdsapi_connection(root_dir, tmpdir):
     filepath = tmpdir.mkdir("sub").join("test_download_cdsapi.nc")
 
-    startDate = datetime.datetime.strptime("2022-07-01", "%Y-%m-%d")
-    endDate = datetime.datetime.strptime("2022-07-02", "%Y-%m-%d")
+    start_date = datetime.datetime.strptime("2022-07-01", "%Y-%m-%d")
+    end_date = datetime.datetime.strptime("2022-07-02", "%Y-%m-%d")
 
-    downloadGFAS(startDate=startDate, endDate=endDate, fileName=filepath)
+    download_GFAS(start_date=start_date, end_date=end_date, file_name=filepath)
 
     assert os.path.exists(filepath)
 
@@ -103,11 +105,11 @@ def test_004_omDownloadInputs(root_dir, input_files):
     assert sorted(input_files) == sorted(EXPECTED_FILES)
 
 
-def test_005_agriculture_emissions(root_dir, input_files):
-    filepath_livestock = os.path.join(root_dir, livestockDataPath)
+def test_005_agriculture_emissions(config, root_dir, input_files):
+    filepath_livestock = config.as_input_file(config.layer_inputs.livestock_path)
     livestock_data = xr.open_dataset(filepath_livestock)
 
-    filepath_sector = os.path.join(root_dir, sectoralEmissionsPath)
+    filepath_sector = config.as_input_file(config.layer_inputs.sectoral_emissions_path)
     sector_data = pd.read_csv(filepath_sector).to_dict(orient="records")[0]
 
     lsVal = round(np.sum(livestock_data["CH4_total"].values))
@@ -127,10 +129,10 @@ def test_009_output_domain_xr(output_domain_xr, num_regression):
     num_regression.check(mean_values)
 
 
-def test_010_emission_discrepancy(root_dir, output_domain_xr, input_files):
+def test_010_emission_discrepancy(config, root_dir, output_domain_xr, input_files):
     modelAreaM2 = output_domain_xr.DX * output_domain_xr.DY
 
-    filepath_sector = os.path.join(root_dir, sectoralEmissionsPath)
+    filepath_sector = config.as_input_file(config.layer_inputs.sectoral_emissions_path)
     sector_data = pd.read_csv(filepath_sector).to_dict(orient="records")[0]
 
     for sector in sector_data.keys():
@@ -139,11 +141,11 @@ def test_010_emission_discrepancy(root_dir, output_domain_xr, input_files):
 
         # Check each layer in the output sums up to the input
         if layerName in output_domain_xr:
-            layerVal = np.sum(output_domain_xr[layerName][0].values * modelAreaM2 * secsPerYear)
+            layerVal = np.sum(output_domain_xr[layerName][0].values * modelAreaM2 * SECS_PER_YEAR)
 
             if sector == "agriculture":
                 layerVal += np.sum(
-                    output_domain_xr["OCH4_LIVESTOCK"][0].values * modelAreaM2 * secsPerYear
+                    output_domain_xr["OCH4_LIVESTOCK"][0].values * modelAreaM2 * SECS_PER_YEAR
                 )
 
             diff = round(layerVal - sectorVal)

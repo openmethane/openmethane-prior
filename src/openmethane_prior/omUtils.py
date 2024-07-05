@@ -21,6 +21,7 @@
 import datetime
 import gzip
 import os
+import pathlib
 import pickle
 import typing
 
@@ -31,7 +32,7 @@ T = typing.TypeVar("T", bound=ArrayLike | float)
 
 getenv = os.environ.get
 
-secsPerYear = 365 * 24 * 60 * 60
+SECS_PER_YEAR = 365 * 24 * 60 * 60
 
 
 def date_time_range(start: datetime.date, end: datetime.date, delta: datetime.timedelta):
@@ -57,13 +58,13 @@ def date_time_range(start: datetime.date, end: datetime.date, delta: datetime.ti
         t += delta
 
 
-def save_zipped_pickle(obj, filename: str, protocol=-1):
+def save_zipped_pickle(obj, filename: str | pathlib.Path, protocol=-1):
     """Save a compressed pickle file."""
     with gzip.open(filename, "wb") as f:
         pickle.dump(obj, f, protocol)
 
 
-def load_zipped_pickle(filename: str):
+def load_zipped_pickle(filename: str | pathlib.Path):
     """Load a gzipped pickle file from disk.
 
     Parameters

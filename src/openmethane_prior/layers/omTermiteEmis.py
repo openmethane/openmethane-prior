@@ -26,18 +26,19 @@ import netCDF4 as nc
 import numpy as np
 from shapely import geometry
 
-from openmethane_prior.omInputs import domainXr, termitePath
-from openmethane_prior.omOutputs import intermediatesPath, sumLayers, write_layer
+from openmethane_prior.config import PriorConfig, load_config_from_env
+from openmethane_prior.omOutputs import sum_layers, write_layer
 from openmethane_prior.omUtils import (
+    SECS_PER_YEAR,
     area_of_rectangle_m2,
     load_zipped_pickle,
     redistribute_spatially,
     save_zipped_pickle,
-    secsPerYear,
 )
 
 
-def processEmissions(  # noqa: PLR0915
+def processEmissions(
+    config: PriorConfig,
     forceUpdate: bool = False,
     **kwargs,
 ):
@@ -50,7 +51,7 @@ def processEmissions(  # noqa: PLR0915
         startDate, endDate
             Currently ignored
     """
-    ncin = nc.Dataset(termitePath, "r")
+    ncin = nc.Dataset(config.as_input_file(config.layer_inputs.termite_path), "r")
     latTerm = np.around(np.float64(ncin.variables["lat"][:]), 3)
     latTerm = latTerm[-1::-1]  # we need it south-north
     lonTerm = np.around(np.float64(ncin.variables["lon"][:]), 3)
@@ -79,14 +80,16 @@ def processEmissions(  # noqa: PLR0915
             / lonTerm.size
         )
     # now collect some domain information
-    LATD = domainXr["LATD"][:].values.squeeze()
-    LOND = domainXr["LOND"].values.squeeze()
-    LAT = domainXr.variables["LAT"].values.squeeze()
-    cmaqArea = domainXr.XCELL * domainXr.YCELL
+    domain_ds = config.domain_dataset()
 
-    indxPath = f"{intermediatesPath}/TERM_ind_x.p.gz"
-    indyPath = f"{intermediatesPath}/TERM_ind_y.p.gz"
-    coefsPath = f"{intermediatesPath}/TERM_coefs.p.gz"
+    LATD = domain_ds["LATD"][:].values.squeeze()
+    LOND = domain_ds["LOND"].values.squeeze()
+    LAT = domain_ds.variables["LAT"].values.squeeze()
+    cmaqArea = domain_ds.XCELL * domain_ds.YCELL
+
+    indxPath = config.as_intermediate_file("TERM_ind_x.p.gz")
+    indyPath = config.as_intermediate_file("TERM_ind_y.p.gz")
+    coefsPath = config.as_intermediate_file("TERM_ind_coefs.p.gz")
 
     if (
         os.path.exists(indxPath)
@@ -178,13 +181,14 @@ def processEmissions(  # noqa: PLR0915
     subset *= 1e9 / termAreas  # converting from mtCH4/gridcell to kg/m^2
     cmaqAreas = np.ones(LAT.shape) * cmaqArea  # all grid cells equal area
     resultNd = redistribute_spatially(LAT.shape, ind_x, ind_y, coefs, subset, termAreas, cmaqAreas)
-    resultNd /= secsPerYear
+    resultNd /= SECS_PER_YEAR
     ncin.close()
 
-    write_layer("OCH4_TERMITE", resultNd)
+    write_layer(config, "OCH4_TERMITE", resultNd)
     return np.array(resultNd)
 
 
 if __name__ == "__main__":
-    processEmissions()
-    sumLayers()
+    config = load_config_from_env()
+    processEmissions(config)
+    sum_layers(config.output_domain_file)

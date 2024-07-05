@@ -23,22 +23,23 @@ import pandas as pd
 import xarray as xr
 from colorama import Fore
 
-from openmethane_prior.omInputs import livestockDataPath, sectoralEmissionsPath
-from openmethane_prior.omOutputs import domainOutputPath
-from openmethane_prior.omUtils import secsPerYear
+from openmethane_prior.config import PriorConfig, load_config_from_env
+from openmethane_prior.omUtils import SECS_PER_YEAR
 
 MAX_ABS_DIFF = 0.1
 
 
-def verifyEmis(atol: float = MAX_ABS_DIFF):
+def verify_emis(config: PriorConfig, atol: float = MAX_ABS_DIFF):
     """Check output sector emissions to make sure they tally up to the input emissions"""
-    sectorData = pd.read_csv(sectoralEmissionsPath).to_dict(orient="records")[0]
+    sector_data = pd.read_csv(
+        config.as_input_file(config.layer_inputs.sectoral_emissions_path)
+    ).to_dict(orient="records")[0]
 
     # Load Livestock inventory and check that it doesn't exceed total agriculture inventory
-    with xr.open_dataset(livestockDataPath) as lss:
+    with xr.open_dataset(config.as_input_file(config.layer_inputs.livestock_path)) as lss:
         ls = lss.load()
     lsVal = round(np.sum(ls["CH4_total"].values))
-    agVal = round(sectorData["agriculture"] * 1e9)
+    agVal = round(sector_data["agriculture"] * 1e9)
     agDX = agVal - lsVal
 
     if agDX > 0:
@@ -53,19 +54,19 @@ def verifyEmis(atol: float = MAX_ABS_DIFF):
         )
 
     # Check each layer in the output sums up to the input
-    with xr.open_dataset(domainOutputPath) as dss:
+    with xr.open_dataset(config.output_domain_file) as dss:
         ds = dss.load()
 
     modelAreaM2 = ds.DX * ds.DY
-    for sector in sectorData.keys():
+    for sector in sector_data.keys():
         layerName = f"OCH4_{sector.upper()}"
-        sectorVal = float(sectorData[sector]) * 1e9
+        sectorVal = float(sector_data[sector]) * 1e9
 
         if layerName in ds:
-            layerVal = np.sum(ds[layerName][0].values * modelAreaM2 * secsPerYear)
+            layerVal = np.sum(ds[layerName][0].values * modelAreaM2 * SECS_PER_YEAR)
 
             if sector == "agriculture":
-                layerVal += np.sum(ds["OCH4_LIVESTOCK"][0].values * modelAreaM2 * secsPerYear)
+                layerVal += np.sum(ds["OCH4_LIVESTOCK"][0].values * modelAreaM2 * SECS_PER_YEAR)
 
             diff = round(layerVal - sectorVal)
             pct_diff = diff / sectorVal * 100
@@ -80,4 +81,5 @@ def verifyEmis(atol: float = MAX_ABS_DIFF):
 
 
 if __name__ == "__main__":
-    verifyEmis()
+    config = load_config_from_env()
+    verify_emis(config)
