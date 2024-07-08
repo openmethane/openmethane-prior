@@ -8,6 +8,7 @@ import attrs
 import dotenv
 import pytest
 import xarray as xr
+
 from openmethane_prior.config import PriorConfig, load_config_from_env
 from scripts.omCreateDomainInfo import create_domain_info, write_domain_info
 from scripts.omDownloadInputs import download_input_files
@@ -15,7 +16,7 @@ from scripts.omPrior import run_prior
 
 
 @pytest.fixture(scope="session")
-def root_dir():
+def root_dir() -> pathlib.Path:
     return Path(__file__).parent.parent
 
 
@@ -35,12 +36,12 @@ def env(monkeypatch, root_dir):
 
 
 @pytest.fixture()
-def cro_xr(config):
+def cro_xr(config) -> xr.Dataset:
     return xr.open_dataset(config.cro_file)
 
 
 @pytest.fixture()
-def dot_xr(config):
+def dot_xr(config) -> xr.Dataset:
     return xr.open_dataset(config.dot_file)
 
 
@@ -52,7 +53,17 @@ def config() -> PriorConfig:
 
 # Fixture to download and later remove all input files
 @pytest.fixture(scope="session")
-def fetch_input_files(root_dir):
+def fetch_input_files(root_dir) -> list[pathlib.Path]:
+    """
+    Fetch and cache the input files.
+
+    Don't use this fixture directly,
+    instead use `input_files` to copy the files to the input directory.
+
+    Returns
+    -------
+        List of cached input files
+    """
     config = load_config_from_env()
 
     fragments = [str(f) for f in attrs.asdict(config.layer_inputs).values()]
@@ -98,7 +109,7 @@ def copy_input_files(input_path: str | pathlib.Path, cached_files: list[pathlib.
 
 
 @pytest.fixture()
-def input_files(root_dir, fetch_input_files, config):
+def input_files(root_dir, fetch_input_files, config) -> list[pathlib.Path]:
     """
     Ensure that the required input files are in the input directory.
 
@@ -108,7 +119,14 @@ def input_files(root_dir, fetch_input_files, config):
 
 
 @pytest.fixture(scope="session")
-def input_domain(root_dir):
+def input_domain(root_dir) -> xr.Dataset:
+    """
+    Generate the input domain
+
+    Returns
+    -------
+        The input domain as an xarray dataset
+    """
     config = load_config_from_env()
 
     domain = create_domain_info(
@@ -127,7 +145,14 @@ def input_domain(root_dir):
 
 
 @pytest.fixture(scope="session")
-def output_domain_xr(root_dir, input_domain, fetch_input_files, tmp_path_factory):
+def output_domain(root_dir, input_domain, fetch_input_files, tmp_path_factory) -> xr.Dataset:
+    """
+    Run the output domain
+
+    Returns
+    -------
+        The calculated output domain
+    """
     # Manually copy the input files to the input directory
     # Can't use the config/input_files fixtures because we want to only run this step once
     output_dir = tmp_path_factory.mktemp("data")

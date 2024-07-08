@@ -65,14 +65,14 @@ def test_005_agriculture_emissions(config, root_dir, input_files):
 
 
 # TODO Update this test when file structure is clear.
-def test_009_output_domain_xr(output_domain_xr, num_regression):
-    mean_values = {key: output_domain_xr[key].mean().item() for key in output_domain_xr.keys()}
+def test_009_output_domain_xr(output_domain, num_regression):
+    mean_values = {key: output_domain[key].mean().item() for key in output_domain.keys()}
 
     num_regression.check(mean_values)
 
 
-def test_010_emission_discrepancy(config, root_dir, output_domain_xr, input_files):
-    modelAreaM2 = output_domain_xr.DX * output_domain_xr.DY
+def test_010_emission_discrepancy(config, root_dir, output_domain, input_files):
+    modelAreaM2 = output_domain.DX * output_domain.DY
 
     filepath_sector = config.as_input_file(config.layer_inputs.sectoral_emissions_path)
     sector_data = pd.read_csv(filepath_sector).to_dict(orient="records")[0]
@@ -82,12 +82,12 @@ def test_010_emission_discrepancy(config, root_dir, output_domain_xr, input_file
         sectorVal = float(sector_data[sector]) * 1e9
 
         # Check each layer in the output sums up to the input
-        if layerName in output_domain_xr:
-            layerVal = np.sum(output_domain_xr[layerName][0].values * modelAreaM2 * SECS_PER_YEAR)
+        if layerName in output_domain:
+            layerVal = np.sum(output_domain[layerName][0].values * modelAreaM2 * SECS_PER_YEAR)
 
             if sector == "agriculture":
                 layerVal += np.sum(
-                    output_domain_xr["OCH4_LIVESTOCK"][0].values * modelAreaM2 * SECS_PER_YEAR
+                    output_domain["OCH4_LIVESTOCK"][0].values * modelAreaM2 * SECS_PER_YEAR
                 )
 
             diff = round(layerVal - sectorVal)
@@ -98,9 +98,9 @@ def test_010_emission_discrepancy(config, root_dir, output_domain_xr, input_file
             ), f"Discrepancy of {percentage_diff}% in {sector} emissions"
 
 
-def test_compare_out_domain_with_cro_dot_files(output_domain_xr, cro_xr, dot_xr):
-    assert dot_xr.NCOLS == output_domain_xr.COL_D.size
-    assert dot_xr.NROWS == output_domain_xr.ROW_D.size
+def test_compare_out_domain_with_cro_dot_files(output_domain, cro_xr, dot_xr):
+    assert dot_xr.NCOLS == output_domain.COL_D.size
+    assert dot_xr.NROWS == output_domain.ROW_D.size
 
-    assert cro_xr.NCOLS == output_domain_xr.COL.size
-    assert cro_xr.NROWS == output_domain_xr.ROW.size
+    assert cro_xr.NCOLS == output_domain.COL.size
+    assert cro_xr.NROWS == output_domain.ROW.size

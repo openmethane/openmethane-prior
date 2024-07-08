@@ -21,6 +21,7 @@ import os
 import sys
 
 import samgeo.common as sam
+
 from openmethane_prior.config import PriorConfig
 
 
