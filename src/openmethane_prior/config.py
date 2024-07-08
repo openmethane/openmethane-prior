@@ -61,9 +61,9 @@ class PriorConfig:
     @cache
     def domain_dataset(self):
         """Load the input domain dataset"""
-        if not self.output_domain_file.exists():
-            raise ValueError(f"Missing domain file: {self.output_domain_file}")
-        return xr.load_dataset(self.output_domain_file)
+        if not self.input_domain_file.exists():
+            raise ValueError(f"Missing domain file: {self.input_domain_file}")
+        return xr.load_dataset(self.input_domain_file)
 
     @cache
     def domain_projection(self):
