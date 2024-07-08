@@ -8,7 +8,6 @@ import attrs
 import dotenv
 import pytest
 import xarray as xr
-
 from openmethane_prior.config import PriorConfig, load_config_from_env
 from scripts.omCreateDomainInfo import create_domain_info, write_domain_info
 from scripts.omDownloadInputs import download_input_files
@@ -88,11 +87,7 @@ def copy_input_files(input_path: str | pathlib.Path, cached_files: list[pathlib.
     """
     files = [input_path / cached_file.name for cached_file in cached_files]
 
-    for filepath in cached_files:
-        try:
-            os.remove(input_path / filepath.name)
-        except FileNotFoundError:
-            pass
+    input_path.mkdir(parents=True, exist_ok=True)
 
     for cached_file, input_file in zip(cached_files, files):
         try:

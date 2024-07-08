@@ -28,7 +28,6 @@ import pathlib
 from pathlib import Path
 
 import xarray as xr
-
 from openmethane_prior.config import load_config_from_env
 
 root_path = Path(__file__).parents[1]
@@ -98,6 +97,8 @@ def write_domain_info(domain_ds: xr.Dataset, domain_path: pathlib.Path):
         The path to write the domain information to
     """
     print(f"Writing domain to {os.path.join(root_path, domain_path)}")
+    domain_path.parent.mkdir(parents=True, exist_ok=True)
+
     domain_ds.to_netcdf(domain_path)
 
 
