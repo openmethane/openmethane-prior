@@ -21,7 +21,7 @@
 import argparse
 import datetime
 
-from openmethane_prior.config import load_config_from_env
+from openmethane_prior.config import PriorConfig, load_config_from_env
 from openmethane_prior.inputs import check_input_files, reproject_raster_inputs
 from openmethane_prior.layers import (
     omAgLulucfWasteEmis,
@@ -36,12 +36,16 @@ from openmethane_prior.outputs import sum_layers
 from openmethane_prior.verification import verify_emis
 
 
-def run_prior(start_date: datetime.date, end_date: datetime.date, skip_reproject: bool):
+def run_prior(
+    config: PriorConfig, start_date: datetime.date, end_date: datetime.date, skip_reproject: bool
+):
     """
     Calculate the prior methane emissions estimate for OpenMethane
 
     Parameters
     ----------
+    config
+        Configuration used for the calculation
     start_date
         Date to start the prior calculation (UTC timezone)
     end_date
@@ -49,8 +53,6 @@ def run_prior(start_date: datetime.date, end_date: datetime.date, skip_reproject
     skip_reproject
         If true, don't reproject the raster datasets onto the domain
     """
-    config = load_config_from_env()
-
     check_input_files(config)
 
     if not skip_reproject:
@@ -86,4 +88,10 @@ if __name__ == "__main__":
     parser.add_argument("--skip-reproject", default=False, action="store_true")
     args = parser.parse_args()
 
-    run_prior(start_date=args.startDate, end_date=args.endDate, skip_reproject=args.skip_reproject)
+    config = load_config_from_env()
+    run_prior(
+        config=config,
+        start_date=args.startDate,
+        end_date=args.endDate,
+        skip_reproject=args.skip_reproject,
+    )

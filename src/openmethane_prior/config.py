@@ -1,4 +1,5 @@
 import pathlib
+import typing
 from functools import cache
 
 import attrs
@@ -104,7 +105,7 @@ class PriorConfig:
         return self.as_output_file(f"out-{self.domain}")
 
 
-def load_config_from_env() -> PriorConfig:
+def load_config_from_env(**overrides: typing.Any) -> PriorConfig:
     """
     Load the configuration from the environment variables
 
@@ -119,7 +120,7 @@ def load_config_from_env() -> PriorConfig:
     )
     env.read_env(verbose=True)
 
-    return PriorConfig(
+    options = dict(
         domain=env("DOMAIN"),
         remote=env("PRIOR_REMOTE"),
         input_path=env.path("INPUT_PATH", "data/inputs"),
@@ -142,3 +143,5 @@ def load_config_from_env() -> PriorConfig:
         dot_file=env.path("DOT_FILE"),
         geometry_file=env.path("GEOMETRY_FILE"),
     )
+
+    return PriorConfig(**{**options, **overrides})

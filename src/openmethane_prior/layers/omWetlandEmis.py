@@ -197,7 +197,7 @@ def make_wetland_climatology(config: PriorConfig, forceUpdate: bool = False):  #
 
 
 def processEmissions(
-    config: PriorConfig, startDate: datetime.date, endDate: datetime.date, **kwargs
+    config: PriorConfig, startDate: datetime.date, endDate: datetime.date, forceUpdate: bool = False
 ):
     """
     Process wetland emissions for the given date range
@@ -211,7 +211,7 @@ def processEmissions(
     kwargs
         Additional kwargs
     """
-    climatology = make_wetland_climatology(**kwargs)
+    climatology = make_wetland_climatology(config, forceUpdate=forceUpdate)
     delta = datetime.timedelta(days=1)
     resultNd = []  # will be ndarray once built
     dates = []

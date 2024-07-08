@@ -21,7 +21,6 @@ import os
 import sys
 
 import samgeo.common as sam
-
 from openmethane_prior.config import PriorConfig
 
 
@@ -55,7 +54,7 @@ def check_input_files(config: PriorConfig):
     )
 
     for path, desc in checks:
-        if not os.path.exists(path):
+        if not os.path.exists(config.as_input_file(path)):
             errors.append(f"Missing file for {desc} at {path}")
 
     ## Print all errors and exit (if we have any errors)
