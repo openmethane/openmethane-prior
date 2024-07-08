@@ -28,6 +28,7 @@ segment-geospatial = "^0.10.6"
 cdsapi = "^0.7.0"
 shapely = "^2.0.4"
 environs = "^11.0.0"
+ruff = "^0.5.1"
 
 [tool.poetry.group.tests.dependencies]
 pytest = "^8.2.1"
@@ -35,7 +36,7 @@ pytest-regressions = "^2.5.0"
 
 [tool.poetry.group.dev.dependencies]
 licenseheaders = "^0.8.8"
-ruff = "^0.4.6"
+ruff = "^0.5.1"
 
 [build-system]
 requires = ["poetry-core"]

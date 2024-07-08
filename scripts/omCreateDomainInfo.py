@@ -28,6 +28,7 @@ import pathlib
 from pathlib import Path
 
 import xarray as xr
+
 from openmethane_prior.config import load_config_from_env
 
 root_path = Path(__file__).parents[1]

@@ -101,7 +101,8 @@ def copy_input_files(input_path: str | pathlib.Path, cached_files: list[pathlib.
     yield files
 
     for filepath in files:
-        os.remove(filepath)
+        if filepath.exists():
+            os.remove(filepath)
 
 
 @pytest.fixture()
@@ -137,10 +138,7 @@ def input_domain(root_dir) -> xr.Dataset:
     yield domain
 
     if config.input_domain_file.exists():
-        try:
-            os.remove(config.input_domain_file)
-        except FileNotFoundError:
-            pass
+        os.remove(config.input_domain_file)
 
 
 @pytest.fixture(scope="session")
