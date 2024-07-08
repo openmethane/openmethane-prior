@@ -155,9 +155,8 @@ def output_domain(root_dir, input_domain, fetch_input_files, tmp_path_factory) -
     output_dir = tmp_path_factory.mktemp("data")
     config = load_config_from_env(output_path=output_dir)
 
-    # Use the factory method as
-    input_files = copy_input_files(config.input_path, fetch_input_files)
-    next(input_files)
+    # Use the factory method as input_files has "function" scope
+    input_files = next(copy_input_files(config.input_path, fetch_input_files))
 
     run_prior(
         config,
@@ -169,4 +168,8 @@ def output_domain(root_dir, input_domain, fetch_input_files, tmp_path_factory) -
     yield xr.load_dataset(config.output_domain_file)
 
     os.remove(config.output_domain_file)
-    next(input_files)  # Cleanup
+
+    # Manually clean up any leftover files
+    for filepath in input_files:
+        if filepath.exists():
+            os.remove(filepath)

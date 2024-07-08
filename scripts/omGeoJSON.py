@@ -57,7 +57,7 @@ def processGeoJSON(config: PriorConfig):
     # Load domain
     print("Loading output file")
 
-    ds = nc.Dataset()
+    ds = nc.Dataset(config.output_domain_file, "r")
 
     # There is a better way to do this but this will work for now
     # Using xarray wasn't straightforward because the layers don't use
