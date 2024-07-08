@@ -2,7 +2,7 @@
 FROM segment/chamber:2 AS chamber
 
 # Build the reqired dependecies
-FROM python:3.11 as builder
+FROM python:3.11 AS builder
 
 # Creates a standalone environment in /opt/venv
 RUN pip install poetry==1.8.2
@@ -25,13 +25,15 @@ RUN touch README.md
 
 # This installs the python dependencies into /opt/venv
 RUN --mount=type=cache,target=$POETRY_CACHE_DIR \
+    poetry config virtualenvs.create true \
+    poetry config virtualenvs.in-project true \
     poetry install --no-ansi --no-root
 
 # Container for running the project
 # This isn't a hyper optimised container but it's a good starting point
 FROM debian:bookworm
 
-MAINTAINER Jared Lewis <jared.lewis@climate-resource.com>
+LABEL org.opencontainers.image.authors="jared.lewis@climate-resource.com"
 
 # Configure Python
 ENV PYTHONFAULTHANDLER=1 \
@@ -57,7 +59,7 @@ WORKDIR /opt/project
 COPY --from=chamber /chamber /bin/chamber
 
 # Copy across the virtual environment
-COPY --from=builder /opt/venv /opt/venv
+COPY --from=builder /opt/venv/.venv /opt/venv
 
 # Install the local package in editable mode
 # Requires scaffolding the src directories
