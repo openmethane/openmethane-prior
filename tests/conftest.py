@@ -8,6 +8,7 @@ import attrs
 import dotenv
 import pytest
 import xarray as xr
+
 from openmethane_prior.config import PriorConfig, load_config_from_env
 from scripts.omCreateDomainInfo import create_domain_info, write_domain_info
 from scripts.omDownloadInputs import download_input_files
@@ -136,7 +137,10 @@ def input_domain(root_dir) -> xr.Dataset:
     yield domain
 
     if config.input_domain_file.exists():
-        os.remove(config.input_domain_file)
+        try:
+            os.remove(config.input_domain_file)
+        except FileNotFoundError:
+            pass
 
 
 @pytest.fixture(scope="session")

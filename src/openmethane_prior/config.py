@@ -13,7 +13,7 @@ class LayerInputs:
     """
     Filename fragments for the files required to generate the layers.
 
-    These files are downloaded to the `input_path` directory via `scripts/omDownloadInputs.py`.
+    These files are downloaded to the `INPUTS` directory via `scripts/omDownloadInputs.py`.
     """
 
     electricity_path: pathlib.Path
@@ -123,25 +123,25 @@ def load_config_from_env(**overrides: typing.Any) -> PriorConfig:
     options = dict(
         domain=env("DOMAIN"),
         remote=env("PRIOR_REMOTE"),
-        input_path=env.path("INPUT_PATH", "data/inputs"),
-        output_path=env.path("OUTPUT_PATH", "data/outputs"),
-        intermediates_path=env.path("INTERMEDIATES_PATH", "data/processed"),
+        input_path=env.path("INPUTS", "data/inputs"),
+        output_path=env.path("OUTPUTS", "data/outputs"),
+        intermediates_path=env.path("INTERMEDIATES", "data/processed"),
         layer_inputs=LayerInputs(
-            electricity_path=env.path("ELECTRICITY_PATH"),
-            oil_gas_path=env.path("OIL_GAS_PATH"),
-            coal_path=env.path("COAL_PATH"),
-            land_use_path=env.path("LAND_USE_PATH"),
-            sectoral_emissions_path=env.path("SECTORAL_EMISSIONS_PATH"),
-            sectoral_mapping_path=env.path("SECTORAL_MAPPING_PATH"),
-            ntl_path=env.path("NTL_PATH"),
-            aus_shapefile_path=env.path("AUS_SHAPEFILE_PATH"),
-            livestock_path=env.path("LIVESTOCK_PATH"),
-            termite_path=env.path("TERMITE_PATH"),
-            wetland_path=env.path("WETLAND_PATH"),
+            electricity_path=env.path("CH4_ELECTRICITY"),
+            oil_gas_path=env.path("CH4_OILGAS"),
+            coal_path=env.path("CH4_COAL"),
+            land_use_path=env.path("LAND_USE"),
+            sectoral_emissions_path=env.path("SECTORAL_EMISSIONS"),
+            sectoral_mapping_path=env.path("SECTORAL_MAPPING"),
+            ntl_path=env.path("NTL"),
+            aus_shapefile_path=env.path("AUSF"),
+            livestock_path=env.path("LIVESTOCK_DATA"),
+            termite_path=env.path("TERMITES"),
+            wetland_path=env.path("WETLANDS"),
         ),
-        cro_file=env.path("CRO_FILE"),
-        dot_file=env.path("DOT_FILE"),
-        geometry_file=env.path("GEOMETRY_FILE"),
+        cro_file=env.path("CROFILE"),
+        dot_file=env.path("DOTFILE"),
+        geometry_file=env.path("GEO_EM"),
     )
 
     return PriorConfig(**{**options, **overrides})
