@@ -27,6 +27,7 @@ RUN touch README.md
 RUN --mount=type=cache,target=$POETRY_CACHE_DIR \
     poetry config virtualenvs.create true && \
     poetry config virtualenvs.in-project true && \
+    poetry config --list && \
     poetry install --no-ansi --no-root --no-directory && \
     ls /opt/venv/.venv/*
 #
