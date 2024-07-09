@@ -61,14 +61,13 @@ COPY --from=chamber /chamber /bin/chamber
 # Copy across the virtual environment
 COPY --from=builder /opt/venv/.venv /opt/venv
 
-# Install the local package in editable mode
-# Requires scaffolding the src directories
-COPY pyproject.toml poetry.lock README.md ./
-RUN mkdir -p src/openmethane_prior && touch src/openmethane_prior/__init__.py
-RUN pip install -e .
-
 # Copy in the rest of the project
 # For testing it might be easier to mount $(PWD):/opt/project so that local changes are reflected in the container
 COPY . /opt/project
+
+RUN ls /opt/venv/*
+
+# Install the local package in editable mode
+RUN pip install -e .
 
 CMD ["/bin/bash"]
