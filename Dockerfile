@@ -59,13 +59,11 @@ WORKDIR /opt/project
 COPY --from=chamber /chamber /bin/chamber
 
 # Copy across the virtual environment
-COPY --from=builder /opt/venv/.venv /opt/venv
+COPY --from=builder /opt/venv/.venv /opt/venv/
 
 # Copy in the rest of the project
 # For testing it might be easier to mount $(PWD):/opt/project so that local changes are reflected in the container
 COPY . /opt/project
-
-RUN ls /opt/venv/*
 
 # Install the local package in editable mode
 RUN pip install -e .
