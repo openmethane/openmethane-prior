@@ -37,6 +37,7 @@ domainJSONOutputPath = os.path.join(outputsPath, "om-domain.json")
 geoJSONOutputPath = os.path.join(outputsPath, "om-prior.json")
 
 coordNames = ["TSTEP", "LAY", "ROW", "COL"]
+requiredAttributes = {'units':'kg/m^2/s'}
 
 
 def convert_to_timescale(emission):
@@ -80,6 +81,8 @@ def write_layer(
         for i in range(layer_data.ndim, 4):
             copy = np.expand_dims(copy, 0)  # should now have four dimensions
         ds[layer_name] = (coordNames[:], copy)
+    for k,v in requiredAttributes.items(): ds[layer_name].attrs[k] = v
+    ds[layer_name].attrs['long_name'] = layer_name
     ds.to_netcdf(domainOutputPath)
 
 
