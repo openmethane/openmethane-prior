@@ -25,7 +25,7 @@ RUN touch README.md
 
 # This installs the python dependencies into /opt/venv
 RUN --mount=type=cache,target=$POETRY_CACHE_DIR \
-    poetry install --no-ansi --no-root \
+    poetry install --no-ansi --no-root && \
     ln -s $(poetry env info --path) /opt/venv/.venv
 
 # Container for running the project
