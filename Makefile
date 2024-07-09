@@ -2,6 +2,10 @@
 update-licenseheaders:  ## add or update license headers in all python files
 	licenseheaders -y 2023 --owner "The Superpower Institute Ltd" --projname "OpenMethane" --tmpl .copyright.tmpl --ext .py -x "venv/*"
 
+.PHONY: build
+build:  ## Build the docker container locally
+	docker build --platform=linux/amd64 -t openmethane-prior .
+
 .PHONY: virtual-environment
 virtual-environment:  ## update virtual environment, create a new one if it doesn't already exist
 	poetry lock --no-update
