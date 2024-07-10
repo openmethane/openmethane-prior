@@ -38,6 +38,8 @@ geoJSONOutputPath = os.path.join(outputsPath, "om-prior.json")
 
 coordNames = ["TSTEP", "LAY", "ROW", "COL"]
 requiredAttributes = {'units':'kg/m^2/s'}
+totalLayerName = 'OCH4_TOTAL'
+totalLayerLongName = 'total methane flux'
 
 
 def convert_to_timescale(emission):
@@ -118,5 +120,7 @@ def sumLayers():
                 summed += ds[layerName].values  # it will broadcast time dimensions of 1 correctly
 
         if summed is not None:
-            ds["OCH4_TOTAL"] = (["date", "LAY", *coordNames[-2:]], summed)
+            ds[totalLayerName] = (["date", "LAY", *coordNames[-2:]], summed)
+            for k,v in requiredAttributes.items(): ds[totalLayerName].attrs[k] = v
+            ds[totalLayerName].attrs['long_name'] = totalLayerLongName
             ds.to_netcdf(domainOutputPath)
