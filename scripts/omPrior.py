@@ -22,7 +22,7 @@ import argparse
 import datetime
 
 from openmethane_prior.config import PriorConfig, load_config_from_env
-from openmethane_prior.inputs import check_input_files, reproject_raster_inputs
+from openmethane_prior.inputs import check_input_files
 from openmethane_prior.layers import (
     omAgLulucfWasteEmis,
     omElectricityEmis,
@@ -33,6 +33,7 @@ from openmethane_prior.layers import (
     omWetlandEmis,
 )
 from openmethane_prior.outputs import sum_layers
+from openmethane_prior.raster import reproject_raster_inputs
 from openmethane_prior.verification import verify_emis
 
 

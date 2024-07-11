@@ -24,11 +24,9 @@ pandas = "^2.2.2"
 geopandas = "^0.14.4"
 python-dotenv = "^1.0.1"
 colorama = "^0.4.6"
-segment-geospatial = "^0.10.6"
 cdsapi = "^0.7.0"
 shapely = "^2.0.4"
 environs = "^11.0.0"
-ruff = "^0.5.1"
 
 [tool.poetry.group.tests.dependencies]
 pytest = "^8.2.1"
