@@ -66,6 +66,6 @@ COPY --from=builder /opt/venv/.venv /opt/venv/
 COPY . /opt/project
 
 # Install the local package in editable mode
-RUN pip install -e .
+RUN ls /opt/venv/bin && /opt/venv/bin/pip install -e .
 
 CMD ["/bin/bash"]
