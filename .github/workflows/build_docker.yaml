@@ -81,6 +81,7 @@ jobs:
       - name: Run a quick test suite
         run: |
           cd /opt/project
+          cp .env.example .env
           python -m pytest -r a -v tests/test_domain_json.py
         env:
           CDSAPI_KEY: ${{ secrets.CDSAPI_ADS_KEY }}
