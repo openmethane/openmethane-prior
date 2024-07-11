@@ -1,6 +1,6 @@
 import pytest
 
-from openmethane_prior.inputs import check_input_files
+from openmethane_prior.inputs import check_input_files, initialise_output
 from scripts.omDownloadInputs import download_input_files
 
 
@@ -22,3 +22,14 @@ def test_check_inputs_missing(config, capsys):
 
 def test_check_inputs(config, input_files):
     check_input_files(config)
+
+
+def test_initialise_output(config, input_files):
+    assert not config.output_domain_file.exists()
+
+    initialise_output(config)
+
+    assert config.output_domain_file.exists()
+
+    # Idempotent
+    initialise_output(config)

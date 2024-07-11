@@ -40,12 +40,12 @@ def config(tmp_path_factory) -> PriorConfig:
 
     Uses a new temporary directory for each test
     """
-    input_dir = tmp_path_factory.mktemp("inputs")
-    intermediate_dir = tmp_path_factory.mktemp("intermediates")
-    output_dir = tmp_path_factory.mktemp("outputs")
+    data_dir = tmp_path_factory.mktemp("data")
 
     return load_config_from_env(
-        input_path=input_dir, intermediates_path=intermediate_dir, output_path=output_dir
+        input_path=data_dir / "inputs",
+        intermediates_path=data_dir / "intermediates",
+        output_path=data_dir / "outputs",
     )
 
 
