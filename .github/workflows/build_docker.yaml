@@ -73,7 +73,7 @@ jobs:
       contents: read
       packages: read
     container:
-      image: ghcr.io/openmethane/openmethane@${{ needs.build.outputs.digest }}
+      image: ghcr.io/openmethane/openmethane-prior@${{ needs.build.outputs.digest }}
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
@@ -81,7 +81,7 @@ jobs:
       - name: Run a quick test suite
         run: |
           cd /opt/project
-          poetry run python -m pytest -r a -v tests/test_create_domain_info.py
+          poetry run python -m pytest -r a -v tests/test_domain_json.py
         env:
           CDSAPI_KEY: ${{ secrets.CDSAPI_ADS_KEY }}
           CDSAPI_URL: https://ads.atmosphere.copernicus.eu/api/v2
@@ -126,7 +126,7 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           tags: ${{ steps.meta.outputs.tags }}
           cache-from: type=gha
-          cache-to: type=gha
+          cache-to: type=gha,mode=max
           push: true
           load: true
 
@@ -138,8 +138,8 @@ jobs:
       contents: read
       packages: read
     env:
-      GHCR_IMAGE_ID: ghcr.io/openmethane/openmethane@${{ needs.build.outputs.digest }}
-      ECR_IMAGE: 654654509571.dkr.ecr.ap-southeast-2.amazonaws.com/github/openmethane/openmethane
+      GHCR_IMAGE_ID: ghcr.io/openmethane/openmethane-prior@${{ needs.build.outputs.digest }}
+      ECR_IMAGE: 654654509571.dkr.ecr.ap-southeast-2.amazonaws.com/github/openmethane/openmethane-prior
     steps:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
