@@ -1,8 +1,9 @@
 import os
 
 import rasterio as rio
-from openmethane_prior.config import PriorConfig
 from rasterio.warp import Resampling, calculate_default_transform, reproject
+
+from openmethane_prior.config import PriorConfig
 
 
 def reproject_tiff(image, output, dst_crs="EPSG:4326", resampling="nearest", **kwargs):
