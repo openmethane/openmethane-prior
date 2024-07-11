@@ -20,6 +20,7 @@
 
 import argparse
 import datetime
+import shutil
 
 from openmethane_prior.config import PriorConfig, load_config_from_env
 from openmethane_prior.inputs import check_input_files
@@ -55,6 +56,9 @@ def run_prior(
         If true, don't reproject the raster datasets onto the domain
     """
     check_input_files(config)
+
+    # Copy the input domain to the output directory
+    shutil.copyfile(config.input_domain_file, config.output_domain_file)
 
     if not skip_reproject:
         reproject_raster_inputs(config)

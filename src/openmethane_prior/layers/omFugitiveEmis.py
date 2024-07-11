@@ -89,7 +89,11 @@ def processEmissions(config: PriorConfig, startDate, endDate):
         except IndexError:
             pass  # it's outside our domain
 
-    write_layer(config, "OCH4_FUGITIVE", convert_to_timescale(methane, config.domain_cell_area))
+    write_layer(
+        config.output_domain_file,
+        "OCH4_FUGITIVE",
+        convert_to_timescale(methane, config.domain_cell_area),
+    )
 
 
 if __name__ == "__main__":

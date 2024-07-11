@@ -29,6 +29,32 @@ class LayerInputs:
     wetland_path: pathlib.Path
 
 
+@attrs.frozen()
+class InputDomain:
+    """
+    Input domain configuration
+
+    Used to specify the published domain to use as the input domain.
+    """
+
+    name: str
+    version: str
+    domain_index: int = 1
+
+    def url_fragment(self) -> str:
+        """
+        Fragment to download the input domain
+
+        Returns
+        -------
+            URL fragment
+        """
+        return (
+            f"domains/{self.name}/{self.version}/"
+            f"prior_domain_{self.name}_{self.version}.d{self.domain_index:02}.nc"
+        )
+
+
 @attrs.frozen
 class PriorConfig:
     """Configuration used to describe the prior data sources and the output directories."""
@@ -39,12 +65,8 @@ class PriorConfig:
     output_path: pathlib.Path
     intermediates_path: pathlib.Path
 
+    input_domain: InputDomain | None
     layer_inputs: LayerInputs
-
-    # CMAQ specific paths
-    cro_file: pathlib.Path
-    dot_file: pathlib.Path
-    geometry_file: pathlib.Path
 
     def as_input_file(self, name: str | pathlib.Path) -> pathlib.Path:
         """Return the full path to an input file"""
@@ -120,12 +142,22 @@ def load_config_from_env(**overrides: typing.Any) -> PriorConfig:
     )
     env.read_env(verbose=True)
 
+    if env.str("DOMAIN_NAME", None) and env.str("DOMAIN_VERSION", None):
+        input_domain = InputDomain(
+            name=env.str("DOMAIN_NAME"),
+            version=env.str("DOMAIN_VERSION"),
+        )
+    else:
+        # TODO: Log?
+        input_domain = None
+
     options = dict(
         domain=env("DOMAIN"),
         remote=env("PRIOR_REMOTE"),
         input_path=env.path("INPUTS", "data/inputs"),
         output_path=env.path("OUTPUTS", "data/outputs"),
         intermediates_path=env.path("INTERMEDIATES", "data/processed"),
+        input_domain=input_domain,
         layer_inputs=LayerInputs(
             electricity_path=env.path("CH4_ELECTRICITY"),
             oil_gas_path=env.path("CH4_OILGAS"),
@@ -139,9 +171,6 @@ def load_config_from_env(**overrides: typing.Any) -> PriorConfig:
             termite_path=env.path("TERMITES"),
             wetland_path=env.path("WETLANDS"),
         ),
-        cro_file=env.path("CROFILE"),
-        dot_file=env.path("DOTFILE"),
-        geometry_file=env.path("GEO_EM"),
     )
 
     return PriorConfig(**{**options, **overrides})
