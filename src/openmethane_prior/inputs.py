@@ -56,6 +56,8 @@ def download_input_file(remote_url: str, url_fragment: str, save_path: pathlib.P
         save_path.parent.mkdir(parents=True, exist_ok=True)
 
         with requests.get(url, stream=True, timeout=30) as response:
+            response.raise_for_status()
+
             with open(save_path, mode="wb") as file:
                 for chunk in response.iter_content(chunk_size=10 * 1024):
                     file.write(chunk)
@@ -104,8 +106,8 @@ def check_input_files(config: PriorConfig):
     if len(errors) > 0:
         print(
             "Some required files are missing. "
-            "Suggest running omDownloadInputs.py if you're using the default input file set, "
-            "and omCreateDomainInfo.py if you haven't already. See issues below."
+            "Suggest running omDownloadInputs.py if you're using the default input file set. "
+            "See issues below."
         )
         print("\n".join(errors))
         sys.exit(1)

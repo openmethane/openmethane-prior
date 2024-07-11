@@ -6,7 +6,6 @@ import numpy as np
 import pandas as pd
 import requests
 import xarray as xr
-
 from openmethane_prior.layers.omGFASEmis import download_GFAS
 from openmethane_prior.utils import SECS_PER_YEAR
 
@@ -45,6 +44,8 @@ def test_004_omDownloadInputs(root_dir, input_files):
         "EntericFermentation.nc",
         "termite_emissions_2010-2016.nc",
         "DLEM_totflux_CRU_diagnostic.nc",
+        "domains/aust-test/v1.0.0/prior_domain_aust-test_v1.0.0.d01.nc",
+        "domains/aust10km/v1.0.0/prior_domain_aust10km_v1.0.0.d01.nc",
     ]
 
     assert sorted([fn.name for fn in input_files]) == sorted(EXPECTED_FILES)
@@ -96,11 +97,3 @@ def test_010_emission_discrepancy(config, root_dir, output_domain, input_files):
             assert (
                 abs(percentage_diff) < 0.1
             ), f"Discrepancy of {percentage_diff}% in {sector} emissions"
-
-
-def test_compare_out_domain_with_cro_dot_files(output_domain, cro_xr, dot_xr):
-    assert dot_xr.NCOLS == output_domain.COL_D.size
-    assert dot_xr.NROWS == output_domain.ROW_D.size
-
-    assert cro_xr.NCOLS == output_domain.COL.size
-    assert cro_xr.NROWS == output_domain.ROW.size

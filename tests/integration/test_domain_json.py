@@ -2,17 +2,10 @@
 import json
 from io import StringIO
 
-import pytest
-
 from scripts.omDomainJSON import write_domain_json
 
 
 def test_001_json_structure(config, input_domain):
-    input_domain.to_netcdf(config.input_domain_file)
-
-    if not config.input_domain_file.exists():
-        pytest.mark.skip("Missing domain file")
-
     outfile = StringIO()
 
     # generate the JSON, writing to a memory buffer

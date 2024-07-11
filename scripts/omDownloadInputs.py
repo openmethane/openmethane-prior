@@ -25,20 +25,18 @@ import pathlib
 from collections.abc import Iterable
 
 import attrs
-from openmethane_prior.config import PriorConfig, load_config_from_env
+from openmethane_prior.config import load_config_from_env
 from openmethane_prior.inputs import download_input_file
 
 
 def download_input_files(
-    config: PriorConfig, download_path: pathlib.Path, fragments: Iterable[str]
+    remote: str, download_path: pathlib.Path, fragments: Iterable[str]
 ) -> list[pathlib.Path]:
     """
     Download input files from a remote location
 
     Parameters
     ----------
-    config
-        OpenMethane-Prior configuration
     download_path
         Path to download the files to
     fragments
@@ -54,16 +52,14 @@ def download_input_files(
         List of input files that have been fetched or found locally.
 
     """
-    download_path.mkdir(parents=True, exist_ok=True)
-
     downloaded_files = []
-    for name, url_fragment in fragments:
-        save_path = config.as_input_file(url_fragment).absolute()
+    for url_fragment in fragments:
+        save_path = download_path / url_fragment
 
-        if save_path.is_relative_to(config.input_path):
+        if not save_path.resolve().is_relative_to(download_path.resolve()):
             raise ValueError(f"Check download fragment: {url_fragment}")
 
-        download_input_file(config.remote, url_fragment, save_path)
+        download_input_file(remote, url_fragment, save_path)
         downloaded_files.append(save_path)
     return downloaded_files
 
@@ -78,7 +74,7 @@ if __name__ == "__main__":
         layer_fragments.append(config.input_domain.url_fragment())
 
     download_input_files(
-        config=config,
+        remote=config.remote,
         download_path=config.input_path,
         fragments=layer_fragments,
     )
