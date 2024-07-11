@@ -82,7 +82,7 @@ jobs:
         run: |
           cd /opt/project
           cp .env.example .env
-          python -m pytest -r a -v tests/test_domain_json.py
+          python -m pytest -r a -v tests/integration/test_domain_json.py
         env:
           CDSAPI_KEY: ${{ secrets.CDSAPI_ADS_KEY }}
           CDSAPI_URL: https://ads.atmosphere.copernicus.eu/api/v2
