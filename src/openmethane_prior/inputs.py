@@ -20,9 +20,8 @@
 import os
 import sys
 
-import samgeo.common as sam
-
 from openmethane_prior.config import PriorConfig
+from openmethane_prior.raster import reproject
 
 
 def check_input_files(config: PriorConfig):
@@ -72,12 +71,12 @@ def check_input_files(config: PriorConfig):
 def reproject_raster_inputs(config: PriorConfig):
     """Re-project raster files to match domain"""
     print("### Re-projecting raster inputs...")
-    sam.reproject(
+    reproject(
         str(config.as_input_file(config.layer_inputs.land_use_path)),
         str(config.as_intermediate_file(config.layer_inputs.land_use_path)),
         config.crs,
     )
-    sam.reproject(
+    reproject(
         str(config.as_input_file(config.layer_inputs.ntl_path)),
         str(config.as_intermediate_file(config.layer_inputs.ntl_path)),
         config.crs,
