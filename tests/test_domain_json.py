@@ -1,26 +1,22 @@
 # work around until folder structure is updated
 import json
-import os
 from io import StringIO
-from pathlib import Path
 
 import pytest
 
-from openmethane_prior.omInputs import domainPath
 from scripts.omDomainJSON import write_domain_json
 
-ROOT_DIRECTORY = Path(__file__).parent.parent
 
+def test_001_json_structure(config, input_domain):
+    input_domain.to_netcdf(config.input_domain_file)
 
-@pytest.mark.skipif(
-    not os.path.isfile(domainPath),
-    reason="test requires omCreateDomainInfo.py to have been run",
-)
-def test_001_json_structure():
+    if not config.input_domain_file.exists():
+        pytest.mark.skip("Missing domain file")
+
     outfile = StringIO()
 
     # generate the JSON, writing to a memory buffer
-    write_domain_json(outfile)
+    write_domain_json(config, outfile)
 
     outfile.seek(0)
     domain = json.load(outfile)

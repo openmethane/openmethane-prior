@@ -22,15 +22,14 @@ import json
 
 import numpy as np
 
-from openmethane_prior.omInputs import domainProj, domainXr
-from openmethane_prior.omOutputs import domainJSONOutputPath
+from openmethane_prior.config import PriorConfig, load_config_from_env
 
 
 def _make_point(x, y):
     return [float(x), float(y)]
 
 
-def write_domain_json(output_file):
+def write_domain_json(config: PriorConfig, output_file):
     """
     Write a JSON file describing the domain and grid.
 
@@ -53,34 +52,36 @@ def write_domain_json(output_file):
     # Load raster land-use data
     print("converting domain grid details to JSON")
 
+    domain_ds = config.domain_dataset()
+
     domain = {
         "crs": {
             "projection_type": "lambert_conformal_conic",
-            "standard_parallel": float(domainXr.attrs["TRUELAT1"]),
-            "standard_parallel_2": float(domainXr.attrs["TRUELAT2"]),
-            "longitude_of_central_meridian": float(domainXr.attrs["STAND_LON"]),
-            "latitude_of_projection_origin": float(domainXr.attrs["MOAD_CEN_LAT"]),
-            "projection_origin_x": float(domainXr.attrs["XORIG"]),
-            "projection_origin_y": float(domainXr.attrs["YORIG"]),
-            "proj4": domainProj.to_proj4(),
+            "standard_parallel": float(domain_ds.attrs["TRUELAT1"]),
+            "standard_parallel_2": float(domain_ds.attrs["TRUELAT2"]),
+            "longitude_of_central_meridian": float(domain_ds.attrs["STAND_LON"]),
+            "latitude_of_projection_origin": float(domain_ds.attrs["MOAD_CEN_LAT"]),
+            "projection_origin_x": float(domain_ds.attrs["XORIG"]),
+            "projection_origin_y": float(domain_ds.attrs["YORIG"]),
+            "proj4": config.domain_projection().to_proj4(),
         },
         "grid_properties": {
-            "rows": domainXr.sizes["ROW"],
-            "cols": domainXr.sizes["COL"],
-            "cell_x_size": float(domainXr.attrs["DX"]),
-            "cell_y_size": float(domainXr.attrs["DY"]),
-            "center_latlon": _make_point(domainXr.attrs["XCENT"], domainXr.attrs["YCENT"]),
+            "rows": domain_ds.sizes["ROW"],
+            "cols": domain_ds.sizes["COL"],
+            "cell_x_size": float(domain_ds.attrs["DX"]),
+            "cell_y_size": float(domain_ds.attrs["DY"]),
+            "center_latlon": _make_point(domain_ds.attrs["XCENT"], domain_ds.attrs["YCENT"]),
         },
         "grid_cells": [],
     }
 
     if (
-        domainXr.sizes["ROW_D"] != domainXr.sizes["ROW"] + 1
-        or domainXr.sizes["COL_D"] != domainXr.sizes["COL"] + 1
+        domain_ds.sizes["ROW_D"] != domain_ds.sizes["ROW"] + 1
+        or domain_ds.sizes["COL_D"] != domain_ds.sizes["COL"] + 1
     ):
         raise RuntimeError("Cell corners dimension must be one greater than number of cells")
 
-    domain_slice = domainXr.sel(TSTEP=0, LAY=0)
+    domain_slice = domain_ds.sel(TSTEP=0, LAY=0)
     # Add projection coordinates and WGS84 lat/lon for each grid cell
     for (y, x), _ in np.ndenumerate(domain_slice["LANDMASK"]):
         cell_properties = {
@@ -109,5 +110,8 @@ def write_domain_json(output_file):
 
 
 if __name__ == "__main__":
-    with open(domainJSONOutputPath, "w") as fp:
-        write_domain_json(fp)
+    config = load_config_from_env()
+    output_file = config.as_output_file("om-domain.json")
+
+    with open(output_file, "w") as fp:
+        write_domain_json(config, fp)

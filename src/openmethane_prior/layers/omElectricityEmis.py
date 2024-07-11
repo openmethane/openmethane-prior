@@ -23,18 +23,11 @@ import math
 import numpy as np
 import pandas as pd
 
-from openmethane_prior.omInputs import (
-    domainProj,
-    electricityPath,
-    sectoralEmissionsPath,
-)
-from openmethane_prior.omInputs import (
-    domainXr as ds,
-)
-from openmethane_prior.omOutputs import convert_to_timescale, sumLayers, write_layer
+from openmethane_prior.config import PriorConfig, load_config_from_env
+from openmethane_prior.outputs import convert_to_timescale, sum_layers, write_layer
 
 
-def processEmissions():
+def processEmissions(config: PriorConfig):
     """
     Process emissions from the electricity sector
 
@@ -43,30 +36,42 @@ def processEmissions():
     print("processEmissions for Electricity")
 
     electricityEmis = (
-        pd.read_csv(sectoralEmissionsPath).to_dict(orient="records")[0]["electricity"] * 1e9
+        pd.read_csv(config.as_input_file(config.layer_inputs.sectoral_emissions_path)).to_dict(
+            orient="records"
+        )[0]["electricity"]
+        * 1e9
     )
-    electricityFacilities = pd.read_csv(electricityPath, header=0).to_dict(orient="records")
+    electricityFacilities = pd.read_csv(
+        config.as_input_file(config.layer_inputs.electricity_path), header=0
+    ).to_dict(orient="records")
+
+    domain_ds = config.domain_dataset()
+
     totalCapacity = sum(item["capacity"] for item in electricityFacilities)
-    landmask = ds["LANDMASK"][:]
+    landmask = domain_ds["LANDMASK"][:]
 
     _, lmy, lmx = landmask.shape
-    ww = ds.DX * lmx
-    hh = ds.DY * lmy
+    ww = domain_ds.DX * lmx
+    hh = domain_ds.DY * lmy
 
     methane = np.zeros(landmask.shape)
 
+    # Get the routine to project the lat/lon grid on to the project grid
+    proj = config.domain_projection()
+
     for facility in electricityFacilities:
-        x, y = domainProj(facility["lng"], facility["lat"])
-        ix = math.floor((x + ww / 2) / ds.DX)
-        iy = math.floor((y + hh / 2) / ds.DY)
+        x, y = proj(facility["lng"], facility["lat"])
+        ix = math.floor((x + ww / 2) / domain_ds.DX)
+        iy = math.floor((y + hh / 2) / domain_ds.DY)
         try:
             methane[0][iy][ix] += (facility["capacity"] / totalCapacity) * electricityEmis
         except IndexError:
             pass  # it's outside our domain
 
-    write_layer("OCH4_ELECTRICITY", convert_to_timescale(methane))
+    write_layer(config, "OCH4_ELECTRICITY", convert_to_timescale(methane, config.domain_cell_area))
 
 
 if __name__ == "__main__":
-    processEmissions()
-    sumLayers()
+    config = load_config_from_env()
+    processEmissions(config)
+    sum_layers(config.output_domain_file)

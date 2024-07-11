@@ -28,6 +28,7 @@ import bisect
 import datetime
 import itertools
 import os
+import pathlib
 
 import cdsapi
 import netCDF4 as nc
@@ -35,21 +36,21 @@ import numpy as np
 import xarray as xr
 from shapely import geometry
 
-from openmethane_prior.omInputs import domainXr
-from openmethane_prior.omOutputs import intermediatesPath, sumLayers, write_layer
-from openmethane_prior.omUtils import (
+from openmethane_prior.config import PriorConfig, load_config_from_env
+from openmethane_prior.outputs import sum_layers, write_layer
+from openmethane_prior.utils import (
     area_of_rectangle_m2,
     load_zipped_pickle,
     redistribute_spatially,
     save_zipped_pickle,
 )
 
-GFASDownloadPath = os.path.join(intermediatesPath, "gfas-download.nc")
 
-
-def downloadGFAS(startDate, endDate, fileName=GFASDownloadPath):
+def download_GFAS(
+    start_date: datetime.date, end_date: datetime.date, file_name: str | pathlib.Path
+):
     """Download GFAS methane between two dates startDate and endDate, returns nothing"""
-    dateString = startDate.strftime("%Y-%m-%d") + "/" + endDate.strftime("%Y-%m-%d")
+    dateString = start_date.strftime("%Y-%m-%d") + "/" + end_date.strftime("%Y-%m-%d")
     c = cdsapi.Client()
 
     c.retrieve(
@@ -61,12 +62,12 @@ def downloadGFAS(startDate, endDate, fileName=GFASDownloadPath):
                 "wildfire_flux_of_methane",
             ],
         },
-        fileName,
+        file_name,
     )
-    return fileName
+    return file_name
 
 
-def processEmissions(startDate, endDate, forceUpdate: bool = False, **kwargs):  # noqa: PLR0915
+def processEmissions(config: PriorConfig, startDate, endDate, forceUpdate: bool = False, **kwargs):  # noqa: PLR0915
     """Remap GFAS fire emissions to the CMAQ domain
 
     Args:
@@ -80,9 +81,10 @@ def processEmissions(startDate, endDate, forceUpdate: bool = False, **kwargs):  
         Nothing
 
     """
-    GFASfile = downloadGFAS(startDate, endDate)
-    # GFASfile = GFASDownloadPath
-    ncin = nc.Dataset(GFASfile, "r", format="NETCDF3")
+    gfas_file = download_GFAS(
+        startDate, endDate, file_name=config.as_intermediate_file("gfas-download.nc")
+    )
+    ncin = nc.Dataset(gfas_file, "r", format="NETCDF3")
     latGfas = np.around(np.float64(ncin.variables["latitude"][:]), 3)
     latGfas = latGfas[::-1]  # they're originally north-south, we want them south north
     lonGfas = np.around(np.float64(ncin.variables["longitude"][:]), 3)
@@ -113,14 +115,15 @@ def processEmissions(startDate, endDate, forceUpdate: bool = False, **kwargs):  
             / lonGfas.size
         )
     # now collect some domain information
-    LATD = domainXr["LATD"][:].values.squeeze()
-    LOND = domainXr["LOND"].values.squeeze()
-    LAT = domainXr.variables["LAT"].values.squeeze()
-    cmaqArea = domainXr.XCELL * domainXr.YCELL
+    domain_ds = config.domain_dataset()
+    LATD = domain_ds["LATD"][:].values.squeeze()
+    LOND = domain_ds["LOND"].values.squeeze()
+    LAT = domain_ds.variables["LAT"].values.squeeze()
+    cmaqArea = domain_ds.XCELL * domain_ds.YCELL
 
-    indxPath = f"{intermediatesPath}/GFAS_ind_x.p.gz"
-    indyPath = f"{intermediatesPath}/GFAS_ind_y.p.gz"
-    coefsPath = f"{intermediatesPath}/GFAS_coefs.p.gz"
+    indxPath = config.as_intermediate_file("GFAS_ind_x.p.gz")
+    indyPath = config.as_intermediate_file("GFAS_ind_y.p.gz")
+    coefsPath = config.as_intermediate_file("GFAS_ind_coefs.p.gz")
 
     if (
         os.path.exists(indxPath)
@@ -224,7 +227,7 @@ def processEmissions(startDate, endDate, forceUpdate: bool = False, **kwargs):  
             "x": np.arange(resultNd.shape[-1]),
         },
     )
-    write_layer("OCH4_FIRE", resultXr, True)
+    write_layer(config, "OCH4_FIRE", resultXr, True)
     return resultNd
 
 
@@ -243,5 +246,6 @@ if __name__ == "__main__":
         help="end date in YYYY-MM-DD format",
     )
     args = parser.parse_args()
-    processEmissions(args.startDate, args.endDate)
-    sumLayers()
+    config = load_config_from_env()
+    processEmissions(config, args.startDate, args.endDate)
+    sum_layers(config.output_domain_file)

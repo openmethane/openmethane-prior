@@ -22,87 +22,62 @@ This downloads the input files that rarely change and can be cached between runs
 """
 
 import os
+import pathlib
+from collections.abc import Iterable
 
+import attrs
 import requests
 
-from openmethane_prior.omInputs import (
-    auShapefilePath,
-    coalPath,
-    electricityPath,
-    landUsePath,
-    livestockDataPath,
-    ntlPath,
-    oilGasPath,
-    sectoralEmissionsPath,
-    sectoralMappingsPath,
-    termitePath,
-    wetlandPath,
-)
-from openmethane_prior.omUtils import getenv
-
-scripts_path = os.path.dirname(os.path.realpath(__file__))
-# go one up because this file now lives in the scripts folder
-# TODO! We could also use Pathlib for this step.
-root_path = os.path.abspath(os.path.join(scripts_path, os.pardir))
-
-remote = getenv("PRIOR_REMOTE")
-
-electricityFile = getenv("CH4_ELECTRICITY")
-fugitivesFile = getenv("CH4_FUGITIVES")
-landUseFile = getenv("LAND_USE")
-sectoralEmissionsFile = getenv("SECTORAL_EMISSIONS")
-sectoralMappingsFile = getenv("SECTORAL_MAPPING")
-ntlFile = getenv("NTL")
-auShapefileFile = getenv("AUSF")
-livestockDataFile = getenv("LIVESTOCK_DATA")
-termiteFile = getenv("TERMITES")
-wetlandFile = getenv("WETLANDS")
-coalFile = getenv("COAL")
-oilGasFile = getenv("OILGAS")
-
-downloads = [
-    [electricityFile, electricityPath],
-    [coalFile, coalPath],
-    [oilGasFile, oilGasPath],
-    [landUseFile, landUsePath],
-    [sectoralEmissionsFile, sectoralEmissionsPath],
-    [sectoralMappingsFile, sectoralMappingsPath],
-    [ntlFile, ntlPath],
-    [auShapefileFile, auShapefilePath],
-    [livestockDataFile, livestockDataPath],
-    [termiteFile, termitePath],
-    [wetlandFile, wetlandPath],
-]
+from openmethane_prior.config import load_config_from_env
 
 
-def download_input_files(root_path, downloads, remote):
+def download_input_files(
+    download_path: pathlib.Path, fragments: Iterable[str], remote: str
+) -> list[pathlib.Path]:
     """
-    Download all input files.
+    Download input files from a remote location
 
     Parameters
     ----------
-    root_path
-        Path to download files to
-    downloads
-        List of files to download and their relative paths
+    download_path
+        Path to download the files to
+    fragments
+        Collection of path fragments to download.
+
+        This fragments are combined with the remote URL
+        to create the full URL to download the file from.
     remote
-        Remote base URL to download from
+        URL prefix to download the files from
+
+    Returns
+    -------
+        List of input files that have been fetched or found locally.
+
     """
-    for filename, download_path in downloads:
-        filepath = os.path.join(root_path, download_path)
+    download_path.mkdir(parents=True, exist_ok=True)
+
+    downloads = []
+    for fragment in fragments:
+        filepath = download_path / fragment
+
         print(filepath)
-        url = f"{remote}{filename}"
+        url = f"{remote}{fragment}"
 
         if not os.path.exists(filepath):
-            print(f"Downloading {filename} to {filepath} from {url}")
+            print(f"Downloading {fragment} to {filepath} from {url}")
 
             with requests.get(url, stream=True, timeout=30) as response:
                 with open(filepath, mode="wb") as file:
                     for chunk in response.iter_content(chunk_size=10 * 1024):
                         file.write(chunk)
         else:
-            print(f"Skipping {filename} beacuse it already exists at {filepath}")
+            print(f"Skipping {fragment} because it already exists at {filepath}")
+        downloads.append(filepath)
+    return downloads
 
 
 if __name__ == "__main__":
-    download_input_files(root_path=root_path, downloads=downloads, remote=remote)
+    config = load_config_from_env()
+
+    fragments = [str(frag) for frag in attrs.asdict(config.layer_inputs).values()]
+    download_input_files(download_path=config.input_path, fragments=fragments, remote=config.remote)

@@ -1,18 +1,15 @@
 import netCDF4 as nc
 import numpy as np
-import pytest
 
 from openmethane_prior.layers.omWetlandEmis import make_wetland_climatology
-from openmethane_prior.omInputs import domainXr, wetlandPath
-from openmethane_prior.omUtils import area_of_rectangle_m2
+from openmethane_prior.utils import area_of_rectangle_m2
 
 
-@pytest.mark.skip(reason="Needs fixtures reshuffled")
-def test_wetland_emis():
+def test_wetland_emis(config, input_files):
     # TODO: convert into an actual test
     """Test totals for WETLAND emissions between original and remapped"""
-    remapped = make_wetland_climatology(forceUpdate=True)
-    ncin = nc.Dataset(wetlandPath, "r")
+    remapped = make_wetland_climatology(config=config, forceUpdate=True)
+    ncin = nc.Dataset(config.as_input_file(config.layer_inputs.wetland_path), "r")
     latWetland = np.around(np.float64(ncin.variables["lat"][:]), 3)
     lonWetland = np.around(np.float64(ncin.variables["lon"][:]), 3)
     dlatWetland = latWetland[0] - latWetland[1]
@@ -42,8 +39,9 @@ def test_wetland_emis():
             )
             / lonWetland.size
         )
-    LATD = domainXr.variables["LATD"].values.squeeze()
-    LOND = domainXr.variables["LOND"].values.squeeze()
+    domain_ds = config.domain_dataset()
+    LATD = domain_ds.variables["LATD"].values.squeeze()
+    LOND = domain_ds.variables["LOND"].values.squeeze()
     indLat = (latWetland > LATD.min()) & (latWetland < LATD.max())
     indLon = (lonWetland > LOND.min()) & (lonWetland < LOND.max())
     flux = ncin["totflux"][...]
@@ -58,7 +56,7 @@ def test_wetland_emis():
 
     inds = np.ix_(indLat, indLon)
     wetlandTotals = [(areas * climatology[month])[inds].sum() for month in range(12)]
-    area = domainXr.XCELL * domainXr.YCELL
+    area = domain_ds.XCELL * domain_ds.YCELL
     remappedTotals = [
         remapped[month, ...].sum() * area for month in range(12)
     ]  # conversion from kg to mt
