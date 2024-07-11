@@ -48,7 +48,7 @@ def test_004_omDownloadInputs(root_dir, input_files, config):
         "domains/aust10km/v1.0.0/prior_domain_aust10km_v1.0.0.d01.nc",
     ]
 
-    assert sorted([fn.relative_to(config.input_path) for fn in input_files]) == sorted(
+    assert sorted([str(fn.relative_to(config.input_path)) for fn in input_files]) == sorted(
         EXPECTED_FILES
     )
 
