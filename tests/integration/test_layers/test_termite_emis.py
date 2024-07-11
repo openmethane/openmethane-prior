@@ -1,12 +1,15 @@
 import netCDF4 as nc
 import numpy as np
 
+from openmethane_prior.inputs import initialise_output
 from openmethane_prior.layers.omTermiteEmis import processEmissions
 from openmethane_prior.utils import area_of_rectangle_m2
 
 
 def test_termite_emis(config, input_files, input_domain):
     # TODO: Check the output correctly
+    initialise_output(config)
+
     remapped = processEmissions(config=config, forceUpdate=True)
     ncin = nc.Dataset(config.as_input_file(config.layer_inputs.termite_path), "r")
     latTerm = np.around(np.float64(ncin.variables["lat"][:]), 3)

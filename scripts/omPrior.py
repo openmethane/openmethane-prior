@@ -20,10 +20,9 @@
 
 import argparse
 import datetime
-import shutil
 
 from openmethane_prior.config import PriorConfig, load_config_from_env
-from openmethane_prior.inputs import check_input_files
+from openmethane_prior.inputs import check_input_files, initialise_output
 from openmethane_prior.layers import (
     omAgLulucfWasteEmis,
     omElectricityEmis,
@@ -58,7 +57,7 @@ def run_prior(
     check_input_files(config)
 
     # Copy the input domain to the output directory
-    shutil.copyfile(config.input_domain_file, config.output_domain_file)
+    initialise_output(config)
 
     if not skip_reproject:
         reproject_raster_inputs(config)

@@ -19,6 +19,7 @@
 
 import os
 import pathlib
+import shutil
 import sys
 import urllib.parse
 
@@ -67,6 +68,22 @@ def download_input_file(remote_url: str, url_fragment: str, save_path: pathlib.P
         print(f"Skipping {url_fragment} because it already exists at {save_path}")
 
     return False
+
+
+def initialise_output(config: PriorConfig):
+    """
+    Initialise the output directory
+
+    Copies the input domain to the output domain
+
+    Parameters
+    ----------
+    config
+        Configuration object
+    """
+    config.output_domain_file.parent.mkdir(parents=True, exist_ok=True)
+
+    shutil.copyfile(config.input_domain_file, config.output_domain_file)
 
 
 def check_input_files(config: PriorConfig):

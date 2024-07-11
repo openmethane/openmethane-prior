@@ -25,6 +25,7 @@ import pathlib
 from collections.abc import Iterable
 
 import attrs
+
 from openmethane_prior.config import load_config_from_env
 from openmethane_prior.inputs import download_input_file
 

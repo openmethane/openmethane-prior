@@ -8,6 +8,7 @@ import attrs
 import dotenv
 import pytest
 import xarray as xr
+
 from openmethane_prior.config import PriorConfig, PublishedInputDomain, load_config_from_env
 from scripts.omDownloadInputs import download_input_files
 from scripts.omPrior import run_prior
@@ -35,7 +36,10 @@ def env(monkeypatch, root_dir):
 
 @pytest.fixture()
 def config(tmp_path_factory) -> PriorConfig:
-    """Default configuration"""
+    """Default configuration
+
+    Uses a new temporary directory for each test
+    """
     input_dir = tmp_path_factory.mktemp("inputs")
     intermediate_dir = tmp_path_factory.mktemp("intermediates")
     output_dir = tmp_path_factory.mktemp("outputs")

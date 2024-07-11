@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 import requests
 import xarray as xr
+
 from openmethane_prior.layers.omGFASEmis import download_GFAS
 from openmethane_prior.utils import SECS_PER_YEAR
 
@@ -31,7 +32,7 @@ def test_002_cdsapi_connection(root_dir, tmp_path):
     assert os.path.exists(filepath)
 
 
-def test_004_omDownloadInputs(root_dir, input_files):
+def test_004_omDownloadInputs(root_dir, input_files, config):
     EXPECTED_FILES = [
         "ch4-electricity.csv",
         "coal-mining_emissions-sources.csv",
@@ -48,7 +49,9 @@ def test_004_omDownloadInputs(root_dir, input_files):
         "domains/aust10km/v1.0.0/prior_domain_aust10km_v1.0.0.d01.nc",
     ]
 
-    assert sorted([fn.name for fn in input_files]) == sorted(EXPECTED_FILES)
+    assert sorted([fn.relative_to(config.input_domain) for fn in input_files]) == sorted(
+        EXPECTED_FILES
+    )
 
 
 def test_005_agriculture_emissions(config, root_dir, input_files):
