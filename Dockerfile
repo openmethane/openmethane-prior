@@ -14,7 +14,7 @@ RUN touch README.md
 
 # This installs the python dependencies into /opt/venv
 RUN python -m venv /opt/venv && \
-    poetry export --with "dev tests" -f requirements.txt --output requirements.txt && \
+    poetry export --with dev,tests -f requirements.txt --output requirements.txt && \
     /opt/venv/bin/pip install -r requirements.txt
 
 # Container for running the project
