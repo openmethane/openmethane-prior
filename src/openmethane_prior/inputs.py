@@ -21,7 +21,6 @@ import os
 import sys
 
 from openmethane_prior.config import PriorConfig
-from openmethane_prior.raster import reproject
 
 
 def check_input_files(config: PriorConfig):
@@ -66,18 +65,3 @@ def check_input_files(config: PriorConfig):
         )
         print("\n".join(errors))
         sys.exit(1)
-
-
-def reproject_raster_inputs(config: PriorConfig):
-    """Re-project raster files to match domain"""
-    print("### Re-projecting raster inputs...")
-    reproject(
-        str(config.as_input_file(config.layer_inputs.land_use_path)),
-        str(config.as_intermediate_file(config.layer_inputs.land_use_path)),
-        config.crs,
-    )
-    reproject(
-        str(config.as_input_file(config.layer_inputs.ntl_path)),
-        str(config.as_intermediate_file(config.layer_inputs.ntl_path)),
-        config.crs,
-    )

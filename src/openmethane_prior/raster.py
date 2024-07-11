@@ -1,10 +1,11 @@
 import os
 
 import rasterio as rio
+from openmethane_prior.config import PriorConfig
 from rasterio.warp import Resampling, calculate_default_transform, reproject
 
 
-def reproject(image, output, dst_crs="EPSG:4326", resampling="nearest", **kwargs):
+def reproject_tiff(image, output, dst_crs="EPSG:4326", resampling="nearest", **kwargs):
     """Reprojects an image.
 
     Based on samgeo.common.reproject
@@ -52,3 +53,18 @@ def reproject(image, output, dst_crs="EPSG:4326", resampling="nearest", **kwargs
                     resampling=resampling,
                     **kwargs,
                 )
+
+
+def reproject_raster_inputs(config: PriorConfig):
+    """Re-project raster files to match domain"""
+    print("### Re-projecting raster inputs...")
+    reproject_tiff(
+        str(config.as_input_file(config.layer_inputs.land_use_path)),
+        str(config.as_intermediate_file(config.layer_inputs.land_use_path)),
+        config.crs,
+    )
+    reproject_tiff(
+        str(config.as_input_file(config.layer_inputs.ntl_path)),
+        str(config.as_intermediate_file(config.layer_inputs.ntl_path)),
+        config.crs,
+    )
