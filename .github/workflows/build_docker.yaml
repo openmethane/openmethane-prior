@@ -171,7 +171,6 @@ jobs:
           images: "${{ env.ECR_IMAGE }}"
           tags: |
             type=schedule
-            type=ref,event=branch
             type=ref,event=pr
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main'}}
       - name: Tag and push docker image to Amazon ECR
@@ -179,8 +178,8 @@ jobs:
           echo "${{ steps.meta.outputs.tags }}"
           
           IFS=$'\n'
-          for tag in "${{ steps.meta.outputs.tags }}"; do
+          for tag in ${{ steps.meta.outputs.tags }}; do
             echo "Tagging ${{ env.GHCR_IMAGE_ID }} as $tag"
-            docker --log-level debug tag "${{ env.GHCR_IMAGE_ID }}" "$tag"
-            docker --log-level debug push "$tag"
+            docker tag "${{ env.GHCR_IMAGE_ID }}" "$tag"
+            docker push "$tag"
           done
