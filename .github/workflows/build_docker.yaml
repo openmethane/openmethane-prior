@@ -86,12 +86,6 @@ jobs:
         env:
           CDSAPI_KEY: ${{ secrets.CDSAPI_ADS_KEY }}
           CDSAPI_URL: https://ads.atmosphere.copernicus.eu/api/v2
-      - name: Upload artifacts
-        if: ${{ always() }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: docker-artifacts
-          path: /opt/project/data
 
   # Tag the latest image if running on the main branch
   # TODO: Handle tagged builds
@@ -175,10 +169,10 @@ jobs:
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main'}}
       - name: Tag and push docker image to Amazon ECR
         run: |
-          echo "${{ steps.meta.outputs.tags }}"
+          TAGS="${{ steps.meta.outputs.tags }}"
           
           IFS=$'\n'
-          for tag in ${{ steps.meta.outputs.tags }}; do
+          for tag in $TAGS; do
             echo "Tagging ${{ env.GHCR_IMAGE_ID }} as $tag"
             docker tag "${{ env.GHCR_IMAGE_ID }}" "$tag"
             docker push "$tag"
