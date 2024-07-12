@@ -179,6 +179,7 @@ jobs:
           echo "${{ steps.meta.outputs.tags }}"
           
           echo "${{ steps.meta.outputs.tags }}" || while read -r tag; do
-            docker tag "${{ env.GHCR_IMAGE_ID }}" "$tag"
-            docker push "$tag"
+            echo "Tagging ${{ env.GHCR_IMAGE_ID }} as $tag"
+            docker --log-level debug tag "${{ env.GHCR_IMAGE_ID }}" "$tag"
+            docker --log-level debug push "$tag"
           done
