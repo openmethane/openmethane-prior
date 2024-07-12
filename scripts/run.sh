@@ -6,6 +6,7 @@
 #
 
 set -Eeuo pipefail
+set -x
 
 if [[ ! -f .env ]]; then
   echo "No .env file found. Copying .env.example to .env"
