@@ -255,6 +255,7 @@ pyrightconfig.json
 outputs
 inputs
 intermediates
+processed
 
 !outputs/README.md
 !inputs/README.md

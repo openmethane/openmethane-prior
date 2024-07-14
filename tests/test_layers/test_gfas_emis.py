@@ -5,14 +5,16 @@ import numpy as np
 import pytest
 
 from openmethane_prior.layers.omGFASEmis import processEmissions
-from openmethane_prior.omInputs import domainXr
-from openmethane_prior.omUtils import area_of_rectangle_m2
+from openmethane_prior.utils import area_of_rectangle_m2
 
 
-@pytest.mark.skip(reason="Needs fixtures reshuffled")
-def test_gfas_emis():  # test totals for GFAS emissions between original and remapped
+@pytest.mark.skip(reason="Needs an example GFAS file")
+def test_gfas_emis(config):  # test totals for GFAS emissions between original and remapped
     remapped = processEmissions(
-        datetime.date(2022, 7, 2), datetime.date(2022, 7, 2), forceUpdate=True
+        config=config,
+        startDate=datetime.date(2022, 7, 2),
+        endDate=datetime.date(2022, 7, 2),
+        forceUpdate=True,
     )
     GFASfile = "download.nc"
     ncin = nc.Dataset(GFASfile, "r", format="NETCDF3")
@@ -42,8 +44,9 @@ def test_gfas_emis():  # test totals for GFAS emissions between original and rem
             )
             / lonGfas.size
         )
-    LATD = domainXr.variables["LATD"].values.squeeze()
-    LOND = domainXr.variables["LOND"].values.squeeze()
+    domain_ds = config.domain_dataset()
+    LATD = domain_ds.variables["LATD"].values.squeeze()
+    LOND = domain_ds.variables["LOND"].values.squeeze()
     indLat = (latGfas > LATD.min()) & (latGfas < LATD.max())
     indLon = (lonGfas > LOND.min()) & (lonGfas < LOND.max())
     gfasCH4 = ncin["ch4fire"][...]

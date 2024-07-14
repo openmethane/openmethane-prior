@@ -27,36 +27,33 @@ import rioxarray as rxr
 import xarray as xr
 from tqdm import tqdm
 
-from openmethane_prior.omInputs import (
-    domainProj,
-    livestockDataPath,
-    sectoralEmissionsPath,
-    sectoralMappingsPath,
-)
-from openmethane_prior.omInputs import domainXr as ds
-from openmethane_prior.omOutputs import (
+from openmethane_prior.config import PriorConfig, load_config_from_env
+from openmethane_prior.outputs import (
     convert_to_timescale,
-    landuseReprojectionPath,
-    sumLayers,
+    sum_layers,
     write_layer,
 )
-from openmethane_prior.omUtils import area_of_rectangle_m2, secsPerYear
+from openmethane_prior.utils import SECS_PER_YEAR, area_of_rectangle_m2
 
 
-def processEmissions():  # noqa: PLR0912, PLR0915
+def processEmissions(config: PriorConfig):  # noqa: PLR0912, PLR0915
     """Process Agriculture LULUCF and Waste emissions"""
     # Load raster land-use data
     print("processEmissions for Agriculture, LULUCF and waste")
     print("Loading land use data")
-    landUseData = rxr.open_rasterio(landuseReprojectionPath, masked=True)
+    landUseData = rxr.open_rasterio(
+        config.as_intermediate_file(config.layer_inputs.land_use_path), masked=True
+    )
 
     ## Calculate livestock CH4
     print("Calculating livestock CH4")
-    with xr.open_dataset(livestockDataPath) as lss:
+    with xr.open_dataset(config.as_input_file(config.layer_inputs.livestock_path)) as lss:
         ls = lss.load()
 
+    domain_ds = config.domain_dataset()
+
     # use the landmask layer to establish the shape of the domain grid
-    landmask = ds.LANDMASK
+    landmask = domain_ds.LANDMASK
     _, lmy, lmx = landmask.shape
 
     # Re-project into domain coordinates
@@ -64,17 +61,17 @@ def processEmissions():  # noqa: PLR0912, PLR0915
     lonmesh, latmesh = np.meshgrid(ls.lon, ls.lat)
 
     # create a pyproj transformer
-    tx = pyproj.Transformer.from_crs("EPSG:4326", domainProj.crs)
+    tx = pyproj.Transformer.from_crs("EPSG:4326", config.crs)
 
     # Transform/reproject - the output is a 2D array of x distances, and a 2D array of y distances
     print("Reprojecting livestock data")
     x1, y1 = tx.transform(latmesh, lonmesh)
 
-    ww = ds.DX * lmx
-    hh = ds.DY * lmy
+    ww = domain_ds.DX * lmx
+    hh = domain_ds.DY * lmy
 
-    xDomain = np.floor((x1 + ww / 2) / ds.DX).astype(int)
-    yDomain = np.floor((y1 + hh / 2) / ds.DY).astype(int)
+    xDomain = np.floor((x1 + ww / 2) / domain_ds.DX).astype(int)
+    yDomain = np.floor((y1 + hh / 2) / domain_ds.DY).astype(int)
 
     # calculate areas in m2 of grid cells
     print("Calculate areas in m2 of livestock data")
@@ -134,13 +131,14 @@ def processEmissions():  # noqa: PLR0912, PLR0915
 
         livestockCH4[j, :] = np.nan_to_num(filtered_y_data, nan=0)
 
-    modelAreaM2 = ds.DX * ds.DY
+    modelAreaM2 = domain_ds.DX * domain_ds.DY
     livestockCH4Total = (livestockCH4 * modelAreaM2).sum()  # total emissions in kg
 
     print("Calculating sectoral emissions")
     # Import a map of land use type numbers to emissions sectors
     landuseSectorMap = {}
-    with open(sectoralMappingsPath, newline="") as f:
+    sectoral_mapping_file = config.as_input_file(config.layer_inputs.sectoral_mapping_path)
+    with open(sectoral_mapping_file, newline="") as f:
         reader = csv.reader(f)
         next(reader)  # toss headers
 
@@ -153,7 +151,7 @@ def processEmissions():  # noqa: PLR0912, PLR0915
     seenHeaders = False
     headers = []
 
-    with open(sectoralEmissionsPath, newline="") as f:
+    with open(config.as_input_file(config.layer_inputs.sectoral_emissions_path), newline="") as f:
         reader = csv.reader(f)
         for row in reader:
             if not seenHeaders:
@@ -202,8 +200,8 @@ def processEmissions():  # noqa: PLR0912, PLR0915
         methane[sector] = np.zeros(landmask.shape)
 
     print("Mapping land use grid to domain grid")
-    xDomain = np.floor((landUseData.x + ww / 2) / ds.DX).values.astype(int)
-    yDomain = np.floor((landUseData.y + hh / 2) / ds.DY).values.astype(int)
+    xDomain = np.floor((landUseData.x + ww / 2) / domain_ds.DX).values.astype(int)
+    yDomain = np.floor((landUseData.y + hh / 2) / domain_ds.DY).values.astype(int)
 
     print("Assigning methane layers to domain grid")
     for landUseType, _ in usageCounts.items():
@@ -221,15 +219,20 @@ def processEmissions():  # noqa: PLR0912, PLR0915
 
     print("Writing sectoral methane layers output file")
     for sector in sectorsUsed:
-        write_layer(f"OCH4_{sector.upper()}", convert_to_timescale(methane[sector]))
+        write_layer(
+            config,
+            f"OCH4_{sector.upper()}",
+            convert_to_timescale(methane[sector], cell_area=config.domain_cell_area),
+        )
 
     print("Writing livestock methane layers output file")
     # convert the livestock data from per year to per second and write
     livestockLayer = np.zeros(landmask.shape)
-    livestockLayer[0] = livestockCH4 / secsPerYear
-    write_layer("OCH4_LIVESTOCK", livestockLayer)
+    livestockLayer[0] = livestockCH4 / SECS_PER_YEAR
+    write_layer(config, "OCH4_LIVESTOCK", livestockLayer)
 
 
 if __name__ == "__main__":
-    processEmissions()
-    sumLayers()
+    config = load_config_from_env()
+    processEmissions(config)
+    sum_layers(config.output_domain_file)

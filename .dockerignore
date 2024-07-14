@@ -1,0 +1,15 @@
+# Ignore any local virtual environments
+.venv
+venv
+.cache
+
+# Ignore the generated runs
+data
+outputs
+intermediates
+inputs
+
+
+# Byte-compiled / optimized / DLL files
+**/__pycache__/
+**/*.py[cod]

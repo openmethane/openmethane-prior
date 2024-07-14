@@ -16,23 +16,29 @@
 # limitations under the License.
 #
 
-"""Generate domain file from example domain."""
+"""
+Generate domain file from example domain.
+
+TODO: Migrate this to the `openmethane` repository as that is where the required
+files are generated.
+"""
 
 import os
+import pathlib
 from pathlib import Path
 
 import xarray as xr
 
-from openmethane_prior.omInputs import croFilePath, domainPath, dotFilePath, geomFilePath
+from openmethane_prior.config import load_config_from_env
 
 root_path = Path(__file__).parents[1]
 # Root directory to use if relative paths are provided
 
 
 def create_domain_info(
-    geometry_file: str,
-    cross_file: str,
-    dot_file: str,
+    geometry_file: pathlib.Path,
+    cross_file: pathlib.Path,
+    dot_file: pathlib.Path,
 ) -> xr.Dataset:
     """
     Create a new domain from the input WRF domain and subsets it to match the CMAQ domain
@@ -50,20 +56,20 @@ def create_domain_info(
     -------
         The regridded domain information as an xarray dataset
     """
-    domainXr = xr.Dataset()
+    domain_ds = xr.Dataset()
 
     with xr.open_dataset(geometry_file) as geomXr:
         for attr in ["DX", "DY", "TRUELAT1", "TRUELAT2", "MOAD_CEN_LAT", "STAND_LON"]:
-            domainXr.attrs[attr] = geomXr.attrs[attr]
+            domain_ds.attrs[attr] = geomXr.attrs[attr]
 
     with xr.open_dataset(cross_file) as croXr:
         for var in ["LAT", "LON"]:
-            domainXr[var] = croXr[var]
-            domainXr[var] = croXr[var].squeeze(
+            domain_ds[var] = croXr[var]
+            domain_ds[var] = croXr[var].squeeze(
                 dim="LAY", drop=True
             )  # copy but remove the 'LAY' dimension
 
-        domainXr["LANDMASK"] = croXr["LWMASK"].squeeze(
+        domain_ds["LANDMASK"] = croXr["LWMASK"].squeeze(
             dim="LAY", drop=True
         )  # copy but remove the 'LAY' dimension
 
@@ -73,18 +79,37 @@ def create_domain_info(
         # - XCENT, YCENT: lat/long of grid centre point
         # - XORIG, YORIG: position of 0,0 cell in grid coordinates (in m)
         for attr in ["XCELL", "YCELL", "XCENT", "YCENT", "XORIG", "YORIG"]:
-            domainXr.attrs[attr] = croXr.attrs[attr]
+            domain_ds.attrs[attr] = croXr.attrs[attr]
         for var in ["LATD", "LOND"]:
-            domainXr[var] = dotXr[var].rename({"COL": "COL_D", "ROW": "ROW_D"})
+            domain_ds[var] = dotXr[var].rename({"COL": "COL_D", "ROW": "ROW_D"})
 
-    return domainXr
+    return domain_ds
+
+
+def write_domain_info(domain_ds: xr.Dataset, domain_path: pathlib.Path):
+    """
+    Write the domain information to a netcdf file
+
+    Parameters
+    ----------
+    domain_ds
+        The domain information as an xarray dataset
+    domain_path
+        The path to write the domain information to
+    """
+    print(f"Writing domain to {os.path.join(root_path, domain_path)}")
+    domain_path.parent.mkdir(parents=True, exist_ok=True)
+
+    domain_ds.to_netcdf(domain_path)
 
 
 if __name__ == "__main__":
+    config = load_config_from_env()
+    domain_path = config.input_domain_file
+
     domain = create_domain_info(
-        geometry_file=os.path.join(root_path, geomFilePath),
-        cross_file=os.path.join(root_path, croFilePath),
-        dot_file=os.path.join(root_path, dotFilePath),
+        geometry_file=root_path / config.geometry_file,
+        cross_file=root_path / config.cro_file,
+        dot_file=root_path / config.dot_file,
     )
-    print(f"Writing domain to {os.path.join(root_path, domainPath)}")
-    domain.to_netcdf(os.path.join(root_path, domainPath))
+    write_domain_info(domain, domain_path)
