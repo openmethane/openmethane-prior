@@ -104,3 +104,14 @@ def test_compare_out_domain_with_cro_dot_files(output_domain, cro_xr, dot_xr):
 
     assert cro_xr.NCOLS == output_domain.COL.size
     assert cro_xr.NROWS == output_domain.ROW.size
+
+
+def test_required_attributes(output_domain):
+    assert output_domain.variables["OCH4_TOTAL"].attrs == {
+        "units": "kg/m^2/s",
+        "long_name": "OCH4_TOTAL",
+    }
+    assert output_domain.variables["OCH4_WETLANDS"].attrs == {
+        "units": "kg/m^2/s",
+        "long_name": "OCH4_WETLANDS",
+    }

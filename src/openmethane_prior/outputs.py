@@ -22,14 +22,15 @@ import pathlib
 import numpy as np
 import numpy.typing as npt
 import xarray as xr
+
 from openmethane_prior.config import PriorConfig
 from openmethane_prior.layers import layer_names
 from openmethane_prior.utils import SECS_PER_YEAR
 
-coordNames = ["TSTEP", "LAY", "ROW", "COL"]
-requiredAttributes = {"units": "kg/m^2/s"}
-totalLayerName = "OCH4_TOTAL"
-totalLayerLongName = "total methane flux"
+COORD_NAMES = ["TSTEP", "LAY", "ROW", "COL"]
+REQUIRED_ATTRIBUTES = {"units": "kg/m^2/s"}
+TOTAL_LAYER_NAME = "OCH4_TOTAL"
+TOTAL_LAYER_LONG_NAME = "total methane flux"
 
 
 def convert_to_timescale(emission, cell_area):
@@ -77,9 +78,9 @@ def write_layer(
         # coerce to four dimensions if it's not
         for i in range(layer_data.ndim, 4):
             copy = np.expand_dims(copy, 0)  # should now have four dimensions
-        ds[layer_name] = (coordNames[:], copy)
+        ds[layer_name] = (COORD_NAMES[:], copy)
 
-    for k, v in requiredAttributes.items():
+    for k, v in REQUIRED_ATTRIBUTES.items():
         ds[layer_name].attrs[k] = v
     ds[layer_name].attrs["long_name"] = layer_name
 
@@ -118,8 +119,8 @@ def sum_layers(output_path: pathlib.Path):
             summed += ds[layerName].values  # it will broadcast time dimensions of 1 correctly
 
     if summed is not None:
-        ds[totalLayerName] = (["date", "LAY", *coordNames[-2:]], summed)
-        for k, v in requiredAttributes.items():
-            ds[totalLayerName].attrs[k] = v
-        ds[totalLayerName].attrs["long_name"] = totalLayerLongName
+        ds[TOTAL_LAYER_NAME] = (["date", "LAY", *COORD_NAMES[-2:]], summed)
+        for k, v in REQUIRED_ATTRIBUTES.items():
+            ds[TOTAL_LAYER_NAME].attrs[k] = v
+        ds[TOTAL_LAYER_NAME].attrs["long_name"] = TOTAL_LAYER_LONG_NAME
         ds.to_netcdf(output_path)
