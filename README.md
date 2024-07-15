@@ -1,6 +1,6 @@
 # OpenMethane prior emissions estimate
 
-Method to calculate a gridded, prior emissions estimate for methane across Australia.
+Method to calculate a gridded, prior emissions estimate for methane.
 
 This repository is matched with downloadable input data so that it will run out of the box.
 
@@ -44,7 +44,7 @@ You can read the instructions out and run the commands by hand if you wish.
 To download all the required input files, run:
 
 ```console
-poetry run python scripts/omDownloadInputs.py
+make download
 ```
 
 This will download input files that match the data in `.env.example`,
@@ -55,15 +55,18 @@ The downloaded files will be stored in `data/inputs` by default.
 ### Domain Info
 
 The domain of interest for the prior is defined using an input domain netCDF file.
-The format of the input domain is based on the CMAQ domain file format and uses a staggered grid.
+The format of the input domain is based on the CMAQ domain file format. Note that CMAQ uses a 
+[staggered grid](https://www.cmascenter.org/ioapi/documentation/all_versions/html/GRIDS.jpg) 
+where some quantities are defined at the center of a grid cell, whereas other quantities are defined 
+at the edges of a grid cell.  This circumstance is represented in  `ROW_D = ROW + 1`.
 
 This input file should contain the following variables:
 
-* LAT
-* LON
-* LANDMASK
-* LATD
-* LOND
+* `LAT`
+* `LON`
+* `LANDMASK`
+* `LATD`
+* `LOND`
 
 The contents of the default domain is shown below:
 
@@ -71,52 +74,52 @@ The contents of the default domain is shown below:
 >>> ncdump -h prior_domain_aust10km_v1.0.0.d01
 netcdf prior_domain_aust10km_v1.0.0.d01 {
 dimensions:
-        TSTEP = 1 ;
-        ROW = 430 ;
-        COL = 454 ;
-        LAY = 1 ;
-        ROW_D = 431 ;
-        COL_D = 455 ;
+        TSTEP = 1;
+        ROW = 430;
+        COL = 454;
+        LAY = 1;
+        ROW_D = 431;
+        COL_D = 455;
 variables:
-        float LAT(TSTEP, ROW, COL) ;
-                LAT:_FillValue = NaNf ;
-                LAT:long_name = "LAT             " ;
-                LAT:units = "DEGREES         " ;
-                LAT:var_desc = "latitude (south negative)                                                       " ;
-        float LON(TSTEP, ROW, COL) ;
-                LON:_FillValue = NaNf ;
-                LON:long_name = "LON             " ;
-                LON:units = "DEGREES         " ;
-                LON:var_desc = "longitude (west negative)                                                       " ;
-        float LANDMASK(TSTEP, ROW, COL) ;
-                LANDMASK:_FillValue = NaNf ;
-                LANDMASK:long_name = "LWMASK          " ;
-                LANDMASK:units = "CATEGORY        " ;
-                LANDMASK:var_desc = "land-water mask (1=land, 0=water)                                               " ;
-        float LATD(TSTEP, LAY, ROW_D, COL_D) ;
-                LATD:_FillValue = NaNf ;
-                LATD:long_name = "LATD            " ;
-                LATD:units = "DEGREES         " ;
-                LATD:var_desc = "latitude (south negative) -- dot point                                          " ;
-        float LOND(TSTEP, LAY, ROW_D, COL_D) ;
-                LOND:_FillValue = NaNf ;
-                LOND:long_name = "LOND            " ;
-                LOND:units = "DEGREES         " ;
-                LOND:var_desc = "longitude (west negative) -- dot point                                          " ;
+        float LAT(TSTEP, ROW, COL);
+                LAT:_FillValue = NaNf;
+                LAT:long_name = "LAT";
+                LAT:units = "DEGREES";
+                LAT:var_desc = "latitude (south negative)";
+        float LON(TSTEP, ROW, COL);
+                LON:_FillValue = NaNf;
+                LON:long_name = "LON";
+                LON:units = "DEGREES";
+                LON:var_desc = "longitude (west negative)";
+        float LANDMASK(TSTEP, ROW, COL);
+                LANDMASK:_FillValue = NaNf;
+                LANDMASK:long_name = "LWMASK";
+                LANDMASK:units = "CATEGORY";
+                LANDMASK:var_desc = "land-water mask (1=land, 0=water)";
+        float LATD(TSTEP, LAY, ROW_D, COL_D);
+                LATD:_FillValue = NaNf;
+                LATD:long_name = "LATD";
+                LATD:units = "DEGREES";
+                LATD:var_desc = "latitude (south negative) -- dot point";
+        float LOND(TSTEP, LAY, ROW_D, COL_D);
+                LOND:_FillValue = NaNf;
+                LOND:long_name = "LOND";
+                LOND:units = "DEGREES";
+                LOND:var_desc = "longitude (west negative) -- dot point";
 
 // global attributes:
-                :DX = 10000.f ;
-                :DY = 10000.f ;
-                :TRUELAT1 = -15.f ;
-                :TRUELAT2 = -40.f ;
-                :MOAD_CEN_LAT = -27.644f ;
-                :STAND_LON = 133.302f ;
-                :XCELL = 10000. ;
-                :YCELL = 10000. ;
-                :XCENT = 133.302001953125 ;
-                :YCENT = -27.5 ;
-                :XORIG = -2270000. ;
-                :YORIG = -2165629.25 ;
+                :DX = 10000.f;
+                :DY = 10000.f;
+                :TRUELAT1 = -15.f;
+                :TRUELAT2 = -40.f;
+                :MOAD_CEN_LAT = -27.644f;
+                :STAND_LON = 133.302f;
+                :XCELL = 10000.;
+                :YCELL = 10000.;
+                :XCENT = 133.302001953125;
+                :YCENT = -27.5;
+                :XORIG = -2270000.;
+                :YORIG = -2165629.25;
 }
 ```
 
@@ -128,9 +131,12 @@ values.
 
 ### Clean outputs
 
+Delete all files in `intermediates` and `outputs` directory.
 ```
 make clean
 ```
+
+Delete all files in `intermediates`, `outputs`, and `inputs` directory.
 
 ```
 make clean-all
@@ -143,7 +149,7 @@ make clean-all
 To calculate emissions for all layers, run `omPrior.py` with a start and end date:
 
 ```console
-poetry run python scripts/omPrior.py 2022-07-01 2022-07-02
+make run
 ```
 
 This takes a while to process (~10 minutes) with the vast majority of that time spent on the layers
@@ -205,7 +211,7 @@ Then run the commands to download the input data in the docker container
 docker run --rm -v </your/path/to/openmethane-prior>:/opt/project openmethane-prior python scripts/omDownloadInputs.py
 ```
 
-Replace the python scripts for the other steps.
+Replace the python files according to the commands in the Makefile for the other steps.
 
 ## For developers
 
