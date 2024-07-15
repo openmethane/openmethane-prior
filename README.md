@@ -36,6 +36,20 @@ The Open Methane prior can be installed from source into a virtual environment w
 make virtual-environment
 ```
 
+### Input Data
+
+To download all the required input files, run:
+
+```console
+poetry run python scripts/omDownloadInputs.py
+```
+
+This will download input files that match the data in `.env.example`,
+so you have a working set to get started with.
+
+The downloaded files will be stored in `data/inputs` by default.
+
+
 ### Domain Info
 
 The domain of interest for the prior is defined using an input domain netCDF file.
@@ -108,19 +122,6 @@ we have provided a domain file for a 10km grid over Australia.
 
 This file will be downloaded with the other layer inputs (see below) using the default configuration
 values.
-
-### Input Data
-
-To download all the required input files, run:
-
-```console
-poetry run python scripts/omDownloadInputs.py
-```
-
-This will download input files that match the data in `.env.example`,
-so you have a working set to get started with.
-
-The downloaded files will be stored in `data/inputs` by default.
 
 ## Run
 
