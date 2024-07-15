@@ -1,6 +1,6 @@
 # OpenMethane prior emissions estimate
 
-Method to calculate a gridded, prior emissions estimate for methane.
+Method to calculate a gridded, prior emissions estimate for methane across Australia.
 
 This repository is matched with downloadable input data so that it will run out of the box.
 
@@ -55,10 +55,10 @@ The downloaded files will be stored in `data/inputs` by default.
 ### Domain Info
 
 The domain of interest for the prior is defined using an input domain netCDF file.
-The format of the input domain is based on the CMAQ domain file format. Note that CMAQ uses a 
-[staggered grid](https://www.cmascenter.org/ioapi/documentation/all_versions/html/GRIDS.jpg) 
-where some quantities are defined at the center of a grid cell, whereas other quantities are defined 
-at the edges of a grid cell.  This circumstance is represented in  `ROW_D = ROW + 1`.
+The format of the input domain is based on the CMAQ domain file format. Note that CMAQ uses a
+[staggered grid](https://www.cmascenter.org/ioapi/documentation/all_versions/html/GRIDS.jpg)
+where some quantities are defined at the center of a grid cell, whereas other quantities are defined
+at the edges of a grid cell. This circumstance is represented in  `ROW_D = ROW + 1`.
 
 This input file should contain the following variables:
 
@@ -126,17 +126,18 @@ variables:
 As part of the [OpenMethane](https://openmethane.org/) project,
 we have provided a domain file for a 10km grid over Australia.
 
-This file will be downloaded with the other layer inputs (see below) using the default configuration
+This file will be downloaded with the other layer inputs (see [Input Data](#input-data)) using the default configuration
 values.
 
 ### Clean outputs
+These two commands are set up so that not all generated files have to be deleted manually
+Delete all files in the `intermediates` and `outputs` directory with
 
-Delete all files in `intermediates` and `outputs` directory.
 ```
 make clean
 ```
 
-Delete all files in `intermediates`, `outputs`, and `inputs` directory.
+Or delete all files in `intermediates`, `outputs`, and `inputs` directory with
 
 ```
 make clean-all
@@ -147,6 +148,12 @@ make clean-all
 ### All layers
 
 To calculate emissions for all layers, run `omPrior.py` with a start and end date:
+
+```
+poetry run python scripts/omPrior.py 2022-07-01 2022-07-01
+```
+
+or use the make target
 
 ```console
 make run
@@ -205,6 +212,7 @@ To carry out the steps described above in a Docker container, first build the Do
 ```
 make build
 ```
+
 Then run the commands to download the input data in the docker container
 
 ```
@@ -215,12 +223,15 @@ Replace the python files according to the commands in the Makefile for the other
 
 ## For developers
 
+The ruff-fixes target runs a series of ruff commands to format the code, check and fix linting
+issues, and then format the code again to ensure that all formatting and fixes are applied.
+
 ```
 make ruff-fixes
 ```
 
+The test target will run all the tests
+
 ```
 make test
 ```
-
-Note: make sure to install the dev dependencies.
