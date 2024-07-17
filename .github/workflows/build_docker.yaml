@@ -140,7 +140,7 @@ jobs:
       packages: read
     env:
       GHCR_IMAGE_ID: ghcr.io/openmethane/openmethane-prior@${{ needs.build.outputs.digest }}
-      ECR_IMAGE: 654654509571.dkr.ecr.ap-southeast-2.amazonaws.com/github/openmethane/openmethane-prior
+      ECR_IMAGE: 654654509571.dkr.ecr.ap-southeast-2.amazonaws.com/openmethane/openmethane-prior
     steps:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
