@@ -17,11 +17,11 @@ virtual-environment:  ## update virtual environment, create a new one if it does
 
 .PHONY: clean
 clean:  ## remove generated temporary files
-	find intermediates outputs inputs/om-domain-info.nc -type f ! -name 'README.md' -delete
+	find intermediates outputs -type f -delete
 
 .PHONY: clean-all
 clean-all:  ## remove all temporary files including downloaded data
-	find inputs intermediates outputs -type f ! -name 'README.md' -delete
+	find inputs intermediates outputs -type f -delete
 
 .PHONY: download
 download: ## Download the data for the project
@@ -29,7 +29,6 @@ download: ## Download the data for the project
 
 .PHONY: run
 run:  download ## Run the project for an example period
-	poetry run python scripts/omCreateDomainInfo.py
 	poetry run python scripts/omPrior.py 2022-07-01 2022-07-01
 
 .PHONY: ruff-fixes
