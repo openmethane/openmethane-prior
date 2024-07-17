@@ -13,8 +13,6 @@ if [[ ! -f .env ]]; then
   cp .env.example .env
 fi
 
-env
-
 export START_DATE=${START_DATE:-2022-07-22}
 export END_DATE=${END_DATE:-2022-07-22}
 
