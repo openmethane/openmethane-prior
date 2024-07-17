@@ -99,3 +99,14 @@ def test_010_emission_discrepancy(config, root_dir, output_domain, input_files):
             assert (
                 abs(percentage_diff) < 0.1
             ), f"Discrepancy of {percentage_diff}% in {sector} emissions"
+
+
+def test_required_attributes(output_domain):
+    assert output_domain.variables["OCH4_TOTAL"].attrs == {
+        "units": "kg/m^2/s",
+        "long_name": "total methane flux",
+    }
+    assert output_domain.variables["OCH4_WETLANDS"].attrs == {
+        "units": "kg/m^2/s",
+        "long_name": "OCH4_WETLANDS",
+    }
