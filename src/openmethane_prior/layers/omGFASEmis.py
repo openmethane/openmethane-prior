@@ -227,7 +227,7 @@ def processEmissions(config: PriorConfig, startDate, endDate, forceUpdate: bool 
             "x": np.arange(resultNd.shape[-1]),
         },
     )
-    write_layer(config, "OCH4_FIRE", resultXr, True)
+    write_layer(config.output_domain_file, "OCH4_FIRE", resultXr, True)
     return resultNd
 
 

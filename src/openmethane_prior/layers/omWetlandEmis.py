@@ -213,26 +213,28 @@ def processEmissions(
     """
     climatology = make_wetland_climatology(config, forceUpdate=forceUpdate)
     delta = datetime.timedelta(days=1)
-    resultNd = []  # will be ndarray once built
+    result_nd = []  # will be ndarray once built
     dates = []
     for d in date_time_range(startDate, endDate, delta):
         dates.append(d)
-        resultNd.append(climatology[d.month - 1, ...])  # d.month is 1-based
+        result_nd.append(climatology[d.month - 1, ...])  # d.month is 1-based
     dates.append(endDate)
-    resultNd.append(climatology[endDate.month - 1, ...])  # we want endDate included, python doesn't
-    resultNd = np.array(resultNd)
-    resultNd = np.expand_dims(resultNd, 1)  # add dummy layer dimension
+    result_nd.append(
+        climatology[endDate.month - 1, ...]
+    )  # we want endDate included, python doesn't
+    result_nd = np.array(result_nd)
+    result_nd = np.expand_dims(result_nd, 1)  # add dummy layer dimension
     resultXr = xr.DataArray(
-        resultNd,
+        result_nd,
         coords={
             "date": dates,
             "LAY": np.array([1]),
-            "y": np.arange(resultNd.shape[-2]),
-            "x": np.arange(resultNd.shape[-1]),
+            "y": np.arange(result_nd.shape[-2]),
+            "x": np.arange(result_nd.shape[-1]),
         },
     )
-    write_layer(config, "OCH4_WETLANDS", resultXr, True)
-    return resultNd
+    write_layer(config.output_domain_file, "OCH4_WETLANDS", resultXr, True)
+    return result_nd
 
 
 if __name__ == "__main__":

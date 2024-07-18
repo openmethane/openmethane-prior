@@ -107,7 +107,7 @@ def processEmissions(config: PriorConfig):
 
     for sector in sectorsUsed:
         write_layer(
-            config,
+            config.output_domain_file,
             f"OCH4_{sector.upper()}",
             convert_to_timescale(methane[sector], config.domain_cell_area),
         )

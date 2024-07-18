@@ -18,9 +18,72 @@
 """Input file definitions and checks"""
 
 import os
+import pathlib
+import shutil
 import sys
+import urllib.parse
 
+import requests
 from openmethane_prior.config import PriorConfig
+
+
+def download_input_file(remote_url: str, url_fragment: str, save_path: pathlib.Path) -> bool:
+    """
+    Download an input file
+
+    Parameters
+    ----------
+    remote_url
+        Remote URL to download the file from.
+    url_fragment
+        URL fragment to download.
+
+        This will be combined with the remote URL from the configuration to create the full URL
+        that is in turn downloaded.
+    save_path
+        Path to save the downloaded file to.
+
+        If an existing file is found at this location, the download is skipped.
+
+    Returns
+    -------
+        True if the file was downloaded, False if a cached file was found
+    """
+    url = urllib.parse.urljoin(remote_url, url_fragment)
+
+    if not os.path.exists(save_path):
+        print(f"Downloading {url_fragment} to {save_path} from {url}")
+
+        save_path.parent.mkdir(parents=True, exist_ok=True)
+
+        with requests.get(url, stream=True, timeout=30) as response:
+            response.raise_for_status()
+
+            with open(save_path, mode="wb") as file:
+                for chunk in response.iter_content(chunk_size=10 * 1024):
+                    file.write(chunk)
+
+        return True
+    else:
+        print(f"Skipping {url_fragment} because it already exists at {save_path}")
+
+    return False
+
+
+def initialise_output(config: PriorConfig):
+    """
+    Initialise the output directory
+
+    Copies the input domain to the output domain
+
+    Parameters
+    ----------
+    config
+        Configuration object
+    """
+    config.output_domain_file.parent.mkdir(parents=True, exist_ok=True)
+
+    shutil.copyfile(config.input_domain_file, config.output_domain_file)
 
 
 def check_input_files(config: PriorConfig):
@@ -36,7 +99,7 @@ def check_input_files(config: PriorConfig):
     if not config.input_domain_file.exists():
         errors.append(
             f"Missing file for domain info at {config.input_domain_file}, "
-            f"suggest running scripts/omCreateDomainInfo.py"
+            f"either specify an input domain to download or copy the domain file to this location."
         )
 
     checks = (
@@ -60,8 +123,8 @@ def check_input_files(config: PriorConfig):
     if len(errors) > 0:
         print(
             "Some required files are missing. "
-            "Suggest running omDownloadInputs.py if you're using the default input file set, "
-            "and omCreateDomainInfo.py if you haven't already. See issues below."
+            "Suggest running omDownloadInputs.py if you're using the default input file set. "
+            "See issues below."
         )
         print("\n".join(errors))
         sys.exit(1)

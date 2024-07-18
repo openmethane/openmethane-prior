@@ -36,6 +36,79 @@ The Open Methane prior can be installed from source into a virtual environment w
 make virtual-environment
 ```
 
+### Domain Info
+
+The domain of interest for the prior is defined using an input domain netCDF file.
+The format of the input domain is based on the CMAQ domain file format and uses a staggered grid.
+
+This input file should contain the following variables:
+* LAT
+* LON
+* LANDMASK
+* LATD
+* LOND
+
+The contents of the default domain is shown below:
+
+```
+>>> ncdump -h prior_domain_aust10km_v1.0.0.d01
+netcdf prior_domain_aust10km_v1.0.0.d01 {
+dimensions:
+        TSTEP = 1 ;
+        ROW = 430 ;
+        COL = 454 ;
+        LAY = 1 ;
+        ROW_D = 431 ;
+        COL_D = 455 ;
+variables:
+        float LAT(TSTEP, ROW, COL) ;
+                LAT:_FillValue = NaNf ;
+                LAT:long_name = "LAT             " ;
+                LAT:units = "DEGREES         " ;
+                LAT:var_desc = "latitude (south negative)                                                       " ;
+        float LON(TSTEP, ROW, COL) ;
+                LON:_FillValue = NaNf ;
+                LON:long_name = "LON             " ;
+                LON:units = "DEGREES         " ;
+                LON:var_desc = "longitude (west negative)                                                       " ;
+        float LANDMASK(TSTEP, ROW, COL) ;
+                LANDMASK:_FillValue = NaNf ;
+                LANDMASK:long_name = "LWMASK          " ;
+                LANDMASK:units = "CATEGORY        " ;
+                LANDMASK:var_desc = "land-water mask (1=land, 0=water)                                               " ;
+        float LATD(TSTEP, LAY, ROW_D, COL_D) ;
+                LATD:_FillValue = NaNf ;
+                LATD:long_name = "LATD            " ;
+                LATD:units = "DEGREES         " ;
+                LATD:var_desc = "latitude (south negative) -- dot point                                          " ;
+        float LOND(TSTEP, LAY, ROW_D, COL_D) ;
+                LOND:_FillValue = NaNf ;
+                LOND:long_name = "LOND            " ;
+                LOND:units = "DEGREES         " ;
+                LOND:var_desc = "longitude (west negative) -- dot point                                          " ;
+
+// global attributes:
+                :DX = 10000.f ;
+                :DY = 10000.f ;
+                :TRUELAT1 = -15.f ;
+                :TRUELAT2 = -40.f ;
+                :MOAD_CEN_LAT = -27.644f ;
+                :STAND_LON = 133.302f ;
+                :XCELL = 10000. ;
+                :YCELL = 10000. ;
+                :XCENT = 133.302001953125 ;
+                :YCENT = -27.5 ;
+                :XORIG = -2270000. ;
+                :YORIG = -2165629.25 ;
+}
+```
+
+As part of the [OpenMethane](https://openmethane.org/) project,
+we have provided a domain file for a 10km grid over Australia.
+
+This file will be downloaded with the other layer inputs (see below) using the default configuration
+values.
+
 ### Input Data
 
 To download all the required input files, run:
@@ -44,20 +117,10 @@ To download all the required input files, run:
 poetry run python scripts/omDownloadInputs.py
 ```
 
-This will download input files that match the data in .env.example, so you have a working set to get started with
+This will download input files that match the data in `.env.example`,
+so you have a working set to get started with.
 
-### Domain Info
-
-To generate the domain information needed for grid resolution etc run
-
-```console
-poetry run python scripts/omCreateDomainInfo.py
-```
-
-The current version is set up for CMAQ and uses three files from the
-WRF and CMAQ setup process. Replace these with your own version for a
-different CMAQ domain. For another model, look at the structure of the
-domainXr variable in omCreateDomainInfo.py
+The downloaded files will be stored in `data/inputs` by default.
 
 ## Run
 
@@ -78,16 +141,16 @@ To skip re-projecting raster layers (you only need to do this once for every tim
 You can run and re-run individual layers one-by-one. Just run each file on it's own (GFAS and Wetlands require a start and end date as below):
 
 ```console
-poetry run python scripts/omWetlandEmis.py 2022-07-01 2022-07-02
+poetry run python src/layers/omWetlandEmis.py 2022-07-01 2022-07-02
 ```
 
 ## Outputs
 
-Outputs can be found in the `outputs` folder. The emissions layers will be written as variables to a copy of the input domain file, with an `OCH4_` prefix for the methane layer variable names. The sum of all layers will be sotred in the `OCH4_TOTAL` layer.
+Outputs can be found in the `data/outputs` folder. The emissions layers will be written as variables to a copy of the input domain file, with an `OCH4_` prefix for the methane layer variable names. The sum of all layers will be stored in the `OCH4_TOTAL` layer.
 
 The name of the layered output file will be `om-prior-output.nc`.
 
-The `intermediates` folder will contain any re-projected raster data, and any files downloaded or generated in the process.
+The `data/processed` folder will contain any re-projected raster data, and any files downloaded or generated in the process.
 
 ## Layers
 
