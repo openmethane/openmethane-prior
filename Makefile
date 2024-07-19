@@ -2,10 +2,6 @@
 update-licenseheaders:  ## add or update license headers in all python files
 	licenseheaders -y 2023 --owner "The Superpower Institute Ltd" --projname "OpenMethane" --tmpl .copyright.tmpl --ext .py -x "venv/*"
 
-.PHONY: build
-build:  ## Build the docker container locally
-	docker build --platform=linux/amd64 -t openmethane-prior .
-
 .PHONY: virtual-environment
 virtual-environment:  ## update virtual environment, create a new one if it doesn't already exist
 	poetry lock --no-update
@@ -17,11 +13,11 @@ virtual-environment:  ## update virtual environment, create a new one if it does
 
 .PHONY: clean
 clean:  ## remove generated temporary files
-	find intermediates outputs -type f -delete
+	find data/intermediates data/outputs -type f -delete
 
 .PHONY: clean-all
 clean-all:  ## remove all temporary files including downloaded data
-	find inputs intermediates outputs -type f -delete
+	rm -r data
 
 .PHONY: download
 download: ## Download the data for the project
@@ -41,3 +37,23 @@ ruff-fixes:  # Run ruff on the project
 .PHONY: test
 test:  ## Run the tests
 	poetry run python -m pytest -r a -v tests
+
+.PHONY: build
+build:  ## Build the docker container locally
+	docker build --platform=linux/amd64 -t openmethane-prior .
+
+.PHONY: start
+start: build  ## Start the docker container locally
+	docker run --rm -it \
+		-v $(PWD):/opt/project \
+		-v ~/.cdsapirc:/root/.cdsapirc \
+		openmethane-prior
+
+.PHONY: run
+run: build clean  ## Run the prior in the docker container
+	# This requires a valid `~/.cdsapirc` file
+	docker run --rm -it \
+		-v $(PWD):/opt/project \
+		-v ~/.cdsapirc:/root/.cdsapirc \
+		openmethane-prior \
+		bash scripts/run.sh
