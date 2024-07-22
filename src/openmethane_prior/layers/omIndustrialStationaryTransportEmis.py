@@ -35,6 +35,53 @@ from openmethane_prior.outputs import (
 def _find_grid(data, totalSize, gridSize):
     return np.floor((data + totalSize / 2) / gridSize)
 
+def remap_raster( input_field: xr.core.dataarray.DataArray,\
+                  config: PriorConfig) -> np.ndarray:
+    """ maps a rasterio dataset onto the domain defined by config.
+    returns np.ndarray """
+    result = np.zeros( config.domain_dataset()['LAT'].shape[-2:]) # any field will do and select only horizontal dims
+    count = np.zeros_like( result)
+    # we accumulate values from each high-res grid in the raster onto our domain then divide by the number
+    # our criterion is that the central point in the high-res lies inside the cell defined on the grid
+    # get input resolutions, these are not retained in this data structure despite presence in underlying tiff file
+    # the following needs .to_numpy() because
+    #subtracting xarray matches coordinates, not what we want
+    delta_lon = (input_field.x.to_numpy()[1:] -input_field.x.to_numpy()[0:-1]).mean()
+    delta_lat = (input_field.y.to_numpy()[1:] -input_field.y.to_numpy()[0:-1]).mean()
+    # output resolutions and extents
+    delta_x = config.domain_dataset().XCELL
+    lmx = result.shape[-1]
+    domain_size_ew = lmx * delta_x 
+    delta_y = config.domain_dataset().YCELL
+    lmy = result.shape[-2]
+    domain_size_ns = lmy * delta_y
+    lons = input_field.x.to_numpy()
+    input_field_as_array = input_field.to_numpy()
+    # the raster is defined lat-lon so we need to reproject each row separately onto the LCC grid
+    for j in range( input_field.y.size):
+        lat = input_field.y.item(j)
+        lats = np.array([lat]).repeat( lons.size) # proj needs lats,lons same size
+        x, y = config.domain_projection()(lons, lats)
+        # correct for point being corner or centre of box, we want centre, note that the necessary key might not be set in which case we assume Point
+        try:
+            if input_field['POINT_OR_AREA'] == 'Area':
+                x += delta_lon/2.
+                y += delta_lat/2
+        except KeyError:
+            pass
+        # calculate indices  assuming regular grid
+        ix = np.floor((x + domain_size_ew / 2) / delta_x).astype('int')
+        iy = np.floor((y + domain_size_ns / 2) / delta_y).astype('int')
+        # input domain is bigger so mask indices out of range
+        mask = ( ix >= 0) & (ix < lmx) & (iy >= 0) & (iy < lmy)
+        if mask.any():
+            # the following needs to use .at method since iy,ix indices may be repeated and we need to acumulate 
+            np.add.at(result, (iy[mask], ix[mask]), input_field_as_array[j, mask])
+            np.add.at(count, (iy[mask], ix[mask]),  1)
+    has_vals = count > 0
+    result[ has_vals] /= count[ has_vals]
+    return result
+
 
 def processEmissions(config: PriorConfig):
     """
@@ -46,25 +93,19 @@ def processEmissions(config: PriorConfig):
 
     sectorsUsed = ["industrial", "stationary", "transport"]
 
-    _ntlData = rxr.open_rasterio(
-        config.as_intermediate_file(config.layer_inputs.ntl_path), masked=True
+    ntlData = rxr.open_rasterio(
+        config.as_input_file(config.layer_inputs.ntl_path), masked=True
     )
-
-    print("Clipping night-time lights data to Australian land border")
-    ausf = geopandas.read_file(config.as_input_file(config.layer_inputs.aus_shapefile_path))
-    ausf_rp = ausf.to_crs(config.crs)
-    ntlData = _ntlData.rio.clip(ausf_rp.geometry.values, ausf_rp.crs)
-
-    # Add together the intensity of the 3 channels for a total intensity per pixel
-    numNtltData = np.nan_to_num(ntlData)
-    ntlt = np.nan_to_num(numNtltData[0] + numNtltData[1] + numNtltData[2])
+    # filter nans
+    np.nan_to_num(ntlData, copy=False)
+    ntlt = ntlData.sum( axis=0)
 
     # Sum all pixel intensities
     ntltTotal = np.sum(ntlt)
 
     # Divide each pixel intensity by the total to get a scaled intensity per pixel
-    ntltScalar = ntlt / ntltTotal
-
+    ntlt /= ntltTotal
+    om_ntlt = remap_raster(ntlt, config)
     sectorData = pd.read_csv(
         config.as_input_file(config.layer_inputs.sectoral_emissions_path)
     ).to_dict(orient="records")[0]
