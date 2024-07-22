@@ -130,6 +130,7 @@ This file will be downloaded with the other layer inputs (see [Input Data](#inpu
 values.
 
 ### Clean outputs
+
 These two commands are set up so that not all generated files have to be deleted manually
 Delete all files in the `intermediates` and `outputs` directory with
 
@@ -204,6 +205,17 @@ Many sectors are taken from data sets used in by Saunois et al (2020) (doi:10.51
 - wetland: Monthly wetland emissions from the diagnostic ensemble used in Saunois et al. 2020 and described in Zhang et
   al. (2023 under review)
 - Termite: Termite emissions used in Saunois et al. 2020 supplied by Simona Castaldi and Sergio Noce
+
+## Data directories
+
+* `data/inputs` 
+This folder should contain all the required input files, which should be referenced in the `.env` file at the root.
+A set of input files has been included in the repository so that it functions out of the box (see [Input Data](#input-data)), but you can add your own
+data here.
+* `data/inputs/domains` The domain of interest is stored in this folder (see [domain info](#domain-info)).
+* `data/intermediates` This folder contains any intermediate files generated through the process. Everything within this folder should be ignored.
+* `data/outputs` Outputs files will be saved here.
+
 
 ## Run in a Docker container
 
