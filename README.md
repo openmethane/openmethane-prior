@@ -47,7 +47,7 @@ To download all the required input files, run:
 make download
 ```
 
-This will download input files that match the data in `.env.example`,
+This will download input files that match the data in `.env`,
 so you have a working set to get started with.
 
 The downloaded files will be stored in `data/inputs` by default.
