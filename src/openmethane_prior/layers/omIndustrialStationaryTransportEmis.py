@@ -36,7 +36,8 @@ def _find_grid(data, totalSize, gridSize):
     return np.floor((data + totalSize / 2) / gridSize)
 
 def remap_raster( input_field: xr.core.dataarray.DataArray,\
-                  config: PriorConfig) -> np.ndarray:
+                  config: PriorConfig,\
+                  AREA_OR_POINT = 'AREA') -> np.ndarray:
     """ maps a rasterio dataset onto the domain defined by config.
     returns np.ndarray """
     result = np.zeros( config.domain_dataset()['LAT'].shape[-2:]) # any field will do and select only horizontal dims
@@ -51,27 +52,24 @@ def remap_raster( input_field: xr.core.dataarray.DataArray,\
     # output resolutions and extents
     delta_x = config.domain_dataset().XCELL
     lmx = result.shape[-1]
-    domain_size_ew = lmx * delta_x 
     delta_y = config.domain_dataset().YCELL
     lmy = result.shape[-2]
-    domain_size_ns = lmy * delta_y
-    lons = input_field.x.to_numpy()
     input_field_as_array = input_field.to_numpy()
+    llc_x, llc_y = config.llc_xy() # lower left corner in x,y coords
     # the raster is defined lat-lon so we need to reproject each row separately onto the LCC grid
     for j in range( input_field.y.size):
+        lons = input_field.x.to_numpy()
         lat = input_field.y.item(j)
         lats = np.array([lat]).repeat( lons.size) # proj needs lats,lons same size
+        # correct for point being corner or centre of box, we want centre
+        if AREA_OR_POINT == 'Area':
+            lons += delta_lon/2.
+            lats += delta_lat/2
+
         x, y = config.domain_projection()(lons, lats)
-        # correct for point being corner or centre of box, we want centre, note that the necessary key might not be set in which case we assume Point
-        try:
-            if input_field['POINT_OR_AREA'] == 'Area':
-                x += delta_lon/2.
-                y += delta_lat/2
-        except KeyError:
-            pass
         # calculate indices  assuming regular grid
-        ix = np.floor((x + domain_size_ew / 2) / delta_x).astype('int')
-        iy = np.floor((y + domain_size_ns / 2) / delta_y).astype('int')
+        ix = np.floor((x -llc_x) / delta_x).astype('int')
+        iy = np.floor((y -llc_y) / delta_y).astype('int')
         # input domain is bigger so mask indices out of range
         mask = ( ix >= 0) & (ix < lmx) & (iy >= 0) & (iy < lmy)
         if mask.any():
@@ -105,48 +103,15 @@ def processEmissions(config: PriorConfig):
 
     # Divide each pixel intensity by the total to get a scaled intensity per pixel
     ntlt /= ntltTotal
-    om_ntlt = remap_raster(ntlt, config)
+    om_ntlt = remap_raster(ntlt, config, AREA_OR_POINT = ntlData.AREA_OR_POINT)
+    # we want proportions of total for scaling emissions
+    ntltScalar = om_ntlt/om_ntlt.sum()
     sectorData = pd.read_csv(
         config.as_input_file(config.layer_inputs.sectoral_emissions_path)
     ).to_dict(orient="records")[0]
-    ntlIndustrial = ntltScalar * (sectorData["industrial"] * 1e9)
-    ntlStationary = ntltScalar * (sectorData["stationary"] * 1e9)
-    ntlTransport = ntltScalar * (sectorData["transport"] * 1e9)
-
-    # Load domain
-    domain_ds = config.domain_dataset()
-    landmask = domain_ds["LANDMASK"][:]
-
-    _, lmy, lmx = landmask.shape
-    ww = domain_ds.DX * lmx
-    hh = domain_ds.DY * lmy
-
-    print("Mapping night-time lights grid to domain grid")
-    xDomain = xr.apply_ufunc(_find_grid, ntlData.x, ww, domain_ds.DX).values.astype(int)
-    yDomain = xr.apply_ufunc(_find_grid, ntlData.y, hh, domain_ds.DY).values.astype(int)
-
-    # xDomain = np.floor((ntlData.x + ww / 2) / domain_ds.DX).astype(int)
-    # yDomain = np.floor((ntlData.y + hh / 2) / domain_ds.DY).astype(int)
-
     methane = {}
     for sector in sectorsUsed:
-        methane[sector] = np.zeros(domain_ds["LANDMASK"].shape)
-
-    litPixels = np.argwhere(ntlt > 0)
-    ignored = 0
-
-    for y, x in litPixels:
-        try:
-            methane["industrial"][0][yDomain[y]][xDomain[x]] += ntlIndustrial[y][x]
-            methane["stationary"][0][yDomain[y]][xDomain[x]] += ntlStationary[y][x]
-            methane["transport"][0][yDomain[y]][xDomain[x]] += ntlTransport[y][x]
-        except Exception as e:
-            print(e)
-            ignored += 1
-
-    print(f"{ignored} lit pixels were ignored")
-
-    for sector in sectorsUsed:
+        methane[sector] = ntltScalar * sectorData[sector] * 1e9
         write_layer(
             config,
             f"OCH4_{sector.upper()}",
