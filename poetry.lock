@@ -270,6 +270,20 @@ files = [
 ]
 
 [[package]]
+name = "colorful"
+version = "0.5.6"
+description = "Terminal string styling done right, in Python."
+optional = false
+python-versions = "*"
+files = [
+    {file = "colorful-0.5.6-py2.py3-none-any.whl", hash = "sha256:eab8c1c809f5025ad2b5238a50bd691e26850da8cac8f90d660ede6ea1af9f1e"},
+    {file = "colorful-0.5.6.tar.gz", hash = "sha256:b56d5c01db1dac4898308ea889edcb113fbee3e6ec5df4bacffd61d5241b5b8d"},
+]
+
+[package.dependencies]
+colorama = {version = "*", markers = "platform_system == \"Windows\""}
+
+[[package]]
 name = "environs"
 version = "11.0.0"
 description = "simplified environment variable parsing"
@@ -609,6 +623,35 @@ files = [
 [package.extras]
 dev = ["pre-commit", "tox"]
 testing = ["pytest", "pytest-benchmark"]
+
+[[package]]
+name = "prettyprinter"
+version = "0.18.0"
+description = "Syntax-highlighting, declarative and composable pretty printer for Python 3.5+"
+optional = false
+python-versions = "*"
+files = [
+    {file = "prettyprinter-0.18.0-py2.py3-none-any.whl", hash = "sha256:358a58f276cb312e3ca29d7a7f244c91e4e0bda7848249d30e4f36d2eb58b67c"},
+    {file = "prettyprinter-0.18.0.tar.gz", hash = "sha256:9fe5da7ec53510881dd35d7a5c677ba45f34cfe6a8e78d1abd20652cf82139a8"},
+]
+
+[package.dependencies]
+colorful = ">=0.4.0"
+Pygments = ">=2.2.0"
+
+[[package]]
+name = "pygments"
+version = "2.18.0"
+description = "Pygments is a syntax highlighting package written in Python."
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "pygments-2.18.0-py3-none-any.whl", hash = "sha256:b8e6aca0523f3ab76fee51799c488e38782ac06eafcf95e7ba832985c8e7b13a"},
+    {file = "pygments-2.18.0.tar.gz", hash = "sha256:786ff802f32e91311bff3889f6e9a86e81505fe99f2735bb6d60ae0c5004f199"},
+]
+
+[package.extras]
+windows-terminal = ["colorama (>=0.4.6)"]
 
 [[package]]
 name = "pyparsing"
@@ -1211,4 +1254,4 @@ viz = ["matplotlib", "nc-time-axis", "seaborn"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.11,<3.12"
-content-hash = "bca53bea7b0947fe95ddeec8370e6945fc9803498012c0fa4cbecc705c2bac7e"
+content-hash = "6238296d9ed2683bbc0a4861a883f3f5f2f390e07beed240fa1f4549e15d8fdb"

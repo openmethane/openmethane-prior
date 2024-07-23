@@ -257,6 +257,3 @@ inputs
 intermediates
 processed
 
-!outputs/README.md
-!inputs/README.md
-!intermediates/README.md

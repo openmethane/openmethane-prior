@@ -24,6 +24,7 @@ import sys
 import urllib.parse
 
 import requests
+
 from openmethane_prior.config import PriorConfig
 
 
