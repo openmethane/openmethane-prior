@@ -21,8 +21,10 @@
 import argparse
 import datetime
 
+import prettyprinter
+
 from openmethane_prior.config import PriorConfig, load_config_from_env
-from openmethane_prior.inputs import check_input_files
+from openmethane_prior.inputs import check_input_files, initialise_output
 from openmethane_prior.layers import (
     omAgLulucfWasteEmis,
     omElectricityEmis,
@@ -35,6 +37,8 @@ from openmethane_prior.layers import (
 from openmethane_prior.outputs import sum_layers
 from openmethane_prior.raster import reproject_raster_inputs
 from openmethane_prior.verification import verify_emis
+
+prettyprinter.install_extras(["attrs"])
 
 
 def run_prior(
@@ -55,6 +59,9 @@ def run_prior(
         If true, don't reproject the raster datasets onto the domain
     """
     check_input_files(config)
+
+    # Copy the input domain to the output directory
+    initialise_output(config)
 
     if not skip_reproject:
         reproject_raster_inputs(config)
@@ -77,12 +84,12 @@ if __name__ == "__main__":
         description="Calculate the prior methane emissions estimate for OpenMethane"
     )
     parser.add_argument(
-        "startDate",
+        "--start-date",
         type=lambda s: datetime.datetime.strptime(s, "%Y-%m-%d"),
         help="Start date in YYYY-MM-DD format",
     )
     parser.add_argument(
-        "endDate",
+        "--end-date",
         type=lambda s: datetime.datetime.strptime(s, "%Y-%m-%d"),
         help="end date in YYYY-MM-DD format",
     )
@@ -90,9 +97,13 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     config = load_config_from_env()
+
+    print("Configuration:")
+    prettyprinter.cpprint(config)
+
     run_prior(
         config=config,
-        start_date=args.startDate,
-        end_date=args.endDate,
+        start_date=args.start_date,
+        end_date=args.end_date,
         skip_reproject=args.skip_reproject,
     )

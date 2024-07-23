@@ -29,22 +29,50 @@ class LayerInputs:
     wetland_path: pathlib.Path
 
 
+@attrs.frozen()
+class PublishedInputDomain:
+    """
+    Input domain configuration
+
+    Used to specify the published domain to use as the input domain.
+    """
+
+    name: str
+    version: str
+    domain_index: int = 1
+
+    def url_fragment(self) -> str:
+        """
+        Fragment to download the input domain
+
+        Returns
+        -------
+            URL fragment
+        """
+        return (
+            f"domains/{self.name}/{self.version}/"
+            f"prior_domain_{self.name}_{self.version}.d{self.domain_index:02}.nc"
+        )
+
+
 @attrs.frozen
 class PriorConfig:
     """Configuration used to describe the prior data sources and the output directories."""
 
-    domain: str
     remote: str
     input_path: pathlib.Path
     output_path: pathlib.Path
     intermediates_path: pathlib.Path
 
-    layer_inputs: LayerInputs
+    input_domain: PublishedInputDomain | str
+    """Input domain specification
 
-    # CMAQ specific paths
-    cro_file: pathlib.Path
-    dot_file: pathlib.Path
-    geometry_file: pathlib.Path
+    If provided, use a published domain as the input domain.
+    Otherwise, a file named `output_domain` is used as the input domain.
+    """
+    output_domain: str
+    """Name of the output domain file"""
+    layer_inputs: LayerInputs
 
     def as_input_file(self, name: str | pathlib.Path) -> pathlib.Path:
         """Return the full path to an input file"""
@@ -102,13 +130,22 @@ class PriorConfig:
 
     @property
     def input_domain_file(self):
-        """Get the filename of the input domain"""
-        return self.as_input_file(self.domain)
+        """
+        Get the filename of the input domain
+
+        Uses a published domain if it is provided otherwise uses a user-specified file name
+        """
+        if isinstance(self.input_domain, PublishedInputDomain):
+            return self.as_input_file(self.input_domain.url_fragment())
+        elif isinstance(self.input_domain, str):
+            return self.as_input_file(self.input_domain)
+        else:
+            raise TypeError("Could not interpret the 'input_domain' field")
 
     @property
     def output_domain_file(self):
         """Get the filename of the output domain"""
-        return self.as_output_file(f"out-{self.domain}")
+        return self.as_output_file(self.output_domain)
 
 
 def load_config_from_env(**overrides: typing.Any) -> PriorConfig:
@@ -126,12 +163,23 @@ def load_config_from_env(**overrides: typing.Any) -> PriorConfig:
     )
     env.read_env(verbose=True)
 
+    if env.str("DOMAIN_NAME", None) and env.str("DOMAIN_VERSION", None):
+        input_domain = PublishedInputDomain(
+            name=env.str("DOMAIN_NAME"),
+            version=env.str("DOMAIN_VERSION"),
+        )
+    else:
+        # Default to using a user-specified file as the input domain
+        # TODO: Log?
+        input_domain = env.str("DOMAIN")
+
     options = dict(
-        domain=env("DOMAIN"),
         remote=env("PRIOR_REMOTE"),
         input_path=env.path("INPUTS", "data/inputs"),
         output_path=env.path("OUTPUTS", "data/outputs"),
         intermediates_path=env.path("INTERMEDIATES", "data/processed"),
+        input_domain=input_domain,
+        output_domain=env.str("OUTPUT_DOMAIN", "out-om-domain-info.nc"),
         layer_inputs=LayerInputs(
             electricity_path=env.path("CH4_ELECTRICITY"),
             oil_gas_path=env.path("CH4_OILGAS"),
@@ -145,9 +193,6 @@ def load_config_from_env(**overrides: typing.Any) -> PriorConfig:
             termite_path=env.path("TERMITES"),
             wetland_path=env.path("WETLANDS"),
         ),
-        cro_file=env.path("CROFILE"),
-        dot_file=env.path("DOTFILE"),
-        geometry_file=env.path("GEO_EM"),
     )
 
     return PriorConfig(**{**options, **overrides})

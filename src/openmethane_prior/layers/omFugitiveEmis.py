@@ -89,7 +89,11 @@ def processEmissions(config: PriorConfig, startDate, endDate):
         except IndexError:
             pass  # it's outside our domain
 
-    write_layer(config, "OCH4_FUGITIVE", convert_to_timescale(methane, config.domain_cell_area))
+    write_layer(
+        config.output_domain_file,
+        "OCH4_FUGITIVE",
+        convert_to_timescale(methane, config.domain_cell_area),
+    )
 
 
 if __name__ == "__main__":
@@ -97,17 +101,17 @@ if __name__ == "__main__":
         description="Calculate the prior methane emissions estimate for OpenMethane"
     )
     parser.add_argument(
-        "startDate",
+        "--start-date",
         type=lambda s: datetime.datetime.strptime(s, "%Y-%m-%d"),
         help="Start date in YYYY-MM-DD format",
     )
     parser.add_argument(
-        "endDate",
+        "--end-date",
         type=lambda s: datetime.datetime.strptime(s, "%Y-%m-%d"),
         help="end date in YYYY-MM-DD format",
     )
     config = load_config_from_env()
 
     args = parser.parse_args()
-    processEmissions(config, args.startDate, args.endDate)
+    processEmissions(config, args.start_date, args.end_date)
     sum_layers(config.output_domain_file)

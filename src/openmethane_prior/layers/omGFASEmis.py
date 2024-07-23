@@ -227,7 +227,7 @@ def processEmissions(config: PriorConfig, startDate, endDate, forceUpdate: bool 
             "x": np.arange(resultNd.shape[-1]),
         },
     )
-    write_layer(config, "OCH4_FIRE", resultXr, True)
+    write_layer(config.output_domain_file, "OCH4_FIRE", resultXr, True)
     return resultNd
 
 
@@ -236,16 +236,16 @@ if __name__ == "__main__":
         description="Calculate the prior methane emissions estimate for OpenMethane"
     )
     parser.add_argument(
-        "startDate",
+        "--start-date",
         type=lambda s: datetime.datetime.strptime(s, "%Y-%m-%d"),
         help="Start date in YYYY-MM-DD format",
     )
     parser.add_argument(
-        "endDate",
+        "--end-date",
         type=lambda s: datetime.datetime.strptime(s, "%Y-%m-%d"),
         help="end date in YYYY-MM-DD format",
     )
     args = parser.parse_args()
     config = load_config_from_env()
-    processEmissions(config, args.startDate, args.endDate)
+    processEmissions(config, args.start_date, args.end_date)
     sum_layers(config.output_domain_file)

@@ -21,18 +21,17 @@
 This downloads the input files that rarely change and can be cached between runs.
 """
 
-import os
 import pathlib
 from collections.abc import Iterable
 
 import attrs
-import requests
 
 from openmethane_prior.config import load_config_from_env
+from openmethane_prior.inputs import download_input_file
 
 
 def download_input_files(
-    download_path: pathlib.Path, fragments: Iterable[str], remote: str
+    remote: str, download_path: pathlib.Path, fragments: Iterable[str]
 ) -> list[pathlib.Path]:
     """
     Download input files from a remote location
@@ -54,30 +53,29 @@ def download_input_files(
         List of input files that have been fetched or found locally.
 
     """
-    download_path.mkdir(parents=True, exist_ok=True)
+    downloaded_files = []
+    for url_fragment in fragments:
+        save_path = download_path / url_fragment
 
-    downloads = []
-    for fragment in fragments:
-        filepath = download_path / fragment
+        if not save_path.resolve().is_relative_to(download_path.resolve()):
+            raise ValueError(f"Check download fragment: {url_fragment}")
 
-        print(filepath)
-        url = f"{remote}{fragment}"
-
-        if not os.path.exists(filepath):
-            print(f"Downloading {fragment} to {filepath} from {url}")
-
-            with requests.get(url, stream=True, timeout=30) as response:
-                with open(filepath, mode="wb") as file:
-                    for chunk in response.iter_content(chunk_size=10 * 1024):
-                        file.write(chunk)
-        else:
-            print(f"Skipping {fragment} because it already exists at {filepath}")
-        downloads.append(filepath)
-    return downloads
+        download_input_file(remote, url_fragment, save_path)
+        downloaded_files.append(save_path)
+    return downloaded_files
 
 
 if __name__ == "__main__":
     config = load_config_from_env()
 
-    fragments = [str(frag) for frag in attrs.asdict(config.layer_inputs).values()]
-    download_input_files(download_path=config.input_path, fragments=fragments, remote=config.remote)
+    layer_fragments = [str(frag) for frag in attrs.asdict(config.layer_inputs).values()]
+
+    # Add the input domain if it is specified
+    if config.input_domain is not None:
+        layer_fragments.append(config.input_domain.url_fragment())
+
+    download_input_files(
+        remote=config.remote,
+        download_path=config.input_path,
+        fragments=layer_fragments,
+    )
