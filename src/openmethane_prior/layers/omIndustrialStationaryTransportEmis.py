@@ -44,7 +44,8 @@ def remap_raster( input_field: xr.core.dataarray.DataArray,\
     count = np.zeros_like( result)
     # we accumulate values from each high-res grid in the raster onto our domain then divide by the number
     # our criterion is that the central point in the high-res lies inside the cell defined on the grid
-    # get input resolutions, these are not retained in this data structure despite presence in underlying tiff file
+    # get input coordinates and resolutions, these are not retained in this data structure despite presence in underlying tiff file
+    lons = input_field.x.to_numpy()
     # the following needs .to_numpy() because
     #subtracting xarray matches coordinates, not what we want
     delta_lon = (input_field.x.to_numpy()[1:] -input_field.x.to_numpy()[0:-1]).mean()
@@ -58,15 +59,14 @@ def remap_raster( input_field: xr.core.dataarray.DataArray,\
     llc_x, llc_y = config.llc_xy() # lower left corner in x,y coords
     # the raster is defined lat-lon so we need to reproject each row separately onto the LCC grid
     for j in range( input_field.y.size):
-        lons = input_field.x.to_numpy()
         lat = input_field.y.item(j)
         lats = np.array([lat]).repeat( lons.size) # proj needs lats,lons same size
         # correct for point being corner or centre of box, we want centre
         if AREA_OR_POINT == 'Area':
-            lons += delta_lon/2.
+            lons_cell = lons + delta_lon/2.
             lats += delta_lat/2
 
-        x, y = config.domain_projection()(lons, lats)
+        x, y = config.domain_projection()(lons_cell, lats)
         # calculate indices  assuming regular grid
         ix = np.floor((x -llc_x) / delta_x).astype('int')
         iy = np.floor((y -llc_y) / delta_y).astype('int')
@@ -92,18 +92,15 @@ def processEmissions(config: PriorConfig):
     sectorsUsed = ["industrial", "stationary", "transport"]
 
     ntlData = rxr.open_rasterio(
-        config.as_input_file(config.layer_inputs.ntl_path), masked=True
+        config.as_input_file(config.layer_inputs.ntl_path), masked=False
     )
-    # filter nans
-    np.nan_to_num(ntlData, copy=False)
+    # sum over three bands
     ntlt = ntlData.sum( axis=0)
+    np.nan_to_num(ntlt, copy=False)
 
-    # Sum all pixel intensities
-    ntltTotal = np.sum(ntlt)
 
-    # Divide each pixel intensity by the total to get a scaled intensity per pixel
-    ntlt /= ntltTotal
-    om_ntlt = remap_raster(ntlt, config, AREA_OR_POINT = ntlData.AREA_OR_POINT)
+    om_ntlt = remap_raster(ntlt, config,\
+                           AREA_OR_POINT = ntlData.AREA_OR_POINT)
     # we want proportions of total for scaling emissions
     ntltScalar = om_ntlt/om_ntlt.sum()
     sectorData = pd.read_csv(
