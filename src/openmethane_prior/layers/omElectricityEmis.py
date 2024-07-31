@@ -25,7 +25,7 @@ import pandas as pd
 
 from openmethane_prior.config import PriorConfig, load_config_from_env
 from openmethane_prior.outputs import convert_to_timescale, sum_layers, write_layer
-
+from openmethane_prior.utils import domain_cell_index
 
 def processEmissions(config: PriorConfig):
     """
@@ -60,9 +60,7 @@ def processEmissions(config: PriorConfig):
     proj = config.domain_projection()
 
     for facility in electricityFacilities:
-        x, y = proj(facility["lng"], facility["lat"])
-        ix = math.floor((x + ww / 2) / domain_ds.DX)
-        iy = math.floor((y + hh / 2) / domain_ds.DY)
+        ix, iy = domain_cell_index(config, facility['lng'], facility['lat'])
         try:
             methane[0][iy][ix] += (facility["capacity"] / totalCapacity) * electricityEmis
         except IndexError:
