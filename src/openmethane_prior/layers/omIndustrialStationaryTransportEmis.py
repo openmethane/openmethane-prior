@@ -30,6 +30,7 @@ from openmethane_prior.outputs import (
     sum_layers,
     write_layer,
 )
+from openmethane_prior.utils import domain_cell_index
 
 
 def _find_grid(data, totalSize, gridSize):
@@ -64,12 +65,11 @@ def remap_raster( input_field: xr.core.dataarray.DataArray,\
         # correct for point being corner or centre of box, we want centre
         if AREA_OR_POINT == 'Area':
             lons_cell = lons + delta_lon/2.
-            lats += delta_lat/2
-
-        x, y = config.domain_projection()(lons_cell, lats)
-        # calculate indices  assuming regular grid
-        ix = np.floor((x -llc_x) / delta_x).astype('int')
-        iy = np.floor((y -llc_y) / delta_y).astype('int')
+            lats_cell = lats + delta_lat/2
+        else:
+            lons_cell = lons.copy()
+            lats_cell = lats.copy()
+        ix, iy = domain_cell_index(config, lons_cell, lats_cell)
         # input domain is bigger so mask indices out of range
         mask = ( ix >= 0) & (ix < lmx) & (iy >= 0) & (iy < lmy)
         if mask.any():

@@ -68,22 +68,15 @@ def processEmissions(config: PriorConfig, startDate, endDate):
         fugitiveEmis / fugitiveYear["emissions_quantity"].sum()
     )
 
-    domain_ds = config.domain_dataset()
-
-    landmask = domain_ds["LANDMASK"][:]
-
-    _, lmy, lmx = landmask.shape
-    ww = domain_ds.DX * lmx
-    hh = domain_ds.DY * lmy
-
     methane = np.zeros(landmask.shape)
 
-    domain_proj = config.domain_projection()
 
     for _, facility in fugitiveYear.iterrows():
-        x, y = domain_proj(facility["lon"], facility["lat"])
-        ix = math.floor((x + ww / 2) / domain_ds.DX)
-        iy = math.floor((y + hh / 2) / domain_ds.DY)
+        x, y = config.domain_projection()(facility['lons'], facility['lat'])
+        x, y = config.domain_projection()(lons_cell, lats)
+        # calculate indices  assuming regular grid
+        ix = np.floor((x -llc_x) / delta_x).astype('int')
+        iy = np.floor((y -llc_y) / delta_y).astype('int')
         try:
             methane[0][iy][ix] += facility["emissions_quantity"]
         except IndexError:
