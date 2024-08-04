@@ -144,8 +144,9 @@ def processEmissions(config: PriorConfig):  # noqa: PLR0912, PLR0915
         methane[sector] = np.zeros(landmask.shape)
 
     print("Mapping land use grid to domain grid")
-    xDomain = np.floor((landUseData.x + ww / 2) / domain_ds.DX).values.astype(int)
-    yDomain = np.floor((landUseData.y + hh / 2) / domain_ds.DY).values.astype(int)
+    llc_x, llc_y = config.llc_xy()
+    xDomain = np.floor((landUseData.x -llc_x) / domain_ds.DX).values.astype(int)
+    yDomain = np.floor((landUseData.y -llc_y) / domain_ds.DY).values.astype(int)
 
     print("Assigning methane layers to domain grid")
     for landUseType, _ in usageCounts.items():
