@@ -33,7 +33,7 @@ from openmethane_prior.outputs import (
     sum_layers,
     write_layer,
 )
-from openmethane_prior.utils import SECS_PER_YEAR, area_of_rectangle_m2
+from openmethane_prior.utils import SECS_PER_YEAR, area_of_rectangle_m2, domain_cell_index
 
 
 def processEmissions(config: PriorConfig):  # noqa: PLR0912, PLR0915
@@ -59,80 +59,24 @@ def processEmissions(config: PriorConfig):  # noqa: PLR0912, PLR0915
     # Re-project into domain coordinates
     # - create meshgrids of the lats and lons
     lonmesh, latmesh = np.meshgrid(ls.lon, ls.lat)
+    xDomain, yDomain = domain_cell_index(config, lonmesh, latmesh )
 
-    # create a pyproj transformer
-    tx = pyproj.Transformer.from_crs("EPSG:4326", config.crs)
-
-    # Transform/reproject - the output is a 2D array of x distances, and a 2D array of y distances
-    print("Reprojecting livestock data")
-    x1, y1 = tx.transform(latmesh, lonmesh)
-
-    ww = domain_ds.DX * lmx
-    hh = domain_ds.DY * lmy
-
-    xDomain = np.floor((x1 + ww / 2) / domain_ds.DX).astype(int)
-    yDomain = np.floor((y1 + hh / 2) / domain_ds.DY).astype(int)
-
-    # calculate areas in m2 of grid cells
-    print("Calculate areas in m2 of livestock data")
-    latEnteric = ls.lat.values
-    lonEnteric = ls.lon.values
-    dlatEnteric = latEnteric[1] - latEnteric[0]
-    dlonEnteric = lonEnteric[1] - lonEnteric[0]
-    lonEnteric_edge = np.zeros(len(lonEnteric) + 1)
-    lonEnteric_edge[0:-1] = lonEnteric - dlonEnteric / 2.0
-    lonEnteric_edge[-1] = lonEnteric[-1] + dlonEnteric / 2.0
-    # lonEnteric_edge = np.around(lonEnteric_edge,2)
-    latEnteric_edge = np.zeros(len(latEnteric) + 1)
-    latEnteric_edge[0:-1] = latEnteric - dlatEnteric / 2.0
-    latEnteric_edge[-1] = latEnteric[-1] + dlatEnteric / 2.0
-    # latEnteric_edge = np.around(latEnteric_edge,2)
-
-    nlonEnteric = len(lonEnteric)
-    nlatEnteric = len(latEnteric)
-
-    areas = np.zeros((nlatEnteric, nlonEnteric))
-    # take advantage of regular grid to compute areas equal for each gridbox at same latitude
-    for iy in range(nlatEnteric):
-        areas[iy, :] = (
-            area_of_rectangle_m2(
-                latEnteric_edge[iy],
-                latEnteric_edge[iy + 1],
-                lonEnteric_edge[0],
-                lonEnteric_edge[-1],
-            )
-            / lonEnteric.size
-        )
-
-    livestockCH4 = np.zeros((lmy, lmx))
-    # convert unit from kg/year/cell to kg/year/m2
-    CH4 = lss.CH4_total.values / areas
-
+    enteric_as_array = lss.CH4_total.to_numpy()
+    livestockCH4 = np.zeros( landmask.shape[-2:])
     print("Distribute livestock CH4 (long process)")
-    # Precalculate masks for each row and column of the target for faster processing
-    x_masks = np.asarray([xDomain == i for i in range(lmx)])
-    y_masks = [yDomain == i for i in range(lmy)]
-
-    for j in tqdm(range(lmy)):
-        if y_masks[j].sum() == 0:
-            # Early exit if no livestock data in this row
-            continue
-
-        # Get a subset of y_data that is of interest for the rest of the loop
-        y_data = CH4[y_masks[j]]
-
-        # Numpy warns about taking means of missing slices
-        # This happens for the cases where the xDomain is empty for the given yDomain
-        with warnings.catch_warnings():
-            warnings.simplefilter(category=RuntimeWarning, action="ignore")
-            filtered_x_masks = x_masks[:, y_masks[j]]
-            filtered_y_data = [y_data[x_mask_subset].mean() for x_mask_subset in filtered_x_masks]
-        assert len(filtered_y_data) == lmx
-
-        livestockCH4[j, :] = np.nan_to_num(filtered_y_data, nan=0)
-
-    modelAreaM2 = domain_ds.DX * domain_ds.DY
-    livestockCH4Total = (livestockCH4 * modelAreaM2).sum()  # total emissions in kg
+    # we're accumulating emissions from fine to coarse grid
+    # accumulate in mass units and divide by area at end
+    for j in tqdm(range(ls.lat.size)):
+        ix = xDomain[j,:]
+        iy = yDomain[j,:]
+        # input domain is bigger so mask indices out of range
+        mask = ( ix >= 0) & (ix < lmx) & (iy >= 0) & (iy < lmy)
+        if mask.any():
+            # the following needs to use .at method since iy,ix indices may be repeated and we need to acumulate 
+            np.add.at(livestockCH4, (iy[mask], ix[mask]), enteric_as_array[j, mask])
+    livestockCH4Total = livestockCH4.sum() 
+    # now convert back to flux not emission units
+    livestockCH4 /= config.domain_cell_area
 
     print("Calculating sectoral emissions")
     # Import a map of land use type numbers to emissions sectors
