@@ -70,6 +70,7 @@ def processEmissions(config: PriorConfig):
         config.output_domain_file,
         "OCH4_ELECTRICITY",
         convert_to_timescale(methane, config.domain_cell_area),
+        config = config,
     )
 
 

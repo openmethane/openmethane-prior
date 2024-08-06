@@ -83,6 +83,9 @@ def processEmissions(config: PriorConfig, startDate, endDate):
         config.output_domain_file,
         "OCH4_FUGITIVE",
         convert_to_timescale(methane, config.domain_cell_area),
+        direct_set = False,
+        config = config,
+        apply_landmask = False,
     )
 
 

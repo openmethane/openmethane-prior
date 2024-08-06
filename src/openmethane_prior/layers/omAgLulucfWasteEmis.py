@@ -168,13 +168,14 @@ def processEmissions(config: PriorConfig):  # noqa: PLR0912, PLR0915
             config.output_domain_file,
             f"OCH4_{sector.upper()}",
             convert_to_timescale(methane[sector], cell_area=config.domain_cell_area),
+            config = config,
         )
 
     print("Writing livestock methane layers output file")
     # convert the livestock data from per year to per second and write
     livestockLayer = np.zeros(landmask.shape)
     livestockLayer[0] = livestockCH4 / SECS_PER_YEAR
-    write_layer(config.output_domain_file, "OCH4_LIVESTOCK", livestockLayer)
+    write_layer(config.output_domain_file, "OCH4_LIVESTOCK", livestockLayer, config=config,)
 
 
 if __name__ == "__main__":
