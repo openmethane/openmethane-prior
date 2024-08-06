@@ -24,6 +24,7 @@ import numpy.typing as npt
 import xarray as xr
 
 from openmethane_prior.layers import layer_names
+from openmethane_prior.config import PriorConfig
 from openmethane_prior.utils import SECS_PER_YEAR
 
 COORD_NAMES = ["TSTEP", "LAY", "ROW", "COL"]
@@ -42,6 +43,8 @@ def write_layer(
     layer_name: str,
     layer_data: xr.DataArray | npt.ArrayLike,
     direct_set: bool = False,
+        config: PriorConfig = None,
+        apply_landmask: bool = True
 ):
     """
     Write a layer to the output file
@@ -61,6 +64,11 @@ def write_layer(
     direct_set
         If True, write the data to the output file without processing
         If False, coerce to the layer_data to 4d if it isn't already
+    config
+        optional domain configuration
+    apply_landmask
+        whether or not to mask with domain landmask
+        note this is performed on a copy so data is unchanged
     """
     print(f"Writing emissions data for {layer_name}")
 
@@ -68,13 +76,18 @@ def write_layer(
         raise FileNotFoundError(f"Output domain file not found: {output_path}")
 
     ds = xr.load_dataset(output_path)
-
+    if apply_landmask:
+        _ = config.domain_dataset()['LANDMASK'].to_numpy()
+        land_mask = _.squeeze()
+        layer_data_maybe_masked = layer_data * land_mask # should broadcast ok
+    else:
+        layer_data_maybe_masked = layer_data.copy()
     # if this is a xr dataArray just include it
     if direct_set:
-        ds[layer_name] = layer_data
+        ds[layer_name] = layer_data_maybe_masked
     else:
         # we're about to alter the input so copy first
-        copy = layer_data.copy()
+        copy = layer_data_maybe_masked.copy()
         # coerce to four dimensions if it's not
         for i in range(layer_data.ndim, 4):
             copy = np.expand_dims(copy, 0)  # should now have four dimensions
