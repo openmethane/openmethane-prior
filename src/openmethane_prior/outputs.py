@@ -203,6 +203,7 @@ def add_sector(
     sector_data: xr.DataArray | npt.ArrayLike,
     sector_standard_name: str = None,
     sector_long_name: str = None,
+    apply_landmask: bool = False,
 ):
     """
     Write a layer to the output file
@@ -219,6 +220,9 @@ def add_sector(
         CF Conventions suffix to add to the "standard_name" attribute
     sector_long_name
         CF Conventions "long_name" attribute
+    apply_landmask
+        whether or not to mask with domain landmask
+        note this is performed on a copy so data is unchanged
     """
     print(f"Adding emissions data for {sector_name}")
 
@@ -238,6 +242,10 @@ def add_sector(
             dims=COORD_NAMES[:],
             data=expand_sector_dims(sector_data, prior_ds.sizes["time"]),
         )
+
+    if apply_landmask:
+        land_mask = prior_ds['land_mask'].to_numpy()
+        sector_data *= land_mask # should broadcast ok
 
     # enable compression for layer data variables
     sector_data.encoding["zlib"] = True
