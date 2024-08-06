@@ -26,6 +26,7 @@ import numpy as np
 import pandas as pd
 
 from openmethane_prior.config import PriorConfig, load_config_from_env
+from openmethane_prior.utils import domain_cell_index
 from openmethane_prior.outputs import convert_to_timescale, sum_layers, write_layer
 
 
@@ -67,23 +68,12 @@ def processEmissions(config: PriorConfig, startDate, endDate):
     fugitiveYear.loc[:, "emissions_quantity"] *= (
         fugitiveEmis / fugitiveYear["emissions_quantity"].sum()
     )
+    methane_shape = config.domain_dataset()['LANDMASK'].shape
+    methane = np.zeros(methane_shape)
 
-    domain_ds = config.domain_dataset()
-
-    landmask = domain_ds["LANDMASK"][:]
-
-    _, lmy, lmx = landmask.shape
-    ww = domain_ds.DX * lmx
-    hh = domain_ds.DY * lmy
-
-    methane = np.zeros(landmask.shape)
-
-    domain_proj = config.domain_projection()
 
     for _, facility in fugitiveYear.iterrows():
-        x, y = domain_proj(facility["lon"], facility["lat"])
-        ix = math.floor((x + ww / 2) / domain_ds.DX)
-        iy = math.floor((y + hh / 2) / domain_ds.DY)
+        ix, iy = domain_cell_index(config, facility['lon'], facility['lat'])
         try:
             methane[0][iy][ix] += facility["emissions_quantity"]
         except IndexError:
@@ -93,6 +83,9 @@ def processEmissions(config: PriorConfig, startDate, endDate):
         config.output_domain_file,
         "OCH4_FUGITIVE",
         convert_to_timescale(methane, config.domain_cell_area),
+        direct_set = False,
+        config = config,
+        apply_landmask = False,
     )
 
 

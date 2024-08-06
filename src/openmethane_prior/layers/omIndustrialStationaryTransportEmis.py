@@ -30,10 +30,55 @@ from openmethane_prior.outputs import (
     sum_layers,
     write_layer,
 )
+from openmethane_prior.utils import domain_cell_index
 
 
 def _find_grid(data, totalSize, gridSize):
     return np.floor((data + totalSize / 2) / gridSize)
+
+def remap_raster( input_field: xr.core.dataarray.DataArray,\
+                  config: PriorConfig,\
+                  AREA_OR_POINT = 'AREA') -> np.ndarray:
+    """ maps a rasterio dataset onto the domain defined by config.
+    returns np.ndarray """
+    result = np.zeros( config.domain_dataset()['LAT'].shape[-2:]) # any field will do and select only horizontal dims
+    count = np.zeros_like( result)
+    # we accumulate values from each high-res grid in the raster onto our domain then divide by the number
+    # our criterion is that the central point in the high-res lies inside the cell defined on the grid
+    # get input coordinates and resolutions, these are not retained in this data structure despite presence in underlying tiff file
+    lons = input_field.x.to_numpy()
+    # the following needs .to_numpy() because
+    #subtracting xarray matches coordinates, not what we want
+    delta_lon = (input_field.x.to_numpy()[1:] -input_field.x.to_numpy()[0:-1]).mean()
+    delta_lat = (input_field.y.to_numpy()[1:] -input_field.y.to_numpy()[0:-1]).mean()
+    # output resolutions and extents
+    delta_x = config.domain_dataset().XCELL
+    lmx = result.shape[-1]
+    delta_y = config.domain_dataset().YCELL
+    lmy = result.shape[-2]
+    input_field_as_array = input_field.to_numpy()
+    llc_x, llc_y = config.llc_xy() # lower left corner in x,y coords
+    # the raster is defined lat-lon so we need to reproject each row separately onto the LCC grid
+    for j in range( input_field.y.size):
+        lat = input_field.y.item(j)
+        lats = np.array([lat]).repeat( lons.size) # proj needs lats,lons same size
+        # correct for point being corner or centre of box, we want centre
+        if AREA_OR_POINT == 'Area':
+            lons_cell = lons + delta_lon/2.
+            lats_cell = lats + delta_lat/2
+        else:
+            lons_cell = lons.copy()
+            lats_cell = lats.copy()
+        ix, iy = domain_cell_index(config, lons_cell, lats_cell)
+        # input domain is bigger so mask indices out of range
+        mask = ( ix >= 0) & (ix < lmx) & (iy >= 0) & (iy < lmy)
+        if mask.any():
+            # the following needs to use .at method since iy,ix indices may be repeated and we need to acumulate 
+            np.add.at(result, (iy[mask], ix[mask]), input_field_as_array[j, mask])
+            np.add.at(count, (iy[mask], ix[mask]),  1)
+    has_vals = count > 0
+    result[ has_vals] /= count[ has_vals]
+    return result
 
 
 def processEmissions(config: PriorConfig):
@@ -46,70 +91,29 @@ def processEmissions(config: PriorConfig):
 
     sectorsUsed = ["industrial", "stationary", "transport"]
 
-    _ntlData = rxr.open_rasterio(
-        config.as_intermediate_file(config.layer_inputs.ntl_path), masked=True
+    ntlData = rxr.open_rasterio(
+        config.as_input_file(config.layer_inputs.ntl_path), masked=False
     )
+    # sum over three bands
+    ntlt = ntlData.sum( axis=0)
+    np.nan_to_num(ntlt, copy=False)
 
-    print("Clipping night-time lights data to Australian land border")
-    ausf = geopandas.read_file(config.as_input_file(config.layer_inputs.aus_shapefile_path))
-    ausf_rp = ausf.to_crs(config.crs)
-    ntlData = _ntlData.rio.clip(ausf_rp.geometry.values, ausf_rp.crs)
 
-    # Add together the intensity of the 3 channels for a total intensity per pixel
-    numNtltData = np.nan_to_num(ntlData)
-    ntlt = np.nan_to_num(numNtltData[0] + numNtltData[1] + numNtltData[2])
-
-    # Sum all pixel intensities
-    ntltTotal = np.sum(ntlt)
-
-    # Divide each pixel intensity by the total to get a scaled intensity per pixel
-    ntltScalar = ntlt / ntltTotal
-
+    om_ntlt = remap_raster(ntlt, config,\
+                           AREA_OR_POINT = ntlData.AREA_OR_POINT)
+    # we want proportions of total for scaling emissions
+    ntltScalar = om_ntlt/om_ntlt.sum()
     sectorData = pd.read_csv(
         config.as_input_file(config.layer_inputs.sectoral_emissions_path)
     ).to_dict(orient="records")[0]
-    ntlIndustrial = ntltScalar * (sectorData["industrial"] * 1e9)
-    ntlStationary = ntltScalar * (sectorData["stationary"] * 1e9)
-    ntlTransport = ntltScalar * (sectorData["transport"] * 1e9)
-
-    # Load domain
-    domain_ds = config.domain_dataset()
-    landmask = domain_ds["LANDMASK"][:]
-
-    _, lmy, lmx = landmask.shape
-    ww = domain_ds.DX * lmx
-    hh = domain_ds.DY * lmy
-
-    print("Mapping night-time lights grid to domain grid")
-    xDomain = xr.apply_ufunc(_find_grid, ntlData.x, ww, domain_ds.DX).values.astype(int)
-    yDomain = xr.apply_ufunc(_find_grid, ntlData.y, hh, domain_ds.DY).values.astype(int)
-
-    # xDomain = np.floor((ntlData.x + ww / 2) / domain_ds.DX).astype(int)
-    # yDomain = np.floor((ntlData.y + hh / 2) / domain_ds.DY).astype(int)
-
     methane = {}
     for sector in sectorsUsed:
-        methane[sector] = np.zeros(domain_ds["LANDMASK"].shape)
-
-    litPixels = np.argwhere(ntlt > 0)
-    ignored = 0
-
-    for y, x in litPixels:
-        try:
-            methane["industrial"][0][yDomain[y]][xDomain[x]] += ntlIndustrial[y][x]
-            methane["stationary"][0][yDomain[y]][xDomain[x]] += ntlStationary[y][x]
-            methane["transport"][0][yDomain[y]][xDomain[x]] += ntlTransport[y][x]
-        except Exception as e:
-            print(e)
-            ignored += 1
-
-    print(f"{ignored} lit pixels were ignored")
-
-    for sector in sectorsUsed:
+        methane[sector] = ntltScalar * sectorData[sector] * 1e9
         write_layer(
             config.output_domain_file,
             f"OCH4_{sector.upper()}",
             convert_to_timescale(methane[sector], config.domain_cell_area),
+            config = config,
         )
 
 
