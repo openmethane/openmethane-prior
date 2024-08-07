@@ -37,6 +37,11 @@ pytest-regressions = "^2.5.0"
 licenseheaders = "^0.8.8"
 ruff = "^0.5.1"
 
+
+[tool.poetry.group.notebooks.dependencies]
+notebook = "^7.2.1"
+matplotlib = "^3.9.1.post1"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
