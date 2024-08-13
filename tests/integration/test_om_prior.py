@@ -6,7 +6,6 @@ import numpy as np
 import pandas as pd
 import requests
 import xarray as xr
-
 from openmethane_prior.layers.omGFASEmis import download_GFAS
 from openmethane_prior.utils import SECS_PER_YEAR
 
@@ -76,29 +75,31 @@ def test_009_output_domain_xr(output_domain, num_regression):
 
 
 def test_010_emission_discrepancy(config, root_dir, output_domain, input_files):
-    modelAreaM2 = output_domain.DX * output_domain.DY
+    THRESHOLD = 1  # %
+
+    model_area_m2 = output_domain.DX * output_domain.DY
 
     filepath_sector = config.as_input_file(config.layer_inputs.sectoral_emissions_path)
     sector_data = pd.read_csv(filepath_sector).to_dict(orient="records")[0]
 
     for sector in sector_data.keys():
-        layerName = f"OCH4_{sector.upper()}"
-        sectorVal = float(sector_data[sector]) * 1e9
+        layer_name = f"OCH4_{sector.upper()}"
+        sector_val = float(sector_data[sector]) * 1e9
 
         # Check each layer in the output sums up to the input
-        if layerName in output_domain:
-            layerVal = np.sum(output_domain[layerName][0].values * modelAreaM2 * SECS_PER_YEAR)
+        if layer_name in output_domain:
+            layer_val = np.sum(output_domain[layer_name][0].values * model_area_m2 * SECS_PER_YEAR)
 
             if sector == "agriculture":
-                layerVal += np.sum(
-                    output_domain["OCH4_LIVESTOCK"][0].values * modelAreaM2 * SECS_PER_YEAR
+                layer_val += np.sum(
+                    output_domain["OCH4_LIVESTOCK"][0].values * model_area_m2 * SECS_PER_YEAR
                 )
 
-            diff = round(layerVal - sectorVal)
-            percentage_diff = diff / sectorVal * 100
+            diff = round(layer_val - sector_val)
+            percentage_diff = diff / sector_val * 100
 
             assert (
-                abs(percentage_diff) < 0.1
+                abs(percentage_diff) < THRESHOLD
             ), f"Discrepancy of {percentage_diff}% in {sector} emissions"
 
 
