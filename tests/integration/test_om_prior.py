@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 import requests
 import xarray as xr
+
 from openmethane_prior.layers.omGFASEmis import download_GFAS
 from openmethane_prior.utils import SECS_PER_YEAR
 

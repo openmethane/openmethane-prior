@@ -26,6 +26,7 @@ import typing
 
 import numpy as np
 from numpy.typing import ArrayLike
+
 from openmethane_prior.config import PriorConfig
 
 T = typing.TypeVar("T", bound=ArrayLike | float)
@@ -142,12 +143,12 @@ def redistribute_spatially(lat_shape, ind_x, ind_y, coefs, subset, from_areas, t
     gridded /= to_areas
     return gridded
 
-def domain_cell_index( config: PriorConfig,
-                       lons, lats) -> tuple:
-    """ calculates indices in cell of lat,lon point(s) """
-    llc_x, llc_y = config.llc_xy() # lower left corner in x,y coords
+
+def domain_cell_index(config: PriorConfig, lons, lats) -> tuple[int, int]:
+    """Calculate indices in cell of lat,lon point(s)"""
+    llc_x, llc_y = config.llc_xy()  # lower left corner in x,y coords
     x, y = config.domain_projection()(lons, lats)
     # calculate indices  assuming regular grid
-    ix = np.floor((x -llc_x) / config.domain_dataset().XCELL).astype('int')
-    iy = np.floor((y -llc_y) / config.domain_dataset().YCELL).astype('int')
+    ix = np.floor((x - llc_x) / config.domain_dataset().XCELL).astype("int")
+    iy = np.floor((y - llc_y) / config.domain_dataset().YCELL).astype("int")
     return ix, iy

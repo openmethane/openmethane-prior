@@ -233,10 +233,13 @@ def processEmissions(
             "x": np.arange(result_nd.shape[-1]),
         },
     )
-    write_layer(config.output_domain_file, "OCH4_WETLANDS", resultXr,
-                direct_set = True,
-                config = config,
-            )
+    write_layer(
+        config.output_domain_file,
+        "OCH4_WETLANDS",
+        resultXr,
+        direct_set=True,
+        config=config,
+    )
     return result_nd
 
 

@@ -8,6 +8,7 @@ import attrs
 import dotenv
 import pytest
 import xarray as xr
+
 from openmethane_prior.config import PriorConfig, PublishedInputDomain, load_config_from_env
 from scripts.omDownloadInputs import download_input_files
 from scripts.omPrior import run_prior

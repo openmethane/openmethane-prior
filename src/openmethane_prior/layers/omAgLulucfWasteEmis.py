@@ -19,10 +19,8 @@
 """Process livestock methane emissions"""
 
 import csv
-import warnings
 
 import numpy as np
-import pyproj
 import rioxarray as rxr
 import xarray as xr
 from tqdm import tqdm
@@ -33,7 +31,7 @@ from openmethane_prior.outputs import (
     sum_layers,
     write_layer,
 )
-from openmethane_prior.utils import SECS_PER_YEAR, area_of_rectangle_m2, domain_cell_index
+from openmethane_prior.utils import SECS_PER_YEAR, domain_cell_index
 
 
 def processEmissions(config: PriorConfig):  # noqa: PLR0912, PLR0915
@@ -59,22 +57,23 @@ def processEmissions(config: PriorConfig):  # noqa: PLR0912, PLR0915
     # Re-project into domain coordinates
     # - create meshgrids of the lats and lons
     lonmesh, latmesh = np.meshgrid(ls.lon, ls.lat)
-    xDomain, yDomain = domain_cell_index(config, lonmesh, latmesh )
+    xDomain, yDomain = domain_cell_index(config, lonmesh, latmesh)
 
     enteric_as_array = lss.CH4_total.to_numpy()
-    livestockCH4 = np.zeros( landmask.shape[-2:])
+    livestockCH4 = np.zeros(landmask.shape[-2:])
     print("Distribute livestock CH4 (long process)")
     # we're accumulating emissions from fine to coarse grid
     # accumulate in mass units and divide by area at end
     for j in tqdm(range(ls.lat.size)):
-        ix = xDomain[j,:]
-        iy = yDomain[j,:]
+        ix = xDomain[j, :]
+        iy = yDomain[j, :]
         # input domain is bigger so mask indices out of range
-        mask = ( ix >= 0) & (ix < lmx) & (iy >= 0) & (iy < lmy)
+        mask = (ix >= 0) & (ix < lmx) & (iy >= 0) & (iy < lmy)
         if mask.any():
-            # the following needs to use .at method since iy,ix indices may be repeated and we need to acumulate 
+            # the following needs to use .at method
+            # since iy,ix indices may be repeated and we need to acumulate
             np.add.at(livestockCH4, (iy[mask], ix[mask]), enteric_as_array[j, mask])
-    livestockCH4Total = livestockCH4.sum() 
+    livestockCH4Total = livestockCH4.sum()
     # now convert back to flux not emission units
     livestockCH4 /= config.domain_cell_area
 
@@ -145,8 +144,8 @@ def processEmissions(config: PriorConfig):  # noqa: PLR0912, PLR0915
 
     print("Mapping land use grid to domain grid")
     llc_x, llc_y = config.llc_xy()
-    xDomain = np.floor((landUseData.x -llc_x) / domain_ds.DX).values.astype(int)
-    yDomain = np.floor((landUseData.y -llc_y) / domain_ds.DY).values.astype(int)
+    xDomain = np.floor((landUseData.x - llc_x) / domain_ds.DX).values.astype(int)
+    yDomain = np.floor((landUseData.y - llc_y) / domain_ds.DY).values.astype(int)
 
     print("Assigning methane layers to domain grid")
     for landUseType, _ in usageCounts.items():
@@ -168,14 +167,19 @@ def processEmissions(config: PriorConfig):  # noqa: PLR0912, PLR0915
             config.output_domain_file,
             f"OCH4_{sector.upper()}",
             convert_to_timescale(methane[sector], cell_area=config.domain_cell_area),
-            config = config,
+            config=config,
         )
 
     print("Writing livestock methane layers output file")
     # convert the livestock data from per year to per second and write
     livestockLayer = np.zeros(landmask.shape)
     livestockLayer[0] = livestockCH4 / SECS_PER_YEAR
-    write_layer(config.output_domain_file, "OCH4_LIVESTOCK", livestockLayer, config=config,)
+    write_layer(
+        config.output_domain_file,
+        "OCH4_LIVESTOCK",
+        livestockLayer,
+        config=config,
+    )
 
 
 if __name__ == "__main__":
