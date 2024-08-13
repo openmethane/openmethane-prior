@@ -18,67 +18,16 @@
 
 """Processing industrial stationary transport emissions"""
 
-import geopandas
 import numpy as np
 import pandas as pd
 import rioxarray as rxr
-import xarray as xr
-
 from openmethane_prior.config import PriorConfig, load_config_from_env
 from openmethane_prior.outputs import (
     convert_to_timescale,
     sum_layers,
     write_layer,
 )
-from openmethane_prior.utils import domain_cell_index
-
-
-def _find_grid(data, totalSize, gridSize):
-    return np.floor((data + totalSize / 2) / gridSize)
-
-def remap_raster( input_field: xr.core.dataarray.DataArray,\
-                  config: PriorConfig,\
-                  AREA_OR_POINT = 'AREA') -> np.ndarray:
-    """ maps a rasterio dataset onto the domain defined by config.
-    returns np.ndarray """
-    result = np.zeros( config.domain_dataset()['LAT'].shape[-2:]) # any field will do and select only horizontal dims
-    count = np.zeros_like( result)
-    # we accumulate values from each high-res grid in the raster onto our domain then divide by the number
-    # our criterion is that the central point in the high-res lies inside the cell defined on the grid
-    # get input coordinates and resolutions, these are not retained in this data structure despite presence in underlying tiff file
-    lons = input_field.x.to_numpy()
-    # the following needs .to_numpy() because
-    #subtracting xarray matches coordinates, not what we want
-    delta_lon = (input_field.x.to_numpy()[1:] -input_field.x.to_numpy()[0:-1]).mean()
-    delta_lat = (input_field.y.to_numpy()[1:] -input_field.y.to_numpy()[0:-1]).mean()
-    # output resolutions and extents
-    delta_x = config.domain_dataset().XCELL
-    lmx = result.shape[-1]
-    delta_y = config.domain_dataset().YCELL
-    lmy = result.shape[-2]
-    input_field_as_array = input_field.to_numpy()
-    llc_x, llc_y = config.llc_xy() # lower left corner in x,y coords
-    # the raster is defined lat-lon so we need to reproject each row separately onto the LCC grid
-    for j in range( input_field.y.size):
-        lat = input_field.y.item(j)
-        lats = np.array([lat]).repeat( lons.size) # proj needs lats,lons same size
-        # correct for point being corner or centre of box, we want centre
-        if AREA_OR_POINT == 'Area':
-            lons_cell = lons + delta_lon/2.
-            lats_cell = lats + delta_lat/2
-        else:
-            lons_cell = lons.copy()
-            lats_cell = lats.copy()
-        ix, iy = domain_cell_index(config, lons_cell, lats_cell)
-        # input domain is bigger so mask indices out of range
-        mask = ( ix >= 0) & (ix < lmx) & (iy >= 0) & (iy < lmy)
-        if mask.any():
-            # the following needs to use .at method since iy,ix indices may be repeated and we need to acumulate 
-            np.add.at(result, (iy[mask], ix[mask]), input_field_as_array[j, mask])
-            np.add.at(count, (iy[mask], ix[mask]),  1)
-    has_vals = count > 0
-    result[ has_vals] /= count[ has_vals]
-    return result
+from openmethane_prior.raster import remap_raster
 
 
 def processEmissions(config: PriorConfig):
@@ -89,31 +38,27 @@ def processEmissions(config: PriorConfig):
     """
     print("processEmissions for Industrial, Stationary and Transport")
 
-    sectorsUsed = ["industrial", "stationary", "transport"]
+    sectors_used = ["industrial", "stationary", "transport"]
 
-    ntlData = rxr.open_rasterio(
-        config.as_input_file(config.layer_inputs.ntl_path), masked=False
-    )
+    ntl_data = rxr.open_rasterio(config.as_input_file(config.layer_inputs.ntl_path), masked=False)
     # sum over three bands
-    ntlt = ntlData.sum( axis=0)
+    ntlt = ntl_data.sum(axis=0)
     np.nan_to_num(ntlt, copy=False)
 
-
-    om_ntlt = remap_raster(ntlt, config,\
-                           AREA_OR_POINT = ntlData.AREA_OR_POINT)
+    om_ntlt = remap_raster(ntlt, config, AREA_OR_POINT=ntl_data.AREA_OR_POINT)
     # we want proportions of total for scaling emissions
-    ntltScalar = om_ntlt/om_ntlt.sum()
-    sectorData = pd.read_csv(
+    ntlt_scalar = om_ntlt / om_ntlt.sum()
+    sector_data = pd.read_csv(
         config.as_input_file(config.layer_inputs.sectoral_emissions_path)
     ).to_dict(orient="records")[0]
     methane = {}
-    for sector in sectorsUsed:
-        methane[sector] = ntltScalar * sectorData[sector] * 1e9
+    for sector in sectors_used:
+        methane[sector] = ntlt_scalar * sector_data[sector] * 1e9
         write_layer(
             config.output_domain_file,
             f"OCH4_{sector.upper()}",
             convert_to_timescale(methane[sector], config.domain_cell_area),
-            config = config,
+            config=config,
         )
 
 
