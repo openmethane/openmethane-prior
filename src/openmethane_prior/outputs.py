@@ -23,8 +23,8 @@ import numpy as np
 import numpy.typing as npt
 import xarray as xr
 
-from openmethane_prior.layers import layer_names
 from openmethane_prior.config import PriorConfig
+from openmethane_prior.layers import layer_names
 from openmethane_prior.utils import SECS_PER_YEAR
 
 COORD_NAMES = ["TSTEP", "LAY", "ROW", "COL"]
@@ -38,13 +38,13 @@ def convert_to_timescale(emission, cell_area):
     return emission / cell_area / SECS_PER_YEAR
 
 
-def write_layer(
+def write_layer(  # noqa: PLR0913
     output_path: pathlib.Path,
     layer_name: str,
     layer_data: xr.DataArray | npt.ArrayLike,
     direct_set: bool = False,
-        config: PriorConfig = None,
-        apply_landmask: bool = True
+    config: PriorConfig = None,
+    apply_landmask: bool = True,
 ):
     """
     Write a layer to the output file
@@ -65,10 +65,10 @@ def write_layer(
         If True, write the data to the output file without processing
         If False, coerce to the layer_data to 4d if it isn't already
     config
-        optional domain configuration
+        Optional domain configuration (required if a landmask is to be applied)
     apply_landmask
-        whether or not to mask with domain landmask
-        note this is performed on a copy so data is unchanged
+        Whether or not to mask with domain landmask
+        Note this is performed on a copy so data is unchanged
     """
     print(f"Writing emissions data for {layer_name}")
 
@@ -77,9 +77,12 @@ def write_layer(
 
     ds = xr.load_dataset(output_path)
     if apply_landmask:
-        _ = config.domain_dataset()['LANDMASK'].to_numpy()
+        if config is None:
+            raise ValueError("config is required to apply landmask")
+
+        _ = config.domain_dataset()["LANDMASK"].to_numpy()
         land_mask = _.squeeze()
-        layer_data_maybe_masked = layer_data * land_mask # should broadcast ok
+        layer_data_maybe_masked = layer_data * land_mask  # should broadcast ok
     else:
         layer_data_maybe_masked = layer_data.copy()
     # if this is a xr dataArray just include it

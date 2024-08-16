@@ -86,9 +86,10 @@ class PriorConfig:
         """Return the full path to an output file"""
         return self.output_path / name
 
-    def llc_xy(self) -> tuple:
-        llc_lat = self.domain_dataset()['LATD'].to_numpy().flatten()[0]
-        llc_lon = self.domain_dataset()['LOND'].to_numpy().flatten()[0]
+    def llc_xy(self) -> tuple[float, float]:
+        """Get the x, y coordinates of the lower left corner of the domain"""
+        llc_lat = self.domain_dataset()["LATD"].to_numpy().flatten()[0]
+        llc_lon = self.domain_dataset()["LOND"].to_numpy().flatten()[0]
         llc_x, llc_y = self.domain_projection()(llc_lon, llc_lat)
         return llc_x, llc_y
 
