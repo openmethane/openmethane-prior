@@ -21,7 +21,6 @@
 import numpy as np
 import pandas as pd
 import rioxarray as rxr
-
 from openmethane_prior.config import PriorConfig, load_config_from_env
 from openmethane_prior.outputs import (
     convert_to_timescale,
@@ -60,7 +59,7 @@ def processEmissions(config: PriorConfig):
             f"OCH4_{sector.upper()}",
             convert_to_timescale(methane[sector], config.domain_cell_area),
             config=config,
-            apply_landmask=False if sector == "industrial" else True,
+            apply_landmask=True if sector == "transport" else False,
         )
 
 
