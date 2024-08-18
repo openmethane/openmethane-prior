@@ -60,6 +60,7 @@ def processEmissions(config: PriorConfig):
             f"OCH4_{sector.upper()}",
             convert_to_timescale(methane[sector], config.domain_cell_area),
             config=config,
+            apply_landmask=False if sector == "industrial" else True,
         )
 
 
