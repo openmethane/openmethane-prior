@@ -128,13 +128,25 @@ jobs:
   # Push the image to ECR as well
   push-ecr:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        account_id:
+          - "654654509571"
+          - "058264429703"
+        include:
+          - account_id: "654654509571"
+            aws_access_key_secret: "AWS_ACCESS_KEY_ID_SANDBOX"
+            aws_secret_access_key_secret: "AWS_SECRET_ACCESS_KEY_SANDBOX"
+          - account_id: "058264429703"
+            aws_access_key_secret: "AWS_ACCESS_KEY_ID_PROD"
+            aws_secret_access_key_secret: "AWS_SECRET_ACCESS_KEY_PROD"
     needs: [test-unit, build ]
     permissions:
       contents: read
       packages: read
     env:
       GHCR_IMAGE_ID: ghcr.io/openmethane/openmethane-prior@${{ needs.build.outputs.digest }}
-      ECR_IMAGE: 654654509571.dkr.ecr.ap-southeast-2.amazonaws.com/openmethane/openmethane-prior
+      ECR_IMAGE: ${{ matrix.account_id }}.dkr.ecr.ap-southeast-2.amazonaws.com/openmethane/openmethane-prior
     steps:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -150,8 +162,8 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4
         # TODO: Use the OIDC token instead of the access key
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-access-key-id: ${{ secrets[matrix.aws_access_key_secret] }}
+          aws-secret-access-key: ${{ secrets[matrix.aws_secret_access_key_secret] }}
           aws-region: ap-southeast-2
       - name: Login to Amazon ECR
         uses: aws-actions/amazon-ecr-login@v2
