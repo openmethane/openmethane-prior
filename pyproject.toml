@@ -28,6 +28,7 @@ cdsapi = "^0.7.0"
 shapely = "^2.0.4"
 environs = "^11.0.0"
 prettyprinter = "^0.18.0"
+debugpy = "^1.8.5"
 
 [tool.poetry.group.tests.dependencies]
 pytest = "^8.2.1"
