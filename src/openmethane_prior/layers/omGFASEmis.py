@@ -36,6 +36,7 @@ import numpy as np
 import xarray as xr
 from shapely import geometry
 
+from openmethane_prior.inputs import initialise_output
 from openmethane_prior.config import PriorConfig, load_config_from_env
 from openmethane_prior.outputs import sum_layers, write_layer
 from openmethane_prior.utils import (
@@ -51,6 +52,10 @@ def download_GFAS(
 ):
     """Download GFAS methane between two dates startDate and endDate, returns nothing"""
     dateString = start_date.strftime("%Y-%m-%d") + "/" + end_date.strftime("%Y-%m-%d")
+
+    downloadPath = pathlib.Path(file_name);
+    downloadPath.parent.mkdir(parents=True, exist_ok=True)
+
     c = cdsapi.Client()
 
     c.retrieve(
@@ -84,7 +89,8 @@ def processEmissions(config: PriorConfig, startDate, endDate, forceUpdate: bool 
     gfas_file = download_GFAS(
         startDate, endDate, file_name=config.as_intermediate_file("gfas-download.nc")
     )
-    ncin = nc.Dataset(gfas_file, "r", format="NETCDF3")
+    ncin = nc.Dataset(gfas_file, "r", format="NETCDF4")
+
     latGfas = np.around(np.float64(ncin.variables["latitude"][:]), 3)
     latGfas = latGfas[::-1]  # they're originally north-south, we want them south north
     lonGfas = np.around(np.float64(ncin.variables["longitude"][:]), 3)
@@ -94,7 +100,8 @@ def processEmissions(config: PriorConfig, startDate, endDate, forceUpdate: bool 
     lonGfas_edge[0:-1] = lonGfas - dlonGfas / 2.0
     lonGfas_edge[-1] = lonGfas[-1] + dlonGfas / 2.0
     lonGfas_edge = np.around(lonGfas_edge, 2)
-    gfasTimes = nc.num2date(ncin.variables["time"][:], ncin.variables["time"].getncattr("units"))
+
+    gfasTimes = nc.num2date(ncin.variables["valid_time"][:], ncin.variables["valid_time"].getncattr("units"))
 
     latGfas_edge = np.zeros(len(latGfas) + 1)
     latGfas_edge[0:-1] = latGfas + dlatGfas / 2.0
@@ -210,7 +217,7 @@ def processEmissions(config: PriorConfig, startDate, endDate, forceUpdate: bool 
     cmaqAreas = np.ones(LAT.shape) * cmaqArea  # all grid cells equal area
 
     for i in range(gfasTimes.size):
-        dates.append(startDate + datetime.timedelta(days=i))
+        dates.append(gfasTimes[i])
         subset = ncin["ch4fire"][i, ...]
         subset = subset[::-1, :]  # they're listed north-south, we want them south north
         resultNd.append(
@@ -247,5 +254,6 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
     config = load_config_from_env()
+    initialise_output(config)
     processEmissions(config, args.start_date, args.end_date)
     sum_layers(config.output_domain_file)
