@@ -101,8 +101,10 @@ def processEmissions(config: PriorConfig, startDate, endDate, forceUpdate: bool 
     lonGfas_edge[-1] = lonGfas[-1] + dlonGfas / 2.0
     lonGfas_edge = np.around(lonGfas_edge, 2)
 
-    gfasTimes = nc.num2date(ncin.variables["valid_time"][:], ncin.variables["valid_time"].getncattr("units"))
-
+    gfasTimesRaw = nc.num2date(ncin.variables["valid_time"][:], ncin.variables["valid_time"].getncattr("units"))
+    # dates are labelled at midnight at end of chosen day (hence looks like next day), subtract one day to fix
+    oneDay = datetime.timedelta(days=1)
+    gfasTimes = [t -oneDay for t in gfasTimesRaw]
     latGfas_edge = np.zeros(len(latGfas) + 1)
     latGfas_edge[0:-1] = latGfas + dlatGfas / 2.0
     latGfas_edge[-1] = latGfas[-1] - dlatGfas / 2.0
@@ -216,7 +218,7 @@ def processEmissions(config: PriorConfig, startDate, endDate, forceUpdate: bool 
     dates = []
     cmaqAreas = np.ones(LAT.shape) * cmaqArea  # all grid cells equal area
 
-    for i in range(gfasTimes.size):
+    for i in range(len(gfasTimes)):
         dates.append(gfasTimes[i])
         subset = ncin["ch4fire"][i, ...]
         subset = subset[::-1, :]  # they're listed north-south, we want them south north
