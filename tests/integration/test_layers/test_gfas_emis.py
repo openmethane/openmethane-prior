@@ -4,20 +4,24 @@ import netCDF4 as nc
 import numpy as np
 import pytest
 
+from openmethane_prior.inputs import initialise_output
 from openmethane_prior.layers.omGFASEmis import processEmissions
 from openmethane_prior.utils import area_of_rectangle_m2
 
 
-@pytest.mark.skip(reason="Needs an example GFAS file")
-def test_gfas_emis(config):  # test totals for GFAS emissions between original and remapped
+# @pytest.mark.skip(reason="Needs an example GFAS file")
+def test_gfas_emis(config, input_files, input_domain):  # test totals for GFAS emissions between original and remapped
+    # TODO: Check the output correctly
+    initialise_output(config)
+
     remapped = processEmissions(
         config=config,
         startDate=datetime.date(2022, 7, 2),
         endDate=datetime.date(2022, 7, 2),
         forceUpdate=True,
     )
-    GFASfile = "download.nc"
-    ncin = nc.Dataset(GFASfile, "r", format="NETCDF3")
+    GFASfile = config.as_intermediate_file("gfas-download.nc")
+    ncin = nc.Dataset(GFASfile, "r", format="NETCDF4")
     latGfas = np.around(np.float64(ncin.variables["latitude"][:]), 3)
     lonGfas = np.around(np.float64(ncin.variables["longitude"][:]), 3)
     dlatGfas = latGfas[0] - latGfas[1]
