@@ -28,6 +28,7 @@ cdsapi = "^0.7.0"
 shapely = "^2.0.4"
 environs = "^11.0.0"
 prettyprinter = "^0.18.0"
+debugpy = "^1.8.5"
 
 [tool.poetry.group.tests.dependencies]
 pytest = "^8.2.1"
@@ -36,6 +37,11 @@ pytest-regressions = "^2.5.0"
 [tool.poetry.group.dev.dependencies]
 licenseheaders = "^0.8.8"
 ruff = "^0.5.1"
+
+
+[tool.poetry.group.notebooks.dependencies]
+notebook = "^7.2.1"
+matplotlib = "^3.9.1.post1"
 
 [build-system]
 requires = ["poetry-core"]
