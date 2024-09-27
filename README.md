@@ -11,13 +11,13 @@ Copy the `.env.example` file to `.env` and customise the paths as you need.
 In order to download the GFAS emissions data, credentials for the Copernicus
 Atmospheric Data Store (ADS) API are required. Instructions for registering for
 the ADS API and setting up the credentials are provided at 
-[ADS Docs](https://ads-beta.atmosphere.copernicus.eu/how-to-api).
+[ADS Docs](https://ads.atmosphere.copernicus.eu/how-to-api).
 
 Step-by-step:
 - Register for an [ECMWF](https://www.ecmwf.int/) account
-- While logged in to ECMWF, register your account with [ADS](https://ads-beta.atmosphere.copernicus.eu/)
+- While logged in to ECMWF, register your account with [ADS](https://ads.atmosphere.copernicus.eu/)
 - Accept the ADS terms and conditions
-- Accept the License to use Copernicus products, by visiting the Download tab of the dataset you wish to use and scrolling to the Terms of use section: https://ads-beta.atmosphere.copernicus.eu/datasets/cams-global-fire-emissions-gfas?tab=download
+- Accept the License to use Copernicus products, by visiting the Download tab of the dataset you wish to use and scrolling to the Terms of use section: https://ads.atmosphere.copernicus.eu/datasets/cams-global-fire-emissions-gfas?tab=download
 
 Note: the ADS API is different from the CDS (Climate Data Store) API
 even though they are both parts of the Copernicus program

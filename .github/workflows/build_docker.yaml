@@ -85,7 +85,7 @@ jobs:
           python -m pytest -r a -v tests/integration/test_domain_json.py
         env:
           CDSAPI_KEY: ${{ secrets.CDSAPI_ADS_KEY }}
-          CDSAPI_URL: https://ads-beta.atmosphere.copernicus.eu/api
+          CDSAPI_URL: https://ads.atmosphere.copernicus.eu/api
 
   # Tag the latest image if running on the main branch
   # TODO: Handle tagged builds
