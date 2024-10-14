@@ -27,7 +27,7 @@ jobs:
          make test
         env:
           CDSAPI_KEY: ${{ secrets.CDSAPI_ADS_KEY }}
-          CDSAPI_URL: https://ads-beta.atmosphere.copernicus.eu/api
+          CDSAPI_URL: https://ads.atmosphere.copernicus.eu/api
 
   imports-without-extras:
     strategy:
