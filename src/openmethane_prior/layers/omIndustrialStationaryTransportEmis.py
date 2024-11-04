@@ -48,7 +48,7 @@ def processEmissions(config: PriorConfig):
 
     om_ntlt = remap_raster(ntlt, config, AREA_OR_POINT=ntl_data.AREA_OR_POINT)
     # we want proportions of total for scaling emissions
-    ntlt_scalar = om_ntlt / om_ntlt.sum()
+    ntlt_scalar = om_ntlt / ntlt.to_numpy().sum()
     sector_data = pd.read_csv(
         config.as_input_file(config.layer_inputs.sectoral_emissions_path)
     ).to_dict(orient="records")[0]
