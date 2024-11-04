@@ -124,5 +124,5 @@ def remap_raster(
             np.add.at(result, (iy[mask], ix[mask]), input_field_as_array[j, mask])
             np.add.at(count, (iy[mask], ix[mask]), 1)
     has_vals = count > 0
-    result[has_vals] /= count[has_vals]
+#    result[has_vals] /= count[has_vals]
     return result
