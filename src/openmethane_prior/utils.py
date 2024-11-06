@@ -144,10 +144,13 @@ def redistribute_spatially(lat_shape, ind_x, ind_y, coefs, subset, from_areas, t
     return gridded
 
 
-def domain_cell_index(config: PriorConfig, lons, lats) -> tuple[int, int]:
+def domain_cell_index(config: PriorConfig, lons, lats,
+                      transform=None) -> tuple[int, int]:
     """Calculate indices in cell of lat,lon point(s)"""
     llc_x, llc_y = config.llc_xy()  # lower left corner in x,y coords
-    x, y = config.domain_projection()(lons, lats)
+    if transform is None:
+        transform = config.domain_projection()
+    x, y = transform(lons, lats)
     # calculate indices  assuming regular grid
     ix = np.floor((x - llc_x) / config.domain_dataset().XCELL).astype("int")
     iy = np.floor((y - llc_y) / config.domain_dataset().YCELL).astype("int")
