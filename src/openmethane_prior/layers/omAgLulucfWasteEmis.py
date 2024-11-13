@@ -21,9 +21,11 @@
 import csv
 
 import numpy as np
+import rasterio
 import rioxarray as rxr
 import xarray as xr
 from tqdm import tqdm
+import pyproj
 
 from openmethane_prior.config import PriorConfig, load_config_from_env
 from openmethane_prior.outputs import (
@@ -31,17 +33,18 @@ from openmethane_prior.outputs import (
     sum_layers,
     write_layer,
 )
-from openmethane_prior.utils import SECS_PER_YEAR, domain_cell_index
+from openmethane_prior.utils import (
+    SECS_PER_YEAR,
+    domain_cell_index,
+    mask_array_by_sequence,
+    )
+from openmethane_prior.raster import remap_raster
 
 
 def processEmissions(config: PriorConfig):  # noqa: PLR0912, PLR0915
     """Process Agriculture LULUCF and Waste emissions"""
     # Load raster land-use data
     print("processEmissions for Agriculture, LULUCF and waste")
-    print("Loading land use data")
-    landUseData = rxr.open_rasterio(
-        config.as_intermediate_file(config.layer_inputs.land_use_path), masked=True
-    )
 
     ## Calculate livestock CH4
     print("Calculating livestock CH4")
@@ -60,6 +63,7 @@ def processEmissions(config: PriorConfig):  # noqa: PLR0912, PLR0915
     xDomain, yDomain = domain_cell_index(config, lonmesh, latmesh)
 
     enteric_as_array = lss.CH4_total.to_numpy()
+    livestockCH4Total = enteric_as_array.sum() # for later correcting ag sector
     livestockCH4 = np.zeros(landmask.shape[-2:])
     print("Distribute livestock CH4 (long process)")
     # we're accumulating emissions from fine to coarse grid
@@ -73,12 +77,11 @@ def processEmissions(config: PriorConfig):  # noqa: PLR0912, PLR0915
             # the following needs to use .at method
             # since iy,ix indices may be repeated and we need to acumulate
             np.add.at(livestockCH4, (iy[mask], ix[mask]), enteric_as_array[j, mask])
-    livestockCH4Total = livestockCH4.sum()
     # now convert back to flux not emission units
     livestockCH4 /= config.domain_cell_area
-
     print("Calculating sectoral emissions")
     # Import a map of land use type numbers to emissions sectors
+    # make a dictionary of all landuse types corresponding to sectors in map
     landuseSectorMap = {}
     sectoral_mapping_file = config.as_input_file(config.layer_inputs.sectoral_mapping_path)
     with open(sectoral_mapping_file, newline="") as f:
@@ -87,86 +90,47 @@ def processEmissions(config: PriorConfig):  # noqa: PLR0912, PLR0915
 
         for value, sector in reader:
             if sector:
-                landuseSectorMap[int(value)] = sector
-
+                if sector in landuseSectorMap:
+                    landuseSectorMap[sector].append(int(value))
+                else:
+                    landuseSectorMap[sector] = [int(value)] 
     # Import a map of emissions per sector, store it to hash table
     methaneInventoryBySector = {}
-    seenHeaders = False
-    headers = []
-
     with open(config.as_input_file(config.layer_inputs.sectoral_emissions_path), newline="") as f:
         reader = csv.reader(f)
-        for row in reader:
-            if not seenHeaders:
-                headers = row.copy()
-                seenHeaders = True
-            else:
-                methaneInventoryBySector = dict.fromkeys(headers, 0)
-                for i, v in enumerate(headers):
-                    ch4 = float(row[i]) * 1e9  # convert Mt to kgs
-
-                    # subtract the livestock ch4 from agricuture
-                    if v == "agriculture":
-                        ch4 -= livestockCH4Total
-
-                    methaneInventoryBySector[v] = ch4
-
-    # Create a dict to count all of the instances of each sector in the land use data
-    sectorCounts = dict.fromkeys(methaneInventoryBySector, 0)
-
+        headers = next(reader                       ) # first line
+        row = next(reader)
+        methaneInventoryBySector = {h:float(row[i])*1e9 for i,h in enumerate(headers)} # converting from mtCH4 to kgCH4
+    # subtract the livestock ch4 from agriculture
+    methaneInventoryBySector["agriculture"] -= livestockCH4Total
     # Read the land use type data band
-    dataBand = landUseData[0].values
-
-    # Count all the unique land-use types
-    unique, counts = np.unique(dataBand, return_counts=True)
-    usageCounts = dict(zip(unique, counts))
-
-    # Filter usage counts down to the land use types we have mapped
-    usageCounts = {key: usageCounts[key] for key in landuseSectorMap.keys()}
-
-    # Sum the land use counts into sector counts
-    for usageType, count in usageCounts.items():
-        sector = landuseSectorMap.get(int(usageType), False)
-        if sector:
-            sectorCounts[sector] += count
-
-    # Calculate a per grid-square value for each sector
-    sectorEmissionsPerGridSquare = dict.fromkeys(methaneInventoryBySector, 0)
-    sectorsUsed = []
-    for sector, numGridSquares in sectorCounts.items():
-        if numGridSquares != 0:
-            sectorEmissionsPerGridSquare[sector] = methaneInventoryBySector[sector] / numGridSquares
-            sectorsUsed.append(sector)
-
-    methane = {}
-    for sector in sectorsUsed:
-        methane[sector] = np.zeros(landmask.shape)
-
-    print("Mapping land use grid to domain grid")
-    llc_x, llc_y = config.llc_xy()
-    xDomain = np.floor((landUseData.x - llc_x) / domain_ds.DX).values.astype(int)
-    yDomain = np.floor((landUseData.y - llc_y) / domain_ds.DY).values.astype(int)
-
-    print("Assigning methane layers to domain grid")
-    for landUseType, _ in usageCounts.items():
-        sector = landuseSectorMap[landUseType]
-        emission = sectorEmissionsPerGridSquare[sector]
-        sectorPixels = np.argwhere(dataBand == landUseType)
-
-        if emission > 0:
-            for y, x in sectorPixels:
-                try:
-                    methane[sector][0][yDomain[y]][xDomain[x]] += emission
-                except IndexError:
-                    # print("ignoring out of range pixel")
-                    pass  # it's outside our domain
-
-    print("Writing sectoral methane layers output file")
-    for sector in sectorsUsed:
+    print("Loading land use data")
+    # this seems to need two approaches since rioxarray
+    # seems to always convert to float which we don't want but we need it for the other tif attributes
+    landUseData = rxr.open_rasterio(
+        config.as_input_file(config.layer_inputs.land_use_path), masked=True
+    )
+    lu_x = landUseData.x
+    lu_y = landUseData.y
+    lu_crs = landUseData.rio.crs
+    landUseData.close
+    dataBand = rasterio.open(config.as_input_file(config.layer_inputs.land_use_path),
+                             engine='rasterio').read()
+    dataBand = dataBand.squeeze().transpose() # fixing order and shape
+    transform_lu_to_domain = pyproj.Transformer.from_crs(lu_crs,
+                                                config.domain_projection().crs).transform
+    for sector in landuseSectorMap.keys():
+        sector_pixels = mask_array_by_sequence(dataBand, landuseSectorMap[sector])
+        total_pixels = sector_pixels.sum()
+        sector_xr = xr.DataArray( sector_pixels, coords={'x':lu_x, 'y':lu_y})
+        # now aggregate to coarser resolution
+        domain_pixels = remap_raster(sector_xr, config, transform=transform_lu_to_domain)
+        domain_pixels /=  total_pixels # proportion of national emission in each grid square
+        domain_pixels *= methaneInventoryBySector[sector]  # convert to national emissions in kg/gridcell
         write_layer(
             config.output_domain_file,
             f"OCH4_{sector.upper()}",
-            convert_to_timescale(methane[sector], cell_area=config.domain_cell_area),
+            convert_to_timescale(domain_pixels, cell_area=config.domain_cell_area),
             config=config,
         )
 
