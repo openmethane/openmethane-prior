@@ -5,7 +5,8 @@ import pytest
 import sys
 import xarray as xr
 
-from openmethane_prior.utils import get_command, get_timestamped_command, time_bounds, bounds_from_cell_edges
+from openmethane_prior.utils import get_command, get_timestamped_command, time_bounds, bounds_from_cell_edges, \
+    mask_array_by_sequence
 
 
 def test_get_command():
@@ -51,3 +52,16 @@ def test_bounds_from_cell_edges():
     assert len(bounds) == len(edges) - 1
     assert list(bounds[0]) == [edges[0], edges[1]]
     assert list(bounds[-1]) == [edges[-2], edges[-1]]
+
+
+def test_mask_array_by_sequence():
+    test_array = np.array([1, 2, 3, 4, 5, 6])
+
+    np.testing.assert_array_equal(
+        mask_array_by_sequence(test_array, [2, 4, 6]),
+        [False, True, False, True, False, True],
+    )
+    np.testing.assert_array_equal(
+        mask_array_by_sequence(test_array, (2, 4, 6)),
+        [False, True, False, True, False, True],
+    )
