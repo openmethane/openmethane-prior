@@ -99,7 +99,7 @@ def remap_raster(
     # output resolutions and extents
     lmx = result.shape[-1]
     lmy = result.shape[-2]
-    input_field_as_array = input_field.to_numpy()
+    input_field_as_array = input_field.to_numpy().squeeze()
     # the raster is defined lat-lon so we need to reproject each row separately onto the LCC grid
     for j in range(input_field.y.size):
         lat = input_field.y.item(j)
