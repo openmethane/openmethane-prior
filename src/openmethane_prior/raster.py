@@ -76,7 +76,10 @@ def reproject_raster_inputs(config: PriorConfig):
 
 
 def remap_raster(
-    input_field: xr.DataArray, config: PriorConfig, AREA_OR_POINT: Literal["Area", "Point"] = "Area"
+        input_field: xr.DataArray,
+        config: PriorConfig,
+        AREA_OR_POINT: Literal["Area", "Point"] = "Area",
+        transform=None,
 ) -> np.ndarray:
     """
     Map a rasterio dataset onto the domain defined by config.
@@ -115,13 +118,13 @@ def remap_raster(
         else:
             raise ValueError(f"Unknown area_or_point: {AREA_OR_POINT}")
 
-        ix, iy = domain_cell_index(config, lons_cell, lats_cell)
+        ix, iy = domain_cell_index(config, lons_cell, lats_cell, transform)
         # input domain is bigger so mask indices out of range
         mask = (ix >= 0) & (ix < lmx) & (iy >= 0) & (iy < lmy)
         if mask.any():
             # the following needs to use .at method since iy,ix indices may be repeated
             # and we need to acumulate
-            np.add.at(result, (iy[mask], ix[mask]), input_field_as_array[j, mask])
+            np.add.at(result, (iy[mask], ix[mask]), input_field_as_array[mask,j])
             np.add.at(count, (iy[mask], ix[mask]), 1)
     has_vals = count > 0
 #    result[has_vals] /= count[has_vals]
