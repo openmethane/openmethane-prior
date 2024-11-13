@@ -84,7 +84,6 @@ def remap_raster(
     domain_grid = config.domain_grid()
 
     result = np.zeros(domain_grid.shape)
-    count = np.zeros_like(result)
 
     # we accumulate values from each high-res grid in the raster onto our domain then divide by the number
     # our criterion is that the central point in the high-res lies inside the cell defined on the grid
@@ -114,9 +113,5 @@ def remap_raster(
         if mask.any():
             # the following needs to use .at method since cell_y,cell_x indices may be repeated and we need to acumulate
             np.add.at(result, (cell_y[mask], cell_x[mask]), input_field_np[j, mask])
-            np.add.at(count, (cell_y[mask], cell_x[mask]),  1)
-
-    has_vals = count > 0
-    result[has_vals] /= count[has_vals]
 
     return result
