@@ -45,7 +45,7 @@ def processEmissions(config: PriorConfig):
     # sum over three bands
     ntlt = ntl_data.sum(axis=0)
     np.nan_to_num(ntlt, copy=False)
-
+    ntlt = ntlt.transpose() # to keep pyproj assumptions happy
     om_ntlt = remap_raster(ntlt, config, AREA_OR_POINT=ntl_data.AREA_OR_POINT)
     # we want proportions of total for scaling emissions
     ntlt_scalar = om_ntlt / ntlt.to_numpy().sum()
