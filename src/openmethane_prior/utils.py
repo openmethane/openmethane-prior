@@ -155,3 +155,12 @@ def domain_cell_index(config: PriorConfig, lons, lats,
     ix = np.floor((x - llc_x) / config.domain_dataset().XCELL).astype("int")
     iy = np.floor((y - llc_y) / config.domain_dataset().YCELL).astype("int")
     return ix, iy
+
+def mask_array_by_sequence(
+        array: np.ndarray,
+        sequence: list|tuple|str,) -> np.ndarray:
+    ''' returns true for all elements that match any member of sequence '''
+    result = np.zeros_like(array).astype('int')
+    for s in sequence:
+        result[(array ==s )] = True
+    return result
