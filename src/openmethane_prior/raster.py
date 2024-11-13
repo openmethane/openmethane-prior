@@ -89,7 +89,7 @@ def remap_raster(
     # we accumulate values from each high-res grid in the raster onto our domain then divide by the number
     # our criterion is that the central point in the high-res lies inside the cell defined on the grid
     # get input coordinates and resolutions, these are not retained in this data structure despite presence in underlying tiff file
-    input_field_np = input_field.to_numpy()
+    input_field_np = input_field.to_numpy().squeeze()
 
     # the following needs .to_numpy() because
     # subtracting xarray matches coordinates, not what we want
