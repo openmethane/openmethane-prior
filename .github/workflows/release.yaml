@@ -1,0 +1,118 @@
+name: Create release
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump_rule:
+        type: choice
+        description: How to bump the project's version (see https://python-poetry.org/docs/cli/#version)
+        options:
+          - patch
+          - minor
+          - major
+          - prepatch
+          - preminor
+          - premajor
+          - prerelease
+        required: true
+
+jobs:
+  bump-version:
+    name: "Bump version and create changelog"
+    if: "!startsWith(github.event.head_commit.message, 'bump:')"
+    runs-on: ubuntu-latest
+    env:
+      CI_COMMIT_EMAIL: "ci-runner@openmethane.invalid"
+    outputs:
+      release-notes: ${{ steps.release-notes.outputs.RELEASE_BODY }}
+      release-version: ${{ steps.release-version.outputs.RELEASE_VERSION }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.PAT }}
+
+      # towncrier imports the package as part of building so we have to
+      # install the package (to keep things slim, we only install the main
+      # dependencies, which also means that we get a test that we can import
+      # the package with only the compulsory dependencies installed for free)
+      - name: Install Python
+        uses: actions/setup-python@v4
+      - name: Install poetry
+        uses: abatilo/actions-poetry@v2
+      - name: Install dependencies
+        run: poetry install --only main
+      - name: Install towncrier
+        run: poetry run pip install towncrier
+
+      - name: Determine release version
+        id: release-version
+        run: |
+          BASE_VERSION=`poetry version -s`
+          NEW_VERSION=`poetry version -s ${{ github.event.inputs.bump_rule }}`
+          echo "BASE_VERSION=$BASE_VERSION" >> $GITHUB_ENV
+          echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
+          echo "RELEASE_VERSION=$NEW_VERSION" >> $GITHUB_OUTPUT
+
+      # Generates changelog text without removing fragments, for use later in the release
+      - name: Generate release notes
+        id: release-notes
+        run: |
+          echo 'RELEASE_BODY<<EOF' >> $GITHUB_OUTPUT
+          poetry run towncrier build --draft --version "v$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo 'EOF' >> $GITHUB_OUTPUT
+
+      - name: Bump version and generate changelog
+        run: |
+          git config --global user.name "$GITHUB_ACTOR"
+          git config --global user.email "$CI_COMMIT_EMAIL"
+
+          # Bump
+          echo "Bumping version $BASE_VERSION > $NEW_VERSION"
+          poetry run towncrier build --yes --version v$NEW_VERSION
+          git commit -a -m "bump: version $BASE_VERSION -> $NEW_VERSION"
+          git tag v$NEW_VERSION
+
+      - name: Bump to pre-release version
+        run: |
+          git config --global user.name "$GITHUB_ACTOR"
+          git config --global user.email "$CI_COMMIT_EMAIL"
+
+          # Bump to pre-release so that future commits do not have the same
+          # version as the tagged commit
+          NEXT_VERSION=`poetry version -s prerelease`
+          echo "Bumping version $NEW_VERSION > $NEXT_VERSION"
+          git commit -a -m "bump(pre-release): version $NEW_VERSION > $NEXT_VERSION"
+          git push && git push --tags
+
+  publish-release:
+    name: Create release
+    runs-on: ubuntu-latest
+    needs: bump-version
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - name: Install poetry
+        uses: abatilo/actions-poetry@v2
+
+      - name: Build package
+        run: |
+          poetry build --no-interaction
+
+      - name: Create release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ needs.bump-version.outputs.release-version }}
+          body: ${{ needs.bump-version.outputs.release-notes }}
+          token: "${{ secrets.PAT }}"
+          files: |
+            dist/{{ project_name_python }}-${{ needs.bump-version.outputs.release-version }}-py3-none-any.whl
+            dist/{{ project_name_python }}-${{ needs.bump-version.outputs.release-version }}.tar.gz
