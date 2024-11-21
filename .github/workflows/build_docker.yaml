@@ -1,4 +1,4 @@
-name: build_docker
+name: Build docker image
 
 on:
   workflow_dispatch:
@@ -11,7 +11,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE: ghcr.io/openmethane/openmethane-prior
+  IMAGE: openmethane/openmethane-prior
 
 jobs:
   build:
@@ -29,6 +29,7 @@ jobs:
 
     outputs:
       digest: ${{ steps.build.outputs.digest }}
+      registry-image-id: ${{ steps.remote-image-id.outputs.REMOTE_ID }}
 
     # Builds and pushes the image
     # Tags the image with the PR that it is linked to
@@ -43,15 +44,18 @@ jobs:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Extract metadata (tags, labels) for Docker
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: "${{ env.IMAGE }}"
+          images: "${{ env.REGISTRY }}/${{ env.IMAGE }}"
+          # tag as `build-XYZ` since images need to be tagged to push
           tags: |
             type=schedule
             type=ref,event=branch
             type=ref,event=pr
+            type=raw,value=build-${{ github.run_number }}
       - name: Build and push image
         uses: docker/build-push-action@v5
         id: build
@@ -63,6 +67,10 @@ jobs:
           pull: false
           cache-from: type=gha
           cache-to: type=gha,mode=max
+      - name: Construct remote image id
+        id: remote-image-id
+        run: |
+          echo "REMOTE_ID=${{ env.REGISTRY }}/${{ env.IMAGE }}@${{ steps.build.outputs.digest }}" >> $GITHUB_OUTPUT
 
   test-unit:
     # Simple test suite to verify that the docker container works as expected
@@ -87,43 +95,69 @@ jobs:
           CDSAPI_KEY: ${{ secrets.CDSAPI_ADS_KEY }}
           CDSAPI_URL: https://ads.atmosphere.copernicus.eu/api
 
-  # Tag the latest image if running on the main branch
-  # TODO: Handle tagged builds
-  tag-latest-image:
+  # Determine additional tags to apply to the image
+  image-tags:
     runs-on: ubuntu-latest
     needs: [ test-unit ]
-    if: github.ref == 'refs/heads/main'
+    outputs:
+      tags: ${{ steps.meta.outputs.tags }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # check if the triggering ref is a vX.Y.Z tag and NOT vX.Y.Za0 (prerelease)
+      - name: Check for stable release
+        id: check-stable
+        if: startsWith(github.event.ref, 'refs/tags/v')
+        run: |
+          if [[ "${{ github.event.ref }}" =~ ^refs/tags/v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              echo "STABLE_RELEASE=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: "${{ env.REGISTRY }}/${{ env.IMAGE }}"
+          tags: |
+            type=ref,event=pr
+            type=pep440,pattern={{version}}
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' || startsWith(github.event.ref, 'refs/tags/v') }}
+            type=raw,value=stable,enable=${{ steps.check-stable.outputs.STABLE_RELEASE == 'true' }}
+
+  tag-image-ghcr:
+    runs-on: ubuntu-latest
+    needs: [ build, image-tags ]
+    if: ${{ needs.image-tags.outputs.tags }}
     permissions:
       contents: read
       packages: write
     steps:
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-      - name: Checkout code
-        uses: actions/checkout@v4
       - name: Login to Container registry
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Extract metadata (tags, labels) for Docker
-        id: meta
-        uses: docker/metadata-action@v5
+
+      - name: Pull built docker image
+        run: |
+          docker pull ${{ needs.build.outputs.registry-image-id }}
+      - name: Tag and push docker image
+        run: |
+          TAGS="${{ needs.image-tags.outputs.tags }}"
+          
+          IFS=$'\n'
+          for tag in $TAGS; do
+            echo "Tagging ${{ needs.build.outputs.registry-image-id }} as $tag"
+            docker tag "${{ needs.build.outputs.registry-image-id }}" "$tag"
+            docker push "$tag"
+          done
+      - name: Remove build tag from published image
+        uses: dataaxiom/ghcr-cleanup-action@v1
         with:
-          images: "${{ env.IMAGE }}"
-          tags: |
-            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main'}}
-      - name: Push latest image
-        uses: docker/build-push-action@v5
-        id: build
-        with:
-          labels: ${{ steps.meta.outputs.labels }}
-          tags: ${{ steps.meta.outputs.tags }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          push: true
-          load: true
+          token: ${{ secrets.GITHUB_TOKEN }}
+          delete-tags: build-${{ github.run_number }}
 
   # Push the image to ECR as well
   push-ecr:
@@ -140,18 +174,15 @@ jobs:
           - account_id: "058264429703"
             aws_access_key_secret: "AWS_ACCESS_KEY_ID_PROD"
             aws_secret_access_key_secret: "AWS_SECRET_ACCESS_KEY_PROD"
-    needs: [test-unit, build ]
+
+    needs: [ build, image-tags ]
+    if: ${{ needs.image-tags.outputs.tags }}
     permissions:
       contents: read
       packages: read
     env:
-      GHCR_IMAGE_ID: ghcr.io/openmethane/openmethane-prior@${{ needs.build.outputs.digest }}
-      ECR_IMAGE: ${{ matrix.account_id }}.dkr.ecr.ap-southeast-2.amazonaws.com/openmethane/openmethane-prior
+      ECR_REGISTRY: ${{ matrix.account_id }}.dkr.ecr.ap-southeast-2.amazonaws.com
     steps:
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-      - name: Checkout code
-        uses: actions/checkout@v4
       - name: Login to Container registry
         uses: docker/login-action@v3
         with:
@@ -167,25 +198,20 @@ jobs:
           aws-region: ap-southeast-2
       - name: Login to Amazon ECR
         uses: aws-actions/amazon-ecr-login@v2
+
       - name: Pull built docker image
         run: |
-          docker pull ${{ env.GHCR_IMAGE_ID }}
-      - name: Extract metadata (tags, labels) for Docker
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: "${{ env.ECR_IMAGE }}"
-          tags: |
-            type=schedule
-            type=ref,event=pr
-            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main'}}
+          docker pull "${{ needs.build.outputs.registry-image-id }}"
       - name: Tag and push docker image to Amazon ECR
+        # Replace the ghcr.io portion of the tags with the ECR URL so the tags
+        # are pushed to the right registry
         run: |
-          TAGS="${{ steps.meta.outputs.tags }}"
+          TAGS="${{ needs.image-tags.outputs.tags }}"
           
           IFS=$'\n'
           for tag in $TAGS; do
-            echo "Tagging ${{ env.GHCR_IMAGE_ID }} as $tag"
-            docker tag "${{ env.GHCR_IMAGE_ID }}" "$tag"
-            docker push "$tag"
+            ECR_TAG=${tag/"${{ env.REGISTRY }}"/"${{ env.ECR_REGISTRY }}"}
+            echo "Tagging ${{ needs.build.outputs.registry-image-id }} as $ECR_TAG"
+            docker tag "${{ needs.build.outputs.registry-image-id }}" "$ECR_TAG"
+            docker push "$ECR_TAG"
           done
