@@ -18,3 +18,11 @@ of rst and use slightly different categories.
 -->
 
 <!-- towncrier release notes start -->
+
+## openmethane-prior v0.2.0 (2024-11-21)
+
+### 🎉 Improvements
+
+- Adopt common release process from openmethane/openmethane
+
+  Adopt common docker build workflow from openmethane/openmethane ([#57](https://github.com/openmethane/openmethane-prior/pulls/57))
