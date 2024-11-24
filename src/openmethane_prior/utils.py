@@ -20,8 +20,11 @@
 
 import datetime
 import gzip
+import importlib
+import os
 import pathlib
 import pickle
+import sys
 import typing
 
 import numpy as np
@@ -140,3 +143,24 @@ def redistribute_spatially(lat_shape, ind_x, ind_y, coefs, subset, from_areas, t
                 gridded[i, j] += subset[iy, ix] * coefs[ij][k] * from_areas[iy, ix]
     gridded /= to_areas
     return gridded
+
+def get_version():
+    return os.getenv('OPENMETHANE_PRIOR_VERSION', importlib.metadata.version('openmethane_prior'))
+
+def format_timestamp(timestamp: datetime.datetime = datetime.datetime.now(datetime.timezone.utc)):
+    """
+    Formats a timestamp.
+
+    :param timestamp: the timestamp to format, defaults to now
+    :return: timestamp in RFC3339 format
+    """
+    return timestamp.isoformat()
+
+def generate_nc_history():
+    """
+    Generates a string in the format:
+        <timestamp>: <command> # <package>@<version>
+
+    :return: string formatted to use in the CF Conventions history attribute
+    """
+    return f"{format_timestamp()}: {' '.join(sys.argv)} # openmethane_prior@{get_version()}"
