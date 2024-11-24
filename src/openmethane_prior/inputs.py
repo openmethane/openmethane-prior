@@ -24,8 +24,10 @@ import sys
 import urllib.parse
 
 import requests
+import netCDF4 as nc
 
 from openmethane_prior.config import PriorConfig
+from openmethane_prior.utils import generate_nc_history
 
 
 def download_input_file(remote_url: str, url_fragment: str, save_path: pathlib.Path) -> bool:
@@ -86,6 +88,12 @@ def initialise_output(config: PriorConfig):
 
     shutil.copyfile(config.input_domain_file, config.output_domain_file)
 
+    # Add the version of openmethane-prior used to generate the file as an attribute
+    outfile = nc.Dataset(config.output_domain_file, "a", format="NETCDF4")
+    outfile.title = "Open Methane Prior Estimate"
+    outfile.comment = "Gridded prior emissions estimate for methane across Australia"
+    outfile.history = generate_nc_history()
+    outfile.sync() # write attributes back to the file
 
 def check_input_files(config: PriorConfig):
     """
