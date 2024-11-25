@@ -23,9 +23,9 @@ clean-all:  ## remove all temporary files including downloaded data
 download: ## Download the data for the project
 	poetry run python scripts/omDownloadInputs.py
 
-.PHONY: run
-run:  download ## Run the project for an example period
-	poetry run python scripts/omPrior.py 2022-07-01 2022-07-01
+.PHONY: run-example
+run-example:  download ## Run the project for an example period
+	poetry run python scripts/omPrior.py --start-date 2022-07-01 --end-date 2022-07-01
 
 .PHONY: ruff-fixes
 ruff-fixes:  # Run ruff on the project
