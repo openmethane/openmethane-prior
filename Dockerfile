@@ -21,7 +21,19 @@ RUN python -m venv /opt/venv && \
 # This isn't a hyper optimised container but it's a good starting point
 FROM python:3.11
 
-LABEL org.opencontainers.image.authors="jared.lewis@climate-resource.com"
+# These will be overwritten in GHA due to https://github.com/docker/metadata-action/issues/295
+# These must be duplicated in .github/workflows/build_docker.yaml
+LABEL org.opencontainers.image.title="Open Methane Prior Emissions"
+LABEL org.opencontainers.image.description="Method to calculate a gridded, prior emissions estimate for methane across Australia."
+LABEL org.opencontainers.image.authors="Peter Rayner <peter.rayner@superpowerinstitute.com.au>, Jared Lewis <jared.lewis@climate-resource.com>"
+LABEL org.opencontainers.image.vendor="The Superpower Institute"
+
+# OPENMETHANE_PRIOR_VERSION will be overridden in release builds with semver vX.Y.Z
+ARG OPENMETHANE_PRIOR_VERSION=development
+# Make the $OPENMETHANE_PRIOR_VERSION available as an env var inside the container
+ENV OPENMETHANE_PRIOR_VERSION=$OPENMETHANE_PRIOR_VERSION
+
+LABEL org.opencontainers.image.version="${OPENMETHANE_PRIOR_VERSION}"
 
 # Configure Python
 ENV PYTHONFAULTHANDLER=1 \
