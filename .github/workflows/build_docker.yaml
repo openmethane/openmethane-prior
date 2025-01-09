@@ -45,6 +45,11 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Extract version from pyproject.toml
+        id: version
+        run: |
+          PACKAGE_VERSION=$(grep -oP '^version = "\K(.+)(?=")' pyproject.toml)
+          echo "version=v$PACKAGE_VERSION" >> $GITHUB_OUTPUT
       - name: Extract metadata (tags, labels) for Docker
         id: meta
         uses: docker/metadata-action@v5
@@ -71,7 +76,7 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           tags: ${{ steps.meta.outputs.tags }}
           build-args: |
-            OPENMETHANE_PRIOR_VERSION=${{ steps.meta.outputs.version }}
+            OPENMETHANE_PRIOR_VERSION=${{ steps.version.outputs.version }}
           push: true
           pull: false
           cache-from: type=gha
