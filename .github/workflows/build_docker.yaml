@@ -99,7 +99,7 @@ jobs:
         if: startsWith(github.event.ref, 'refs/tags/v')
         run: |
           TAG_REF="${{ github.event.ref }}"
-          TAG_VERSION=${TAG_REF/"refs\/tags\/"}
+          TAG_VERSION=${TAG_REF#"refs/tags/"}
           if [ "$OPENMETHANE_PRIOR_VERSION" != "$TAG_VERSION" ]; then
             echo "OPENMETHANE_PRIOR_VERSION is $OPENMETHANE_PRIOR_VERSION; expected version is $TAG_VERSION"
             exit 1
