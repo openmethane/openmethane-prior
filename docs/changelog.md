@@ -19,6 +19,21 @@ of rst and use slightly different categories.
 
 <!-- towncrier release notes start -->
 
+## openmethane-prior v0.3.0 (2025-01-12)
+
+### 🎉 Improvements
+
+- Make OPENMETHANE_PRIOR_VERSION environment variable available inside the container ([#60](https://github.com/openmethane/openmethane-prior/pulls/60))
+
+### 🐛 Bug Fixes
+
+- Fix actions incorrectly populating container image version ([#61](https://github.com/openmethane/openmethane-prior/pulls/61))
+
+### 🔧 Trivial/Internal Changes
+
+- [#53](https://github.com/openmethane/openmethane-prior/pulls/53)
+
+
 ## openmethane-prior v0.2.0 (2024-11-21)
 
 ### 🎉 Improvements
