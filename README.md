@@ -23,9 +23,25 @@ Note: the ADS API is different from the CDS (Climate Data Store) API
 even though they are both parts of the Copernicus program
 and share the same credentials file.
 
+
+### Requirements
+Before installation, you will need to make sure that [poetry](https://python-poetry.org/docs/) version 1 is installed.
+
+Step-by-step:
+- Install pipx 
+```bash
+python -m pip install --user pipx
+```
+
+- Install poetry and downgrading your poetry version to version v1.
+```bash
+pipx install poetry~=1.0 --force
+```
+
 ### Installation
 
-To get started, you will need to make sure that [poetry](https://python-poetry.org/docs/) is installed.
+
+
 The Open Methane prior can be installed from source into a virtual environment with:
 
 ```bash
@@ -147,7 +163,7 @@ make clean-all
 To calculate emissions for all layers, run `omPrior.py` with a start and end date:
 
 ```
-poetry run python scripts/omPrior.py 2022-07-01 2022-07-01
+poetry run python scripts/omPrior.py --start-date 2022-07-01 --end-date 2022-07-01
 ```
 
 or use the make target
@@ -168,7 +184,7 @@ You can run and re-run individual layers one-by-one. Just run each file on it's 
 and end date as below):
 
 ```console
-poetry run python src/layers/omWetlandEmis.py 2022-07-01 2022-07-02
+poetry run python src/openmethane_prior/layers/omWetlandEmis.py --start-date 2022-07-01 --end-date 2022-07-01
 ```
 
 ## Outputs
@@ -181,6 +197,12 @@ The name of the layered output file will be `om-prior-output.nc`.
 
 The `data/processed` folder will contain any re-projected raster data, and any files downloaded or generated in the
 process.
+
+Outputs can be plotted using the ncl file `plot_emis.ncl`. 
+
+```console 
+ncl plot_emis.ncl
+```
 
 ## Layers
 
