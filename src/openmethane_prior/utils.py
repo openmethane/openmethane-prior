@@ -20,8 +20,11 @@
 
 import datetime
 import gzip
+import importlib
+import os
 import pathlib
 import pickle
+import sys
 import typing
 
 import numpy as np
@@ -164,3 +167,7 @@ def mask_array_by_sequence(
     for s in sequence:
         result[(array ==s )] = True
     return result
+
+def get_version():
+    return os.getenv('OPENMETHANE_PRIOR_VERSION', importlib.metadata.version('openmethane_prior'))
+

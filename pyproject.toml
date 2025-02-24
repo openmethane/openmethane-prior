@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "openmethane_prior"
-version = "0.0.1"
+version = "0.2.1a0"
 description = "Method to calculate a gridded, prior emissions estimate for methane across Australia."
 authors = [
      "Peter Rayner <peter.rayner@superpowerinstitute.com.au>",
@@ -36,6 +36,7 @@ pytest-regressions = "^2.5.0"
 [tool.poetry.group.dev.dependencies]
 licenseheaders = "^0.8.8"
 ruff = "^0.5.1"
+towncrier = "^24.7.1"
 
 [build-system]
 requires = ["poetry-core"]
@@ -93,3 +94,25 @@ convention = "numpy"
 
 [tool.ruff.lint.isort]
 known-first-party = ["src", "scripts"]
+
+[tool.towncrier]
+package = "openmethane_prior"
+package_dir = "src"
+filename = "docs/changelog.md"
+directory = "changelog/"
+title_format = "## openmethane-prior {version} ({project_date})"
+underlines = [
+    "",
+    "",
+    "",
+]
+issue_format = "[#{issue}](https://github.com/openmethane/openmethane-prior/pulls/{issue})"
+type = [
+    { directory = "breaking", name = "⚠️ Breaking Changes", showcontent = true },
+    { directory = "deprecation", name = "🗑️ Deprecations", showcontent = true },
+    { directory = "feature", name = "🆕 Features", showcontent = true },
+    { directory = "improvement", name = "🎉 Improvements", showcontent = true },
+    { directory = "fix", name = "🐛 Bug Fixes", showcontent = true },
+    { directory = "docs", name = "📚 Improved Documentation", showcontent = true },
+    { directory = "trivial", name = "🔧 Trivial/Internal Changes", showcontent = false },
+]
