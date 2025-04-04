@@ -99,6 +99,12 @@ class PriorConfig:
         if not self.input_domain_file.exists():
             raise ValueError(f"Missing domain file: {self.input_domain_file}")
         return xr.load_dataset(self.input_domain_file)
+    @cache
+    def inventory_domain_dataset(self):
+        """Load the inventory domain dataset"""
+        if not self.inventory_domain_file.exists():
+            raise ValueError(f"Missing domain file: {self.inventory_domain_file}")
+        return xr.load_dataset(self.inventory_domain_file)
 
     @cache
     def domain_projection(self):
@@ -142,6 +148,19 @@ class PriorConfig:
             return self.as_input_file(self.input_domain)
         else:
             raise TypeError("Could not interpret the 'input_domain' field")
+    @property
+    def inventory_domain_file(self):
+        """
+        Get the filename of the inventory domain
+
+        Uses a published domain if it is provided otherwise uses a user-specified file name
+        """
+        if isinstance(self.inventory_domain, PublishedInputDomain):
+            return self.as_input_file(self.inventory_domain.url_fragment())
+        elif isinstance(self.inventory_domain, str):
+            return self.as_input_file(self.inventory_domain)
+        else:
+            raise TypeError("Could not interpret the 'inventory_domain' field")
 
     @property
     def output_domain_file(self):
