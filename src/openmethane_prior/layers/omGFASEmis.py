@@ -36,9 +36,8 @@ import numpy as np
 import xarray as xr
 from shapely import geometry
 
-from openmethane_prior.inputs import initialise_output
 from openmethane_prior.config import PriorConfig, load_config_from_env
-from openmethane_prior.outputs import sum_layers, write_layer
+from openmethane_prior.outputs import initialise_output, sum_layers, write_layer
 from openmethane_prior.utils import (
     area_of_rectangle_m2,
     load_zipped_pickle,
@@ -256,6 +255,6 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
     config = load_config_from_env()
-    initialise_output(config)
+    initialise_output(config, args.start_date, args.end_date)
     processEmissions(config, args.start_date, args.end_date)
     sum_layers(config.output_domain_file)

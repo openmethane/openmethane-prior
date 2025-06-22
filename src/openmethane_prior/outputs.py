@@ -16,15 +16,16 @@
 # limitations under the License.
 #
 """Output handling"""
-
+import datetime
 import pathlib
 
 import numpy as np
 import numpy.typing as npt
 import xarray as xr
 
+from openmethane_prior.config import PriorConfig
 from openmethane_prior.layers import layer_names
-from openmethane_prior.utils import SECS_PER_YEAR
+from openmethane_prior.utils import SECS_PER_YEAR, extract_bounds, get_version, get_timestamped_command
 
 COORD_NAMES = ["TSTEP", "LAY", "ROW", "COL"]
 REQUIRED_ATTRIBUTES = {"units": "kg/m^2/s"}
@@ -35,6 +36,143 @@ TOTAL_LAYER_LONG_NAME = "total methane flux"
 def convert_to_timescale(emission, cell_area):
     """Convert a gridded emission dataset in kgs/cell/year to kgs/m2/s"""
     return emission / cell_area / SECS_PER_YEAR
+
+
+def create_output_dataset(
+    config: PriorConfig,
+    start_date: datetime.date,
+    end_date: datetime.date,
+):
+    domain_ds = config.domain_dataset()
+    period_start = start_date
+    period_end = end_date
+
+    # create a variable with projection coordinates
+    projection_x = (
+        domain_ds.XORIG + (0.5 * domain_ds.XCELL)
+        + np.arange(len(domain_ds.COL)) * domain_ds.XCELL
+    )
+
+    projection_y = (
+        domain_ds.YORIG + (0.5 * domain_ds.YCELL)
+        + np.arange(len(domain_ds.ROW)) * domain_ds.YCELL
+    )
+
+    # copy dimensions and attributes from the domain where the grid is defined
+    prior_ds = xr.Dataset(
+        data_vars={
+            # meta data
+            "lat": (
+                ("y", "x"),
+                domain_ds.variables["LAT"].squeeze(),
+                {
+                    "long_name": "latitude",
+                    "units": "degrees_north",
+                    "standard_name": "latitude",
+                    "bounds": "lat_bounds",
+                },
+            ),
+            "lon": (
+                ("y", "x"),
+                domain_ds.variables["LON"].squeeze(),
+                {
+                    "long_name": "longitude",
+                    "units": "degrees_east",
+                    "standard_name": "longitude",
+                    "bounds": "lon_bounds",
+                },
+            ),
+            # https://cfconventions.org/Data/cf-conventions/cf-conventions-1.11/cf-conventions.html#cell-boundaries
+            "lat_bounds": (
+                ("y", "x", "cell_corners"),
+                extract_bounds(domain_ds.variables["LATD"].squeeze()),
+            ),
+            "lon_bounds": (
+                ("y", "x", "cell_corners"),
+                extract_bounds(domain_ds.variables["LOND"].squeeze()),
+            ),
+            # https://cfconventions.org/Data/cf-conventions/cf-conventions-1.11/cf-conventions.html#_lambert_conformal
+            "grid_projection": (
+                (),
+                False,
+                {
+                    "grid_mapping_name": "lambert_conformal_conic",
+                    "standard_parallel": (domain_ds.TRUELAT1, domain_ds.TRUELAT2),
+                    "longitude_of_central_meridian": domain_ds.STAND_LON,
+                    "latitude_of_projection_origin": domain_ds.MOAD_CEN_LAT,
+                },
+            ),
+            "projection_x": (
+                ("x"),
+                projection_x,
+                {
+                    "long_name": "x coordinate of projection",
+                    "units": "m",
+                    "standard_name": "projection_x_coordinate",
+                },
+            ),
+            "projection_y": (
+                ("y"),
+                projection_y,
+                {
+                    "long_name": "y coordinate of projection",
+                    "units": "m",
+                    "standard_name": "projection_y_coordinate",
+                },
+            ),
+            "time_bounds": (("time", "bounds_t"), [[period_start, period_end]]),
+
+            # data variables
+            "LANDMASK": (
+                ("y", "x"),
+                domain_ds.variables["LANDMASK"].squeeze(),
+                domain_ds.variables["LANDMASK"].attrs,
+            ),
+        },
+        coords={
+            "x": domain_ds.coords["COL"],
+            "y": domain_ds.coords["ROW"],
+            "time": (("time"), [period_start], {"bounds": "time_bounds"}),
+        },
+        attrs={
+            "DX": domain_ds.DX,
+            "DY": domain_ds.DY,
+            "XCELL": domain_ds.XCELL,
+            "YCELL": domain_ds.YCELL,
+            "title": "Open Methane prior emissions estimate",
+            "comment": "Gridded prior emissions estimate for methane across Australia",
+            "history": get_timestamped_command(),
+            "openmethane_prior_version": get_version(),
+        },
+    )
+
+    # ensure time and time_bounds use the same time encoding
+    time_encoding = f"days since {period_start.strftime('%Y-%m-%d')}"
+    prior_ds.time.encoding["units"] = time_encoding
+    prior_ds.time_bounds.encoding["units"] = time_encoding
+
+    return prior_ds
+
+
+def initialise_output(
+    config: PriorConfig,
+    start_date: datetime.date,
+    end_date: datetime.date,
+):
+    """
+    Initialise the output directory
+
+    Copies the input domain to the output domain
+
+    Parameters
+    ----------
+    config
+        Configuration object
+    """
+    config.output_domain_file.parent.mkdir(parents=True, exist_ok=True)
+
+    output_ds = create_output_dataset(config, start_date, end_date)
+    output_ds.to_netcdf(config.output_domain_file)
 
 
 def write_layer(

@@ -24,7 +24,7 @@ import datetime
 import prettyprinter
 
 from openmethane_prior.config import PriorConfig, load_config_from_env
-from openmethane_prior.inputs import check_input_files, initialise_output
+from openmethane_prior.inputs import check_input_files
 from openmethane_prior.layers import (
     omAgLulucfWasteEmis,
     omElectricityEmis,
@@ -34,7 +34,7 @@ from openmethane_prior.layers import (
     omTermiteEmis,
     omWetlandEmis,
 )
-from openmethane_prior.outputs import sum_layers
+from openmethane_prior.outputs import sum_layers, initialise_output
 from openmethane_prior.raster import reproject_raster_inputs
 from openmethane_prior.verification import verify_emis
 
@@ -61,7 +61,7 @@ def run_prior(
     check_input_files(config)
 
     # Copy the input domain to the output directory
-    initialise_output(config)
+    initialise_output(config, start_date, end_date)
 
     if not skip_reproject:
         reproject_raster_inputs(config)

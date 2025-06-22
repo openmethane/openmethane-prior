@@ -1,10 +1,10 @@
 import os
-
 import attrs
 import numpy as np
 import pandas as pd
 import requests
 import xarray as xr
+
 from openmethane_prior.layers.omGFASEmis import download_GFAS
 from openmethane_prior.utils import SECS_PER_YEAR
 
@@ -67,12 +67,16 @@ def test_005_agriculture_emissions(config, root_dir, input_files):
 def test_009_output_domain_xr(output_domain):
     mean_values = {key: output_domain[key].mean().item() for key in output_domain.keys()}
 
-    expected = {
-        "LAT": -26.983160018920898,
-        "LON": 133.302001953125,
+    expected_values = {
+        "grid_projection": 0.0,
+        "lat": -26.9831600189209,
+        "lat_bounds": -26.98314616858941,
+        "lon": 133.302001953125,
+        "lon_bounds": 133.30200195229452,
+        "projection_x": 0.0,
+        "projection_y": -15629.25,
+        "time_bounds": 1656676800000000000,
         "LANDMASK": 0.39128163456916809,
-        "LATD": -26.980266571044922,
-        "LOND": 133.302001953125,
         "OCH4_AGRICULTURE": 3.8221794892533713e-13,
         "OCH4_LULUCF": 8.2839841777071689e-13,
         "OCH4_WASTE": 7.6806688034203811e-13,
@@ -88,7 +92,7 @@ def test_009_output_domain_xr(output_domain):
         "OCH4_TOTAL": 2.701186087531425e-11,
     }
 
-    assert mean_values == expected
+    assert mean_values == expected_values
 
 
 def test_010_emission_discrepancy(config, root_dir, output_domain, input_files):
@@ -116,6 +120,25 @@ def test_010_emission_discrepancy(config, root_dir, output_domain, input_files):
             assert (
                 abs(percentage_diff) < 0.1
             ), f"Discrepancy of {percentage_diff}% in {sector} emissions"
+
+
+def test_011_output_domain_dims(output_domain):
+    expected_dimensions = {
+        "time": 1, # TODO: should be 2
+        "LAY": 1, # TODO: rename "vertical"
+        "y": 430,
+        "x": 454,
+        "cell_corners": 4,
+        "bounds_t": 2,
+
+        # to be removed
+        "TSTEP": 1,
+        "date": 2, # start_date -> end_date = 2 days
+        "ROW": 430,
+        "COL": 454,
+    }
+
+    assert output_domain.dims == expected_dimensions
 
 
 def test_required_attributes(output_domain):

@@ -29,6 +29,7 @@ import typing
 
 import numpy as np
 from numpy.typing import ArrayLike
+import xarray as xr
 
 T = typing.TypeVar("T", bound=ArrayLike | float)
 
@@ -144,5 +145,46 @@ def redistribute_spatially(lat_shape, ind_x, ind_y, coefs, subset, from_areas, t
     gridded /= to_areas
     return gridded
 
+
+def get_command():
+    return " ".join(sys.argv)
+
+
+def get_timestamped_command():
+    now_utc = datetime.datetime.now(datetime.timezone.utc)
+    return f"{now_utc.isoformat(sep=' ', timespec='seconds')}: {get_command()}"
+
+
 def get_version():
     return os.getenv('OPENMETHANE_PRIOR_VERSION', importlib.metadata.version('openmethane_prior'))
+
+
+def extract_bounds(corner_coords: xr.Variable):
+    """
+    Extract grid cell boundary coordinates for a single dimension, from a 2D
+    array of size x+1,y+1 where x,y are the grid cell coordinates.
+    An array describing the corners of a 2x2 grid would have 3x3 items, where
+    the corners of the cell at [0][0] would be: [0][0], [1][0], [1][1], [0][1]
+
+    See: https://cfconventions.org/Data/cf-conventions/cf-conventions-1.11/cf-conventions.html#cell-boundaries
+
+    :param corner_coords:
+    :return:
+    """
+    corner_shape = np.shape(corner_coords)
+    if corner_shape[0] < 1 or corner_shape[1] < 1:
+        raise ValueError("no corner coordinates provided")
+
+    # create an array smaller by 1 in each dimension
+    corner_values = np.empty(shape=(corner_shape[0] - 1, corner_shape[1] - 1, 4))
+
+    it = np.nditer(corner_values, flags=["multi_index"], op_axes=[[0, 1]])
+    for _ in it:
+        y, x = it.multi_index
+        corner_values[y][x] = [
+            corner_coords[y][x],
+            corner_coords[y + 1][x],
+            corner_coords[y + 1][x + 1],
+            corner_coords[y][x + 1],
+        ]
+    return corner_values
