@@ -1,5 +1,4 @@
 import os
-from datetime import datetime
 
 import attrs
 import numpy as np
@@ -19,12 +18,9 @@ def test_001_response_for_download_links(config):
             assert response.status_code == 200
 
 
-def test_002_cdsapi_connection(root_dir, tmp_path):
+def test_002_cdsapi_connection(root_dir, tmp_path, start_date, end_date):
     filepath = tmp_path / "sub" / "test_download_cdsapi.nc"
     filepath.parent.mkdir(parents=True)
-
-    start_date = datetime.strptime("2022-07-01", "%Y-%m-%d")
-    end_date = datetime.strptime("2022-07-02", "%Y-%m-%d")
 
     download_GFAS(start_date=start_date, end_date=end_date, file_name=filepath)
 
