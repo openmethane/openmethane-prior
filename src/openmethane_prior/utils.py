@@ -170,7 +170,7 @@ def time_bounds(dates: xr.CFTimeIndex):
     return bounds
 
 
-def extract_bounds(corner_coords: xr.Variable):
+def extract_bounds(corner_coords: xr.DataArray):
     """
     Extract grid cell boundary coordinates for a single dimension, from a 2D
     array of size x+1,y+1 where x,y are the grid cell coordinates.
@@ -179,23 +179,42 @@ def extract_bounds(corner_coords: xr.Variable):
 
     See: https://cfconventions.org/Data/cf-conventions/cf-conventions-1.11/cf-conventions.html#cell-boundaries
 
-    :param corner_coords:
-    :return:
+    Parameters:
+    corner_coords: xarray.DataArray with dimensions like ('y_corner', 'x_corner')
+                  containing coordinate values at grid corners
+                  Shape: (ny_corners, nx_corners) where corners = cells + 1
+
+    Returns:
+    xarray.DataArray with dimensions ('y', 'x', 'corner') where:
+    - y has size ny_corners - 1 (number of cells)
+    - x has size nx_corners - 1 (number of cells)
+    - corner has 4 values representing the corners of each cell
     """
-    corner_shape = np.shape(corner_coords)
-    if corner_shape[0] < 1 or corner_shape[1] < 1:
-        raise ValueError("no corner coordinates provided")
+    if len(corner_coords.shape) < 2:
+        raise ValueError("corner coordinates must have at least 2 dimensions")
 
-    # create an array smaller by 1 in each dimension
-    corner_values = np.empty(shape=(corner_shape[0] - 1, corner_shape[1] - 1, 4))
+    # Get corner data as numpy array for efficient indexing
+    corner_data = corner_coords.values
+    ny_corners, nx_corners = corner_data.shape[-2:]
+    ny_cells, nx_cells = ny_corners - 1, nx_corners - 1
 
-    it = np.nditer(corner_values, flags=["multi_index"], op_axes=[[0, 1]])
-    for _ in it:
-        y, x = it.multi_index
-        corner_values[y][x] = [
-            corner_coords[y][x],
-            corner_coords[y + 1][x],
-            corner_coords[y + 1][x + 1],
-            corner_coords[y][x + 1],
-        ]
-    return corner_values
+    # Create output array
+    cell_corners = np.zeros((ny_cells, nx_cells, 4))
+
+    # Vectorized assignment of all corners
+    cell_corners[:, :, 0] = corner_data[:-1, :-1]  # bottom_left
+    cell_corners[:, :, 1] = corner_data[:-1, 1:]   # bottom_right
+    cell_corners[:, :, 2] = corner_data[1:, 1:]    # top_right
+    cell_corners[:, :, 3] = corner_data[1:, :-1]   # top_left
+
+    # Create new DataArray
+    result = xr.DataArray(
+        cell_corners,
+        coords={
+            "y": range(ny_cells),
+            "x": range(nx_cells),
+            "corner": ["bottom_left", "bottom_right", "top_right", "top_left"]
+        },
+    )
+
+    return result

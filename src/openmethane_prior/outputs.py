@@ -90,15 +90,11 @@ def create_output_dataset(
                     "bounds": "lon_bounds",
                 },
             ),
+
             # https://cfconventions.org/Data/cf-conventions/cf-conventions-1.11/cf-conventions.html#cell-boundaries
-            "lat_bounds": (
-                ("y", "x", "cell_corners"),
-                extract_bounds(domain_ds.variables["LATD"].squeeze()),
-            ),
-            "lon_bounds": (
-                ("y", "x", "cell_corners"),
-                extract_bounds(domain_ds.variables["LOND"].squeeze()),
-            ),
+            "lat_bounds": extract_bounds(domain_ds.variables["LATD"].squeeze()),
+            "lon_bounds": extract_bounds(domain_ds.variables["LOND"].squeeze()),
+
             # https://cfconventions.org/Data/cf-conventions/cf-conventions-1.11/cf-conventions.html#_lambert_conformal
             "grid_projection": (
                 (),

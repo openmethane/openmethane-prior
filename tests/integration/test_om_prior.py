@@ -128,7 +128,7 @@ def test_011_output_domain_dims(output_domain):
         "vertical": 1,
         "y": 430,
         "x": 454,
-        "cell_corners": 4,
+        "corner": 4,
         "time_period": 2,
     }
 
