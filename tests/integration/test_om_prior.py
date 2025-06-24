@@ -76,6 +76,7 @@ def test_009_output_domain_xr(output_domain):
         "projection_x": 0.0,
         "projection_y": -15629.25,
         "time_bounds": 1656720000000000000,
+        "land_mask": 0.39128163098043234,
         "LANDMASK": 0.39128163456916809,
         "OCH4_AGRICULTURE": 3.8221794892533713e-13,
         "OCH4_LULUCF": 8.2839841777071689e-13,

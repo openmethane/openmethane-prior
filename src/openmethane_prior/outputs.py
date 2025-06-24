@@ -130,6 +130,17 @@ def create_output_dataset(
             ),
 
             # data variables
+            "land_mask": (
+                ("y", "x"),
+                domain_ds.variables["LANDMASK"].squeeze().astype(int),
+                {
+                    "standard_name": "land_binary_mask",
+                    "units": "1",
+                    "long_name": "land-water mask (1=land, 0=water)",
+                },
+            ),
+
+            # legacy / deprecated
             "LANDMASK": (
                 ("y", "x"),
                 domain_ds.variables["LANDMASK"].squeeze(),
