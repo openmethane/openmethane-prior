@@ -223,12 +223,12 @@ def processEmissions(
         climatology[endDate.month - 1, ...]
     )  # we want endDate included, python doesn't
     result_nd = np.array(result_nd)
-    result_nd = np.expand_dims(result_nd, 1)  # add dummy layer dimension
+    result_nd = np.expand_dims(result_nd, 1)  # adding single vertical dimension
     resultXr = xr.DataArray(
         result_nd,
         coords={
-            "date": dates,
-            "LAY": np.array([1]),
+            "time": dates,
+            "vertical": np.array([1]),
             "y": np.arange(result_nd.shape[-2]),
             "x": np.arange(result_nd.shape[-1]),
         },

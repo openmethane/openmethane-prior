@@ -225,12 +225,12 @@ def processEmissions(config: PriorConfig, startDate, endDate, forceUpdate: bool 
             redistribute_spatially(LAT.shape, ind_x, ind_y, coefs, subset, GFASAreas, cmaqAreas)
         )
     resultNd = np.array(resultNd)
-    resultNd = np.expand_dims(resultNd, 1)  # adding dummy layer dimension
+    resultNd = np.expand_dims(resultNd, 1)  # adding single vertical dimension
     resultXr = xr.DataArray(
         resultNd,
         coords={
-            "date": dates,
-            "LAY": np.array([1]),
+            "time": dates,
+            "vertical": np.array([1]),
             "y": np.arange(resultNd.shape[-2]),
             "x": np.arange(resultNd.shape[-1]),
         },

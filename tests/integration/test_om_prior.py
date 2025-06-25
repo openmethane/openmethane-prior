@@ -75,18 +75,18 @@ def test_009_output_domain_xr(output_domain):
         "lon_bounds": 133.30200195229452,
         "projection_x": 0.0,
         "projection_y": -15629.25,
-        "time_bounds": 1656676800000000000,
+        "time_bounds": 1656720000000000000,
         "LANDMASK": 0.39128163456916809,
         "OCH4_AGRICULTURE": 3.8221794892533713e-13,
         "OCH4_LULUCF": 8.2839841777071689e-13,
-        "OCH4_WASTE": 7.6806688034203811e-13,
-        "OCH4_LIVESTOCK": 3.3252710482543979e-12,
-        "OCH4_INDUSTRIAL": 4.6406982245152562e-15,
-        "OCH4_STATIONARY": 8.5852921845127254e-14,
-        "OCH4_TRANSPORT": 1.8562792898061025e-14,
-        "OCH4_ELECTRICITY": 2.3204437472569127e-14,
-        "OCH4_FUGITIVE": 1.9068246493083643e-12,
-        "OCH4_TERMITE": 8.1061502996138124e-13,
+        "OCH4_WASTE": 7.680668803420382e-13,
+        "OCH4_LIVESTOCK": 3.3252710482543987e-12,
+        "OCH4_INDUSTRIAL": 4.640698224515257e-15,
+        "OCH4_STATIONARY": 8.585292184512728e-14,
+        "OCH4_TRANSPORT": 1.8562792898061028e-14,
+        "OCH4_ELECTRICITY": 2.3204437472569124e-14,
+        "OCH4_FUGITIVE": 1.906824649308364e-12,
+        "OCH4_TERMITE": 8.106151383815985e-13,
         "OCH4_FIRE": 2.6126792244431096e-13,
         "OCH4_WETLANDS": 1.8596938045956645e-11,
         "OCH4_TOTAL": 2.701186087531425e-11,
@@ -124,18 +124,12 @@ def test_010_emission_discrepancy(config, root_dir, output_domain, input_files):
 
 def test_011_output_domain_dims(output_domain):
     expected_dimensions = {
-        "time": 1, # TODO: should be 2
-        "LAY": 1, # TODO: rename "vertical"
+        "time": 2,
+        "vertical": 1,
         "y": 430,
         "x": 454,
         "cell_corners": 4,
-        "bounds_t": 2,
-
-        # to be removed
-        "TSTEP": 1,
-        "date": 2, # start_date -> end_date = 2 days
-        "ROW": 430,
-        "COL": 454,
+        "time_period": 2,
     }
 
     assert output_domain.dims == expected_dimensions

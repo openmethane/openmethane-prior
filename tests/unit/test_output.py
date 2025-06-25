@@ -1,7 +1,8 @@
 import numpy as np
+import xarray as xr
 import pytest
 
-from openmethane_prior.outputs import initialise_output, create_output_dataset
+from openmethane_prior.outputs import initialise_output, create_output_dataset, expand_layer_dims
 
 def test_initialise_output(config, input_files, start_date, end_date):
     assert not config.output_domain_file.exists()
@@ -44,5 +45,65 @@ def test_create_output_dataset(config, input_files, start_date, end_date):
     assert output_ds["grid_projection"].attrs["latitude_of_projection_origin"] == domain_ds.attrs["MOAD_CEN_LAT"]
 
     # bounds
-    assert output_ds["time"].values == np.datetime64(start_date)
+    assert output_ds["time"].values.tolist() == xr.date_range(start=start_date, end=end_date, use_cftime=True).tolist()
 
+
+def test_expand_layer_dims_errors():
+    test_xr = xr.DataArray([1, 2, 3]) # 1-dimensional array
+
+    with pytest.raises(ValueError) as e:
+        expand_layer_dims(test_xr)
+
+    assert "minimum of 2 dimensions" in str(e.value)
+
+def test_expand_layer_dims_extra_dims():
+    # adds 1-length time and vertical dimensions if not present
+    test_xr = xr.DataArray([
+        [1, 2, 3],
+        [4, 5, 6],
+    ])
+    expanded = expand_layer_dims(test_xr)
+
+    assert expanded.ndim == 4
+    assert expanded.shape == (1, 1, 2, 3)
+    assert list(expanded[0][0][0]) == [1, 2, 3]
+    assert list(expanded[0][0][1]) == [4, 5, 6]
+
+def test_expand_layer_dims_add_time_dim():
+    test_xr = xr.DataArray([
+        [1, 2],
+        [4, 5],
+    ])
+    expanded = expand_layer_dims(test_xr, time_steps=3)
+
+    assert expanded.ndim == 4
+    assert expanded.shape == (3, 1, 2, 2) # first dimension is time
+    # copies the existing data for each time step
+    assert list(expanded[0][0][0]) == [1, 2]
+    assert list(expanded[0][0][1]) == [4, 5]
+    assert list(expanded[1][0][0]) == [1, 2]
+    assert list(expanded[1][0][1]) == [4, 5]
+    assert list(expanded[2][0][0]) == [1, 2]
+    assert list(expanded[2][0][1]) == [4, 5]
+
+def test_expand_layer_dims_add_time_steps():
+    test_xr = xr.DataArray([[[
+        [1, 2],
+        [4, 5],
+    ]]])
+    # already has correct dims, but not enough time steps
+    assert test_xr.ndim == 4
+    assert test_xr.shape == (1, 1, 2, 2)
+
+    expanded = expand_layer_dims(test_xr, time_steps=3)
+
+    # time dim filled to 3
+    assert expanded.shape == (3, 1, 2, 2)
+
+    # copies the existing data for each time step
+    assert list(expanded[0][0][0]) == [1, 2]
+    assert list(expanded[0][0][1]) == [4, 5]
+    assert list(expanded[1][0][0]) == [1, 2]
+    assert list(expanded[1][0][1]) == [4, 5]
+    assert list(expanded[2][0][0]) == [1, 2]
+    assert list(expanded[2][0][1]) == [4, 5]

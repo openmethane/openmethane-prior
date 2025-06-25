@@ -159,6 +159,17 @@ def get_version():
     return os.getenv('OPENMETHANE_PRIOR_VERSION', importlib.metadata.version('openmethane_prior'))
 
 
+def time_bounds(dates: xr.CFTimeIndex):
+    bounds = []
+    for period_start in dates:
+        # bounds for each day start at midnight and extend 1 day
+        bounds.append([
+            period_start,
+            period_start + datetime.timedelta(days=1)
+        ])
+    return bounds
+
+
 def extract_bounds(corner_coords: xr.Variable):
     """
     Extract grid cell boundary coordinates for a single dimension, from a 2D

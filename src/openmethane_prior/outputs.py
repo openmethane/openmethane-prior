@@ -25,9 +25,10 @@ import xarray as xr
 
 from openmethane_prior.config import PriorConfig
 from openmethane_prior.layers import layer_names
-from openmethane_prior.utils import SECS_PER_YEAR, extract_bounds, get_version, get_timestamped_command
+from openmethane_prior.utils import SECS_PER_YEAR, extract_bounds, get_version, get_timestamped_command, time_bounds, \
+    range_of_dates
 
-COORD_NAMES = ["TSTEP", "LAY", "ROW", "COL"]
+COORD_NAMES = ["time", "vertical", "y", "x"]
 REQUIRED_ATTRIBUTES = {"units": "kg/m^2/s"}
 TOTAL_LAYER_NAME = "OCH4_TOTAL"
 TOTAL_LAYER_LONG_NAME = "total methane flux"
@@ -57,6 +58,9 @@ def create_output_dataset(
         domain_ds.YORIG + (0.5 * domain_ds.YCELL)
         + np.arange(len(domain_ds.ROW)) * domain_ds.YCELL
     )
+
+    # generate daily time steps
+    time_steps = xr.date_range(start=period_start, end=period_end, freq="D", use_cftime=True, normalize=True)
 
     # copy dimensions and attributes from the domain where the grid is defined
     prior_ds = xr.Dataset(
@@ -120,7 +124,10 @@ def create_output_dataset(
                     "standard_name": "projection_y_coordinate",
                 },
             ),
-            "time_bounds": (("time", "bounds_t"), [[period_start, period_end]]),
+            "time_bounds": (
+                ("time", "time_period"),
+                time_bounds(time_steps),
+            ),
 
             # data variables
             "LANDMASK": (
@@ -130,9 +137,11 @@ def create_output_dataset(
             ),
         },
         coords={
-            "x": domain_ds.coords["COL"],
-            "y": domain_ds.coords["ROW"],
-            "time": (("time"), [period_start], {"bounds": "time_bounds"}),
+            "x": domain_ds.coords["COL"].values,
+            "y": domain_ds.coords["ROW"].values,
+            "time": (("time"), time_steps, {
+                "bounds": "time_bounds",
+            }),
         },
         attrs={
             "DX": domain_ds.DX,
@@ -211,18 +220,55 @@ def write_layer(
     if direct_set:
         ds[layer_name] = layer_data
     else:
-        # we're about to alter the input so copy first
-        copy = layer_data.copy()
-        # coerce to four dimensions if it's not
-        for i in range(layer_data.ndim, 4):
-            copy = np.expand_dims(copy, 0)  # should now have four dimensions
-        ds[layer_name] = (COORD_NAMES[:], copy)
+        # some layers only generate 2 or 3-dimensional data, which needs
+        # to be expanded into the same dimensions as the other layers
+        ds[layer_name] = (COORD_NAMES[:], expand_layer_dims(layer_data, ds.sizes["time"]))
 
     for k, v in REQUIRED_ATTRIBUTES.items():
         ds[layer_name].attrs[k] = v
     ds[layer_name].attrs["long_name"] = layer_name
 
     ds.to_netcdf(output_path)
+
+
+def expand_layer_dims(
+    layer_data: xr.DataArray | npt.ArrayLike,
+    time_steps: int | None = 1,
+):
+    """
+    Expands layer data to use the same dimensions as other spatial layers.
+    Most layers produce 2-dimensional data, which must be expanded to include:
+    - "vertical" dimension with a single value
+    - "time" dimension, which must match the size of the existing time dim
+
+    When expanding the time dim, we are working with datasets that produce a
+    single average emission across the entire period, so we just duplicate it
+    across all the periods present in the output.
+
+    :param layer_data:
+    :param time_steps:
+    :return:
+    """
+    if layer_data.ndim < 2:
+        raise ValueError("expand_layer_dims supports a minimum of 2 dimensions")
+
+    # we're about to alter the input so copy first
+    copy = layer_data.copy()
+
+    if copy.ndim == 2:
+        # add single-value "vertical" layer
+        copy = np.expand_dims(copy, axis=0)
+
+    if copy.ndim == 3:
+        # add single-value "time" layer
+        copy = np.expand_dims(copy, axis=0)
+
+    if copy.ndim == 4 and copy.shape[0] < time_steps:
+        # duplicate the existing data across as many time steps are required
+        # see: https://stackoverflow.com/questions/39463019/how-to-copy-numpy-array-value-into-higher-dimensions/55754233#55754233
+        copy = np.concatenate([copy] * time_steps, axis=0)
+
+    return copy
 
 
 def sum_layers(output_path: pathlib.Path):
@@ -256,7 +302,7 @@ def sum_layers(output_path: pathlib.Path):
             summed += ds[layer_name].values  # it will broadcast time dimensions of 1 correctly
 
     if summed is not None:
-        ds[TOTAL_LAYER_NAME] = (["date", "LAY", *COORD_NAMES[-2:]], summed)
+        ds[TOTAL_LAYER_NAME] = (COORD_NAMES[:], summed)
         for k, v in REQUIRED_ATTRIBUTES.items():
             ds[TOTAL_LAYER_NAME].attrs[k] = v
         ds[TOTAL_LAYER_NAME].attrs["long_name"] = TOTAL_LAYER_LONG_NAME
