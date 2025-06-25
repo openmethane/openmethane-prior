@@ -31,7 +31,6 @@ prettyprinter = "^0.18.0"
 
 [tool.poetry.group.tests.dependencies]
 pytest = "^8.2.1"
-pytest-regressions = "^2.5.0"
 
 [tool.poetry.group.dev.dependencies]
 licenseheaders = "^0.8.8"
