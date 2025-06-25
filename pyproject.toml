@@ -17,7 +17,7 @@ packages = [
 python = ">=3.11,<3.12"
 numpy = "^1.26.4"
 netcdf4 = "^1.6.5"
-xarray = "^2024.5.0"
+xarray = "2025.06.1"
 rioxarray = "^0.15.5"
 pyproj = "^3.6.1"
 pandas = "^2.2.2"
