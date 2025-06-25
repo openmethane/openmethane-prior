@@ -68,10 +68,31 @@ def test_005_agriculture_emissions(config, root_dir, input_files):
 
 
 # TODO Update this test when file structure is clear.
-def test_009_output_domain_xr(output_domain, num_regression):
+def test_009_output_domain_xr(output_domain):
     mean_values = {key: output_domain[key].mean().item() for key in output_domain.keys()}
 
-    num_regression.check(mean_values)
+    expected = {
+        "LAT": -26.983160018920898,
+        "LON": 133.302001953125,
+        "LANDMASK": 0.39128163456916809,
+        "LATD": -26.980266571044922,
+        "LOND": 133.302001953125,
+        "OCH4_AGRICULTURE": 3.8221794892533713e-13,
+        "OCH4_LULUCF": 8.2839841777071689e-13,
+        "OCH4_WASTE": 7.6806688034203811e-13,
+        "OCH4_LIVESTOCK": 3.3252710482543979e-12,
+        "OCH4_INDUSTRIAL": 4.6406982245152562e-15,
+        "OCH4_STATIONARY": 8.5852921845127254e-14,
+        "OCH4_TRANSPORT": 1.8562792898061025e-14,
+        "OCH4_ELECTRICITY": 2.3204437472569127e-14,
+        "OCH4_FUGITIVE": 1.9068246493083643e-12,
+        "OCH4_TERMITE": 8.1061502996138124e-13,
+        "OCH4_FIRE": 2.6126792244431096e-13,
+        "OCH4_WETLANDS": 1.8596938045956645e-11,
+        "OCH4_TOTAL": 2.7011860875314249e-11,
+    }
+
+    assert mean_values == expected
 
 
 def test_010_emission_discrepancy(config, root_dir, output_domain, input_files):
