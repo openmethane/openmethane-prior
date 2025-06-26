@@ -25,13 +25,17 @@ import xarray as xr
 
 from openmethane_prior.config import PriorConfig
 from openmethane_prior.layers import layer_names
-from openmethane_prior.utils import SECS_PER_YEAR, extract_bounds, get_version, get_timestamped_command, time_bounds, \
-    range_of_dates
+from openmethane_prior.utils import SECS_PER_YEAR, extract_bounds, get_version, get_timestamped_command, time_bounds
 
 COORD_NAMES = ["time", "vertical", "y", "x"]
-REQUIRED_ATTRIBUTES = {"units": "kg/m^2/s"}
+COMMON_ATTRIBUTES = {
+    "units": "kg/m2/s",
+}
 TOTAL_LAYER_NAME = "OCH4_TOTAL"
-TOTAL_LAYER_LONG_NAME = "total methane flux"
+TOTAL_LAYER_ATTRIBUTES = {
+    "long_name": "total expected flux of methane based on public data",
+    "standard_name": "surface_upward_mass_flux_of_methane",
+}
 
 
 def convert_to_timescale(emission, cell_area):
@@ -189,6 +193,8 @@ def write_layer(
     layer_name: str,
     layer_data: xr.DataArray | npt.ArrayLike,
     direct_set: bool = False,
+    layer_standard_name: str = None,
+    layer_long_name: str = None,
 ):
     """
     Write a layer to the output file
@@ -224,9 +230,13 @@ def write_layer(
         # to be expanded into the same dimensions as the other layers
         ds[layer_name] = (COORD_NAMES[:], expand_layer_dims(layer_data, ds.sizes["time"]))
 
-    for k, v in REQUIRED_ATTRIBUTES.items():
+    for k, v in COMMON_ATTRIBUTES.items():
         ds[layer_name].attrs[k] = v
-    ds[layer_name].attrs["long_name"] = layer_name
+
+    ds[layer_name].attrs["standard_name"] = TOTAL_LAYER_ATTRIBUTES["standard_name"]
+    if layer_standard_name is not None:
+        ds[layer_name].attrs["standard_name"] += f"_due_to_emission_from_{layer_standard_name}"
+    ds[layer_name].attrs["long_name"] = layer_long_name or layer_name
 
     ds.to_netcdf(output_path)
 
@@ -303,7 +313,8 @@ def sum_layers(output_path: pathlib.Path):
 
     if summed is not None:
         ds[TOTAL_LAYER_NAME] = (COORD_NAMES[:], summed)
-        for k, v in REQUIRED_ATTRIBUTES.items():
+        for k, v in COMMON_ATTRIBUTES.items():
             ds[TOTAL_LAYER_NAME].attrs[k] = v
-        ds[TOTAL_LAYER_NAME].attrs["long_name"] = TOTAL_LAYER_LONG_NAME
+        for k, v in TOTAL_LAYER_ATTRIBUTES.items():
+            ds[TOTAL_LAYER_NAME].attrs[k] = v
         ds.to_netcdf(output_path)

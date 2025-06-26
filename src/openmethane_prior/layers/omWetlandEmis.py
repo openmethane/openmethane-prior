@@ -233,7 +233,13 @@ def processEmissions(
             "x": np.arange(result_nd.shape[-1]),
         },
     )
-    write_layer(config.output_domain_file, "OCH4_WETLANDS", resultXr, True)
+    write_layer(
+        output_path=config.output_domain_file,
+        layer_name="OCH4_WETLANDS",
+        layer_data=resultXr,
+        direct_set=True,
+        layer_standard_name="wetland_biological_processes",
+    )
     return result_nd
 
 

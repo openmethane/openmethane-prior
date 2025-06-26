@@ -34,6 +34,12 @@ from openmethane_prior.outputs import (
 )
 from openmethane_prior.utils import SECS_PER_YEAR, area_of_rectangle_m2
 
+sectorEmissionStandardNames = {
+    "agriculture": "agricultural_production",
+    "lulucf": "anthropogenic_land_use_change",
+    "waste": "waste_treatment_and_disposal",
+}
+
 
 def processEmissions(config: PriorConfig):  # noqa: PLR0912, PLR0915
     """Process Agriculture LULUCF and Waste emissions"""
@@ -213,15 +219,21 @@ def processEmissions(config: PriorConfig):  # noqa: PLR0912, PLR0915
     print("Writing sectoral methane layers output file")
     for sector in sectorsUsed:
         write_layer(
-            config.output_domain_file,
-            f"OCH4_{sector.upper()}",
-            convert_to_timescale(methane[sector], cell_area=domain_grid.cell_area),
+            output_path=config.output_domain_file,
+            layer_name=f"OCH4_{sector.upper()}",
+            layer_data=convert_to_timescale(methane[sector], cell_area=domain_grid.cell_area),
+            layer_standard_name=sectorEmissionStandardNames[sector],
         )
 
     print("Writing livestock methane layers output file")
     # convert the livestock data from per year to per second and write
     livestock_ch4_s = livestockCH4 / SECS_PER_YEAR
-    write_layer(config.output_domain_file, "OCH4_LIVESTOCK", livestock_ch4_s)
+    write_layer(
+        output_path=config.output_domain_file,
+        layer_name="OCH4_LIVESTOCK",
+        layer_data=livestock_ch4_s,
+        layer_standard_name="domesticated_livestock",
+    )
 
 
 if __name__ == "__main__":

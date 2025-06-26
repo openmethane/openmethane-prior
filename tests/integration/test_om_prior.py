@@ -135,12 +135,14 @@ def test_011_output_domain_dims(output_domain):
     assert output_domain.dims == expected_dimensions
 
 
-def test_required_attributes(output_domain):
+def test_012_output_variable_attributes(output_domain):
     assert output_domain.variables["OCH4_TOTAL"].attrs == {
-        "units": "kg/m^2/s",
-        "long_name": "total methane flux",
+        "units": "kg/m2/s",
+        "standard_name": "surface_upward_mass_flux_of_methane",
+        "long_name": "total expected flux of methane based on public data",
     }
-    assert output_domain.variables["OCH4_WETLANDS"].attrs == {
-        "units": "kg/m^2/s",
-        "long_name": "OCH4_WETLANDS",
-    }
+
+    for layer_name in [layer for layer in list(output_domain.variables.keys()) if layer.startswith("OCH4_") and layer != "OCH4_TOTAL"]:
+        assert output_domain.variables[layer_name].attrs["units"] == "kg/m2/s"
+        assert output_domain.variables[layer_name].attrs["long_name"] == layer_name
+        assert output_domain.variables[layer_name].attrs["standard_name"].startswith("surface_upward_mass_flux_of_methane_due_to_emission_from_")

@@ -78,9 +78,10 @@ def processEmissions(config: PriorConfig, startDate, endDate):
             methane[cell_coords[1], cell_coords[0]] += facility["emissions_quantity"]
 
     write_layer(
-        config.output_domain_file,
-        "OCH4_FUGITIVE",
-        convert_to_timescale(methane, domain_grid.cell_area),
+        output_path=config.output_domain_file,
+        layer_name="OCH4_FUGITIVE",
+        layer_data=convert_to_timescale(methane, domain_grid.cell_area),
+        layer_standard_name="extraction_production_and_transport_of_fuel",
     )
 
 

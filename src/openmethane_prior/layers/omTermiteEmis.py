@@ -184,7 +184,12 @@ def processEmissions(  # noqa: PLR0915
     resultNd /= SECS_PER_YEAR
     ncin.close()
 
-    write_layer(config.output_domain_file, "OCH4_TERMITE", resultNd)
+    write_layer(
+        output_path=config.output_domain_file,
+        layer_name="OCH4_TERMITE",
+        layer_data=resultNd,
+        layer_standard_name="termites",
+    )
     return np.array(resultNd)
 
 

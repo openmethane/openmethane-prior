@@ -56,9 +56,10 @@ def processEmissions(config: PriorConfig):
             methane[cell_coords[1], cell_coords[0]] += (facility["capacity"] / totalCapacity) * electricityEmis
 
     write_layer(
-        config.output_domain_file,
-        "OCH4_ELECTRICITY",
-        convert_to_timescale(methane, domain_grid.cell_area),
+        output_path=config.output_domain_file,
+        layer_name="OCH4_ELECTRICITY",
+        layer_data=convert_to_timescale(methane, domain_grid.cell_area),
+        layer_standard_name="energy_production_and_distribution",
     )
 
 

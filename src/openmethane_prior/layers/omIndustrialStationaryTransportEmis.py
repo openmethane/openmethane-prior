@@ -31,6 +31,11 @@ from openmethane_prior.outputs import (
     write_layer,
 )
 
+sectorEmissionStandardNames = {
+    "industrial": "industrial_processes_and_combustion",
+    "stationary": "industrial_energy_production",
+    "transport": "land_transport",
+}
 
 def _find_grid(data, totalSize, gridSize):
     return np.floor((data + totalSize / 2) / gridSize)
@@ -102,9 +107,10 @@ def processEmissions(config: PriorConfig):
 
     for sector in sectorsUsed:
         write_layer(
-            config.output_domain_file,
-            f"OCH4_{sector.upper()}",
-            convert_to_timescale(methane[sector], domain_grid.cell_area),
+            output_path=config.output_domain_file,
+            layer_name=f"OCH4_{sector.upper()}",
+            layer_data=convert_to_timescale(methane[sector], domain_grid.cell_area),
+            layer_standard_name=sectorEmissionStandardNames[sector],
         )
 
 
