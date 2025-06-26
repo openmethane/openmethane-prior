@@ -199,7 +199,6 @@ def write_layer(
     output_path: pathlib.Path,
     layer_name: str,
     layer_data: xr.DataArray | npt.ArrayLike,
-    direct_set: bool = False,
     layer_standard_name: str = None,
     layer_long_name: str = None,
 ):
@@ -229,8 +228,16 @@ def write_layer(
 
     ds = xr.load_dataset(output_path)
 
-    # if this is a xr dataArray just include it
-    if direct_set:
+    # determine the expected shape of a data layer based on the assumed coords
+    expected_shape = tuple([(ds.sizes[coord_name] if coord_name in ds.sizes else 1) for coord_name in COORD_NAMES])
+
+    # if this is a DataArray with the right dimensions, it can be added directly
+    if type(layer_data) == xr.DataArray and layer_data.shape == expected_shape:
+        for time_step in layer_data.coords["time"].values:
+            if time_step not in ds.coords["time"].values:
+                raise ValueError(f"Layer {layer_name} time step {time_step} not found in dataset")
+
+        # layer coords and time steps match, it can be added directly
         ds[layer_name] = layer_data
     else:
         # some layers only generate 2 or 3-dimensional data, which needs

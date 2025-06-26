@@ -45,7 +45,9 @@ def test_create_output_dataset(config, input_files, start_date, end_date):
     assert output_ds["grid_projection"].attrs["latitude_of_projection_origin"] == domain_ds.attrs["MOAD_CEN_LAT"]
 
     # bounds
-    assert output_ds["time"].values.tolist() == xr.date_range(start=start_date, end=end_date, use_cftime=True).tolist()
+    assert output_ds["time"].size == (end_date - start_date).days + 1 # one time step per day, end inclusive
+    assert output_ds["time"].values[0] == np.datetime64(start_date)
+    assert output_ds["time"].values[-1] == np.datetime64(end_date)
 
 
 def test_expand_layer_dims_errors():

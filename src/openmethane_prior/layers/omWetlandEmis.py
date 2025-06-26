@@ -237,7 +237,6 @@ def processEmissions(
         output_path=config.output_domain_file,
         layer_name="OCH4_WETLANDS",
         layer_data=resultXr,
-        direct_set=True,
         layer_standard_name="wetland_biological_processes",
     )
     return result_nd
