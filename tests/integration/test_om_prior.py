@@ -2,13 +2,14 @@ import os
 import attrs
 import numpy as np
 import pandas as pd
+import pytest
 import requests
 import xarray as xr
 
 from openmethane_prior.layers.omGFASEmis import download_GFAS
 from openmethane_prior.utils import SECS_PER_YEAR
 
-
+@pytest.mark.skip(reason="Duplicated by test_004_omDownloadInputs")
 def test_001_response_for_download_links(config):
     layer_info = attrs.asdict(config.layer_inputs)
     for file_fragment in layer_info.values():
@@ -18,6 +19,7 @@ def test_001_response_for_download_links(config):
             assert response.status_code == 200
 
 
+@pytest.mark.skip(reason="Duplicated by other tests")
 def test_002_cdsapi_connection(root_dir, tmp_path, start_date, end_date):
     filepath = tmp_path / "sub" / "test_download_cdsapi.nc"
     filepath.parent.mkdir(parents=True)
