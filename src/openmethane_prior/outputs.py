@@ -244,6 +244,10 @@ def write_layer(
         # to be expanded into the same dimensions as the other layers
         ds[layer_name] = (COORD_NAMES[:], expand_layer_dims(layer_data, ds.sizes["time"]))
 
+        # enable compression for expanded layer data which may be duplicated
+        # across time steps
+        ds[layer_name].encoding["zlib"] = True
+
     for k, v in COMMON_ATTRIBUTES.items():
         ds[layer_name].attrs[k] = v
 
@@ -331,4 +335,9 @@ def sum_layers(output_path: pathlib.Path):
             ds[TOTAL_LAYER_NAME].attrs[k] = v
         for k, v in TOTAL_LAYER_ATTRIBUTES.items():
             ds[TOTAL_LAYER_NAME].attrs[k] = v
+
+        # enable compression for total layer which may be duplicated
+        # across time steps
+        ds[TOTAL_LAYER_NAME].encoding["zlib"] = True
+
         ds.to_netcdf(output_path)
