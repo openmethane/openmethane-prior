@@ -133,7 +133,7 @@ def test_011_output_domain_dims(output_domain):
         "time_period": 2,
     }
 
-    assert output_domain.dims == expected_dimensions
+    assert output_domain.sizes == expected_dimensions
 
 
 def test_012_output_variable_attributes(output_domain):
