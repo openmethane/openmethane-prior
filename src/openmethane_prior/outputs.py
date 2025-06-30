@@ -104,6 +104,7 @@ def create_output_dataset(
                     "standard_parallel": (domain_ds.TRUELAT1, domain_ds.TRUELAT2),
                     "longitude_of_central_meridian": domain_ds.STAND_LON,
                     "latitude_of_projection_origin": domain_ds.MOAD_CEN_LAT,
+                    "proj4": config.domain_projection().to_proj4(),
                 },
             ),
             "projection_x": (
