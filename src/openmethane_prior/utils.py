@@ -18,6 +18,7 @@
 
 """General utilities"""
 
+import cftime
 import datetime
 import gzip
 import importlib
@@ -159,14 +160,15 @@ def get_version():
     return os.getenv('OPENMETHANE_PRIOR_VERSION', importlib.metadata.version('openmethane_prior'))
 
 
-def time_bounds(dates: xr.CFTimeIndex):
+def time_bounds(
+    dates: xr.CFTimeIndex,
+    interval: datetime.timedelta = datetime.timedelta(days=1)
+) -> list[list[cftime.datetime]]:
     bounds = []
     for period_start in dates:
-        # bounds for each day start at midnight and extend 1 day
-        bounds.append([
-            period_start,
-            period_start + datetime.timedelta(days=1)
-        ])
+        # bounds for each time coordinate extend from the start
+        # to the end of the interval
+        bounds.append([period_start, period_start + interval])
     return bounds
 
 
