@@ -92,7 +92,7 @@ class PriorConfig:
         """Load the input domain dataset"""
         if not self.input_domain_file.exists():
             raise ValueError(f"Missing domain file: {self.input_domain_file}")
-        return xr.load_dataset(self.input_domain_file)
+        return xr.open_dataset(self.input_domain_file)
 
     @cache
     def domain_grid(self) -> DomainGrid:
