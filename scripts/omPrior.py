@@ -45,7 +45,7 @@ def run_prior(
     config: PriorConfig, start_date: datetime.date, end_date: datetime.date, skip_reproject: bool
 ):
     """
-    Calculate the prior methane emissions estimate for OpenMethane
+    Calculate the prior methane emissions estimate for Open Methane
 
     Parameters
     ----------
@@ -60,7 +60,7 @@ def run_prior(
     """
     check_input_files(config)
 
-    # Copy the input domain to the output directory
+    # Initialise the output dataset based on the domain provided in config
     initialise_output(config, start_date, end_date)
 
     if not skip_reproject:
