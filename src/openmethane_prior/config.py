@@ -68,11 +68,14 @@ class PriorConfig:
     input_domain: PublishedInputDomain | str
     """Input domain specification
 
-    If provided, use a published domain as the input domain.
-    Otherwise, a file named `output_domain` is used as the input domain.
+    If provided, use a published domain as the input domain. Otherwise, a file
+    specified in the `DOMAIN` env variable is used as the input domain.
     """
-    output_domain: str
-    """Name of the output domain file"""
+
+    output_filename: str
+    """Filename to write the prior output to as a NetCDFv4 file in
+    `output_path`"""
+
     layer_inputs: LayerInputs
 
     def as_input_file(self, name: str | pathlib.Path) -> pathlib.Path:
@@ -124,9 +127,9 @@ class PriorConfig:
             raise TypeError("Could not interpret the 'input_domain' field")
 
     @property
-    def output_domain_file(self):
+    def output_file(self):
         """Get the filename of the output domain"""
-        return self.as_output_file(self.output_domain)
+        return self.as_output_file(self.output_filename)
 
 
 def load_config_from_env(**overrides: typing.Any) -> PriorConfig:
@@ -151,7 +154,6 @@ def load_config_from_env(**overrides: typing.Any) -> PriorConfig:
         )
     else:
         # Default to using a user-specified file as the input domain
-        # TODO: Log?
         input_domain = env.str("DOMAIN")
 
     options = dict(
@@ -160,7 +162,7 @@ def load_config_from_env(**overrides: typing.Any) -> PriorConfig:
         output_path=env.path("OUTPUTS", "data/outputs"),
         intermediates_path=env.path("INTERMEDIATES", "data/processed"),
         input_domain=input_domain,
-        output_domain=env.str("OUTPUT_DOMAIN", "out-om-domain-info.nc"),
+        output_filename=env.str("OUTPUT_FILENAME", "prior_emissions.nc"),
         layer_inputs=LayerInputs(
             electricity_path=env.path("CH4_ELECTRICITY"),
             oil_gas_path=env.path("CH4_OILGAS"),

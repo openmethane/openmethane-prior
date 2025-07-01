@@ -78,7 +78,7 @@ def processEmissions(config: PriorConfig, startDate, endDate):
             methane[cell_coords[1], cell_coords[0]] += facility["emissions_quantity"]
 
     write_sector(
-        output_path=config.output_domain_file,
+        output_path=config.output_file,
         sector_name="fugitive",
         sector_data=convert_to_timescale(methane, domain_grid.cell_area),
         sector_standard_name="extraction_production_and_transport_of_fuel",
@@ -103,4 +103,4 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     processEmissions(config, args.start_date, args.end_date)
-    sum_sectors(config.output_domain_file)
+    sum_sectors(config.output_file)

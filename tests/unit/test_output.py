@@ -5,11 +5,11 @@ import pytest
 from openmethane_prior.outputs import initialise_output, create_output_dataset, expand_sector_dims
 
 def test_initialise_output(config, input_files, start_date, end_date):
-    assert not config.output_domain_file.exists()
+    assert not config.output_file.exists()
 
     initialise_output(config, start_date, end_date)
 
-    assert config.output_domain_file.exists()
+    assert config.output_file.exists()
 
     # Idempotent
     initialise_output(config, start_date, end_date)
@@ -18,7 +18,7 @@ def test_initialise_output(config, input_files, start_date, end_date):
 def test_create_output_dataset(config, input_files, start_date, end_date):
     domain_ds = config.domain_dataset()
 
-    assert not config.output_domain_file.exists()
+    assert not config.output_file.exists()
 
     output_ds = create_output_dataset(config, start_date, end_date)
 

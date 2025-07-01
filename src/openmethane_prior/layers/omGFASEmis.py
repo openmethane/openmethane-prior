@@ -237,7 +237,7 @@ def processEmissions(config: PriorConfig, startDate, endDate, forceUpdate: bool 
         },
     )
     write_sector(
-        output_path=config.output_domain_file,
+        output_path=config.output_file,
         sector_name="fire",
         sector_data=resultXr,
         sector_standard_name="fires",
@@ -263,4 +263,4 @@ if __name__ == "__main__":
     config = load_config_from_env()
     initialise_output(config, args.start_date, args.end_date)
     processEmissions(config, args.start_date, args.end_date)
-    sum_sectors(config.output_domain_file)
+    sum_sectors(config.output_file)

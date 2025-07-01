@@ -179,10 +179,10 @@ def initialise_output(
     config
         Configuration object
     """
-    config.output_domain_file.parent.mkdir(parents=True, exist_ok=True)
+    config.output_file.parent.mkdir(parents=True, exist_ok=True)
 
     output_ds = create_output_dataset(config, start_date, end_date)
-    output_ds.to_netcdf(config.output_domain_file)
+    output_ds.to_netcdf(config.output_file)
 
 
 def write_sector(

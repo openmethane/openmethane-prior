@@ -232,9 +232,9 @@ def output_domain(
         False,
     )
 
-    yield xr.load_dataset(config.output_domain_file)
+    yield xr.load_dataset(config.output_file)
 
-    os.remove(config.output_domain_file)
+    os.remove(config.output_file)
 
     # Manually clean up any leftover files
     for filepath in input_files:
