@@ -27,7 +27,7 @@ import numpy as np
 from shapely import geometry
 
 from openmethane_prior.config import PriorConfig, load_config_from_env
-from openmethane_prior.outputs import sum_layers, write_layer
+from openmethane_prior.outputs import sum_sectors, write_sector
 from openmethane_prior.utils import (
     SECS_PER_YEAR,
     area_of_rectangle_m2,
@@ -184,11 +184,11 @@ def processEmissions(  # noqa: PLR0915
     resultNd /= SECS_PER_YEAR
     ncin.close()
 
-    write_layer(
+    write_sector(
         output_path=config.output_domain_file,
-        layer_name="OCH4_TERMITE",
-        layer_data=resultNd,
-        layer_standard_name="termites",
+        sector_name="termite",
+        sector_data=resultNd,
+        sector_standard_name="termites",
     )
     return np.array(resultNd)
 
@@ -196,4 +196,4 @@ def processEmissions(  # noqa: PLR0915
 if __name__ == "__main__":
     config = load_config_from_env()
     processEmissions(config)
-    sum_layers(config.output_domain_file)
+    sum_sectors(config.output_domain_file)

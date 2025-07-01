@@ -25,14 +25,14 @@ import numpy as np
 import pandas as pd
 
 from openmethane_prior.config import PriorConfig, load_config_from_env
-from openmethane_prior.outputs import convert_to_timescale, sum_layers, write_layer
+from openmethane_prior.outputs import convert_to_timescale, sum_sectors, write_sector
 
 
 def processEmissions(config: PriorConfig, startDate, endDate):
     """
     Process the fugitive methane emissions
 
-    Adds the OCH4_FUGITIVE layer to the output
+    Adds the ch4_fugitive layer to the output
 
     Parameters
     ----------
@@ -77,11 +77,11 @@ def processEmissions(config: PriorConfig, startDate, endDate):
         if cell_coords is not None:
             methane[cell_coords[1], cell_coords[0]] += facility["emissions_quantity"]
 
-    write_layer(
+    write_sector(
         output_path=config.output_domain_file,
-        layer_name="OCH4_FUGITIVE",
-        layer_data=convert_to_timescale(methane, domain_grid.cell_area),
-        layer_standard_name="extraction_production_and_transport_of_fuel",
+        sector_name="fugitive",
+        sector_data=convert_to_timescale(methane, domain_grid.cell_area),
+        sector_standard_name="extraction_production_and_transport_of_fuel",
     )
 
 
@@ -103,4 +103,4 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     processEmissions(config, args.start_date, args.end_date)
-    sum_layers(config.output_domain_file)
+    sum_sectors(config.output_domain_file)

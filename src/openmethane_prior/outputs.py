@@ -24,18 +24,18 @@ import numpy.typing as npt
 import xarray as xr
 
 from openmethane_prior.config import PriorConfig
-from openmethane_prior.layers import layer_names
 from openmethane_prior.utils import SECS_PER_YEAR, extract_bounds, get_version, get_timestamped_command, time_bounds
 
 COORD_NAMES = ["time", "vertical", "y", "x"]
 COMMON_ATTRIBUTES = {
     "units": "kg/m2/s",
 }
-TOTAL_LAYER_NAME = "OCH4_TOTAL"
+TOTAL_LAYER_NAME = "ch4_total"
 TOTAL_LAYER_ATTRIBUTES = {
     "long_name": "total expected flux of methane based on public data",
     "standard_name": "surface_upward_mass_flux_of_methane",
 }
+SECTOR_PREFIX = "ch4_sector"
 
 
 def convert_to_timescale(emission, cell_area):
@@ -47,7 +47,7 @@ def create_output_dataset(
     config: PriorConfig,
     start_date: datetime.date,
     end_date: datetime.date,
-):
+) -> xr.Dataset:
     domain_ds = config.domain_dataset()
     period_start = start_date
     period_end = end_date
@@ -196,12 +196,12 @@ def initialise_output(
     output_ds.to_netcdf(config.output_domain_file)
 
 
-def write_layer(
+def write_sector(
     output_path: pathlib.Path,
-    layer_name: str,
-    layer_data: xr.DataArray | npt.ArrayLike,
-    layer_standard_name: str = None,
-    layer_long_name: str = None,
+    sector_name: str,
+    sector_data: xr.DataArray | npt.ArrayLike,
+    sector_standard_name: str = None,
+    sector_long_name: str = None,
 ):
     """
     Write a layer to the output file
@@ -212,17 +212,17 @@ def write_layer(
         Path to the output file.
 
         This file should already exist and will be updated to include the layer data
-    layer_name
+    sector_name
         Name
-    layer_data
+    sector_data
         Data to write to file
 
         This could be a xarray Dataset
     direct_set
         If True, write the data to the output file without processing
-        If False, coerce to the layer_data to 4d if it isn't already
+        If False, coerce to the sector_data to 4d if it isn't already
     """
-    print(f"Writing emissions data for {layer_name}")
+    print(f"Writing emissions data for {sector_name}")
 
     if not output_path.exists():
         raise FileNotFoundError(f"Output domain file not found: {output_path}")
@@ -233,35 +233,38 @@ def write_layer(
     expected_shape = tuple([(ds.sizes[coord_name] if coord_name in ds.sizes else 1) for coord_name in COORD_NAMES])
 
     # if this is a DataArray with the right dimensions, it can be added directly
-    if type(layer_data) == xr.DataArray and layer_data.shape == expected_shape:
-        for time_step in layer_data.coords["time"].values:
+    if type(sector_data) == xr.DataArray and sector_data.shape == expected_shape:
+        # verify that time steps for the sector data match the parent coordinates exactly
+        for time_step in sector_data.coords["time"].values:
             if time_step not in ds.coords["time"].values:
-                raise ValueError(f"Layer {layer_name} time step {time_step} not found in dataset")
-
-        # layer coords and time steps match, it can be added directly
-        ds[layer_name] = layer_data
+                raise ValueError(f"Layer {sector_name} time step {time_step} not found in dataset")
     else:
         # some layers only generate 2 or 3-dimensional data, which needs
         # to be expanded into the same dimensions as the other layers
-        ds[layer_name] = (COORD_NAMES[:], expand_layer_dims(layer_data, ds.sizes["time"]))
+        sector_data = xr.DataArray(
+            dims=COORD_NAMES[:],
+            data=expand_sector_dims(sector_data, ds.sizes["time"]),
+        )
 
         # enable compression for expanded layer data which may be duplicated
         # across time steps
-        ds[layer_name].encoding["zlib"] = True
+        sector_data.encoding["zlib"] = True
 
-    for k, v in COMMON_ATTRIBUTES.items():
-        ds[layer_name].attrs[k] = v
+    sector_data.attrs = COMMON_ATTRIBUTES | {
+        "standard_name": TOTAL_LAYER_ATTRIBUTES["standard_name"],
+        "long_name": sector_long_name or f"expected flux of methane caused by sector: {sector_name}",
+    }
+    if sector_standard_name is not None:
+        sector_data.attrs["standard_name"] += f"_due_to_emission_from_{sector_standard_name}"
 
-    ds[layer_name].attrs["standard_name"] = TOTAL_LAYER_ATTRIBUTES["standard_name"]
-    if layer_standard_name is not None:
-        ds[layer_name].attrs["standard_name"] += f"_due_to_emission_from_{layer_standard_name}"
-    ds[layer_name].attrs["long_name"] = layer_long_name or layer_name
+    sector_var_name = f"{SECTOR_PREFIX}_{sector_name}"
+    ds[sector_var_name] = sector_data
 
     ds.to_netcdf(output_path)
 
 
-def expand_layer_dims(
-    layer_data: xr.DataArray | npt.ArrayLike,
+def expand_sector_dims(
+    sector_data: xr.DataArray | npt.ArrayLike,
     time_steps: int | None = 1,
 ):
     """
@@ -274,15 +277,15 @@ def expand_layer_dims(
     single average emission across the entire period, so we just duplicate it
     across all the periods present in the output.
 
-    :param layer_data:
+    :param sector_data:
     :param time_steps:
     :return:
     """
-    if layer_data.ndim < 2:
-        raise ValueError("expand_layer_dims supports a minimum of 2 dimensions")
+    if sector_data.ndim < 2:
+        raise ValueError("expand_sector_dims supports a minimum of 2 dimensions")
 
     # we're about to alter the input so copy first
-    copy = layer_data.copy()
+    copy = sector_data.copy()
 
     if copy.ndim == 2:
         # add single-value "vertical" layer
@@ -300,45 +303,50 @@ def expand_layer_dims(
     return copy
 
 
-def sum_layers(output_path: pathlib.Path):
+def sum_sectors(output_path: pathlib.Path):
     """
     Calculate the total methane emissions from the individual layers and write to the output file.
 
-    This adds the `OCH4_TOTAL` variable to the output file.
+    This adds the `ch4_total` variable to the output file.
     """
     if not output_path.exists():
         raise FileNotFoundError("Output file does not exist")
 
     ds = xr.load_dataset(output_path)
 
+    sectors = [var_name for var_name in ds.data_vars.keys() if var_name.startswith(SECTOR_PREFIX)]
+
     # now check to find largest shape because we'll broadcast everything else to that
-    summed_size = 0
-    for layer in layer_names:
-        layer_name = f"OCH4_{layer.upper()}"
-
-        if layer_name in ds:
-            if ds[layer_name].size > summed_size:
-                summed_shape = ds[layer_name].shape
-                summed_size = ds[layer_name].size
-
     summed = None
-    for layer in layer_names:
-        layer_name = f"OCH4_{layer.upper()}"
+    for sector_name in sectors:
+        if summed is None:
+            # all sectors should have dims normalised by expand_sector_dims, so
+            # if this is the first layer, simply copy it
+            summed = np.zeros(ds[sector_name].shape)
 
-        if layer_name in ds:
-            if summed is None:
-                summed = np.zeros(summed_shape)
-            summed += ds[layer_name].values  # it will broadcast time dimensions of 1 correctly
+        # add each layer to the accumulated sum
+        summed += ds[sector_name].values
 
     if summed is not None:
-        ds[TOTAL_LAYER_NAME] = (COORD_NAMES[:], summed)
-        for k, v in COMMON_ATTRIBUTES.items():
-            ds[TOTAL_LAYER_NAME].attrs[k] = v
-        for k, v in TOTAL_LAYER_ATTRIBUTES.items():
-            ds[TOTAL_LAYER_NAME].attrs[k] = v
+        ds[TOTAL_LAYER_NAME] = (
+            COORD_NAMES[:],
+            summed,
+            COMMON_ATTRIBUTES | TOTAL_LAYER_ATTRIBUTES
+        )
 
         # enable compression for total layer which may be duplicated
         # across time steps
         ds[TOTAL_LAYER_NAME].encoding["zlib"] = True
+
+        # Ensure legacy / deprecated "OCH4_TOTAL" layer is still in the output
+        # until downstream consumers can be updated
+        ds["OCH4_TOTAL"] = (
+            COORD_NAMES[:],
+            summed,
+            COMMON_ATTRIBUTES | TOTAL_LAYER_ATTRIBUTES | {
+                "deprecated": "This variable is deprecated and will be removed in future versions",
+                "superseded_by": TOTAL_LAYER_NAME
+            }
+        )
 
         ds.to_netcdf(output_path)

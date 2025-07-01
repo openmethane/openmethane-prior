@@ -34,7 +34,7 @@ from openmethane_prior.layers import (
     omTermiteEmis,
     omWetlandEmis,
 )
-from openmethane_prior.outputs import sum_layers, initialise_output
+from openmethane_prior.outputs import sum_sectors, initialise_output
 from openmethane_prior.raster import reproject_raster_inputs
 from openmethane_prior.verification import verify_emis
 
@@ -75,7 +75,7 @@ def run_prior(
     omGFASEmis.processEmissions(config, start_date, end_date)
     omWetlandEmis.processEmissions(config, start_date, end_date)
 
-    sum_layers(config.output_domain_file)
+    sum_sectors(config.output_domain_file)
     verify_emis(config)
 
 

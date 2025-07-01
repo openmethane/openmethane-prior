@@ -27,8 +27,8 @@ import xarray as xr
 from openmethane_prior.config import PriorConfig, load_config_from_env
 from openmethane_prior.outputs import (
     convert_to_timescale,
-    sum_layers,
-    write_layer,
+    sum_sectors,
+    write_sector,
 )
 
 sectorEmissionStandardNames = {
@@ -106,15 +106,15 @@ def processEmissions(config: PriorConfig):
     print(f"{ignored} lit pixels were ignored")
 
     for sector in sectorsUsed:
-        write_layer(
+        write_sector(
             output_path=config.output_domain_file,
-            layer_name=f"OCH4_{sector.upper()}",
-            layer_data=convert_to_timescale(methane[sector], domain_grid.cell_area),
-            layer_standard_name=sectorEmissionStandardNames[sector],
+            sector_name=sector.lower(),
+            sector_data=convert_to_timescale(methane[sector], domain_grid.cell_area),
+            sector_standard_name=sectorEmissionStandardNames[sector],
         )
 
 
 if __name__ == "__main__":
     config = load_config_from_env()
     processEmissions(config)
-    sum_layers(config.output_domain_file)
+    sum_sectors(config.output_domain_file)

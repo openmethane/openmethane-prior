@@ -36,7 +36,7 @@ import xarray as xr
 from shapely import geometry
 
 from openmethane_prior.config import PriorConfig, load_config_from_env
-from openmethane_prior.outputs import initialise_output, sum_layers, write_layer
+from openmethane_prior.outputs import initialise_output, sum_sectors, write_sector
 from openmethane_prior.utils import (
     area_of_rectangle_m2,
     load_zipped_pickle,
@@ -234,11 +234,11 @@ def processEmissions(config: PriorConfig, startDate, endDate, forceUpdate: bool 
             "x": np.arange(resultNd.shape[-1]),
         },
     )
-    write_layer(
+    write_sector(
         output_path=config.output_domain_file,
-        layer_name="OCH4_FIRE",
-        layer_data=resultXr,
-        layer_standard_name="fires",
+        sector_name="fire",
+        sector_data=resultXr,
+        sector_standard_name="fires",
     )
     return resultNd
 
@@ -261,4 +261,4 @@ if __name__ == "__main__":
     config = load_config_from_env()
     initialise_output(config, args.start_date, args.end_date)
     processEmissions(config, args.start_date, args.end_date)
-    sum_layers(config.output_domain_file)
+    sum_sectors(config.output_domain_file)

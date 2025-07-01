@@ -29,8 +29,8 @@ from tqdm import tqdm
 from openmethane_prior.config import PriorConfig, load_config_from_env
 from openmethane_prior.outputs import (
     convert_to_timescale,
-    sum_layers,
-    write_layer,
+    sum_sectors,
+    write_sector,
 )
 from openmethane_prior.utils import SECS_PER_YEAR, area_of_rectangle_m2
 
@@ -160,7 +160,6 @@ def processEmissions(config: PriorConfig):  # noqa: PLR0912, PLR0915
                 methaneInventoryBySector = dict.fromkeys(headers, 0)
                 for i, v in enumerate(headers):
                     ch4 = float(row[i]) * 1e9  # convert Mt to kgs
-
                     # subtract the livestock ch4 from agricuture
                     if v == "agriculture":
                         ch4 -= livestockCH4Total
@@ -218,25 +217,25 @@ def processEmissions(config: PriorConfig):  # noqa: PLR0912, PLR0915
 
     print("Writing sectoral methane layers output file")
     for sector in sectorsUsed:
-        write_layer(
+        write_sector(
             output_path=config.output_domain_file,
-            layer_name=f"OCH4_{sector.upper()}",
-            layer_data=convert_to_timescale(methane[sector], cell_area=domain_grid.cell_area),
-            layer_standard_name=sectorEmissionStandardNames[sector],
+            sector_name=sector.lower(),
+            sector_data=convert_to_timescale(methane[sector], cell_area=domain_grid.cell_area),
+            sector_standard_name=sectorEmissionStandardNames[sector],
         )
 
     print("Writing livestock methane layers output file")
     # convert the livestock data from per year to per second and write
     livestock_ch4_s = livestockCH4 / SECS_PER_YEAR
-    write_layer(
+    write_sector(
         output_path=config.output_domain_file,
-        layer_name="OCH4_LIVESTOCK",
-        layer_data=livestock_ch4_s,
-        layer_standard_name="domesticated_livestock",
+        sector_name="livestock",
+        sector_data=livestock_ch4_s,
+        sector_standard_name="domesticated_livestock",
     )
 
 
 if __name__ == "__main__":
     config = load_config_from_env()
     processEmissions(config)
-    sum_layers(config.output_domain_file)
+    sum_sectors(config.output_domain_file)
