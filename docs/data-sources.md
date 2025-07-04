@@ -82,8 +82,8 @@ supplied by Simona Castaldi and Sergio Noce.
 - No Australian database
 - Rough spatial resolution
 - Database doesn't appear to be available online
-  - Possibly source dataset for
-    [Global Methane Budget 2000-2017](https://essd.copernicus.org/articles/12/1561/2020/essd-12-1561-2020.html)? 
+  - Source dataset for
+    [Global Methane Budget 2000-2017](https://essd.copernicus.org/articles/12/1561/2020/essd-12-1561-2020.html)
 
 ### Alternative candidates
 
