@@ -162,7 +162,10 @@ Industrial emissions taken from the NGGI
 
 Spatialised according to facility-level estimates
 
-- Dataset: [ClimateTrace](https://climatetrace.org/)
+- Dataset: [Coal mining sources][10]
+  - Original source: [ClimateTrace](https://climatetrace.org/)
+- Dataset: [Oil and gas production sources][13]
+  - Original source: [ClimateTrace](https://climatetrace.org/)
 
 The national inventory total for fugitive emissions is pro-rated to the
 location of every facility noted in the ClimateTrace data which is
