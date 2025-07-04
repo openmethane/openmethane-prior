@@ -158,13 +158,18 @@ Spatialised according to the agriculture land-use mask
 
 ### Sources
 
-Facility-level data from [ClimateTrace
-dataset](https://climatetrace.org/) and national inventory. the
-national inventory total for fugitive emissions is pro-rated to the
+Industrial emissions taken from the NGGI
+
+- Dataset: [Australia NGGI][9]
+
+Spatialised according to facility-level estimates
+
+- Dataset: [ClimateTrace](https://climatetrace.org/)
+
+The national inventory total for fugitive emissions is pro-rated to the
 location of every facility noted in the ClimateTrace data which is
 listed for the chosen period. The listed point location for each
-climate trace emission is mapped to the relevant openmethane grid
-cell. 
+climate trace emission is mapped to the relevant domain grid cell.
 
 
 ## Sector: Industrial
