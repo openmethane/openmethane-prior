@@ -152,6 +152,25 @@ Spatialised according to the agriculture land-use mask
   - Original source: https://www.agriculture.gov.au/abares/aclump/land-use/land-use-of-australia-2010-11_2015-16
 
 
+## Sector: Electricity
+
+### Sources
+
+Industrial emissions taken from the NGGI
+
+- Dataset: [Australia NGGI][6]
+
+Spatialised according to facility-level capacity
+
+- Dataset: [Electricity production facilities][5]
+  - Original source: [Open Electricity](https://openelectricity.org.au/)
+
+The national inventory total for electricity emissions is pro-rated to the
+location of every facility noted in Open Electricity which is
+listed for the chosen period. The listed point location for each
+facility is mapped to the relevant domain grid cell.
+
+
 ## Sector: Fugitive
 
 ### Sources
