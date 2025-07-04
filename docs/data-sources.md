@@ -53,15 +53,13 @@ Australia."
 
 - Spatial distribution might change during the year since farmers are moving their cows around
 - Doesn't appear to be available online
-  - https://publications.csiro.au/publications/publication/PIcsiro:EP2022-1995/SQNavarro/RP1/RS25/RORECENT
-  - https://publications.csiro.au/publications/publication/PIcsiro:EP198407/SQNavarro/RP1/RS25/RORECENT
 
 ### Alternative candidates
 
 - https://publications.csiro.au/publications/publication/PIcsiro:EP2022-1389/
   - Resolution: 0.1 degree
   - Period: 1972 - 2019, annual averages
-  - National
+  - Global
 - Electronic ear tags might be a useful database
 
 
