@@ -44,7 +44,7 @@ taken from: "Navarro, J. Marcos Martinez, R. (2021) Estimating long-term profits
 baselines in Australian agricultural regions. User Guide. CSIRO,
 Australia." 
 
-- Dataset: [EntericFermentation.nc][4]
+- Dataset: [EntericFermentation.nc][3]
 - Resolution: 0.01 degree
 - Period: 2020, single annual average
 - Updates: never
@@ -72,7 +72,7 @@ Global dataset of CH4 flux estimates from termites
 Termite emissions used in [Saunois et al. 2020](https://essd.copernicus.org/articles/12/1561/2020/)
 supplied by Simona Castaldi and Sergio Noce.
 
-- Dataset: [termite_emissions_2010-2016.nc][14]
+- Dataset: [termite_emissions_2010-2016.nc][11]
 - Resolution: 0.5 degree
 - Period: mean of 2010 – 2016
 - Updates: never
@@ -118,7 +118,7 @@ Monthly wetland emissions from the diagnostic ensemble used in
 [Saunois et al. 2020](https://essd.copernicus.org/articles/12/1561/2020/)
 and described in Zhang et al. (2023 under review) (could this be https://essd.copernicus.org/articles/13/2001/2021/?)
 
-- Dataset: [DLEM_totflux_CRU_diagnostic.nc][3]
+- Dataset: [DLEM_totflux_CRU_diagnostic.nc][2]
 - Resolution: 0.5 degree
 - Period: 2000 - 2020, monthly averages
 - Updates: never
@@ -143,12 +143,12 @@ and described in Zhang et al. (2023 under review) (could this be https://essd.co
 
 Agricultural emissions apart from livestock taken from the Agricultural emissions of the NGGI
 
-- Dataset: [Australia NGGI][9]
+- Dataset: [Australia NGGI][6]
 
 Spatialised according to the agriculture land-use mask
 
-- Dataset: [Land Use Sector Mapping][11]
-- Dataset: [Land use of Australia 2015–16][5]
+- Dataset: [Land Use Sector Mapping][8]
+- Dataset: [Land use of Australia 2015–16][4]
   - Original source: https://www.agriculture.gov.au/abares/aclump/land-use/land-use-of-australia-2010-11_2015-16
 
 
@@ -158,13 +158,13 @@ Spatialised according to the agriculture land-use mask
 
 Industrial emissions taken from the NGGI
 
-- Dataset: [Australia NGGI][9]
+- Dataset: [Australia NGGI][6]
 
 Spatialised according to facility-level estimates
 
-- Dataset: [Coal mining sources][10]
+- Dataset: [Coal mining sources][7]
   - Original source: [ClimateTrace](https://climatetrace.org/)
-- Dataset: [Oil and gas production sources][13]
+- Dataset: [Oil and gas production sources][10]
   - Original source: [ClimateTrace](https://climatetrace.org/)
 
 The national inventory total for fugitive emissions is pro-rated to the
@@ -177,23 +177,23 @@ climate trace emission is mapped to the relevant domain grid cell.
 
 Industrial emissions taken from the NGGI
 
-- Dataset: [Australia NGGI][9]
+- Dataset: [Australia NGGI][6]
 
 Spatialised according to nighttime lights
 
-- Dataset: [NASA Nighttime Lights Australia][12]
+- Dataset: [NASA Nighttime Lights Australia][9]
 
 
 ## Sector: Land Use, Land Use Change, and Forestry (LULUCF)
 
 LULUCF sector emissions taken from the NGGI
 
-- Dataset: [Australia NGGI][9]
+- Dataset: [Australia NGGI][6]
 
 Spatialised according to the lulucf land-use mask
 
-- Dataset: [Land Use Sector Mapping][11]
-- Dataset: [Land use of Australia 2015–16][5]
+- Dataset: [Land Use Sector Mapping][8]
+- Dataset: [Land use of Australia 2015–16][4]
   - Original source: https://www.agriculture.gov.au/abares/aclump/land-use/land-use-of-australia-2010-11_2015-16
 
 
@@ -201,48 +201,47 @@ Spatialised according to the lulucf land-use mask
 
 Energy sector emissions taken from the NGGI
 
-- Dataset: [Australia NGGI][9]
+- Dataset: [Australia NGGI][6]
 
 Spatialised according to nighttime lights
 
-- Dataset: [NASA Nighttime Lights Australia][12]
+- Dataset: [NASA Nighttime Lights Australia][9]
 
 
 ## Sector: Transport
 
 Transport sector emissions taken from the NGGI
 
-- Dataset: [Australia NGGI][9]
+- Dataset: [Australia NGGI][6]
 
 Spatialised according to nighttime lights
 
-- Dataset: [NASA Nighttime Lights Australia][12]
+- Dataset: [NASA Nighttime Lights Australia][9]
 
 
 ## Sector: Waste
 
 Waste sector emissions taken from the NGGI
 
-- Dataset: [Australia NGGI][9]
+- Dataset: [Australia NGGI][6]
 
 Spatialised according to the waste land-use mask
 
-- Dataset: [Land Use Sector Mapping][11]
-- Dataset: [Land use of Australia 2015–16][5]
+- Dataset: [Land Use Sector Mapping][8]
+- Dataset: [Land use of Australia 2015–16][4]
   - Original source: https://www.agriculture.gov.au/abares/aclump/land-use/land-use-of-australia-2010-11_2015-16
 
 
 # Assets
 
 [1]: https://openmethane.s3.amazonaws.com/prior/inputs/AUS_2021_AUST_SHP_GDA2020.zip
-[3]: https://openmethane.s3.amazonaws.com/prior/inputs/DLEM_totflux_CRU_diagnostic.nc
-[4]: https://openmethane.s3.amazonaws.com/prior/inputs/EntericFermentation.nc
-[5]: https://openmethane.s3.amazonaws.com/prior/inputs/NLUM_ALUMV8_250m_2015_16_alb.tif
-[6]: https://openmethane.s3.amazonaws.com/prior/inputs/ch4-electricity.csv
-[8]: https://openmethane.s3.amazonaws.com/prior/inputs/ch4-fugitives.csv
-[9]: https://openmethane.s3.amazonaws.com/prior/inputs/ch4-sectoral-emissions.csv
-[10]: https://openmethane.s3.amazonaws.com/prior/inputs/coal-mining_emissions-sources.csv
-[11]: https://openmethane.s3.amazonaws.com/prior/inputs/landuse-sector-map.csv
-[12]: https://openmethane.s3.amazonaws.com/prior/inputs/nasa-nighttime-lights.tiff
-[13]: https://openmethane.s3.amazonaws.com/prior/inputs/oil-and-gas-production-and-transport_emissions-sources.csv
-[14]: https://openmethane.s3.amazonaws.com/prior/inputs/termite_emissions_2010-2016.nc
+[2]: https://openmethane.s3.amazonaws.com/prior/inputs/DLEM_totflux_CRU_diagnostic.nc
+[3]: https://openmethane.s3.amazonaws.com/prior/inputs/EntericFermentation.nc
+[4]: https://openmethane.s3.amazonaws.com/prior/inputs/NLUM_ALUMV8_250m_2015_16_alb.tif
+[5]: https://openmethane.s3.amazonaws.com/prior/inputs/ch4-electricity.csv
+[6]: https://openmethane.s3.amazonaws.com/prior/inputs/ch4-sectoral-emissions.csv
+[7]: https://openmethane.s3.amazonaws.com/prior/inputs/coal-mining_emissions-sources.csv
+[8]: https://openmethane.s3.amazonaws.com/prior/inputs/landuse-sector-map.csv
+[9]: https://openmethane.s3.amazonaws.com/prior/inputs/nasa-nighttime-lights.tiff
+[10]: https://openmethane.s3.amazonaws.com/prior/inputs/oil-and-gas-production-and-transport_emissions-sources.csv
+[11]: https://openmethane.s3.amazonaws.com/prior/inputs/termite_emissions_2010-2016.nc
