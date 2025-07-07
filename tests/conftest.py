@@ -50,6 +50,24 @@ def config(tmp_path_factory) -> PriorConfig:
 
 
 @pytest.fixture(scope="session")
+def start_date() -> datetime.date:
+    """Default configuration
+
+    Uses the same range of dates for each test
+    """
+    return datetime.strptime("2022-07-01", "%Y-%m-%d")
+
+
+@pytest.fixture(scope="session")
+def end_date() -> datetime.date:
+    """Default configuration
+
+    Uses the same range of dates for each test
+    """
+    return datetime.strptime("2022-07-02", "%Y-%m-%d")
+
+
+@pytest.fixture(scope="session")
 def fetch_published_domain(root_dir) -> list[pathlib.Path]:
     """
     Fetch and cache the domain files.
@@ -169,7 +187,12 @@ def input_domain(config, root_dir, input_files) -> xr.Dataset:
 
 @pytest.fixture(scope="session")
 def output_domain(
-    root_dir, fetch_input_files, fetch_published_domain, tmp_path_factory
+    root_dir,
+    fetch_input_files,
+    fetch_published_domain,
+    start_date,
+    end_date,
+    tmp_path_factory,
 ) -> xr.Dataset:
     """
     Run the output domain
@@ -204,8 +227,8 @@ def output_domain(
 
     run_prior(
         config,
-        datetime.strptime("2022-07-01", "%Y-%m-%d"),
-        datetime.strptime("2022-07-02", "%Y-%m-%d"),
+        start_date,
+        end_date,
         False,
     )
 
