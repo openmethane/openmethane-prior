@@ -82,8 +82,8 @@ def fetch_published_domain(root_dir) -> list[pathlib.Path]:
     """
     config = load_config_from_env()
     published_domains = [
-        PublishedInputDomain(name="aust-test", version="v1.0.0"),
-        PublishedInputDomain(name="aust10km", version="v1.0.0"),
+        PublishedInputDomain(name="aust-test", version="v1"),
+        PublishedInputDomain(name="aust10km", version="v1"),
     ]
 
     fragments = [domain.url_fragment() for domain in published_domains]
@@ -219,7 +219,7 @@ def prior_emissions_ds(
         # Use the test domain to speed things up
         # input_domain=PublishedInputDomain(
         #     name="aust-test",
-        #     version="v1.0.0",
+        #     version="v1",
         # ),
     )
 

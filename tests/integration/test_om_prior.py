@@ -43,8 +43,8 @@ def test_004_omDownloadInputs(root_dir, input_files, config):
         "EntericFermentation.nc",
         "termite_emissions_2010-2016.nc",
         "DLEM_totflux_CRU_diagnostic.nc",
-        "domains/aust-test/v1.0.0/prior_domain_aust-test_v1.0.0.d01.nc",
-        "domains/aust10km/v1.0.0/prior_domain_aust10km_v1.0.0.d01.nc",
+        "domains/aust-test/v1/prior_domain_aust-test_v1.d01.nc",
+        "domains/aust10km/v1/prior_domain_aust10km_v1.d01.nc",
     ]
 
     assert sorted([str(fn.relative_to(config.input_path)) for fn in input_files]) == sorted(
