@@ -55,6 +55,14 @@ class PublishedInputDomain:
             f"prior_domain_{self.name}_{self.version}.d{self.domain_index:02}.nc"
         )
 
+class PriorConfigOptions(typing.TypedDict, total=False):
+    remote: str
+    input_path: pathlib.Path | str
+    output_path: pathlib.Path | str
+    intermediates_path: pathlib.Path | str
+    input_domain: PublishedInputDomain | str
+    output_filename: str
+    layer_inputs: LayerInputs
 
 @attrs.frozen
 class PriorConfig:
@@ -132,7 +140,7 @@ class PriorConfig:
         return self.as_output_file(self.output_filename)
 
 
-def load_config_from_env(**overrides: typing.Any) -> PriorConfig:
+def load_config_from_env(**overrides: PriorConfigOptions) -> PriorConfig:
     """
     Load the configuration from the environment variables
 
@@ -156,8 +164,8 @@ def load_config_from_env(**overrides: typing.Any) -> PriorConfig:
         # Default to using a user-specified file as the input domain
         input_domain = env.str("DOMAIN")
 
-    options = dict(
-        remote=env("PRIOR_REMOTE"),
+    options: PriorConfigOptions = dict(
+        remote=env.str("PRIOR_REMOTE"),
         input_path=env.path("INPUTS", "data/inputs"),
         output_path=env.path("OUTPUTS", "data/outputs"),
         intermediates_path=env.path("INTERMEDIATES", "data/processed"),
