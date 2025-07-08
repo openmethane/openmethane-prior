@@ -1,7 +1,6 @@
 import numpy
 
 def test_domain_attributes(input_domain):
-    # Check domain matches projection used in calculations
     assert type(input_domain.attrs["TRUELAT1"]) == numpy.float32
     assert type(input_domain.attrs["TRUELAT2"]) == numpy.float32
     assert type(input_domain.attrs["MOAD_CEN_LAT"]) == numpy.float32
@@ -16,12 +15,9 @@ def test_domain_attributes(input_domain):
     
 # Check domain matches projection used in calculations
 def test_domain_projection(config, input_domain):
-    assert str(input_domain.attrs["TRUELAT1"]) in str(config.crs)
-    assert str(input_domain.attrs["TRUELAT2"]) in str(config.crs)
-    assert str(input_domain.attrs["MOAD_CEN_LAT"]) in str(config.crs)
-    assert str(input_domain.attrs["STAND_LON"]) in str(config.crs)
-    assert str(input_domain.attrs["XCENT"]) in str(config.crs)
-    # TODO: is this a problem?
-    # assert str(input_domain.attrs["YCENT"]) in str(config.crs)
-    
+    assert f"+lat_1={float(input_domain.attrs['TRUELAT1'])} " in str(config.crs)
+    assert f"+lat_2={float(input_domain.attrs['TRUELAT2'])} " in str(config.crs)
+    assert f"+lat_0={float(input_domain.attrs['MOAD_CEN_LAT'])} " in str(config.crs)
+    assert f"+lon_0={float(input_domain.attrs['STAND_LON'])} " in str(config.crs)
+
     
