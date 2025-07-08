@@ -86,12 +86,25 @@ class PriorConfig:
         """Return the full path to an output file"""
         return self.output_path / name
 
+    def llc_xy(self) -> tuple[float, float]:
+        """Get the x, y coordinates of the lower left corner of the domain"""
+        llc_lat = self.domain_dataset()["LATD"].to_numpy().flatten()[0]
+        llc_lon = self.domain_dataset()["LOND"].to_numpy().flatten()[0]
+        llc_x, llc_y = self.domain_projection()(llc_lon, llc_lat)
+        return llc_x, llc_y
+
     @cache
     def domain_dataset(self):
         """Load the input domain dataset"""
         if not self.input_domain_file.exists():
             raise ValueError(f"Missing domain file: {self.input_domain_file}")
         return xr.load_dataset(self.input_domain_file)
+    @cache
+    def inventory_domain_dataset(self):
+        """Load the inventory domain dataset"""
+        if not self.inventory_domain_file.exists():
+            raise ValueError(f"Missing domain file: {self.inventory_domain_file}")
+        return xr.load_dataset(self.inventory_domain_file)
 
     @cache
     def domain_projection(self):
@@ -135,6 +148,19 @@ class PriorConfig:
             return self.as_input_file(self.input_domain)
         else:
             raise TypeError("Could not interpret the 'input_domain' field")
+    @property
+    def inventory_domain_file(self):
+        """
+        Get the filename of the inventory domain
+
+        Uses a published domain if it is provided otherwise uses a user-specified file name
+        """
+        if isinstance(self.inventory_domain, PublishedInputDomain):
+            return self.as_input_file(self.inventory_domain.url_fragment())
+        elif isinstance(self.inventory_domain, str):
+            return self.as_input_file(self.inventory_domain)
+        else:
+            raise TypeError("Could not interpret the 'inventory_domain' field")
 
     @property
     def output_domain_file(self):

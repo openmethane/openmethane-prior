@@ -18,13 +18,12 @@
 
 """Process emissions from the electricity sector"""
 
-import math
-
 import numpy as np
 import pandas as pd
 
 from openmethane_prior.config import PriorConfig, load_config_from_env
 from openmethane_prior.outputs import convert_to_timescale, sum_layers, write_layer
+from openmethane_prior.utils import domain_cell_index
 
 
 def processEmissions(config: PriorConfig):
@@ -51,18 +50,12 @@ def processEmissions(config: PriorConfig):
     landmask = domain_ds["LANDMASK"][:]
 
     _, lmy, lmx = landmask.shape
-    ww = domain_ds.DX * lmx
-    hh = domain_ds.DY * lmy
 
     methane = np.zeros(landmask.shape)
 
     # Get the routine to project the lat/lon grid on to the project grid
-    proj = config.domain_projection()
-
     for facility in electricityFacilities:
-        x, y = proj(facility["lng"], facility["lat"])
-        ix = math.floor((x + ww / 2) / domain_ds.DX)
-        iy = math.floor((y + hh / 2) / domain_ds.DY)
+        ix, iy = domain_cell_index(config, facility["lng"], facility["lat"])
         try:
             methane[0][iy][ix] += (facility["capacity"] / totalCapacity) * electricityEmis
         except IndexError:
@@ -72,6 +65,7 @@ def processEmissions(config: PriorConfig):
         config.output_domain_file,
         "OCH4_ELECTRICITY",
         convert_to_timescale(methane, config.domain_cell_area),
+        config=config,
     )
 
 
