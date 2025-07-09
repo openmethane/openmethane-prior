@@ -40,10 +40,10 @@ def test_create_output_dataset(config, input_files, start_date, end_date):
     assert isinstance(output_ds.attrs["openmethane_prior_version"], str)
 
     # projection
-    assert output_ds["grid_projection"].attrs["grid_mapping_name"] == "lambert_conformal_conic"
-    assert output_ds["grid_projection"].attrs["standard_parallel"] == (domain_ds.attrs["TRUELAT1"], domain_ds.attrs["TRUELAT2"])
-    assert output_ds["grid_projection"].attrs["longitude_of_central_meridian"] == domain_ds.attrs["STAND_LON"]
-    assert output_ds["grid_projection"].attrs["latitude_of_projection_origin"] == domain_ds.attrs["MOAD_CEN_LAT"]
+    assert output_ds["lambert_conformal"].attrs["grid_mapping_name"] == "lambert_conformal_conic"
+    assert output_ds["lambert_conformal"].attrs["standard_parallel"] == (domain_ds.attrs["TRUELAT1"], domain_ds.attrs["TRUELAT2"])
+    assert output_ds["lambert_conformal"].attrs["longitude_of_central_meridian"] == domain_ds.attrs["STAND_LON"]
+    assert output_ds["lambert_conformal"].attrs["latitude_of_projection_origin"] == domain_ds.attrs["MOAD_CEN_LAT"]
 
     # bounds
     assert output_ds["time"].size == (end_date - start_date).days + 1 # one time step per day, end inclusive

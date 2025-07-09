@@ -70,7 +70,7 @@ def test_009_output_domain_xr(output_domain):
     mean_values = {key: output_domain[key].mean().item() for key in output_domain.keys()}
 
     expected_values = {
-        "grid_projection": 0.0,
+        "lambert_conformal": 0.0,
         "lat": -26.9831600189209,
         "lat_bounds": -26.98314616858941,
         "lon": 133.302001953125,
@@ -146,12 +146,14 @@ def test_012_output_variable_attributes(output_domain):
         "units": "kg/m2/s",
         "standard_name": "surface_upward_mass_flux_of_methane",
         "long_name": "total expected flux of methane based on public data",
+        "grid_mapping": "lambert_conformal",
     }
 
     for layer_name in [layer for layer in list(output_domain.variables.keys()) if layer.startswith("ch4_sector_")]:
         assert output_domain.variables[layer_name].attrs["units"] == "kg/m2/s"
         assert output_domain.variables[layer_name].attrs["long_name"] == f"expected flux of methane caused by sector: {layer_name.replace('ch4_sector_', '')}"
         assert output_domain.variables[layer_name].attrs["standard_name"].startswith("surface_upward_mass_flux_of_methane_due_to_emission_from_")
+        assert output_domain.variables[layer_name].attrs["grid_mapping"] == "lambert_conformal"
 
     # TODO: remove when OCH4_TOTAL layer is removed
     assert output_domain.variables["OCH4_TOTAL"].attrs["deprecated"] == "This variable is deprecated and will be removed in future versions"

@@ -27,7 +27,9 @@ from openmethane_prior.config import PriorConfig
 from openmethane_prior.utils import SECS_PER_YEAR, extract_bounds, get_version, get_timestamped_command, time_bounds
 
 COORD_NAMES = ["time", "vertical", "y", "x"]
+PROJECTION_VAR_NAME = "lambert_conformal"
 COMMON_ATTRIBUTES = {
+    "grid_mapping": PROJECTION_VAR_NAME,
     "units": "kg/m2/s",
 }
 TOTAL_LAYER_NAME = "ch4_total"
@@ -96,9 +98,9 @@ def create_output_dataset(
             "lon_bounds": extract_bounds(domain_ds.variables["LOND"].squeeze()),
 
             # https://cfconventions.org/Data/cf-conventions/cf-conventions-1.11/cf-conventions.html#_lambert_conformal
-            "grid_projection": (
+            PROJECTION_VAR_NAME: (
                 (),
-                False,
+                0,
                 {
                     "grid_mapping_name": "lambert_conformal_conic",
                     "standard_parallel": (domain_ds.TRUELAT1, domain_ds.TRUELAT2),
