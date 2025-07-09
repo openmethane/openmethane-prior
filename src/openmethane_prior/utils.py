@@ -211,11 +211,9 @@ def extract_bounds(corner_coords: xr.DataArray):
 
     # Create new DataArray
     result = xr.DataArray(
-        cell_corners,
-        coords={
-            "y": range(ny_cells),
-            "x": range(nx_cells),
-            "corner": ["bottom_left", "bottom_right", "top_right", "top_left"]
+        dims=("y", "x", "corner"),
+        data=cell_corners,
+        attrs={
         },
     )
 

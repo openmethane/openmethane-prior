@@ -109,24 +109,6 @@ def create_output_dataset(
                     "proj4": config.domain_projection().to_proj4(),
                 },
             ),
-            "projection_x": (
-                ("x"),
-                projection_x,
-                {
-                    "long_name": "x coordinate of projection",
-                    "units": "m",
-                    "standard_name": "projection_x_coordinate",
-                },
-            ),
-            "projection_y": (
-                ("y"),
-                projection_y,
-                {
-                    "long_name": "y coordinate of projection",
-                    "units": "m",
-                    "standard_name": "projection_y_coordinate",
-                },
-            ),
             "time_bounds": (
                 ("time", "time_period"),
                 time_bounds(time_steps),
@@ -151,11 +133,23 @@ def create_output_dataset(
             ),
         },
         coords={
-            "x": domain_ds.coords["COL"].values,
-            "y": domain_ds.coords["ROW"].values,
+            "x": (("x"), projection_x, {
+                "long_name": "x coordinate of projection",
+                "units": "m",
+                "standard_name": "projection_x_coordinate",
+            }),
+            "y": (("y"), projection_y, {
+                "long_name": "y coordinate of projection",
+                "units": "m",
+                "standard_name": "projection_y_coordinate",
+            }),
             "time": (("time"), time_steps, {
+                "standard_name": "time",
                 "bounds": "time_bounds",
             }),
+            # this dimension currently has no coordinate values, so it is left
+            # as a dimension without coordinates
+            # "vertical": (("vertical"), [0], {}),
         },
         attrs={
             "DX": domain_ds.DX,
@@ -261,8 +255,10 @@ def write_sector(
     if sector_standard_name is not None:
         sector_data.attrs["standard_name"] += f"_due_to_emission_from_{sector_standard_name}"
 
+    _, aligned_sector_data = xr.align(ds, sector_data, join="override")
+
     sector_var_name = f"{SECTOR_PREFIX}_{sector_name}"
-    ds[sector_var_name] = sector_data
+    ds[sector_var_name] = aligned_sector_data
 
     ds.to_netcdf(output_path)
 
