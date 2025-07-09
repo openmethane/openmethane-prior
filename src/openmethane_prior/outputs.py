@@ -74,7 +74,7 @@ def create_output_dataset(
                 ("y", "x"),
                 domain_ds.variables["LAT"].squeeze(),
                 {
-                    "long_name": "latitude",
+                    "long_name": "latitude coordinate",
                     "units": "degrees_north",
                     "standard_name": "latitude",
                     "bounds": "lat_bounds",
@@ -84,7 +84,7 @@ def create_output_dataset(
                 ("y", "x"),
                 domain_ds.variables["LON"].squeeze(),
                 {
-                    "long_name": "longitude",
+                    "long_name": "longitude coordinate",
                     "units": "degrees_east",
                     "standard_name": "longitude",
                     "bounds": "lon_bounds",
@@ -164,6 +164,8 @@ def create_output_dataset(
             "comment": "Gridded prior emissions estimate for methane across Australia",
             "history": get_timestamped_command(),
             "openmethane_prior_version": get_version(),
+
+            "Conventions": "CF-1.12",
         },
     )
 

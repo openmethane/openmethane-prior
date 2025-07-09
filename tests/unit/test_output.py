@@ -34,6 +34,7 @@ def test_create_output_dataset(config, input_files, start_date, end_date):
     assert output_ds.attrs["DX"] == domain_ds.attrs["DX"]
     assert output_ds.attrs["DY"] == 10000
     assert output_ds.attrs["title"] == "Open Methane prior emissions estimate"
+    assert output_ds.attrs["Conventions"] == "CF-1.12"
     assert isinstance(output_ds.attrs["comment"], str)
     assert isinstance(output_ds.attrs["history"], str)
     assert isinstance(output_ds.attrs["openmethane_prior_version"], str)
