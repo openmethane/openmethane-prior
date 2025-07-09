@@ -170,7 +170,7 @@ def load_config_from_env(**overrides: PriorConfigOptions) -> PriorConfig:
         output_path=env.path("OUTPUTS", "data/outputs"),
         intermediates_path=env.path("INTERMEDIATES", "data/processed"),
         input_domain=input_domain,
-        output_filename=env.str("OUTPUT_FILENAME", "prior_emissions.nc"),
+        output_filename=env.str("OUTPUT_FILENAME", "prior-emissions.nc"),
         layer_inputs=LayerInputs(
             electricity_path=env.path("CH4_ELECTRICITY"),
             oil_gas_path=env.path("CH4_OILGAS"),
