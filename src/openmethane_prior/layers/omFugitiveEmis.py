@@ -92,7 +92,7 @@ def processEmissions(config: PriorConfig, startDate, endDate):
     write_layer(
         config.output_domain_file,
         "OCH4_FUGITIVE",
-        convert_to_timescale(methane, config.domain_cell_area),
+        convert_to_timescale(methane, config.domain_grid().cell_area),
     )
 
 

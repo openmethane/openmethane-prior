@@ -222,7 +222,7 @@ def processEmissions(config: PriorConfig):  # noqa: PLR0912, PLR0915
         write_layer(
             config.output_domain_file,
             f"OCH4_{sector.upper()}",
-            convert_to_timescale(methane[sector], cell_area=config.domain_cell_area),
+            convert_to_timescale(methane[sector], cell_area=config.domain_grid().cell_area),
         )
 
     print("Writing livestock methane layers output file")

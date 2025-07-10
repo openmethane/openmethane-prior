@@ -7,6 +7,7 @@ import pyproj
 import xarray as xr
 from environs import Env
 
+from openmethane_prior.grid.grid import Grid
 
 @attrs.frozen()
 class LayerInputs:
@@ -94,33 +95,19 @@ class PriorConfig:
         return xr.load_dataset(self.input_domain_file)
 
     @cache
-    def domain_projection(self):
-        """Query the projection used by the input domain"""
-        ds = self.domain_dataset()
+    def domain_grid(self) -> Grid:
+        """Create a Grid from the domain dataset"""
+        return Grid(domain_ds=self.domain_dataset())
 
-        return pyproj.Proj(
-            proj="lcc",
-            lat_1=ds.TRUELAT1,
-            lat_2=ds.TRUELAT2,
-            lat_0=ds.MOAD_CEN_LAT,
-            lon_0=ds.STAND_LON,
-            # https://github.com/openmethane/openmethane-prior/issues/24
-            # x_0=domainXr.XORIG,
-            # y_0=domainXr.YORIG,
-            a=6370000,
-            b=6370000,
-        )
+    @cache
+    def domain_projection(self) -> pyproj.Proj:
+        """Query the projection used by the input domain"""
+        return self.domain_grid().projection
 
     @property
     def crs(self):
         """Return the CRS used by the domain dataset"""
         return self.domain_projection().crs
-
-    @property
-    def domain_cell_area(self):
-        """Calculate the cell area for each cell"""
-        ds = self.domain_dataset()
-        return ds.DX * ds.DY
 
     @property
     def input_domain_file(self):

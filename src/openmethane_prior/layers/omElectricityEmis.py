@@ -71,7 +71,7 @@ def processEmissions(config: PriorConfig):
     write_layer(
         config.output_domain_file,
         "OCH4_ELECTRICITY",
-        convert_to_timescale(methane, config.domain_cell_area),
+        convert_to_timescale(methane, config.domain_grid().cell_area),
     )
 
 
