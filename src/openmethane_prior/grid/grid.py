@@ -31,6 +31,13 @@ class Grid:
         self.origin_xy = (self.domain_ds.XORIG, self.domain_ds.YORIG)
         self.cell_size = (self.domain_ds.XCELL, self.domain_ds.YCELL)
 
+    @property
+    def shape(self) -> tuple[int, int]:
+        """
+        Shape of the grid, with y-axis in first position. This is useful when
+        establishing xarray dimensions, which are often ordered (y, x).
+        """
+        return (self.dimensions[1], self.dimensions[0])
 
     @property
     def projection(self) -> pyproj.Proj:

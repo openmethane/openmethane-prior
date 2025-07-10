@@ -68,24 +68,20 @@ def processEmissions(config: PriorConfig, startDate, endDate):
         fugitiveEmis / fugitiveYear["emissions_quantity"].sum()
     )
 
-    domain_ds = config.domain_dataset()
+    domain_grid = config.domain_grid()
 
-    landmask = domain_ds["LANDMASK"][:]
+    ww = domain_grid.cell_size[0] * domain_grid.shape[0]
+    hh = domain_grid.cell_size[1] * domain_grid.shape[1]
 
-    _, lmy, lmx = landmask.shape
-    ww = domain_ds.DX * lmx
-    hh = domain_ds.DY * lmy
-
-    methane = np.zeros(landmask.shape)
-
-    domain_proj = config.domain_projection()
+    methane = np.zeros(domain_grid.shape)
 
     for _, facility in fugitiveYear.iterrows():
-        x, y = domain_proj(facility["lon"], facility["lat"])
-        ix = math.floor((x + ww / 2) / domain_ds.DX)
-        iy = math.floor((y + hh / 2) / domain_ds.DY)
+        x, y = domain_grid.lonlat_to_xy(facility["lon"], facility["lat"])
+
+        ix = math.floor((x + ww / 2) / domain_grid.cell_size[0])
+        iy = math.floor((y + hh / 2) / domain_grid.cell_size[1])
         try:
-            methane[0][iy][ix] += facility["emissions_quantity"]
+            methane[iy][ix] += facility["emissions_quantity"]
         except IndexError:
             pass  # it's outside our domain
 

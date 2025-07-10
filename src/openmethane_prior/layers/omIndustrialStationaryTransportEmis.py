@@ -73,32 +73,27 @@ def processEmissions(config: PriorConfig):
     ntlTransport = ntltScalar * (sectorData["transport"] * 1e9)
 
     # Load domain
-    domain_ds = config.domain_dataset()
-    landmask = domain_ds["LANDMASK"][:]
+    domain_grid = config.domain_grid()
 
-    _, lmy, lmx = landmask.shape
-    ww = domain_ds.DX * lmx
-    hh = domain_ds.DY * lmy
+    ww = domain_grid.cell_size[0] * domain_grid.dimensions[0]
+    hh = domain_grid.cell_size[1] * domain_grid.dimensions[1]
 
     print("Mapping night-time lights grid to domain grid")
-    xDomain = xr.apply_ufunc(_find_grid, ntlData.x, ww, domain_ds.DX).values.astype(int)
-    yDomain = xr.apply_ufunc(_find_grid, ntlData.y, hh, domain_ds.DY).values.astype(int)
-
-    # xDomain = np.floor((ntlData.x + ww / 2) / domain_ds.DX).astype(int)
-    # yDomain = np.floor((ntlData.y + hh / 2) / domain_ds.DY).astype(int)
+    xDomain = xr.apply_ufunc(_find_grid, ntlData.x, ww, domain_grid.cell_size[0]).values.astype(int)
+    yDomain = xr.apply_ufunc(_find_grid, ntlData.y, hh, domain_grid.cell_size[1]).values.astype(int)
 
     methane = {}
     for sector in sectorsUsed:
-        methane[sector] = np.zeros(domain_ds["LANDMASK"].shape)
+        methane[sector] = np.zeros(domain_grid.shape)
 
     litPixels = np.argwhere(ntlt > 0)
     ignored = 0
 
     for y, x in litPixels:
         try:
-            methane["industrial"][0][yDomain[y]][xDomain[x]] += ntlIndustrial[y][x]
-            methane["stationary"][0][yDomain[y]][xDomain[x]] += ntlStationary[y][x]
-            methane["transport"][0][yDomain[y]][xDomain[x]] += ntlTransport[y][x]
+            methane["industrial"][yDomain[y]][xDomain[x]] += ntlIndustrial[y][x]
+            methane["stationary"][yDomain[y]][xDomain[x]] += ntlStationary[y][x]
+            methane["transport"][yDomain[y]][xDomain[x]] += ntlTransport[y][x]
         except Exception as e:
             print(e)
             ignored += 1
@@ -109,7 +104,7 @@ def processEmissions(config: PriorConfig):
         write_layer(
             config.output_domain_file,
             f"OCH4_{sector.upper()}",
-            convert_to_timescale(methane[sector], config.domain_grid().cell_area),
+            convert_to_timescale(methane[sector], domain_grid.cell_area),
         )
 
 

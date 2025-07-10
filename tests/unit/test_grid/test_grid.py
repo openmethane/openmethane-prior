@@ -7,6 +7,7 @@ def test_grid_attributes(input_domain):
     test_grid = Grid(input_domain)
 
     assert test_grid.dimensions == (input_domain.COL.size, input_domain.ROW.size)
+    assert test_grid.shape == (input_domain.ROW.size, input_domain.COL.size)
     assert test_grid.center_lonlat == (input_domain.XCENT, input_domain.YCENT)
     assert test_grid.origin_xy == (input_domain.XORIG, input_domain.YORIG)
     assert test_grid.cell_size == (input_domain.XCELL, input_domain.YCELL)

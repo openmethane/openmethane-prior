@@ -45,26 +45,22 @@ def processEmissions(config: PriorConfig):
         config.as_input_file(config.layer_inputs.electricity_path), header=0
     ).to_dict(orient="records")
 
-    domain_ds = config.domain_dataset()
+    domain_grid = config.domain_grid()
 
     totalCapacity = sum(item["capacity"] for item in electricityFacilities)
-    landmask = domain_ds["LANDMASK"][:]
 
-    _, lmy, lmx = landmask.shape
-    ww = domain_ds.DX * lmx
-    hh = domain_ds.DY * lmy
+    ww = domain_grid.cell_size[0] * domain_grid.shape[0]
+    hh = domain_grid.cell_size[1] * domain_grid.shape[1]
 
-    methane = np.zeros(landmask.shape)
-
-    # Get the routine to project the lat/lon grid on to the project grid
-    proj = config.domain_projection()
+    methane = np.zeros(domain_grid.shape)
 
     for facility in electricityFacilities:
-        x, y = proj(facility["lng"], facility["lat"])
-        ix = math.floor((x + ww / 2) / domain_ds.DX)
-        iy = math.floor((y + hh / 2) / domain_ds.DY)
+        x, y = domain_grid.lonlat_to_xy(facility["lng"], facility["lat"])
+
+        ix = math.floor((x + ww / 2) / domain_grid.cell_size[0])
+        iy = math.floor((y + hh / 2) / domain_grid.cell_size[1])
         try:
-            methane[0][iy][ix] += (facility["capacity"] / totalCapacity) * electricityEmis
+            methane[iy][ix] += (facility["capacity"] / totalCapacity) * electricityEmis
         except IndexError:
             pass  # it's outside our domain
 
