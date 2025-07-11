@@ -50,6 +50,11 @@ def test_create_output_dataset(config, input_files, start_date, end_date):
     assert output_ds["time"].values[0] == np.datetime64(start_date)
     assert output_ds["time"].values[-1] == np.datetime64(end_date)
 
+    assert output_ds["x"].attrs["bounds"] == "x_bounds"
+    assert output_ds["x_bounds"].shape == (output_ds["x"].size, 2)
+    assert output_ds["y"].attrs["bounds"] == "y_bounds"
+    assert output_ds["y_bounds"].shape == (output_ds["y"].size, 2)
+
 
 def test_expand_sector_dims_errors():
     test_xr = xr.DataArray([1, 2, 3]) # 1-dimensional array

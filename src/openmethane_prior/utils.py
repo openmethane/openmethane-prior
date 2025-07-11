@@ -172,49 +172,12 @@ def time_bounds(
     return bounds
 
 
-def extract_bounds(corner_coords: xr.DataArray):
+def bounds_from_cell_edges(cell_edges: xr.DataArray) -> np.array:
     """
-    Extract grid cell boundary coordinates for a single dimension, from a 2D
-    array of size x+1,y+1 where x,y are the grid cell coordinates.
-    An array describing the corners of a 2x2 grid would have 3x3 items, where
-    the corners of the cell at [0][0] would be: [0][0], [1][0], [1][1], [0][1]
-
-    See: https://cfconventions.org/Data/cf-conventions/cf-conventions-1.11/cf-conventions.html#cell-boundaries
-
-    Parameters:
-    corner_coords: xarray.DataArray with dimensions like ('y_corner', 'x_corner')
-                  containing coordinate values at grid corners
-                  Shape: (ny_corners, nx_corners) where corners = cells + 1
-
-    Returns:
-    xarray.DataArray with dimensions ('y', 'x', 'corner') where:
-    - y has size ny_corners - 1 (number of cells)
-    - x has size nx_corners - 1 (number of cells)
-    - corner has 4 values representing the corners of each cell
+    Convert an array with [n+1] elements representing the edge coordinates of
+    grid cells, to an array of [n][2] elements where each entry contains the
+    lower and upper edge of the grid cell at position n.
     """
-    if len(corner_coords.shape) < 2:
-        raise ValueError("corner coordinates must have at least 2 dimensions")
-
-    # Get corner data as numpy array for efficient indexing
-    corner_data = corner_coords.values
-    ny_corners, nx_corners = corner_data.shape[-2:]
-    ny_cells, nx_cells = ny_corners - 1, nx_corners - 1
-
-    # Create output array
-    cell_corners = np.zeros((ny_cells, nx_cells, 4))
-
-    # Vectorized assignment of all corners
-    cell_corners[:, :, 0] = corner_data[:-1, :-1]  # bottom_left
-    cell_corners[:, :, 1] = corner_data[:-1, 1:]   # bottom_right
-    cell_corners[:, :, 2] = corner_data[1:, 1:]    # top_right
-    cell_corners[:, :, 3] = corner_data[1:, :-1]   # top_left
-
-    # Create new DataArray
-    result = xr.DataArray(
-        dims=("y", "x", "corner"),
-        data=cell_corners,
-        attrs={
-        },
-    )
-
-    return result
+    lower_bounds = cell_edges[:-1]
+    upper_bounds = cell_edges[1:]
+    return np.column_stack([lower_bounds, upper_bounds])

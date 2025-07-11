@@ -72,9 +72,9 @@ def test_009_output_domain_xr(output_domain):
     expected_values = {
         "lambert_conformal": 0.0,
         "lat": -26.9831600189209,
-        "lat_bounds": -26.98314616858941,
         "lon": 133.302001953125,
-        "lon_bounds": 133.30200195229452,
+        "x_bounds": 0.0,
+        "y_bounds": 0.02444604212461516,
         "time_bounds": 1656720000000000000,
         "land_mask": 0.39128163098043234,
         "ch4_sector_agriculture": 3.8221794892533713e-13,
@@ -132,7 +132,7 @@ def test_011_output_domain_dims(output_domain):
         "vertical": 1,
         "y": 430,
         "x": 454,
-        "corner": 4,
+        "cell_bounds": 2,
         "time_period": 2,
     }
 

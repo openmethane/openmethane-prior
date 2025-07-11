@@ -24,7 +24,8 @@ import numpy.typing as npt
 import xarray as xr
 
 from openmethane_prior.config import PriorConfig
-from openmethane_prior.utils import SECS_PER_YEAR, extract_bounds, get_version, get_timestamped_command, time_bounds
+from openmethane_prior.utils import SECS_PER_YEAR, get_version, get_timestamped_command, time_bounds, \
+    bounds_from_cell_edges
 
 COORD_NAMES = ["time", "vertical", "y", "x"]
 PROJECTION_VAR_NAME = "lambert_conformal"
@@ -51,19 +52,9 @@ def create_output_dataset(
     end_date: datetime.date,
 ) -> xr.Dataset:
     domain_ds = config.domain_dataset()
+    domain_grid = config.domain_grid()
     period_start = start_date
     period_end = end_date
-
-    # create a variable with projection coordinates
-    projection_x = (
-        domain_ds.XORIG + (0.5 * domain_ds.XCELL)
-        + np.arange(len(domain_ds.COL)) * domain_ds.XCELL
-    )
-
-    projection_y = (
-        domain_ds.YORIG + (0.5 * domain_ds.YCELL)
-        + np.arange(len(domain_ds.ROW)) * domain_ds.YCELL
-    )
 
     # generate daily time steps
     time_steps = xr.date_range(start=period_start, end=period_end, freq="D", use_cftime=True, normalize=True)
@@ -79,7 +70,6 @@ def create_output_dataset(
                     "long_name": "latitude coordinate",
                     "units": "degrees_north",
                     "standard_name": "latitude",
-                    "bounds": "lat_bounds",
                 },
             ),
             "lon": (
@@ -89,13 +79,12 @@ def create_output_dataset(
                     "long_name": "longitude coordinate",
                     "units": "degrees_east",
                     "standard_name": "longitude",
-                    "bounds": "lon_bounds",
                 },
             ),
 
-            # https://cfconventions.org/Data/cf-conventions/cf-conventions-1.11/cf-conventions.html#cell-boundaries
-            "lat_bounds": extract_bounds(domain_ds.variables["LATD"].squeeze()),
-            "lon_bounds": extract_bounds(domain_ds.variables["LOND"].squeeze()),
+            # # https://cfconventions.org/Data/cf-conventions/cf-conventions-1.11/cf-conventions.html#cell-boundaries
+            "x_bounds": (("x", "cell_bounds"), bounds_from_cell_edges(domain_grid.cell_bounds_x())),
+            "y_bounds": (("y", "cell_bounds"), bounds_from_cell_edges(domain_grid.cell_bounds_y())),
 
             # https://cfconventions.org/Data/cf-conventions/cf-conventions-1.11/cf-conventions.html#_lambert_conformal
             PROJECTION_VAR_NAME: (
@@ -133,15 +122,19 @@ def create_output_dataset(
             ),
         },
         coords={
-            "x": (("x"), projection_x, {
+            "x": (("x"), domain_grid.cell_coords_x(), {
                 "long_name": "x coordinate of projection",
                 "units": "m",
                 "standard_name": "projection_x_coordinate",
+                "bounds": "x_bounds",
+                "grid_mapping_name": PROJECTION_VAR_NAME,
             }),
-            "y": (("y"), projection_y, {
+            "y": (("y"), domain_grid.cell_coords_y(), {
                 "long_name": "y coordinate of projection",
                 "units": "m",
                 "standard_name": "projection_y_coordinate",
+                "bounds": "y_bounds",
+                "grid_mapping_name": PROJECTION_VAR_NAME,
             }),
             "time": (("time"), time_steps, {
                 "standard_name": "time",

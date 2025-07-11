@@ -1,9 +1,11 @@
 import datetime
+
+import numpy as np
 import pytest
 import sys
 import xarray as xr
 
-from openmethane_prior.utils import get_command, get_timestamped_command, time_bounds
+from openmethane_prior.utils import get_command, get_timestamped_command, time_bounds, bounds_from_cell_edges
 
 
 def test_get_command():
@@ -40,3 +42,12 @@ def test_time_bounds():
     assert bounds[1] == [multi_date_range[0] + datetime.timedelta(days=1), multi_date_range[0] + datetime.timedelta(days=2)]
     assert bounds[29] == [multi_date_range[-1] - datetime.timedelta(days=1), multi_date_range[-1]]
     assert bounds[30] == [multi_date_range[-1], multi_date_range[-1] + datetime.timedelta(days=1)]
+
+
+def test_bounds_from_cell_edges():
+    edges = np.arange(11)
+    bounds = bounds_from_cell_edges(edges)
+
+    assert len(bounds) == len(edges) - 1
+    assert list(bounds[0]) == [edges[0], edges[1]]
+    assert list(bounds[-1]) == [edges[-2], edges[-1]]
