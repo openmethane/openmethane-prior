@@ -1,3 +1,4 @@
+import math
 
 import numpy as np
 import pyproj
@@ -144,3 +145,36 @@ class Grid:
         """
         return self.llc_xy[1] + np.arange(self.dimensions[1] + 1) * self.cell_size[1]
 
+    def valid_cell_coords(self, coords: tuple[int, int]) -> bool:
+        """
+        Return true if the grid cell coords refer to a valid cell in the grid.
+        """
+        return (
+            coords[0] >= 0 and coords[0] < self.dimensions[0] and
+            coords[1] >= 0 and coords[1] < self.dimensions[1]
+        )
+
+    def find_cell(
+        self,
+        xy: tuple[float, float] | None = None,
+        lonlat: tuple[float, float] | None = None,
+    ) -> tuple[int, int] | None:
+        """
+        Return the grid cell coordinates for the cell which contains the
+        point provided in xy or lonlat arguments.
+        :param xy: Search point in grid projection coordinates.
+        :param lonlat: Search point in longitude / latitude coordinates.
+        :return: Grid cell coordinates or None if coords are not in the grid
+        """
+        if xy is None and lonlat is None:
+            raise ValueError("find_cell: xy or lonlat must be provided")
+        if xy is not None and lonlat is not None:
+            raise ValueError("find_cell: provide only one of xy or lonlat")
+
+        search_xy = xy if xy is not None else self.lonlat_to_xy(*lonlat)
+
+        grid_coords = (
+            math.floor((search_xy[0] - self.llc_xy[0]) / self.cell_size[0]),
+            math.floor((search_xy[1] - self.llc_xy[1]) / self.cell_size[1])
+        )
+        return grid_coords if self.valid_cell_coords(grid_coords) else None

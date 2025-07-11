@@ -18,8 +18,6 @@
 
 """Process emissions from the electricity sector"""
 
-import math
-
 import numpy as np
 import pandas as pd
 
@@ -49,25 +47,18 @@ def processEmissions(config: PriorConfig):
 
     totalCapacity = sum(item["capacity"] for item in electricityFacilities)
 
-    ww = domain_grid.cell_size[0] * domain_grid.shape[0]
-    hh = domain_grid.cell_size[1] * domain_grid.shape[1]
-
     methane = np.zeros(domain_grid.shape)
 
     for facility in electricityFacilities:
-        x, y = domain_grid.lonlat_to_xy(facility["lng"], facility["lat"])
+        cell_coords = domain_grid.find_cell(lonlat=(facility["lng"], facility["lat"]))
 
-        ix = math.floor((x + ww / 2) / domain_grid.cell_size[0])
-        iy = math.floor((y + hh / 2) / domain_grid.cell_size[1])
-        try:
-            methane[iy][ix] += (facility["capacity"] / totalCapacity) * electricityEmis
-        except IndexError:
-            pass  # it's outside our domain
+        if cell_coords is not None:
+            methane[cell_coords[1], cell_coords[0]] += (facility["capacity"] / totalCapacity) * electricityEmis
 
     write_layer(
         config.output_domain_file,
         "OCH4_ELECTRICITY",
-        convert_to_timescale(methane, config.domain_grid().cell_area),
+        convert_to_timescale(methane, domain_grid.cell_area),
     )
 
 
