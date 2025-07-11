@@ -1,16 +1,13 @@
 import math
+from typing import Any
 
 import numpy as np
 import pyproj
-import xarray as xr
 
 class Grid:
     """
     Grid details and utilities for working with grid coordinates.
     """
-
-    domain_ds: xr.Dataset
-    """Source for grid attributes"""
 
     dimensions: tuple[int, int]
     """Number of grid cells along the x and y axis"""
@@ -24,13 +21,22 @@ class Grid:
     cell_size: tuple[float, float]
     """Dimensions of a grid cell in grid projection coordinates"""
 
-    def __init__(self, domain_ds: xr.Dataset):
-        self.domain_ds = domain_ds
+    proj_params: Any
+    """Parameters for constructing a pyproj.Proj for the grid"""
 
-        self.dimensions = (self.domain_ds.COL.size, self.domain_ds.ROW.size)
-        self.center_lonlat = (self.domain_ds.XCENT, self.domain_ds.YCENT)
-        self.origin_xy = (self.domain_ds.XORIG, self.domain_ds.YORIG)
-        self.cell_size = (self.domain_ds.XCELL, self.domain_ds.YCELL)
+    def __init__(
+        self,
+        dimensions: tuple[int, int],
+        center_lonlat: tuple[float, float],
+        origin_xy: tuple[float, float],
+        cell_size: tuple[float, float],
+        proj_params: Any = None, # default projection
+    ):
+        self.dimensions = dimensions
+        self.center_lonlat = center_lonlat
+        self.origin_xy = origin_xy
+        self.cell_size = cell_size
+        self.proj_params = proj_params
 
     @property
     def shape(self) -> tuple[int, int]:
@@ -42,28 +48,7 @@ class Grid:
 
     @property
     def projection(self) -> pyproj.Proj:
-        """
-        Projection used to convert between lon/lat coordinates and grid
-        projection coordinates.
-        """
-        # if the domain was generated from WRF geometry, we must use a
-        # spherical Earth in our projection.
-        # https://fabienmaussion.info/2018/01/06/wrf-projection/
-        # TODO: allow these params to be specified for non-WRF domains
-        earth_equatorial_axis_radius = 6370000
-        earth_polar_axis_radius = 6370000
-
-        return pyproj.Proj(
-            proj="lcc",
-            lat_1=self.domain_ds.TRUELAT1,
-            lat_2=self.domain_ds.TRUELAT2,
-            lat_0=self.domain_ds.MOAD_CEN_LAT,
-            lon_0=self.domain_ds.STAND_LON,
-            # semi-major or equatorial axis radius
-            a=earth_equatorial_axis_radius,
-            # semi-minor, or polar axis radius
-            b=earth_polar_axis_radius,
-        )
+        return pyproj.Proj(**self.proj_params) if self.proj_params else pyproj.Proj("EPSG:4326")
 
     def lonlat_to_xy(self, lon, lat) -> tuple[float, float]:
         return self.projection.transform(xx=lon, yy=lat, direction=pyproj.enums.TransformDirection.FORWARD)

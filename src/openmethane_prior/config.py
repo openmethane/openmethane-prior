@@ -7,7 +7,7 @@ import pyproj
 import xarray as xr
 from environs import Env
 
-from openmethane_prior.grid.grid import Grid
+from .grid.domain_grid import DomainGrid
 
 @attrs.frozen()
 class LayerInputs:
@@ -95,9 +95,9 @@ class PriorConfig:
         return xr.load_dataset(self.input_domain_file)
 
     @cache
-    def domain_grid(self) -> Grid:
+    def domain_grid(self) -> DomainGrid:
         """Create a Grid from the domain dataset"""
-        return Grid(domain_ds=self.domain_dataset())
+        return DomainGrid(domain_ds=self.domain_dataset())
 
     @cache
     def domain_projection(self) -> pyproj.Proj:

@@ -4,79 +4,111 @@ import pytest
 from openmethane_prior.grid.grid import Grid
 
 
-def test_grid_attributes(input_domain):
-    test_grid = Grid(input_domain)
+def test_grid_attributes():
+    test_grid = Grid(
+        dimensions=(8, 10),
+        center_lonlat=(45, 45),
+        origin_xy=(-4, -5),
+        cell_size=(1, 2),
+    )
 
-    assert test_grid.dimensions == (input_domain.COL.size, input_domain.ROW.size)
-    assert test_grid.shape == (input_domain.ROW.size, input_domain.COL.size)
-    assert test_grid.center_lonlat == (input_domain.XCENT, input_domain.YCENT)
-    assert test_grid.origin_xy == (input_domain.XORIG, input_domain.YORIG)
-    assert test_grid.cell_size == (input_domain.XCELL, input_domain.YCELL)
+    assert test_grid.dimensions == (8, 10)
+    assert test_grid.shape == (10, 8)
+    assert test_grid.center_lonlat == (45, 45)
+    assert test_grid.origin_xy == (-4, -5)
+    assert test_grid.cell_size == (1, 2)
 
-def test_grid_center(input_domain):
-    test_grid = Grid(input_domain)
+def test_grid_center():
+    test_grid = Grid(
+        dimensions=(8, 10),
+        center_lonlat=(45, 45),
+        origin_xy=(-4, -5),
+        cell_size=(1, 2),
+    )
 
-    grid_center_x, grid_center_y = test_grid.projection(input_domain.XCENT, input_domain.YCENT)
+    grid_center_x, grid_center_y = test_grid.projection(45, 45)
 
     assert test_grid.center_xy == (grid_center_x, grid_center_y)
 
 
-def test_grid_llc_xy(input_domain):
-    test_grid = Grid(input_domain)
+def test_grid_llc_xy():
+    test_grid = Grid(
+        dimensions=(8, 10),
+        center_lonlat=(45, 45),
+        origin_xy=(-4, -5),
+        cell_size=(1, 2),
+    )
+    assert test_grid.llc_xy == (41.0, 40.0)
 
-    grid_center_x, grid_center_y = test_grid.projection(input_domain.XCENT, input_domain.YCENT)
-    grid_llc_x = grid_center_x + input_domain.XORIG
-    grid_llc_y = grid_center_y + input_domain.YORIG
+def test_grid_llc_center_xy():
+    test_grid = Grid(
+        dimensions=(8, 10),
+        center_lonlat=(45, 45),
+        origin_xy=(-4, -5),
+        cell_size=(1, 2),
+    )
 
-    assert test_grid.llc_xy == (grid_llc_x, grid_llc_y)
+    assert test_grid.llc_center_xy == (41.5, 41.0)
 
-def test_grid_llc_center_xy(input_domain):
-    test_grid = Grid(input_domain)
+def test_grid_cell_area():
+    test_grid = Grid(
+        dimensions=(8, 10),
+        center_lonlat=(45, 45),
+        origin_xy=(-4, -5),
+        cell_size=(1, 2),
+    )
 
-    grid_center_x, grid_center_y = test_grid.projection(input_domain.XCENT, input_domain.YCENT)
-    grid_llc_center_x = grid_center_x + input_domain.XORIG + (input_domain.XCELL / 2)
-    grid_llc_center_y = grid_center_y + input_domain.YORIG + (input_domain.YCELL / 2)
+    assert test_grid.cell_area == 2.0
 
-    assert test_grid.llc_center_xy == (grid_llc_center_x, grid_llc_center_y)
-
-def test_grid_cell_area(input_domain):
-    test_grid = Grid(input_domain)
-
-    assert test_grid.cell_area == input_domain.XCELL * input_domain.YCELL
-
-def test_grid_coords(input_domain):
-    test_grid = Grid(input_domain)
+def test_grid_coords():
+    test_grid = Grid(
+        dimensions=(8, 10),
+        center_lonlat=(45, 45),
+        origin_xy=(-4, -5),
+        cell_size=(1, 2),
+    )
     cell_coords_x = test_grid.cell_coords_x()
     cell_coords_y = test_grid.cell_coords_y()
 
-    assert len(cell_coords_x) == input_domain.COL.size
+    assert len(cell_coords_x) == 8
     assert cell_coords_x[0] == test_grid.llc_center_xy[0]
 
-    assert len(cell_coords_y) == input_domain.ROW.size
+    assert len(cell_coords_y) == 10
     assert cell_coords_y[0] == test_grid.llc_center_xy[1]
 
-def test_grid_bounds(input_domain):
-    test_grid = Grid(input_domain)
+def test_grid_bounds():
+    test_grid = Grid(
+        dimensions=(8, 10),
+        center_lonlat=(45, 45),
+        origin_xy=(-4, -5),
+        cell_size=(1, 2),
+    )
     cell_bounds_x = test_grid.cell_bounds_x()
     cell_bounds_y = test_grid.cell_bounds_y()
 
-    assert len(cell_bounds_x) == input_domain.COL.size + 1
+    assert len(cell_bounds_x) == 9
     assert cell_bounds_x[0] == test_grid.llc_xy[0]
 
-    assert len(cell_bounds_y) == input_domain.ROW.size + 1
+    assert len(cell_bounds_y) == 11
     assert cell_bounds_y[0] == test_grid.llc_xy[1]
 
-def test_grid_xy_to_lonlat(input_domain):
-    test_grid = Grid(input_domain)
+def test_grid_xy_to_lonlat():
+    test_grid = Grid(
+        dimensions=(8, 10),
+        center_lonlat=(45, 45),
+        origin_xy=(-4, -5),
+        cell_size=(1, 2),
+    )
 
-    # this is sort of a "round trip" test, as Grid.center_xy is calculated
-    # by running the center_lonlat through the projection forward.
-    grid_center_lonlat = test_grid.xy_to_lonlat(*test_grid.center_xy)
+    assert test_grid.xy_to_lonlat(*test_grid.center_xy) == (45, 45)
 
-    np.testing.assert_allclose(grid_center_lonlat, (input_domain.XCENT, input_domain.YCENT))
-
-def test_grid_projection_coordinates(input_domain):
-    test_grid = Grid(input_domain)
+def test_grid_projection_coordinates():
+    test_grid = Grid(
+        dimensions=(8, 10),
+        center_lonlat=(45, 45),
+        origin_xy=(-4, -5),
+        cell_size=(1, 2),
+    )
 
     # projection center coords for all cells in the domain
     x_center_coords = test_grid.cell_coords_x()
@@ -98,30 +130,38 @@ def test_grid_projection_coordinates(input_domain):
             # LON/LAT coords stored in the input domain file which was
             # generated by MCIP using the same grid parameters.
             expected_coords = (float(x_center_coords[x]), float(y_center_coords[y]))
-            input_coords = (float(input_domain["LON"][0, y, x].values), float(input_domain["LAT"][0, y, x].values))
-            projected_coords = test_grid.lonlat_to_xy(*input_coords)
+            projected_coords = test_grid.lonlat_to_xy(*expected_coords)
 
             # check that our generated coordinates match the coords generated by MCIP
             np.testing.assert_allclose(projected_coords, expected_coords, atol=drift_tolerance)
 
-def test_grid_valid_cell_coords(input_domain):
-    test_grid = Grid(input_domain)
+def test_grid_valid_cell_coords():
+    test_grid = Grid(
+        dimensions=(8, 10),
+        center_lonlat=(45, 45),
+        origin_xy=(-4, -5),
+        cell_size=(1, 2),
+    )
 
     assert test_grid.valid_cell_coords((0, 0))
-    assert test_grid.valid_cell_coords((test_grid.dimensions[0] - 1, test_grid.dimensions[1] - 1))
-    assert test_grid.valid_cell_coords((test_grid.dimensions[0] - 1, 0))
-    assert test_grid.valid_cell_coords((0, test_grid.dimensions[1] - 1))
-    assert test_grid.valid_cell_coords((0, test_grid.dimensions[1] - 1))
-    assert test_grid.valid_cell_coords((test_grid.dimensions[0] - 1, 0))
+    assert test_grid.valid_cell_coords((1, 1))
+    assert test_grid.valid_cell_coords((7, 0))
+    assert test_grid.valid_cell_coords((0, 9))
+    assert test_grid.valid_cell_coords((7, 9))
 
     assert not test_grid.valid_cell_coords((-1, 0))
     assert not test_grid.valid_cell_coords((0, -1))
-    assert not test_grid.valid_cell_coords((0, test_grid.dimensions[1]))
-    assert not test_grid.valid_cell_coords((test_grid.dimensions[0], 0))
-    assert not test_grid.valid_cell_coords((test_grid.dimensions[0], test_grid.dimensions[1]))
+    assert not test_grid.valid_cell_coords((0, 10))
+    assert not test_grid.valid_cell_coords((8, 0))
+    assert not test_grid.valid_cell_coords((8, 10))
 
-def test_grid_find_cell(input_domain):
-    test_grid = Grid(input_domain)
+def test_grid_find_cell():
+    test_grid = Grid(
+        dimensions=(8, 10),
+        center_lonlat=(45, 45),
+        origin_xy=(-4, -5),
+        cell_size=(1, 2),
+    )
 
     # one of xy or lonlat must be provided
     with pytest.raises(ValueError, match="xy or lonlat must be provided"):
@@ -130,9 +170,16 @@ def test_grid_find_cell(input_domain):
         test_grid.find_cell(xy=(0, 0), lonlat=(0, 0))
 
     # coords inside the grid should succeed
+    assert test_grid.find_cell(xy=(41, 40)) == (0, 0)
+    assert test_grid.find_cell(xy=(45, 45)) == (4, 2)
+    assert test_grid.find_cell(xy=(48.9, 59.9)) == (7, 9)
+
     assert test_grid.find_cell(xy=test_grid.llc_xy) == (0, 0)
-    # fails due to minute error caused by round-tripping
-    # assert test_grid.find_cell(lonlat=test_grid.xy_to_lonlat(*test_grid.llc_xy)) == (0, 0)
 
     # coords outside the grid should find None
-    assert test_grid.find_cell(xy=(test_grid.llc_xy[0] - 1, test_grid.llc_xy[1])) == None
+    assert test_grid.find_cell(xy=(40.9, 39.9)) == None
+    assert test_grid.find_cell(xy=(40.9, 40.0)) == None
+    assert test_grid.find_cell(xy=(41.0, 39.9)) == None
+    assert test_grid.find_cell(xy=(48.9, 60)) == None
+    assert test_grid.find_cell(xy=(49.0, 59.9)) == None
+    assert test_grid.find_cell(xy=(49.0, 59.9)) == None
