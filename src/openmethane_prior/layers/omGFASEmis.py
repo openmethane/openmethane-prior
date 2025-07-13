@@ -27,6 +27,7 @@ import argparse
 import bisect
 import datetime
 import itertools
+import netCDF4 as nc
 import os
 import pathlib
 
@@ -87,11 +88,12 @@ def processEmissions(config: PriorConfig, startDate, endDate, forceUpdate: bool 
     gfas_file = download_GFAS(
         startDate, endDate, file_name=config.as_intermediate_file("gfas-download.nc")
     )
-    gfas_ds = xr.load_dataset(gfas_file)
+    gfas_ds = nc.Dataset(gfas_file, "r")
 
     # dates are labelled at midnight at end of chosen day (hence looks like next day), subtract one day to fix
     oneDay = np.timedelta64(1, "D")
-    gfasTimes = [t - oneDay for t in gfas_ds["valid_time"].values]
+    gfasTimesRaw = nc.num2date(gfas_ds.variables["valid_time"], gfas_ds.variables["valid_time"].getncattr("units"))
+    gfasTimes = [np.datetime64(t) - oneDay for t in gfasTimesRaw]
 
     latGfas = np.around(np.float64(gfas_ds.variables["latitude"][:]), 3)
     latGfas = latGfas[::-1]  # they're originally north-south, we want them south north
