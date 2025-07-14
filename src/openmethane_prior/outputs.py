@@ -152,6 +152,7 @@ def create_output_dataset(
             # domain
             "domain_name": config.input_domain.name,
             "domain_version": config.input_domain.version,
+            "domain_slug": config.input_domain.slug,
 
             # meta attributes
             "title": "Open Methane prior emissions estimate",

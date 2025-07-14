@@ -35,17 +35,20 @@ class InputDomain:
     name: str
     version: str
     domain_index: int
+    slug: str
 
     def __init__(self,
             path: str | pathlib.Path,
             name: str | None = None,
             version: str | None = None,
             domain_index: int | None = None,
+            slug: str | None = None,
         ):
         self.path = pathlib.Path(path)
         self.name = name or self.path.stem
         self.version = version or "v1"
         self.domain_index = domain_index or 1
+        self.slug = slug or self.name
 
 class PublishedInputDomain(InputDomain):
     """
@@ -57,6 +60,7 @@ class PublishedInputDomain(InputDomain):
         name: str,
         version: str | None = "v1",
         domain_index: int | None = 1,
+        slug: str | None = None,
     ):
         published_path = pathlib.Path(
             f"domains/{name}/{version}/"
@@ -68,6 +72,7 @@ class PublishedInputDomain(InputDomain):
             name=name,
             version=version,
             domain_index=domain_index,
+            slug=slug,
         )
 
 class PriorConfigOptions(typing.TypedDict, total=False):

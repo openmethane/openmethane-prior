@@ -58,19 +58,22 @@ def test_input_domain():
     assert test_defaults.name == "default"
     assert test_defaults.version == "v1"
     assert test_defaults.domain_index == 1
+    assert test_defaults.slug == "default"
     assert str(test_defaults.path) == "default.nc"
 
-    test_domain = InputDomain(name="dname", version="v9.0.1", domain_index=33, path="./file.nc")
+    test_domain = InputDomain(name="dname", version="v9.0.1", domain_index=33, slug="dslug", path="./file.nc")
     assert test_domain.name == "dname"
     assert test_domain.version == "v9.0.1"
     assert test_domain.domain_index == 33
+    assert test_domain.slug == "dslug"
     assert str(test_domain.path) == "file.nc"
 
 def test_published_input_domain():
-    test_domain = PublishedInputDomain(name="dname", version="v9.0.1", domain_index=3)
+    test_domain = PublishedInputDomain(name="dname", version="v9.0.1", domain_index=3, slug="dslug")
     assert test_domain.name == "dname"
     assert test_domain.version == "v9.0.1"
     assert test_domain.domain_index == 3
+    assert test_domain.slug == "dslug"
     assert str(test_domain.path) == (
         f"domains/dname/v9.0.1/"
         f"prior_domain_dname_v9.0.1.d03.nc"
