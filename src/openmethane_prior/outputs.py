@@ -23,6 +23,7 @@ import numpy as np
 import numpy.typing as npt
 import xarray as xr
 
+from openmethane_prior.cell_name import encode_grid_cell_name
 from openmethane_prior.config import PriorConfig, PublishedInputDomain
 from openmethane_prior.utils import SECS_PER_YEAR, get_version, get_timestamped_command, time_bounds, \
     bounds_from_cell_edges
@@ -58,6 +59,14 @@ def create_output_dataset(
 
     # generate daily time steps
     time_steps = xr.date_range(start=period_start, end=period_end, freq="D", use_cftime=True, normalize=True)
+
+    # generate grid cell names
+    # TODO: generate and store these when creating the domain file
+    grid_cell_names = []
+    for y in range(domain_grid.shape[0]):
+        grid_cell_names.append([])
+        for x in range(domain_grid.shape[1]):
+            grid_cell_names[-1].append(encode_grid_cell_name(config.input_domain.slug, x, y, "."))
 
     # copy dimensions and attributes from the domain where the grid is defined
     prior_ds = xr.Dataset(
@@ -102,6 +111,9 @@ def create_output_dataset(
                 ("time", "time_period"),
                 time_bounds(time_steps),
             ),
+            "cell_name": (("y", "x"), grid_cell_names, {
+                "long_name": "unique grid cell name",
+            }),
 
             # data variables
             "land_mask": (
