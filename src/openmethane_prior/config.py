@@ -50,6 +50,10 @@ class InputDomain:
         self.domain_index = domain_index or 1
         self.slug = slug or self.name
 
+        # TODO this should be embedded in the domain file as an attribute
+        # TODO remove matching test assertion when this is removed
+        if (self.slug == "aust10km"): self.slug = "10"
+
 class PublishedInputDomain(InputDomain):
     """
     Input domain configuration
