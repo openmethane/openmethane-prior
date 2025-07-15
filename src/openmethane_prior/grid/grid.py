@@ -1,4 +1,3 @@
-import math
 from typing import Any
 
 import numpy as np
@@ -156,10 +155,10 @@ class Grid:
         if xy is not None and lonlat is not None:
             raise ValueError("find_cell: provide only one of xy or lonlat")
 
-        search_xy = xy if xy is not None else self.lonlat_to_xy(*lonlat)
+        search_x, search_y = xy if xy is not None else self.lonlat_to_xy(*lonlat)
 
         grid_coords = (
-            math.floor((search_xy[0] - self.llc_xy[0]) / self.cell_size[0]),
-            math.floor((search_xy[1] - self.llc_xy[1]) / self.cell_size[1])
+            int((search_x - self.llc_xy[0]) // self.cell_size[0]),
+            int((search_y - self.llc_xy[1]) // self.cell_size[1])
         )
         return grid_coords if self.valid_cell_coords(grid_coords) else None
