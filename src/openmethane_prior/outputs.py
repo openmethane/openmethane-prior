@@ -127,14 +127,12 @@ def create_output_dataset(
                 "units": "m",
                 "standard_name": "projection_x_coordinate",
                 "bounds": "x_bounds",
-                "grid_mapping_name": PROJECTION_VAR_NAME,
             }),
             "y": (("y"), domain_grid.cell_coords_y(), {
                 "long_name": "y coordinate of projection",
                 "units": "m",
                 "standard_name": "projection_y_coordinate",
                 "bounds": "y_bounds",
-                "grid_mapping_name": PROJECTION_VAR_NAME,
             }),
             "time": (("time"), time_steps, {
                 "standard_name": "time",
