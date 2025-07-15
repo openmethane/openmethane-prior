@@ -85,7 +85,7 @@ def test_009_output_domain_xr(output_domain):
         "OCH4_TERMITE": 8.1061502996138124e-13,
         "OCH4_FIRE": 2.6126792244431096e-13,
         "OCH4_WETLANDS": 1.8596938045956645e-11,
-        "OCH4_TOTAL": 2.7011860875314249e-11,
+        "OCH4_TOTAL": 2.701186087531425e-11,
     }
 
     assert mean_values == expected

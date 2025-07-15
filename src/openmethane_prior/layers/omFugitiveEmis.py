@@ -20,7 +20,6 @@
 
 import argparse
 import datetime
-import math
 
 import numpy as np
 import pandas as pd
@@ -68,31 +67,20 @@ def processEmissions(config: PriorConfig, startDate, endDate):
         fugitiveEmis / fugitiveYear["emissions_quantity"].sum()
     )
 
-    domain_ds = config.domain_dataset()
+    domain_grid = config.domain_grid()
 
-    landmask = domain_ds["LANDMASK"][:]
-
-    _, lmy, lmx = landmask.shape
-    ww = domain_ds.DX * lmx
-    hh = domain_ds.DY * lmy
-
-    methane = np.zeros(landmask.shape)
-
-    domain_proj = config.domain_projection()
+    methane = np.zeros(domain_grid.shape)
 
     for _, facility in fugitiveYear.iterrows():
-        x, y = domain_proj(facility["lon"], facility["lat"])
-        ix = math.floor((x + ww / 2) / domain_ds.DX)
-        iy = math.floor((y + hh / 2) / domain_ds.DY)
-        try:
-            methane[0][iy][ix] += facility["emissions_quantity"]
-        except IndexError:
-            pass  # it's outside our domain
+        cell_coords = domain_grid.find_cell(lonlat=(facility["lon"], facility["lat"]))
+
+        if cell_coords is not None:
+            methane[cell_coords[1], cell_coords[0]] += facility["emissions_quantity"]
 
     write_layer(
         config.output_domain_file,
         "OCH4_FUGITIVE",
-        convert_to_timescale(methane, config.domain_cell_area),
+        convert_to_timescale(methane, domain_grid.cell_area),
     )
 
 

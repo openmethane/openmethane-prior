@@ -18,8 +18,6 @@
 
 """Process emissions from the electricity sector"""
 
-import math
-
 import numpy as np
 import pandas as pd
 
@@ -45,33 +43,22 @@ def processEmissions(config: PriorConfig):
         config.as_input_file(config.layer_inputs.electricity_path), header=0
     ).to_dict(orient="records")
 
-    domain_ds = config.domain_dataset()
+    domain_grid = config.domain_grid()
 
     totalCapacity = sum(item["capacity"] for item in electricityFacilities)
-    landmask = domain_ds["LANDMASK"][:]
 
-    _, lmy, lmx = landmask.shape
-    ww = domain_ds.DX * lmx
-    hh = domain_ds.DY * lmy
-
-    methane = np.zeros(landmask.shape)
-
-    # Get the routine to project the lat/lon grid on to the project grid
-    proj = config.domain_projection()
+    methane = np.zeros(domain_grid.shape)
 
     for facility in electricityFacilities:
-        x, y = proj(facility["lng"], facility["lat"])
-        ix = math.floor((x + ww / 2) / domain_ds.DX)
-        iy = math.floor((y + hh / 2) / domain_ds.DY)
-        try:
-            methane[0][iy][ix] += (facility["capacity"] / totalCapacity) * electricityEmis
-        except IndexError:
-            pass  # it's outside our domain
+        cell_coords = domain_grid.find_cell(lonlat=(facility["lng"], facility["lat"]))
+
+        if cell_coords is not None:
+            methane[cell_coords[1], cell_coords[0]] += (facility["capacity"] / totalCapacity) * electricityEmis
 
     write_layer(
         config.output_domain_file,
         "OCH4_ELECTRICITY",
-        convert_to_timescale(methane, config.domain_cell_area),
+        convert_to_timescale(methane, domain_grid.cell_area),
     )
 
 
