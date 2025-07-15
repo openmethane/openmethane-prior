@@ -169,6 +169,15 @@ def test_grid_find_cell():
     with pytest.raises(ValueError, match="provide only one of xy or lonlat"):
         test_grid.find_cell(xy=(0, 0), lonlat=(0, 0))
 
+    # coords should be a tuple of ints
+    found = test_grid.find_cell(xy=(41, 40))
+    assert found == (0, 0)
+    assert type(found) == tuple
+
+    found_x, found_y = found
+    assert type(found_x) == int
+    assert type(found_y) == int
+
     # coords inside the grid should succeed
     assert test_grid.find_cell(xy=(41, 40)) == (0, 0)
     assert test_grid.find_cell(xy=(45, 45)) == (4, 2)
