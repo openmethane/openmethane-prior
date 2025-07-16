@@ -176,6 +176,11 @@ def create_output_dataset(config: PriorConfig) -> xr.Dataset:
     # compress cell_names which take a lot of space
     prior_ds.cell_name.encoding["zlib"] = True
 
+    # disable _FillValue for variables that shouldn't have empty values
+    prior_ds.time_bounds.encoding["_FillValue"] = None
+    prior_ds.x_bounds.encoding["_FillValue"] = None
+    prior_ds.y_bounds.encoding["_FillValue"] = None
+
     return prior_ds
 
 
