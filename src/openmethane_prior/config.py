@@ -1,3 +1,6 @@
+import argparse
+import datetime
+import os
 import pathlib
 import typing
 from functools import cache
@@ -87,6 +90,9 @@ class PriorConfigOptions(typing.TypedDict, total=False):
     input_domain: InputDomain
     output_filename: str
     layer_inputs: LayerInputs
+    start_date: datetime.datetime
+    end_date: datetime.datetime
+    skip_reproject: bool
 
 @attrs.frozen
 class PriorConfig:
@@ -109,6 +115,11 @@ class PriorConfig:
     `output_path`"""
 
     layer_inputs: LayerInputs
+
+    start_date: datetime.datetime | None = None
+    end_date: datetime.datetime | None = None
+
+    skip_reproject: bool = False
 
     def as_input_file(self, name: str | pathlib.Path) -> pathlib.Path:
         """Return the full path to an input file"""
@@ -208,6 +219,52 @@ def load_config_from_env(**overrides: PriorConfigOptions) -> PriorConfig:
             termite_path=env.path("TERMITES"),
             wetland_path=env.path("WETLANDS"),
         ),
+        start_date=env.datetime("START_DATE", None),
+        # if END_DATE not set, use START_DATE for a 1-day run
+        end_date=env.datetime("END_DATE", None) or env.datetime("START_DATE", None),
+        skip_reproject=env.bool("SKIP_REPROJECT", False),
     )
 
     return PriorConfig(**{**options, **overrides})
+
+def parse_cli_args():
+    """
+    Set up common CLI arguments that can be read in at start time.
+    """
+    parser = argparse.ArgumentParser(
+        description="Calculate the prior methane emissions estimate for Open Methane"
+    )
+    parser.add_argument(
+        "--start-date",
+        type=lambda s: datetime.datetime.strptime(s, "%Y-%m-%d"),
+        help="Start date in YYYY-MM-DD format",
+    )
+    parser.add_argument(
+        "--end-date",
+        type=lambda s: datetime.datetime.strptime(s, "%Y-%m-%d"),
+        help="end date in YYYY-MM-DD format",
+    )
+    parser.add_argument(
+        "--skip-reproject",
+        default=False,
+        action="store_true", # set as True if present
+    )
+
+    return parser.parse_args()
+
+def parse_cli_to_env():
+    """
+    Parse CLI arguments and set them as environment variables so they can be
+    read in by the config.
+    """
+    args = parse_cli_args()
+
+    if args.start_date is not None:
+        os.environ["START_DATE"] = args.start_date.strftime("%Y-%m-%d")
+
+    if args.end_date is not None:
+        os.environ["END_DATE"] = args.end_date.strftime("%Y-%m-%d")
+    elif args.start_date is not None:
+        os.environ["END_DATE"] = args.start_date.strftime("%Y-%m-%d")
+
+    os.environ["SKIP_REPROJECT"] = "True" if args.skip_reproject else "False"
