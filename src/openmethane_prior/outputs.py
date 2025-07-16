@@ -181,6 +181,9 @@ def create_output_dataset(
     prior_ds.time.encoding["units"] = time_encoding
     prior_ds.time_bounds.encoding["units"] = time_encoding
 
+    # compress cell_names which take a lot of space
+    prior_ds.cell_name.encoding["zlib"] = True
+
     return prior_ds
 
 
