@@ -15,16 +15,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-"""Output handling"""
-import datetime
-import pathlib
-
 import numpy as np
 import numpy.typing as npt
 import xarray as xr
 
 from openmethane_prior.cell_name import encode_grid_cell_name
-from openmethane_prior.config import PriorConfig, PublishedInputDomain
+from openmethane_prior.config import PriorConfig
 from openmethane_prior.utils import SECS_PER_YEAR, get_version, get_timestamped_command, time_bounds, \
     bounds_from_cell_edges
 
@@ -183,25 +179,21 @@ def create_output_dataset(config: PriorConfig) -> xr.Dataset:
     return prior_ds
 
 
-def initialise_output(config: PriorConfig):
+def write_output_dataset(
+    config: PriorConfig,
+    prior_ds: xr.Dataset,
+):
     """
-    Initialise the output directory
-
-    Copies the input domain to the output domain
-
-    Parameters
-    ----------
-    config
-        Configuration object
+    Writes the accumulated prior emissions dataset to the output file
+    specified in the config.
     """
     config.output_file.parent.mkdir(parents=True, exist_ok=True)
 
-    output_ds = create_output_dataset(config)
-    output_ds.to_netcdf(config.output_file)
+    prior_ds.to_netcdf(config.output_file)
 
 
-def write_sector(
-    output_path: pathlib.Path,
+def add_sector(
+    prior_ds: xr.Dataset,
     sector_name: str,
     sector_data: xr.DataArray | npt.ArrayLike,
     sector_standard_name: str = None,
@@ -212,47 +204,38 @@ def write_sector(
 
     Parameters
     ----------
-    output_path
-        Path to the output file.
-
-        This file should already exist and will be updated to include the layer data
+    prior_ds
+        DataSet where sector data should be added
     sector_name
         Name
     sector_data
-        Data to write to file
-
-        This could be a xarray Dataset
-    direct_set
-        If True, write the data to the output file without processing
-        If False, coerce to the sector_data to 4d if it isn't already
+        Data to add to the output file
+    sector_standard_name
+        CF Conventions suffix to add to the "standard_name" attribute
+    sector_long_name
+        CF Conventions "long_name" attribute
     """
-    print(f"Writing emissions data for {sector_name}")
-
-    if not output_path.exists():
-        raise FileNotFoundError(f"Output domain file not found: {output_path}")
-
-    ds = xr.load_dataset(output_path)
+    print(f"Adding emissions data for {sector_name}")
 
     # determine the expected shape of a data layer based on the assumed coords
-    expected_shape = tuple([(ds.sizes[coord_name] if coord_name in ds.sizes else 1) for coord_name in COORD_NAMES])
+    expected_shape = tuple([(prior_ds.sizes[coord_name] if coord_name in prior_ds.sizes else 1) for coord_name in COORD_NAMES])
 
     # if this is a DataArray with the right dimensions, it can be added directly
     if type(sector_data) == xr.DataArray and sector_data.shape == expected_shape:
         # verify that time steps for the sector data match the parent coordinates exactly
         for time_step in sector_data.coords["time"].values:
-            if time_step not in ds.coords["time"].values:
+            if time_step not in prior_ds.coords["time"].values:
                 raise ValueError(f"Layer {sector_name} time step {time_step} not found in dataset")
     else:
         # some layers only generate 2 or 3-dimensional data, which needs
         # to be expanded into the same dimensions as the other layers
         sector_data = xr.DataArray(
             dims=COORD_NAMES[:],
-            data=expand_sector_dims(sector_data, ds.sizes["time"]),
+            data=expand_sector_dims(sector_data, prior_ds.sizes["time"]),
         )
 
-        # enable compression for expanded layer data which may be duplicated
-        # across time steps
-        sector_data.encoding["zlib"] = True
+    # enable compression for layer data variables
+    sector_data.encoding["zlib"] = True
 
     sector_data.attrs = COMMON_ATTRIBUTES | {
         "standard_name": TOTAL_LAYER_ATTRIBUTES["standard_name"],
@@ -261,12 +244,12 @@ def write_sector(
     if sector_standard_name is not None:
         sector_data.attrs["standard_name"] += f"_due_to_emission_from_{sector_standard_name}"
 
-    _, aligned_sector_data = xr.align(ds, sector_data, join="override")
+    _, aligned_sector_data = xr.align(prior_ds, sector_data, join="override")
 
     sector_var_name = f"{SECTOR_PREFIX}_{sector_name}"
-    ds[sector_var_name] = aligned_sector_data
+    prior_ds[sector_var_name] = aligned_sector_data
 
-    ds.to_netcdf(output_path)
+    return prior_ds
 
 
 def expand_sector_dims(
@@ -309,32 +292,27 @@ def expand_sector_dims(
     return copy
 
 
-def sum_sectors(output_path: pathlib.Path):
+def add_ch4_total(prior_ds: xr.Dataset):
     """
     Calculate the total methane emissions from the individual layers and write to the output file.
 
-    This adds the `ch4_total` variable to the output file.
+    This adds the `ch4_total` variable to the output dataset.
     """
-    if not output_path.exists():
-        raise FileNotFoundError("Output file does not exist")
-
-    ds = xr.load_dataset(output_path)
-
-    sectors = [var_name for var_name in ds.data_vars.keys() if var_name.startswith(SECTOR_PREFIX)]
+    sectors = [var_name for var_name in prior_ds.data_vars.keys() if var_name.startswith(SECTOR_PREFIX)]
 
     # now check to find largest shape because we'll broadcast everything else to that
     summed = None
     for sector_name in sectors:
         if summed is None:
             # all sectors should have dims normalised by expand_sector_dims, so
-            # if this is the first layer, simply copy it
-            summed = np.zeros(ds[sector_name].shape)
+            # use the shape of the first sector we encounter
+            summed = np.zeros(prior_ds[sector_name].shape)
 
         # add each layer to the accumulated sum
-        summed += ds[sector_name].values
+        summed += prior_ds[sector_name].values
 
     if summed is not None:
-        ds[TOTAL_LAYER_NAME] = (
+        prior_ds[TOTAL_LAYER_NAME] = (
             COORD_NAMES[:],
             summed,
             COMMON_ATTRIBUTES | TOTAL_LAYER_ATTRIBUTES
@@ -342,11 +320,11 @@ def sum_sectors(output_path: pathlib.Path):
 
         # enable compression for total layer which may be duplicated
         # across time steps
-        ds[TOTAL_LAYER_NAME].encoding["zlib"] = True
+        prior_ds[TOTAL_LAYER_NAME].encoding["zlib"] = True
 
         # Ensure legacy / deprecated "OCH4_TOTAL" layer is still in the output
         # until downstream consumers can be updated
-        ds["OCH4_TOTAL"] = (
+        prior_ds["OCH4_TOTAL"] = (
             COORD_NAMES[:],
             summed,
             COMMON_ATTRIBUTES | TOTAL_LAYER_ATTRIBUTES | {
@@ -354,5 +332,3 @@ def sum_sectors(output_path: pathlib.Path):
                 "superseded_by": TOTAL_LAYER_NAME
             }
         )
-
-        ds.to_netcdf(output_path)

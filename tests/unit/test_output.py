@@ -2,17 +2,16 @@ import numpy as np
 import xarray as xr
 import pytest
 
-from openmethane_prior.outputs import initialise_output, create_output_dataset, expand_sector_dims
+from openmethane_prior.outputs import create_output_dataset, expand_sector_dims, write_output_dataset
 
-def test_initialise_output(config, input_files):
+def test_write_output_dataset(config, input_files):
+    output_ds = create_output_dataset(config)
+
     assert not config.output_file.exists()
 
-    initialise_output(config)
+    write_output_dataset(config, output_ds)
 
     assert config.output_file.exists()
-
-    # Idempotent
-    initialise_output(config)
 
 
 def test_create_output_dataset(config, input_files):

@@ -30,7 +30,7 @@ from openmethane_prior.utils import SECS_PER_YEAR
 MAX_ABS_DIFF = 0.1
 
 
-def verify_emis(config: PriorConfig, atol: float = MAX_ABS_DIFF):
+def verify_emis(config: PriorConfig, prior_ds: xr.Dataset, atol: float = MAX_ABS_DIFF):
     """Check output sector emissions to make sure they tally up to the input emissions"""
     sector_data = pd.read_csv(
         config.as_input_file(config.layer_inputs.sectoral_emissions_path)
@@ -55,19 +55,16 @@ def verify_emis(config: PriorConfig, atol: float = MAX_ABS_DIFF):
         )
 
     # Check each layer in the output sums up to the input
-    with xr.open_dataset(config.output_file) as dss:
-        ds = dss.load()
-
     modelAreaM2 = config.domain_grid().cell_area
     for sector in sector_data.keys():
         layerName = f"{SECTOR_PREFIX}_{sector}"
         sectorVal = float(sector_data[sector]) * 1e9
 
-        if layerName in ds:
-            layerVal = np.sum(ds[layerName][0].values * modelAreaM2 * SECS_PER_YEAR)
+        if layerName in prior_ds:
+            layerVal = np.sum(prior_ds[layerName][0].values * modelAreaM2 * SECS_PER_YEAR)
 
             if sector == "agriculture":
-                layerVal += np.sum(ds[f"{SECTOR_PREFIX}_livestock"][0].values * modelAreaM2 * SECS_PER_YEAR)
+                layerVal += np.sum(prior_ds[f"{SECTOR_PREFIX}_livestock"][0].values * modelAreaM2 * SECS_PER_YEAR)
 
             diff = round(layerVal - sectorVal)
             pct_diff = diff / sectorVal * 100
@@ -83,4 +80,4 @@ def verify_emis(config: PriorConfig, atol: float = MAX_ABS_DIFF):
 
 if __name__ == "__main__":
     config = load_config_from_env()
-    verify_emis(config)
+    verify_emis(config=config, prior_ds=xr.open_dataset(config.output_file))
