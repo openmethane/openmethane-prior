@@ -36,7 +36,7 @@ def env(monkeypatch, root_dir):
 
 
 @pytest.fixture()
-def config(tmp_path_factory) -> PriorConfig:
+def config(tmp_path_factory, start_date, end_date) -> PriorConfig:
     """Default configuration
 
     Uses a new temporary directory for each test
@@ -47,6 +47,8 @@ def config(tmp_path_factory) -> PriorConfig:
         input_path=data_dir / "inputs",
         intermediates_path=data_dir / "intermediates",
         output_path=data_dir / "outputs",
+        start_date=start_date,
+        end_date=end_date,
     )
 
 

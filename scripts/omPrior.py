@@ -53,7 +53,7 @@ def run_prior(config: PriorConfig):
     check_input_files(config)
 
     # Initialise the output dataset based on the domain provided in config
-    initialise_output(config, config.start_date, config.end_date)
+    initialise_output(config)
 
     if not config.skip_reproject:
         reproject_raster_inputs(config)
@@ -61,11 +61,11 @@ def run_prior(config: PriorConfig):
     omAgLulucfWasteEmis.processEmissions(config)
     omIndustrialStationaryTransportEmis.processEmissions(config)
     omElectricityEmis.processEmissions(config)
-    omFugitiveEmis.processEmissions(config, config.start_date, config.end_date)
+    omFugitiveEmis.processEmissions(config)
 
     omTermiteEmis.processEmissions(config)
-    omGFASEmis.processEmissions(config, config.start_date, config.end_date)
-    omWetlandEmis.processEmissions(config, config.start_date, config.end_date)
+    omGFASEmis.processEmissions(config)
+    omWetlandEmis.processEmissions(config)
 
     sum_sectors(config.output_file)
     verify_emis(config)
