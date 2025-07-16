@@ -31,7 +31,7 @@ from openmethane_prior.layers import (
     omTermiteEmis,
     omWetlandEmis,
 )
-from openmethane_prior.outputs import sum_sectors, initialise_output
+from openmethane_prior.outputs import add_ch4_total, create_output_dataset, write_output_dataset
 from openmethane_prior.raster import reproject_raster_inputs
 from openmethane_prior.verification import verify_emis
 
@@ -53,22 +53,24 @@ def run_prior(config: PriorConfig):
     check_input_files(config)
 
     # Initialise the output dataset based on the domain provided in config
-    initialise_output(config)
+    prior_ds = create_output_dataset(config)
 
     if not config.skip_reproject:
         reproject_raster_inputs(config)
 
-    omAgLulucfWasteEmis.processEmissions(config)
-    omIndustrialStationaryTransportEmis.processEmissions(config)
-    omElectricityEmis.processEmissions(config)
-    omFugitiveEmis.processEmissions(config)
+    omAgLulucfWasteEmis.processEmissions(config, prior_ds)
+    omIndustrialStationaryTransportEmis.processEmissions(config, prior_ds)
+    omElectricityEmis.processEmissions(config, prior_ds)
+    omFugitiveEmis.processEmissions(config, prior_ds)
 
-    omTermiteEmis.processEmissions(config)
-    omGFASEmis.processEmissions(config)
-    omWetlandEmis.processEmissions(config)
+    omTermiteEmis.processEmissions(config, prior_ds)
+    omGFASEmis.processEmissions(config, prior_ds)
+    omWetlandEmis.processEmissions(config, prior_ds)
 
-    sum_sectors(config.output_file)
-    verify_emis(config)
+    add_ch4_total(prior_ds)
+    verify_emis(config, prior_ds)
+
+    write_output_dataset(config, prior_ds)
 
 
 if __name__ == "__main__":

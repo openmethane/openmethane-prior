@@ -24,11 +24,13 @@ import pandas as pd
 import rioxarray as rxr
 import xarray as xr
 
-from openmethane_prior.config import PriorConfig, load_config_from_env
+from openmethane_prior.config import PriorConfig, load_config_from_env, parse_cli_to_env
 from openmethane_prior.outputs import (
     convert_to_timescale,
-    sum_sectors,
-    write_sector,
+    add_ch4_total,
+    add_sector,
+    create_output_dataset,
+    write_output_dataset,
 )
 
 sectorEmissionStandardNames = {
@@ -41,11 +43,10 @@ def _find_grid(data, totalSize, gridSize):
     return np.floor((data + totalSize / 2) / gridSize)
 
 
-def processEmissions(config: PriorConfig):
+def processEmissions(config: PriorConfig, prior_ds: xr.Dataset):
     """
-    Process emissions for Industrial, Stationary and Transport
-
-    Writes layers into the output file
+    Process emissions for Industrial, Stationary and Transport sectors, adding
+    them to the prior dataset.
     """
     print("processEmissions for Industrial, Stationary and Transport")
 
@@ -106,8 +107,8 @@ def processEmissions(config: PriorConfig):
     print(f"{ignored} lit pixels were ignored")
 
     for sector in sectorsUsed:
-        write_sector(
-            output_path=config.output_file,
+        add_sector(
+            prior_ds=prior_ds,
             sector_name=sector.lower(),
             sector_data=convert_to_timescale(methane[sector], domain_grid.cell_area),
             sector_standard_name=sectorEmissionStandardNames[sector],
@@ -115,6 +116,10 @@ def processEmissions(config: PriorConfig):
 
 
 if __name__ == "__main__":
+    parse_cli_to_env()
     config = load_config_from_env()
-    processEmissions(config)
-    sum_sectors(config.output_file)
+
+    ds = create_output_dataset(config)
+    processEmissions(config, ds)
+    add_ch4_total(ds)
+    write_output_dataset(config, ds)

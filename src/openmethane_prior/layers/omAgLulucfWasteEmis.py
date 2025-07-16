@@ -16,7 +16,7 @@
 # limitations under the License.
 #
 
-"""Process livestock methane emissions"""
+"""Process agriculture, land use and waste methane emissions"""
 
 import csv
 import warnings
@@ -26,11 +26,12 @@ import rioxarray as rxr
 import xarray as xr
 from tqdm import tqdm
 
-from openmethane_prior.config import PriorConfig, load_config_from_env
+from openmethane_prior.config import PriorConfig, load_config_from_env, parse_cli_to_env
 from openmethane_prior.outputs import (
     convert_to_timescale,
-    sum_sectors,
-    write_sector,
+    add_ch4_total,
+    add_sector,
+    create_output_dataset, write_output_dataset,
 )
 from openmethane_prior.utils import SECS_PER_YEAR, area_of_rectangle_m2
 
@@ -41,8 +42,11 @@ sectorEmissionStandardNames = {
 }
 
 
-def processEmissions(config: PriorConfig):  # noqa: PLR0912, PLR0915
-    """Process Agriculture LULUCF and Waste emissions"""
+def processEmissions(config: PriorConfig, prior_ds: xr.Dataset):  # noqa: PLR0912, PLR0915
+    """
+    Process Agriculture LULUCF and Waste emissions, adding them to the prior
+    dataset.
+    """
     # Load raster land-use data
     print("processEmissions for Agriculture, LULUCF and waste")
     print("Loading land use data")
@@ -217,8 +221,8 @@ def processEmissions(config: PriorConfig):  # noqa: PLR0912, PLR0915
 
     print("Writing sectoral methane layers output file")
     for sector in sectorsUsed:
-        write_sector(
-            output_path=config.output_file,
+        add_sector(
+            prior_ds=prior_ds,
             sector_name=sector.lower(),
             sector_data=convert_to_timescale(methane[sector], cell_area=domain_grid.cell_area),
             sector_standard_name=sectorEmissionStandardNames[sector],
@@ -227,8 +231,8 @@ def processEmissions(config: PriorConfig):  # noqa: PLR0912, PLR0915
     print("Writing livestock methane layers output file")
     # convert the livestock data from per year to per second and write
     livestock_ch4_s = livestockCH4 / SECS_PER_YEAR
-    write_sector(
-        output_path=config.output_file,
+    add_sector(
+        prior_ds=prior_ds,
         sector_name="livestock",
         sector_data=livestock_ch4_s,
         sector_standard_name="domesticated_livestock",
@@ -236,6 +240,11 @@ def processEmissions(config: PriorConfig):  # noqa: PLR0912, PLR0915
 
 
 if __name__ == "__main__":
+    parse_cli_to_env()
     config = load_config_from_env()
-    processEmissions(config)
-    sum_sectors(config.output_file)
+
+    ds = create_output_dataset(config)
+    processEmissions(config, ds)
+    add_ch4_total(ds)
+    write_output_dataset(config, ds)
+

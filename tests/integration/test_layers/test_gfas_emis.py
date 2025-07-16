@@ -2,7 +2,7 @@ import netCDF4 as nc
 import numpy as np
 import pytest
 
-from openmethane_prior.outputs import initialise_output
+from openmethane_prior.outputs import create_output_dataset
 from openmethane_prior.layers.omGFASEmis import processEmissions
 from openmethane_prior.utils import area_of_rectangle_m2
 
@@ -10,9 +10,9 @@ from openmethane_prior.utils import area_of_rectangle_m2
 @pytest.mark.skip(reason="Makes no assertions")
 def test_gfas_emis(config, input_files, input_domain):  # test totals for GFAS emissions between original and remapped
     # TODO: Check the output correctly
-    initialise_output(config)
+    prior_ds = create_output_dataset(config)
 
-    remapped = processEmissions(config=config, forceUpdate=True)
+    remapped = processEmissions(config=config, prior_ds=prior_ds, forceUpdate=True)
 
     GFASfile = config.as_intermediate_file("gfas-download.nc")
     ncin = nc.Dataset(GFASfile, "r", format="NETCDF4")

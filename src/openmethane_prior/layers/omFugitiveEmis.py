@@ -18,17 +18,21 @@
 
 """Process fugitive Methane emissions"""
 
-import argparse
-import datetime
-
 import numpy as np
 import pandas as pd
+import xarray as xr
 
 from openmethane_prior.config import PriorConfig, load_config_from_env, parse_cli_to_env
-from openmethane_prior.outputs import convert_to_timescale, sum_sectors, write_sector, initialise_output
+from openmethane_prior.outputs import (
+    convert_to_timescale,
+    add_ch4_total,
+    add_sector,
+    create_output_dataset,
+    write_output_dataset,
+)
 
 
-def processEmissions(config: PriorConfig):
+def processEmissions(config: PriorConfig, prior_ds: xr.Dataset):
     """
     Process the fugitive methane emissions
 
@@ -70,8 +74,8 @@ def processEmissions(config: PriorConfig):
         if cell_coords is not None:
             methane[cell_coords[1], cell_coords[0]] += facility["emissions_quantity"]
 
-    write_sector(
-        output_path=config.output_file,
+    add_sector(
+        prior_ds=prior_ds,
         sector_name="fugitive",
         sector_data=convert_to_timescale(methane, domain_grid.cell_area),
         sector_standard_name="extraction_production_and_transport_of_fuel",
@@ -82,6 +86,7 @@ if __name__ == "__main__":
     parse_cli_to_env()
     config = load_config_from_env()
 
-    initialise_output(config)
-    processEmissions(config)
-    sum_sectors(config.output_file)
+    ds = create_output_dataset(config)
+    processEmissions(config, ds)
+    add_ch4_total(ds)
+    write_output_dataset(config, ds)

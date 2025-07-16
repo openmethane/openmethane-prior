@@ -20,16 +20,21 @@
 
 import numpy as np
 import pandas as pd
+import xarray as xr
 
-from openmethane_prior.config import PriorConfig, load_config_from_env
-from openmethane_prior.outputs import convert_to_timescale, sum_sectors, write_sector
+from openmethane_prior.config import PriorConfig, load_config_from_env, parse_cli_to_env
+from openmethane_prior.outputs import (
+    convert_to_timescale,
+    add_ch4_total,
+    add_sector,
+    create_output_dataset,
+    write_output_dataset,
+)
 
-
-def processEmissions(config: PriorConfig):
+def processEmissions(config: PriorConfig, prior_ds: xr.Dataset):
     """
-    Process emissions from the electricity sector
-
-    Adds `ch4_electricity` layer to the output file
+    Process emissions from the electricity sector, adding them to the prior
+    dataset.
     """
     print("processEmissions for Electricity")
 
@@ -55,8 +60,8 @@ def processEmissions(config: PriorConfig):
         if cell_coords is not None:
             methane[cell_coords[1], cell_coords[0]] += (facility["capacity"] / totalCapacity) * electricityEmis
 
-    write_sector(
-        output_path=config.output_file,
+    add_sector(
+        prior_ds=prior_ds,
         sector_name="electricity",
         sector_data=convert_to_timescale(methane, domain_grid.cell_area),
         sector_standard_name="energy_production_and_distribution",
@@ -64,6 +69,10 @@ def processEmissions(config: PriorConfig):
 
 
 if __name__ == "__main__":
+    parse_cli_to_env()
     config = load_config_from_env()
-    processEmissions(config)
-    sum_sectors(config.output_file)
+
+    ds = create_output_dataset(config)
+    processEmissions(config, ds)
+    add_ch4_total(ds)
+    write_output_dataset(config, ds)

@@ -2,16 +2,16 @@ import netCDF4 as nc
 import numpy as np
 import pytest
 
-from openmethane_prior.outputs import initialise_output
+from openmethane_prior.outputs import create_output_dataset
 from openmethane_prior.layers.omTermiteEmis import processEmissions
 from openmethane_prior.utils import area_of_rectangle_m2
 
 @pytest.mark.skip(reason="Makes no assertions")
 def test_termite_emis(config, input_files, input_domain):
     # TODO: Check the output correctly
-    initialise_output(config)
+    prior_ds = create_output_dataset(config)
 
-    remapped = processEmissions(config=config, forceUpdate=True)
+    remapped = processEmissions(config=config, prior_ds=prior_ds, forceUpdate=True)
     ncin = nc.Dataset(config.as_input_file(config.layer_inputs.termite_path), "r")
     latTerm = np.around(np.float64(ncin.variables["lat"][:]), 3)
     latTerm = latTerm[-1::-1]  # reversing order, we need south first

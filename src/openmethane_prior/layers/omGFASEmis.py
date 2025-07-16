@@ -37,7 +37,7 @@ import xarray as xr
 from shapely import geometry
 
 from openmethane_prior.config import PriorConfig, load_config_from_env, parse_cli_to_env
-from openmethane_prior.outputs import initialise_output, sum_sectors, write_sector
+from openmethane_prior.outputs import add_ch4_total, add_sector, create_output_dataset, write_output_dataset
 from openmethane_prior.utils import (
     area_of_rectangle_m2,
     load_zipped_pickle,
@@ -76,7 +76,7 @@ def download_GFAS(
     return file_name
 
 
-def processEmissions(config: PriorConfig, forceUpdate: bool = False, **kwargs):  # noqa: PLR0915
+def processEmissions(config: PriorConfig, prior_ds: xr.Dataset, forceUpdate: bool = False, **kwargs):  # noqa: PLR0915
     """
     Remap GFAS fire emissions to the CMAQ domain
     """
@@ -231,8 +231,8 @@ def processEmissions(config: PriorConfig, forceUpdate: bool = False, **kwargs): 
             "x": np.arange(resultNd.shape[-1]),
         },
     )
-    write_sector(
-        output_path=config.output_file,
+    add_sector(
+        prior_ds=prior_ds,
         sector_name="fire",
         sector_data=resultXr,
         sector_standard_name="fires",
@@ -244,6 +244,7 @@ if __name__ == "__main__":
     parse_cli_to_env()
     config = load_config_from_env()
 
-    initialise_output(config)
-    processEmissions(config)
-    sum_sectors(config.output_file)
+    ds = create_output_dataset(config)
+    processEmissions(config, ds)
+    add_ch4_total(ds)
+    write_output_dataset(config, ds)
