@@ -59,6 +59,12 @@ def test_create_output_dataset(config, input_files, start_date, end_date):
     assert output_ds["y"].attrs["bounds"] == "y_bounds"
     assert output_ds["y_bounds"].shape == (output_ds["y"].size, 2)
 
+    # grid cell names
+    assert str(output_ds["cell_name"][0, 0].data) == "10.0.0"
+    assert str(output_ds["cell_name"][31, 32].data) == "10.10.Z"
+    assert str(output_ds["cell_name"][99, 328].data) == "10.A8.33"
+    assert str(output_ds["cell_name"][135, 388].data) == "10.C4.47"
+
 
 def test_expand_sector_dims_errors():
     test_xr = xr.DataArray([1, 2, 3]) # 1-dimensional array

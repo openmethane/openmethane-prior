@@ -67,7 +67,8 @@ def test_005_agriculture_emissions(config, root_dir, input_files):
 
 
 def test_009_prior_emissions_ds(prior_emissions_ds):
-    mean_values = {key: prior_emissions_ds[key].mean().item() for key in prior_emissions_ds.keys()}
+    numeric_keys = [key for key in prior_emissions_ds.keys() if np.issubdtype(prior_emissions_ds[key].dtype, np.number)]
+    mean_values = {key: prior_emissions_ds[key].mean().item() for key in numeric_keys}
 
     expected_values = {
         "lambert_conformal": 0.0,
@@ -75,7 +76,6 @@ def test_009_prior_emissions_ds(prior_emissions_ds):
         "lon": 133.302001953125,
         "x_bounds": 0.0,
         "y_bounds": 0.02444604212461516,
-        "time_bounds": 1656720000000000000,
         "land_mask": 0.39128163098043234,
         "ch4_sector_agriculture": 3.8221794892533713e-13,
         "ch4_sector_lulucf": 8.2839841777071689e-13,
