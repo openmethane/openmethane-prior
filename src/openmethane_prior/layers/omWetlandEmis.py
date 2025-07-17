@@ -30,7 +30,7 @@ import xarray as xr
 from shapely import geometry
 
 from openmethane_prior.config import PriorConfig, load_config_from_env
-from openmethane_prior.outputs import sum_layers, write_layer
+from openmethane_prior.outputs import sum_sectors, write_sector
 from openmethane_prior.utils import (
     area_of_rectangle_m2,
     date_time_range,
@@ -223,17 +223,22 @@ def processEmissions(
         climatology[endDate.month - 1, ...]
     )  # we want endDate included, python doesn't
     result_nd = np.array(result_nd)
-    result_nd = np.expand_dims(result_nd, 1)  # add dummy layer dimension
+    result_nd = np.expand_dims(result_nd, 1)  # adding single vertical dimension
     resultXr = xr.DataArray(
         result_nd,
         coords={
-            "date": dates,
-            "LAY": np.array([1]),
+            "time": dates,
+            "vertical": np.array([1]),
             "y": np.arange(result_nd.shape[-2]),
             "x": np.arange(result_nd.shape[-1]),
         },
     )
-    write_layer(config.output_domain_file, "OCH4_WETLANDS", resultXr, True)
+    write_sector(
+        output_path=config.output_domain_file,
+        sector_name="wetlands",
+        sector_data=resultXr,
+        sector_standard_name="wetland_biological_processes",
+    )
     return result_nd
 
 
@@ -254,4 +259,4 @@ if __name__ == "__main__":
     args = parser.parse_args()
     config = load_config_from_env()
     processEmissions(config, args.start_date, args.end_date)
-    sum_layers(config.output_domain_file)
+    sum_sectors(config.output_domain_file)

@@ -22,14 +22,14 @@ import numpy as np
 import pandas as pd
 
 from openmethane_prior.config import PriorConfig, load_config_from_env
-from openmethane_prior.outputs import convert_to_timescale, sum_layers, write_layer
+from openmethane_prior.outputs import convert_to_timescale, sum_sectors, write_sector
 
 
 def processEmissions(config: PriorConfig):
     """
     Process emissions from the electricity sector
 
-    Adds `OCH4_ELECTRICITY` layer to the output file
+    Adds `ch4_electricity` layer to the output file
     """
     print("processEmissions for Electricity")
 
@@ -55,14 +55,15 @@ def processEmissions(config: PriorConfig):
         if cell_coords is not None:
             methane[cell_coords[1], cell_coords[0]] += (facility["capacity"] / totalCapacity) * electricityEmis
 
-    write_layer(
-        config.output_domain_file,
-        "OCH4_ELECTRICITY",
-        convert_to_timescale(methane, domain_grid.cell_area),
+    write_sector(
+        output_path=config.output_domain_file,
+        sector_name="electricity",
+        sector_data=convert_to_timescale(methane, domain_grid.cell_area),
+        sector_standard_name="energy_production_and_distribution",
     )
 
 
 if __name__ == "__main__":
     config = load_config_from_env()
     processEmissions(config)
-    sum_layers(config.output_domain_file)
+    sum_sectors(config.output_domain_file)

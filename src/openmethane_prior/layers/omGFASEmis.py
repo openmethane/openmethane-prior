@@ -27,18 +27,17 @@ import argparse
 import bisect
 import datetime
 import itertools
+import netCDF4 as nc
 import os
 import pathlib
 
 import cdsapi
-import netCDF4 as nc
 import numpy as np
 import xarray as xr
 from shapely import geometry
 
-from openmethane_prior.inputs import initialise_output
 from openmethane_prior.config import PriorConfig, load_config_from_env
-from openmethane_prior.outputs import sum_layers, write_layer
+from openmethane_prior.outputs import initialise_output, sum_sectors, write_sector
 from openmethane_prior.utils import (
     area_of_rectangle_m2,
     load_zipped_pickle,
@@ -89,11 +88,16 @@ def processEmissions(config: PriorConfig, startDate, endDate, forceUpdate: bool 
     gfas_file = download_GFAS(
         startDate, endDate, file_name=config.as_intermediate_file("gfas-download.nc")
     )
-    ncin = nc.Dataset(gfas_file, "r", format="NETCDF4")
+    gfas_ds = nc.Dataset(gfas_file, "r")
 
-    latGfas = np.around(np.float64(ncin.variables["latitude"][:]), 3)
+    # dates are labelled at midnight at end of chosen day (hence looks like next day), subtract one day to fix
+    oneDay = np.timedelta64(1, "D")
+    gfasTimesRaw = nc.num2date(gfas_ds.variables["valid_time"], gfas_ds.variables["valid_time"].getncattr("units"))
+    gfasTimes = [np.datetime64(t) - oneDay for t in gfasTimesRaw]
+
+    latGfas = np.around(np.float64(gfas_ds.variables["latitude"][:]), 3)
     latGfas = latGfas[::-1]  # they're originally north-south, we want them south north
-    lonGfas = np.around(np.float64(ncin.variables["longitude"][:]), 3)
+    lonGfas = np.around(np.float64(gfas_ds.variables["longitude"][:]), 3)
     dlatGfas = latGfas[0] - latGfas[1]
     dlonGfas = lonGfas[1] - lonGfas[0]
     lonGfas_edge = np.zeros(len(lonGfas) + 1)
@@ -101,10 +105,6 @@ def processEmissions(config: PriorConfig, startDate, endDate, forceUpdate: bool 
     lonGfas_edge[-1] = lonGfas[-1] + dlonGfas / 2.0
     lonGfas_edge = np.around(lonGfas_edge, 2)
 
-    gfasTimesRaw = nc.num2date(ncin.variables["valid_time"][:], ncin.variables["valid_time"].getncattr("units"))
-    # dates are labelled at midnight at end of chosen day (hence looks like next day), subtract one day to fix
-    oneDay = datetime.timedelta(days=1)
-    gfasTimes = [t -oneDay for t in gfasTimesRaw]
     latGfas_edge = np.zeros(len(latGfas) + 1)
     latGfas_edge[0:-1] = latGfas + dlatGfas / 2.0
     latGfas_edge[-1] = latGfas[-1] - dlatGfas / 2.0
@@ -220,23 +220,28 @@ def processEmissions(config: PriorConfig, startDate, endDate, forceUpdate: bool 
 
     for i in range(len(gfasTimes)):
         dates.append(gfasTimes[i])
-        subset = ncin["ch4fire"][i, ...]
+        subset = gfas_ds["ch4fire"][i, ...]
         subset = subset[::-1, :]  # they're listed north-south, we want them south north
         resultNd.append(
             redistribute_spatially(LAT.shape, ind_x, ind_y, coefs, subset, GFASAreas, cmaqAreas)
         )
     resultNd = np.array(resultNd)
-    resultNd = np.expand_dims(resultNd, 1)  # adding dummy layer dimension
+    resultNd = np.expand_dims(resultNd, 1)  # adding single vertical dimension
     resultXr = xr.DataArray(
         resultNd,
         coords={
-            "date": dates,
-            "LAY": np.array([1]),
+            "time": dates,
+            "vertical": np.array([1]),
             "y": np.arange(resultNd.shape[-2]),
             "x": np.arange(resultNd.shape[-1]),
         },
     )
-    write_layer(config.output_domain_file, "OCH4_FIRE", resultXr, True)
+    write_sector(
+        output_path=config.output_domain_file,
+        sector_name="fire",
+        sector_data=resultXr,
+        sector_standard_name="fires",
+    )
     return resultNd
 
 
@@ -256,6 +261,6 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
     config = load_config_from_env()
-    initialise_output(config)
+    initialise_output(config, args.start_date, args.end_date)
     processEmissions(config, args.start_date, args.end_date)
-    sum_layers(config.output_domain_file)
+    sum_sectors(config.output_domain_file)

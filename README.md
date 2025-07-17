@@ -190,8 +190,8 @@ poetry run python src/openmethane_prior/layers/omWetlandEmis.py --start-date 202
 ## Outputs
 
 Outputs can be found in the `data/outputs` folder. The emissions layers will be written as variables to a copy of the
-input domain file, with an `OCH4_` prefix for the methane layer variable names. The sum of all layers will be stored in
-the `OCH4_TOTAL` layer.
+input domain file, with an `ch4_sector_` prefix for the methane layer variable names. The sum of all layers will be stored in
+the `ch4_total` layer.
 
 The name of the layered output file will be `om-prior-output.nc`.
 

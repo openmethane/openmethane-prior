@@ -17,18 +17,13 @@
 #
 """Input file definitions and checks"""
 
-import datetime
 import os
 import pathlib
-import shutil
 import sys
 import urllib.parse
-
 import requests
-import netCDF4 as nc
 
 from openmethane_prior.config import PriorConfig
-from openmethane_prior.utils import get_version
 
 
 def download_input_file(remote_url: str, url_fragment: str, save_path: pathlib.Path) -> bool:
@@ -73,29 +68,6 @@ def download_input_file(remote_url: str, url_fragment: str, save_path: pathlib.P
 
     return False
 
-
-def initialise_output(config: PriorConfig):
-    """
-    Initialise the output directory
-
-    Copies the input domain to the output domain
-
-    Parameters
-    ----------
-    config
-        Configuration object
-    """
-    config.output_domain_file.parent.mkdir(parents=True, exist_ok=True)
-
-    shutil.copyfile(config.input_domain_file, config.output_domain_file)
-
-    # Add the version of openmethane-prior used to generate the file as an attribute
-    outfile = nc.Dataset(config.output_domain_file, "a", format="NETCDF4")
-    outfile.title = "Open Methane Prior Estimate"
-    outfile.comment = "Gridded prior emissions estimate for methane across Australia"
-    outfile.history = f"{datetime.datetime.now(datetime.timezone.utc)}: {' '.join(sys.argv)}"
-    outfile.openmethane_prior_version = get_version()
-    outfile.sync() # write attributes back to the file
 
 def check_input_files(config: PriorConfig):
     """

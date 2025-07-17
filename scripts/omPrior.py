@@ -24,7 +24,7 @@ import datetime
 import prettyprinter
 
 from openmethane_prior.config import PriorConfig, load_config_from_env
-from openmethane_prior.inputs import check_input_files, initialise_output
+from openmethane_prior.inputs import check_input_files
 from openmethane_prior.layers import (
     omAgLulucfWasteEmis,
     omElectricityEmis,
@@ -34,7 +34,7 @@ from openmethane_prior.layers import (
     omTermiteEmis,
     omWetlandEmis,
 )
-from openmethane_prior.outputs import sum_layers
+from openmethane_prior.outputs import sum_sectors, initialise_output
 from openmethane_prior.raster import reproject_raster_inputs
 from openmethane_prior.verification import verify_emis
 
@@ -45,7 +45,7 @@ def run_prior(
     config: PriorConfig, start_date: datetime.date, end_date: datetime.date, skip_reproject: bool
 ):
     """
-    Calculate the prior methane emissions estimate for OpenMethane
+    Calculate the prior methane emissions estimate for Open Methane
 
     Parameters
     ----------
@@ -60,8 +60,8 @@ def run_prior(
     """
     check_input_files(config)
 
-    # Copy the input domain to the output directory
-    initialise_output(config)
+    # Initialise the output dataset based on the domain provided in config
+    initialise_output(config, start_date, end_date)
 
     if not skip_reproject:
         reproject_raster_inputs(config)
@@ -75,7 +75,7 @@ def run_prior(
     omGFASEmis.processEmissions(config, start_date, end_date)
     omWetlandEmis.processEmissions(config, start_date, end_date)
 
-    sum_layers(config.output_domain_file)
+    sum_sectors(config.output_domain_file)
     verify_emis(config)
 
 

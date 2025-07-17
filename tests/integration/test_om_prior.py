@@ -1,14 +1,16 @@
 import os
-
 import attrs
 import numpy as np
 import pandas as pd
+import pytest
 import requests
 import xarray as xr
+
 from openmethane_prior.layers.omGFASEmis import download_GFAS
+from openmethane_prior.outputs import SECTOR_PREFIX
 from openmethane_prior.utils import SECS_PER_YEAR
 
-
+@pytest.mark.skip(reason="Duplicated by test_004_omDownloadInputs")
 def test_001_response_for_download_links(config):
     layer_info = attrs.asdict(config.layer_inputs)
     for file_fragment in layer_info.values():
@@ -18,6 +20,7 @@ def test_001_response_for_download_links(config):
             assert response.status_code == 200
 
 
+@pytest.mark.skip(reason="Duplicated by other tests")
 def test_002_cdsapi_connection(root_dir, tmp_path, start_date, end_date):
     filepath = tmp_path / "sub" / "test_download_cdsapi.nc"
     filepath.parent.mkdir(parents=True)
@@ -63,42 +66,47 @@ def test_005_agriculture_emissions(config, root_dir, input_files):
     assert agDX > 0, f"Livestock CH4 exceeds bounds of total agriculture CH4: {agDX / 1e9}"
 
 
-# TODO Update this test when file structure is clear.
 def test_009_output_domain_xr(output_domain):
     mean_values = {key: output_domain[key].mean().item() for key in output_domain.keys()}
 
-    expected = {
-        "LAT": -26.983160018920898,
-        "LON": 133.302001953125,
-        "LANDMASK": 0.39128163456916809,
-        "LATD": -26.980266571044922,
-        "LOND": 133.302001953125,
-        "OCH4_AGRICULTURE": 3.8221794892533713e-13,
-        "OCH4_LULUCF": 8.2839841777071689e-13,
-        "OCH4_WASTE": 7.6806688034203811e-13,
-        "OCH4_LIVESTOCK": 3.3252710482543979e-12,
-        "OCH4_INDUSTRIAL": 4.6406982245152562e-15,
-        "OCH4_STATIONARY": 8.5852921845127254e-14,
-        "OCH4_TRANSPORT": 1.8562792898061025e-14,
-        "OCH4_ELECTRICITY": 2.3204437472569127e-14,
-        "OCH4_FUGITIVE": 1.9068246493083643e-12,
-        "OCH4_TERMITE": 8.1061502996138124e-13,
-        "OCH4_FIRE": 2.6126792244431096e-13,
-        "OCH4_WETLANDS": 1.8596938045956645e-11,
+    expected_values = {
+        "lambert_conformal": 0.0,
+        "lat": -26.9831600189209,
+        "lon": 133.302001953125,
+        "x_bounds": 0.0,
+        "y_bounds": 0.02444604212461516,
+        "time_bounds": 1656720000000000000,
+        "land_mask": 0.39128163098043234,
+        "ch4_sector_agriculture": 3.8221794892533713e-13,
+        "ch4_sector_lulucf": 8.2839841777071689e-13,
+        "ch4_sector_waste": 7.680668803420382e-13,
+        "ch4_sector_livestock": 3.3252710482543987e-12,
+        "ch4_sector_industrial": 4.640698224515257e-15,
+        "ch4_sector_stationary": 8.585292184512728e-14,
+        "ch4_sector_transport": 1.8562792898061028e-14,
+        "ch4_sector_electricity": 2.3204437472569124e-14,
+        "ch4_sector_fugitive": 1.906824649308364e-12,
+        "ch4_sector_termite": 8.106151383815985e-13,
+        "ch4_sector_fire": 2.6126792244431096e-13,
+        "ch4_sector_wetlands": 1.8596938045956645e-11,
+        "ch4_total": 2.701186087531425e-11,
+
+        # deprecated
         "OCH4_TOTAL": 2.701186087531425e-11,
+        "LANDMASK": 0.39128163456916809,
     }
 
-    assert mean_values == expected
+    assert mean_values == expected_values
 
 
 def test_010_emission_discrepancy(config, root_dir, output_domain, input_files):
-    modelAreaM2 = output_domain.DX * output_domain.DY
+    modelAreaM2 = config.domain_grid().cell_area
 
     filepath_sector = config.as_input_file(config.layer_inputs.sectoral_emissions_path)
     sector_data = pd.read_csv(filepath_sector).to_dict(orient="records")[0]
 
     for sector in sector_data.keys():
-        layerName = f"OCH4_{sector.upper()}"
+        layerName = f"{SECTOR_PREFIX}_{sector}"
         sectorVal = float(sector_data[sector]) * 1e9
 
         # Check each layer in the output sums up to the input
@@ -107,7 +115,7 @@ def test_010_emission_discrepancy(config, root_dir, output_domain, input_files):
 
             if sector == "agriculture":
                 layerVal += np.sum(
-                    output_domain["OCH4_LIVESTOCK"][0].values * modelAreaM2 * SECS_PER_YEAR
+                    output_domain[f"{SECTOR_PREFIX}_livestock"][0].values * modelAreaM2 * SECS_PER_YEAR
                 )
 
             diff = round(layerVal - sectorVal)
@@ -118,12 +126,33 @@ def test_010_emission_discrepancy(config, root_dir, output_domain, input_files):
             ), f"Discrepancy of {percentage_diff}% in {sector} emissions"
 
 
-def test_required_attributes(output_domain):
-    assert output_domain.variables["OCH4_TOTAL"].attrs == {
-        "units": "kg/m^2/s",
-        "long_name": "total methane flux",
+def test_011_output_domain_dims(output_domain):
+    expected_dimensions = {
+        "time": 2,
+        "vertical": 1,
+        "y": 430,
+        "x": 454,
+        "cell_bounds": 2,
+        "time_period": 2,
     }
-    assert output_domain.variables["OCH4_WETLANDS"].attrs == {
-        "units": "kg/m^2/s",
-        "long_name": "OCH4_WETLANDS",
+
+    assert output_domain.sizes == expected_dimensions
+
+
+def test_012_output_variable_attributes(output_domain):
+    assert output_domain.variables["ch4_total"].attrs == {
+        "units": "kg/m2/s",
+        "standard_name": "surface_upward_mass_flux_of_methane",
+        "long_name": "total expected flux of methane based on public data",
+        "grid_mapping": "lambert_conformal",
     }
+
+    for layer_name in [layer for layer in list(output_domain.variables.keys()) if layer.startswith("ch4_sector_")]:
+        assert output_domain.variables[layer_name].attrs["units"] == "kg/m2/s"
+        assert output_domain.variables[layer_name].attrs["long_name"] == f"expected flux of methane caused by sector: {layer_name.replace('ch4_sector_', '')}"
+        assert output_domain.variables[layer_name].attrs["standard_name"].startswith("surface_upward_mass_flux_of_methane_due_to_emission_from_")
+        assert output_domain.variables[layer_name].attrs["grid_mapping"] == "lambert_conformal"
+
+    # TODO: remove when OCH4_TOTAL layer is removed
+    assert output_domain.variables["OCH4_TOTAL"].attrs["deprecated"] == "This variable is deprecated and will be removed in future versions"
+    assert output_domain.variables["OCH4_TOTAL"].attrs["superseded_by"] == "ch4_total"

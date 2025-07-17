@@ -18,6 +18,7 @@
 
 """General utilities"""
 
+import cftime
 import datetime
 import gzip
 import importlib
@@ -29,6 +30,7 @@ import typing
 
 import numpy as np
 from numpy.typing import ArrayLike
+import xarray as xr
 
 T = typing.TypeVar("T", bound=ArrayLike | float)
 
@@ -144,5 +146,38 @@ def redistribute_spatially(lat_shape, ind_x, ind_y, coefs, subset, from_areas, t
     gridded /= to_areas
     return gridded
 
+
+def get_command():
+    return " ".join(sys.argv)
+
+
+def get_timestamped_command():
+    now_utc = datetime.datetime.now(datetime.timezone.utc)
+    return f"{now_utc.isoformat(sep=' ', timespec='seconds')}: {get_command()}"
+
+
 def get_version():
     return os.getenv('OPENMETHANE_PRIOR_VERSION', importlib.metadata.version('openmethane_prior'))
+
+
+def time_bounds(
+    dates: xr.CFTimeIndex,
+    interval: datetime.timedelta = datetime.timedelta(days=1)
+) -> list[list[cftime.datetime]]:
+    bounds = []
+    for period_start in dates:
+        # bounds for each time coordinate extend from the start
+        # to the end of the interval
+        bounds.append([period_start, period_start + interval])
+    return bounds
+
+
+def bounds_from_cell_edges(cell_edges: xr.DataArray) -> np.array:
+    """
+    Convert an array with [n+1] elements representing the edge coordinates of
+    grid cells, to an array of [n][2] elements where each entry contains the
+    lower and upper edge of the grid cell at position n.
+    """
+    lower_bounds = cell_edges[:-1]
+    upper_bounds = cell_edges[1:]
+    return np.column_stack([lower_bounds, upper_bounds])

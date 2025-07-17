@@ -24,6 +24,7 @@ import xarray as xr
 from colorama import Fore
 
 from openmethane_prior.config import PriorConfig, load_config_from_env
+from openmethane_prior.outputs import SECTOR_PREFIX
 from openmethane_prior.utils import SECS_PER_YEAR
 
 MAX_ABS_DIFF = 0.1
@@ -57,26 +58,26 @@ def verify_emis(config: PriorConfig, atol: float = MAX_ABS_DIFF):
     with xr.open_dataset(config.output_domain_file) as dss:
         ds = dss.load()
 
-    modelAreaM2 = ds.DX * ds.DY
+    modelAreaM2 = config.domain_grid().cell_area
     for sector in sector_data.keys():
-        layerName = f"OCH4_{sector.upper()}"
+        layerName = f"{SECTOR_PREFIX}_{sector}"
         sectorVal = float(sector_data[sector]) * 1e9
 
         if layerName in ds:
             layerVal = np.sum(ds[layerName][0].values * modelAreaM2 * SECS_PER_YEAR)
 
             if sector == "agriculture":
-                layerVal += np.sum(ds["OCH4_LIVESTOCK"][0].values * modelAreaM2 * SECS_PER_YEAR)
+                layerVal += np.sum(ds[f"{SECTOR_PREFIX}_livestock"][0].values * modelAreaM2 * SECS_PER_YEAR)
 
             diff = round(layerVal - sectorVal)
             pct_diff = diff / sectorVal * 100
 
             if abs(pct_diff) > atol:
-                print(f"{Fore.RED}FAILED - " f"Discrepancy of {pct_diff}% in {sector} emissions")
+                print(f"{Fore.RED}FAILED - " f"Discrepancy of {pct_diff}% in {sector} emissions{Fore.RESET}")
             else:
                 print(
                     f"{Fore.GREEN}PASSED - "
-                    f"{sector} emissions OK, discrepancy is {abs(pct_diff)}% of total"
+                    f"{sector} emissions OK, discrepancy is {abs(pct_diff)}% of total{Fore.RESET}"
                 )
 
 
