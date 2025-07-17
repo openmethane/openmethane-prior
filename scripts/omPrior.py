@@ -75,7 +75,7 @@ def run_prior(
     omGFASEmis.processEmissions(config, start_date, end_date)
     omWetlandEmis.processEmissions(config, start_date, end_date)
 
-    sum_sectors(config.output_domain_file)
+    sum_sectors(config.output_file)
     verify_emis(config)
 
 

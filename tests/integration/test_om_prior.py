@@ -66,8 +66,8 @@ def test_005_agriculture_emissions(config, root_dir, input_files):
     assert agDX > 0, f"Livestock CH4 exceeds bounds of total agriculture CH4: {agDX / 1e9}"
 
 
-def test_009_output_domain_xr(output_domain):
-    mean_values = {key: output_domain[key].mean().item() for key in output_domain.keys()}
+def test_009_prior_emissions_ds(prior_emissions_ds):
+    mean_values = {key: prior_emissions_ds[key].mean().item() for key in prior_emissions_ds.keys()}
 
     expected_values = {
         "lambert_conformal": 0.0,
@@ -99,7 +99,7 @@ def test_009_output_domain_xr(output_domain):
     assert mean_values == expected_values
 
 
-def test_010_emission_discrepancy(config, root_dir, output_domain, input_files):
+def test_010_emission_discrepancy(config, prior_emissions_ds, input_files):
     modelAreaM2 = config.domain_grid().cell_area
 
     filepath_sector = config.as_input_file(config.layer_inputs.sectoral_emissions_path)
@@ -110,12 +110,12 @@ def test_010_emission_discrepancy(config, root_dir, output_domain, input_files):
         sectorVal = float(sector_data[sector]) * 1e9
 
         # Check each layer in the output sums up to the input
-        if layerName in output_domain:
-            layerVal = np.sum(output_domain[layerName][0].values * modelAreaM2 * SECS_PER_YEAR)
+        if layerName in prior_emissions_ds:
+            layerVal = np.sum(prior_emissions_ds[layerName][0].values * modelAreaM2 * SECS_PER_YEAR)
 
             if sector == "agriculture":
                 layerVal += np.sum(
-                    output_domain[f"{SECTOR_PREFIX}_livestock"][0].values * modelAreaM2 * SECS_PER_YEAR
+                    prior_emissions_ds[f"{SECTOR_PREFIX}_livestock"][0].values * modelAreaM2 * SECS_PER_YEAR
                 )
 
             diff = round(layerVal - sectorVal)
@@ -126,7 +126,7 @@ def test_010_emission_discrepancy(config, root_dir, output_domain, input_files):
             ), f"Discrepancy of {percentage_diff}% in {sector} emissions"
 
 
-def test_011_output_domain_dims(output_domain):
+def test_011_output_dims(prior_emissions_ds):
     expected_dimensions = {
         "time": 2,
         "vertical": 1,
@@ -136,23 +136,23 @@ def test_011_output_domain_dims(output_domain):
         "time_period": 2,
     }
 
-    assert output_domain.sizes == expected_dimensions
+    assert prior_emissions_ds.sizes == expected_dimensions
 
 
-def test_012_output_variable_attributes(output_domain):
-    assert output_domain.variables["ch4_total"].attrs == {
+def test_012_output_variable_attributes(prior_emissions_ds):
+    assert prior_emissions_ds.variables["ch4_total"].attrs == {
         "units": "kg/m2/s",
         "standard_name": "surface_upward_mass_flux_of_methane",
         "long_name": "total expected flux of methane based on public data",
         "grid_mapping": "lambert_conformal",
     }
 
-    for layer_name in [layer for layer in list(output_domain.variables.keys()) if layer.startswith("ch4_sector_")]:
-        assert output_domain.variables[layer_name].attrs["units"] == "kg/m2/s"
-        assert output_domain.variables[layer_name].attrs["long_name"] == f"expected flux of methane caused by sector: {layer_name.replace('ch4_sector_', '')}"
-        assert output_domain.variables[layer_name].attrs["standard_name"].startswith("surface_upward_mass_flux_of_methane_due_to_emission_from_")
-        assert output_domain.variables[layer_name].attrs["grid_mapping"] == "lambert_conformal"
+    for layer_name in [layer for layer in list(prior_emissions_ds.variables.keys()) if layer.startswith("ch4_sector_")]:
+        assert prior_emissions_ds.variables[layer_name].attrs["units"] == "kg/m2/s"
+        assert prior_emissions_ds.variables[layer_name].attrs["long_name"] == f"expected flux of methane caused by sector: {layer_name.replace('ch4_sector_', '')}"
+        assert prior_emissions_ds.variables[layer_name].attrs["standard_name"].startswith("surface_upward_mass_flux_of_methane_due_to_emission_from_")
+        assert prior_emissions_ds.variables[layer_name].attrs["grid_mapping"] == "lambert_conformal"
 
     # TODO: remove when OCH4_TOTAL layer is removed
-    assert output_domain.variables["OCH4_TOTAL"].attrs["deprecated"] == "This variable is deprecated and will be removed in future versions"
-    assert output_domain.variables["OCH4_TOTAL"].attrs["superseded_by"] == "ch4_total"
+    assert prior_emissions_ds.variables["OCH4_TOTAL"].attrs["deprecated"] == "This variable is deprecated and will be removed in future versions"
+    assert prior_emissions_ds.variables["OCH4_TOTAL"].attrs["superseded_by"] == "ch4_total"

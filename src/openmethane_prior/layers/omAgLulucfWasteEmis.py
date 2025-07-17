@@ -218,7 +218,7 @@ def processEmissions(config: PriorConfig):  # noqa: PLR0912, PLR0915
     print("Writing sectoral methane layers output file")
     for sector in sectorsUsed:
         write_sector(
-            output_path=config.output_domain_file,
+            output_path=config.output_file,
             sector_name=sector.lower(),
             sector_data=convert_to_timescale(methane[sector], cell_area=domain_grid.cell_area),
             sector_standard_name=sectorEmissionStandardNames[sector],
@@ -228,7 +228,7 @@ def processEmissions(config: PriorConfig):  # noqa: PLR0912, PLR0915
     # convert the livestock data from per year to per second and write
     livestock_ch4_s = livestockCH4 / SECS_PER_YEAR
     write_sector(
-        output_path=config.output_domain_file,
+        output_path=config.output_file,
         sector_name="livestock",
         sector_data=livestock_ch4_s,
         sector_standard_name="domesticated_livestock",
@@ -238,4 +238,4 @@ def processEmissions(config: PriorConfig):  # noqa: PLR0912, PLR0915
 if __name__ == "__main__":
     config = load_config_from_env()
     processEmissions(config)
-    sum_sectors(config.output_domain_file)
+    sum_sectors(config.output_file)

@@ -55,7 +55,7 @@ def verify_emis(config: PriorConfig, atol: float = MAX_ABS_DIFF):
         )
 
     # Check each layer in the output sums up to the input
-    with xr.open_dataset(config.output_domain_file) as dss:
+    with xr.open_dataset(config.output_file) as dss:
         ds = dss.load()
 
     modelAreaM2 = config.domain_grid().cell_area

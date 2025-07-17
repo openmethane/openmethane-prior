@@ -234,7 +234,7 @@ def processEmissions(
         },
     )
     write_sector(
-        output_path=config.output_domain_file,
+        output_path=config.output_file,
         sector_name="wetlands",
         sector_data=resultXr,
         sector_standard_name="wetland_biological_processes",
@@ -259,4 +259,4 @@ if __name__ == "__main__":
     args = parser.parse_args()
     config = load_config_from_env()
     processEmissions(config, args.start_date, args.end_date)
-    sum_sectors(config.output_domain_file)
+    sum_sectors(config.output_file)
