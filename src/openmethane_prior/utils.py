@@ -38,29 +38,6 @@ T = typing.TypeVar("T", bound=ArrayLike | float)
 SECS_PER_YEAR = 365 * 24 * 60 * 60
 
 
-def date_time_range(start: datetime.date, end: datetime.date, delta: datetime.timedelta):
-    """Iterate over a range of dates between start and end.
-
-    Parameters
-    ----------
-    start
-        Start date (inclusive)
-    end
-        Start date (exclusive)
-    delta
-        Time delta to step over
-
-    Yields
-    ------
-        Dates between start and end (exclusive)
-
-    """
-    t = start
-    while t < end:
-        yield t
-        t += delta
-
-
 def save_zipped_pickle(obj, filename: str | pathlib.Path, protocol=-1):
     """Save a compressed pickle file."""
     pathlib.Path(filename).parent.mkdir(parents=True, exist_ok=True)
