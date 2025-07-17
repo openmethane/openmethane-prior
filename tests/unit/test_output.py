@@ -4,23 +4,23 @@ import pytest
 
 from openmethane_prior.outputs import initialise_output, create_output_dataset, expand_sector_dims
 
-def test_initialise_output(config, input_files, start_date, end_date):
+def test_initialise_output(config, input_files):
     assert not config.output_file.exists()
 
-    initialise_output(config, start_date, end_date)
+    initialise_output(config)
 
     assert config.output_file.exists()
 
     # Idempotent
-    initialise_output(config, start_date, end_date)
+    initialise_output(config)
 
 
-def test_create_output_dataset(config, input_files, start_date, end_date):
+def test_create_output_dataset(config, input_files):
     domain_ds = config.domain_dataset()
 
     assert not config.output_file.exists()
 
-    output_ds = create_output_dataset(config, start_date, end_date)
+    output_ds = create_output_dataset(config)
 
     # validate input domain hasn't changed before we assert about output
     assert domain_ds.sizes["COL"] == 454, "reference domain COL dimension has changed"
@@ -50,9 +50,9 @@ def test_create_output_dataset(config, input_files, start_date, end_date):
     assert output_ds["lambert_conformal"].attrs["latitude_of_projection_origin"] == domain_ds.attrs["MOAD_CEN_LAT"]
 
     # bounds
-    assert output_ds["time"].size == (end_date - start_date).days + 1 # one time step per day, end inclusive
-    assert output_ds["time"].values[0] == np.datetime64(start_date)
-    assert output_ds["time"].values[-1] == np.datetime64(end_date)
+    assert output_ds["time"].size == (config.end_date - config.start_date).days + 1 # one time step per day, end inclusive
+    assert output_ds["time"].values[0] == np.datetime64(config.start_date)
+    assert output_ds["time"].values[-1] == np.datetime64(config.end_date)
 
     assert output_ds["x"].attrs["bounds"] == "x_bounds"
     assert output_ds["x_bounds"].shape == (output_ds["x"].size, 2)

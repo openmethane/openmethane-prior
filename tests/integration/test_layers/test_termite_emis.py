@@ -7,9 +7,9 @@ from openmethane_prior.layers.omTermiteEmis import processEmissions
 from openmethane_prior.utils import area_of_rectangle_m2
 
 @pytest.mark.skip(reason="Makes no assertions")
-def test_termite_emis(config, input_files, input_domain, start_date, end_date):
+def test_termite_emis(config, input_files, input_domain):
     # TODO: Check the output correctly
-    initialise_output(config, start_date, end_date)
+    initialise_output(config)
 
     remapped = processEmissions(config=config, forceUpdate=True)
     ncin = nc.Dataset(config.as_input_file(config.layer_inputs.termite_path), "r")

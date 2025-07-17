@@ -29,8 +29,8 @@ import numpy as np
 import xarray as xr
 from shapely import geometry
 
-from openmethane_prior.config import PriorConfig, load_config_from_env
-from openmethane_prior.outputs import sum_sectors, write_sector
+from openmethane_prior.config import PriorConfig, load_config_from_env, parse_cli_to_env
+from openmethane_prior.outputs import sum_sectors, write_sector, initialise_output
 from openmethane_prior.utils import (
     area_of_rectangle_m2,
     date_time_range,
@@ -197,31 +197,23 @@ def make_wetland_climatology(config: PriorConfig, forceUpdate: bool = False):  #
 
 
 def processEmissions(
-    config: PriorConfig, startDate: datetime.date, endDate: datetime.date, forceUpdate: bool = False
+    config: PriorConfig,
+    forceUpdate: bool = False,
 ):
     """
     Process wetland emissions for the given date range
-
-    Parameters
-    ----------
-    startDate
-        Start date to process
-    endDate
-        End date to process
-    kwargs
-        Additional kwargs
     """
     climatology = make_wetland_climatology(config, forceUpdate=forceUpdate)
     delta = datetime.timedelta(days=1)
     result_nd = []  # will be ndarray once built
     dates = []
-    for d in date_time_range(startDate, endDate, delta):
+    for d in date_time_range(config.start_date, config.end_date, delta):
         dates.append(d)
         result_nd.append(climatology[d.month - 1, ...])  # d.month is 1-based
-    dates.append(endDate)
+    dates.append(config.end_date)
     result_nd.append(
-        climatology[endDate.month - 1, ...]
-    )  # we want endDate included, python doesn't
+        climatology[config.end_date.month - 1, ...]
+    )  # we want config.end_date included, python doesn't
     result_nd = np.array(result_nd)
     result_nd = np.expand_dims(result_nd, 1)  # adding single vertical dimension
     resultXr = xr.DataArray(
@@ -243,20 +235,9 @@ def processEmissions(
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Calculate the prior methane emissions estimate for OpenMethane"
-    )
-    parser.add_argument(
-        "--start-date",
-        type=lambda s: datetime.datetime.strptime(s, "%Y-%m-%d"),
-        help="Start date in YYYY-MM-DD format",
-    )
-    parser.add_argument(
-        "--end-date",
-        type=lambda s: datetime.datetime.strptime(s, "%Y-%m-%d"),
-        help="end date in YYYY-MM-DD format",
-    )
-    args = parser.parse_args()
+    parse_cli_to_env()
     config = load_config_from_env()
-    processEmissions(config, args.start_date, args.end_date)
+
+    initialise_output(config)
+    processEmissions(config)
     sum_sectors(config.output_file)

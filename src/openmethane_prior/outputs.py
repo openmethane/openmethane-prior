@@ -47,15 +47,11 @@ def convert_to_timescale(emission, cell_area):
     return emission / cell_area / SECS_PER_YEAR
 
 
-def create_output_dataset(
-    config: PriorConfig,
-    start_date: datetime.date,
-    end_date: datetime.date,
-) -> xr.Dataset:
+def create_output_dataset(config: PriorConfig) -> xr.Dataset:
     domain_ds = config.domain_dataset()
     domain_grid = config.domain_grid()
-    period_start = start_date
-    period_end = end_date
+    period_start = config.start_date
+    period_end = config.end_date
 
     # generate daily time steps
     time_steps = xr.date_range(start=period_start, end=period_end, freq="D", use_cftime=True, normalize=True)
@@ -187,11 +183,7 @@ def create_output_dataset(
     return prior_ds
 
 
-def initialise_output(
-    config: PriorConfig,
-    start_date: datetime.date,
-    end_date: datetime.date,
-):
+def initialise_output(config: PriorConfig):
     """
     Initialise the output directory
 
@@ -204,7 +196,7 @@ def initialise_output(
     """
     config.output_file.parent.mkdir(parents=True, exist_ok=True)
 
-    output_ds = create_output_dataset(config, start_date, end_date)
+    output_ds = create_output_dataset(config)
     output_ds.to_netcdf(config.output_file)
 
 

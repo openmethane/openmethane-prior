@@ -40,7 +40,6 @@ from openmethane_prior.utils import (
 def processEmissions(  # noqa: PLR0915
     config: PriorConfig,
     forceUpdate: bool = False,
-    **kwargs,
 ):
     """Remap termite emissions to the CMAQ domain
 
@@ -48,8 +47,6 @@ def processEmissions(  # noqa: PLR0915
     ----
         forceUpdate
             If True, always recalculate grid mapping indices
-        startDate, endDate
-            Currently ignored
     """
     ncin = nc.Dataset(config.as_input_file(config.layer_inputs.termite_path), "r")
     latTerm = np.around(np.float64(ncin.variables["lat"][:]), 3)

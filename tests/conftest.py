@@ -36,7 +36,7 @@ def env(monkeypatch, root_dir):
 
 
 @pytest.fixture()
-def config(tmp_path_factory) -> PriorConfig:
+def config(tmp_path_factory, start_date, end_date) -> PriorConfig:
     """Default configuration
 
     Uses a new temporary directory for each test
@@ -47,6 +47,8 @@ def config(tmp_path_factory) -> PriorConfig:
         input_path=data_dir / "inputs",
         intermediates_path=data_dir / "intermediates",
         output_path=data_dir / "outputs",
+        start_date=start_date,
+        end_date=end_date,
     )
 
 
@@ -216,6 +218,9 @@ def prior_emissions_ds(
         input_path=input_dir,
         intermediates_path=intermediate_dir,
         output_path=output_dir,
+        start_date=start_date,
+        end_date=end_date,
+        skip_reproject=False,
         # Use the test domain to speed things up
         # input_domain=PublishedInputDomain(
         #     name="aust-test",
@@ -230,12 +235,7 @@ def prior_emissions_ds(
     ]
     input_files = next(copy_input_files(root_dir / ".cache", config.input_path, input_fragments))
 
-    run_prior(
-        config,
-        start_date,
-        end_date,
-        False,
-    )
+    run_prior(config)
 
     yield xr.load_dataset(config.output_file)
 
