@@ -40,7 +40,7 @@ def test_create_output_dataset(config, input_files, start_date, end_date):
     assert isinstance(output_ds.attrs["openmethane_prior_version"], str)
 
     assert output_ds.attrs["domain_name"] == "aust10km"
-    assert output_ds.attrs["domain_version"] == "v1.0.0"
+    assert output_ds.attrs["domain_version"] == "v1"
 
     # projection
     assert output_ds["lambert_conformal"].attrs["grid_mapping_name"] == "lambert_conformal_conic"

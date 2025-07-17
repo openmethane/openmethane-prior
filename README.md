@@ -83,8 +83,8 @@ This input file should contain the following variables:
 The contents of the default domain is shown below:
 
 ```
->>> ncdump -h prior_domain_aust10km_v1.0.0.d01
-netcdf prior_domain_aust10km_v1.0.0.d01 {
+>>> ncdump -h prior_domain_aust10km_v1.d01
+netcdf prior_domain_aust10km_v1.d01 {
 dimensions:
         TSTEP = 1;
         ROW = 430;
