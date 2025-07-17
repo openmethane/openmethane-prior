@@ -26,7 +26,7 @@ from collections.abc import Iterable
 
 import attrs
 
-from openmethane_prior.config import load_config_from_env
+from openmethane_prior.config import load_config_from_env, PublishedInputDomain
 from openmethane_prior.inputs import download_input_file
 
 
@@ -71,8 +71,8 @@ if __name__ == "__main__":
     layer_fragments = [str(frag) for frag in attrs.asdict(config.layer_inputs).values()]
 
     # Add the input domain if it is specified
-    if config.input_domain is not None:
-        layer_fragments.append(config.input_domain.url_fragment())
+    if type(config.input_domain) == PublishedInputDomain:
+        layer_fragments.append(str(config.input_domain.path))
 
     download_input_files(
         remote=config.remote,

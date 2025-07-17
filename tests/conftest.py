@@ -86,7 +86,7 @@ def fetch_published_domain(root_dir) -> list[pathlib.Path]:
         PublishedInputDomain(name="aust10km", version="v1"),
     ]
 
-    fragments = [domain.url_fragment() for domain in published_domains]
+    fragments = [str(domain.path) for domain in published_domains]
 
     downloaded_files = download_input_files(
         remote=config.remote,

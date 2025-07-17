@@ -41,6 +41,7 @@ def test_create_output_dataset(config, input_files, start_date, end_date):
 
     assert output_ds.attrs["domain_name"] == "aust10km"
     assert output_ds.attrs["domain_version"] == "v1"
+    assert output_ds.attrs["domain_slug"] == "10"
 
     # projection
     assert output_ds["lambert_conformal"].attrs["grid_mapping_name"] == "lambert_conformal_conic"
