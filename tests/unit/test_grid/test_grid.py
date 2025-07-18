@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+import xarray as xr
 
 from openmethane_prior.grid.grid import Grid
 
@@ -192,3 +193,51 @@ def test_grid_find_cell():
     assert test_grid.find_cell(xy=(48.9, 60)) == None
     assert test_grid.find_cell(xy=(49.0, 59.9)) == None
     assert test_grid.find_cell(xy=(49.0, 59.9)) == None
+
+def test_grid_lonlat_to_cell_index():
+    # set up a grid with a different projection so we can test lon/lat -> x/y conversion
+    # using EPSG:7844, which is GDA2020:
+    # center: 133.38 -34.51
+    # extent: 93.31, -60.55 x 173.34, -8.47
+    test_grid = Grid(
+        dimensions=(80, 40),
+        center_lonlat=(133.38, -34.51),
+        origin_xy=(-40, -20),
+        cell_size=(1, 1), # EPSG:7844 (GDA2020) uses degrees
+        proj_params="EPSG:7844",
+    )
+
+    # multiple values as np.array
+    np_result = test_grid.lonlat_to_cell_index(
+        lon=np.array([100, 130, 160]),
+        lat=np.array([-40, -45, -50]),
+    )
+
+    np.testing.assert_allclose(np_result, (
+        [6, 36, 66],
+        [14, 9, 4],
+        [True, True, True],
+    ))
+
+    # multiple values as xr.DataArray
+    xr_result = test_grid.lonlat_to_cell_index(
+        lon=xr.DataArray([100.5, 130.5, 160.5]),
+        lat=xr.DataArray([-40.5, -45.5, -50.5]),
+    )
+
+    np.testing.assert_allclose(xr_result, (
+        [7, 37, 67],
+        [14, 9, 4],
+        [True, True, True],
+    ))
+
+    # some points outside the grid
+    in_out = test_grid.lonlat_to_cell_index(
+        lon=np.array([80, 130, 177, 100, 100, 100]),
+        lat=np.array([-40, -45, -50, -55, -40, -13]),
+    )
+    np.testing.assert_allclose(in_out, (
+        [-14, 36, 83, 6, 6, 6], # valid x coords: 0 - 79
+        [14, 9, 4, -1, 14, 41], # valid y coords: 0 - 40
+        [False, True, False, False, True, False],
+    ))

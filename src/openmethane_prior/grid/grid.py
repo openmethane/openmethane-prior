@@ -144,3 +144,21 @@ class Grid:
             int((search_y - self.llc_xy[1]) // self.cell_size[1])
         )
         return grid_coords if self.valid_cell_coords(grid_coords) else None
+
+    def lonlat_to_cell_index(self, lon: Any, lat: Any) -> tuple[Any, Any, Any]:
+        """
+        Find the grid cell indices for the cells containing each provided
+        lon/lat coordinate. Return tuple also includes a binary mask in the
+        third position for whether coords are valid and inside the grid extent.
+        """
+        x, y = self.lonlat_to_xy(lon=lon, lat=lat)
+
+        # calculate indices assuming regular grid
+        cell_index_x = np.floor((x - self.llc_xy[0]) / self.cell_size[0]).astype('int')
+        cell_index_y = np.floor((y - self.llc_xy[1]) / self.cell_size[1]).astype('int')
+
+        # determine which coords are within the grid
+        mask = ((0 <= cell_index_x) & (cell_index_x < self.dimensions[0]) &
+                (0 <= cell_index_y) & (cell_index_y < self.dimensions[1]))
+
+        return cell_index_x, cell_index_y, mask
