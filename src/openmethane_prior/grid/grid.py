@@ -111,13 +111,13 @@ class Grid:
         """
         return self.llc_xy[1] + np.arange(self.dimensions[1] + 1) * self.cell_size[1]
 
-    def valid_cell_coords(self, coords: tuple[int, int]) -> bool:
+    def valid_cell_coords(self, coord_x: int, coord_y: int) -> bool:
         """
         Return true if the grid cell coords refer to a valid cell in the grid.
         """
         return (
-            coords[0] >= 0 and coords[0] < self.dimensions[0] and
-            coords[1] >= 0 and coords[1] < self.dimensions[1]
+            (coord_x >= 0) & (coord_x < self.dimensions[0]) &
+            (coord_y >= 0) & (coord_y < self.dimensions[1])
         )
 
     def find_cell(
@@ -143,7 +143,10 @@ class Grid:
             int((search_x - self.llc_xy[0]) // self.cell_size[0]),
             int((search_y - self.llc_xy[1]) // self.cell_size[1])
         )
-        return grid_coords if self.valid_cell_coords(grid_coords) else None
+
+        if self.valid_cell_coords(grid_coords[0], grid_coords[1]):
+            return grid_coords
+        return None
 
     def lonlat_to_cell_index(self, lon: Any, lat: Any) -> tuple[Any, Any, Any]:
         """
@@ -158,7 +161,6 @@ class Grid:
         cell_index_y = np.floor((y - self.llc_xy[1]) / self.cell_size[1]).astype('int')
 
         # determine which coords are within the grid
-        mask = ((0 <= cell_index_x) & (cell_index_x < self.dimensions[0]) &
-                (0 <= cell_index_y) & (cell_index_y < self.dimensions[1]))
+        mask = self.valid_cell_coords(cell_index_x, cell_index_y)
 
         return cell_index_x, cell_index_y, mask

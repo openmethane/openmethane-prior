@@ -144,17 +144,17 @@ def test_grid_valid_cell_coords():
         cell_size=(1, 2),
     )
 
-    assert test_grid.valid_cell_coords((0, 0))
-    assert test_grid.valid_cell_coords((1, 1))
-    assert test_grid.valid_cell_coords((7, 0))
-    assert test_grid.valid_cell_coords((0, 9))
-    assert test_grid.valid_cell_coords((7, 9))
+    assert test_grid.valid_cell_coords(0, 0)
+    assert test_grid.valid_cell_coords(1, 1)
+    assert test_grid.valid_cell_coords(7, 0)
+    assert test_grid.valid_cell_coords(0, 9)
+    assert test_grid.valid_cell_coords(7, 9)
 
-    assert not test_grid.valid_cell_coords((-1, 0))
-    assert not test_grid.valid_cell_coords((0, -1))
-    assert not test_grid.valid_cell_coords((0, 10))
-    assert not test_grid.valid_cell_coords((8, 0))
-    assert not test_grid.valid_cell_coords((8, 10))
+    assert not test_grid.valid_cell_coords(-1, 0)
+    assert not test_grid.valid_cell_coords(0, -1)
+    assert not test_grid.valid_cell_coords(0, 10)
+    assert not test_grid.valid_cell_coords(8, 0)
+    assert not test_grid.valid_cell_coords(8, 10)
 
 def test_grid_find_cell():
     test_grid = Grid(

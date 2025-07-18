@@ -107,18 +107,18 @@ def test_grid_projection_coordinates(input_domain):
 def test_grid_valid_cell_coords(input_domain):
     test_grid = DomainGrid(input_domain)
 
-    assert test_grid.valid_cell_coords((0, 0))
-    assert test_grid.valid_cell_coords((test_grid.dimensions[0] - 1, test_grid.dimensions[1] - 1))
-    assert test_grid.valid_cell_coords((test_grid.dimensions[0] - 1, 0))
-    assert test_grid.valid_cell_coords((0, test_grid.dimensions[1] - 1))
-    assert test_grid.valid_cell_coords((0, test_grid.dimensions[1] - 1))
-    assert test_grid.valid_cell_coords((test_grid.dimensions[0] - 1, 0))
+    assert test_grid.valid_cell_coords(0, 0)
+    assert test_grid.valid_cell_coords(test_grid.dimensions[0] - 1, test_grid.dimensions[1] - 1)
+    assert test_grid.valid_cell_coords(test_grid.dimensions[0] - 1, 0)
+    assert test_grid.valid_cell_coords(0, test_grid.dimensions[1] - 1)
+    assert test_grid.valid_cell_coords(0, test_grid.dimensions[1] - 1)
+    assert test_grid.valid_cell_coords(test_grid.dimensions[0] - 1, 0)
 
-    assert not test_grid.valid_cell_coords((-1, 0))
-    assert not test_grid.valid_cell_coords((0, -1))
-    assert not test_grid.valid_cell_coords((0, test_grid.dimensions[1]))
-    assert not test_grid.valid_cell_coords((test_grid.dimensions[0], 0))
-    assert not test_grid.valid_cell_coords((test_grid.dimensions[0], test_grid.dimensions[1]))
+    assert not test_grid.valid_cell_coords(-1, 0)
+    assert not test_grid.valid_cell_coords(0, -1)
+    assert not test_grid.valid_cell_coords(0, test_grid.dimensions[1])
+    assert not test_grid.valid_cell_coords(test_grid.dimensions[0], 0)
+    assert not test_grid.valid_cell_coords(test_grid.dimensions[0], test_grid.dimensions[1])
 
 def test_grid_find_cell(input_domain):
     test_grid = DomainGrid(input_domain)
