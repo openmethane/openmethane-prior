@@ -9,10 +9,17 @@ class Grid:
     """
 
     dimensions: tuple[int, int]
-    """Number of grid cells along the x and y axis"""
+    """Number of grid cells along the (x, y) axes"""
+
+    shape: tuple[int, int]
+    """Number of grid cells along the (y, x) axes.
+    Useful for xarray dimensions ordered (y, x)."""
 
     center_lonlat: tuple[float, float]
     """Grid center point in longitude and latitude coordinates"""
+
+    center_xy: tuple[float, float]
+    """Grid center point in grid projection coordinates"""
 
     origin_xy: tuple[float, float]
     """Location of grid origin relative to center_lonlat"""
@@ -20,7 +27,18 @@ class Grid:
     cell_size: tuple[float, float]
     """Dimensions of a grid cell in grid projection coordinates"""
 
-    proj_params: Any
+    cell_area: float
+    """Area of a single grid cell in grid projection coordinate units."""
+
+    llc_xy: tuple[float, float]
+    """Lower left corner coordinates in grid projection coordinates. The
+    lower boundary in both x and y dimensions."""
+
+    llc_center_xy: tuple[float, float]
+    """Coordinates for the center point of the lower left corner (0, 0) grid
+    cell in grid projection coordinates."""
+
+    projection: pyproj.Proj
     """Parameters for constructing a pyproj.Proj for the grid"""
 
     def __init__(
@@ -29,7 +47,7 @@ class Grid:
         center_lonlat: tuple[float, float],
         origin_xy: tuple[float, float],
         cell_size: tuple[float, float],
-        proj_params: Any = None, # default projection
+        proj_params: Any = "EPSG:4326", # default projection
     ):
         self.dimensions = dimensions
         self.center_lonlat = center_lonlat
@@ -37,63 +55,27 @@ class Grid:
         self.cell_size = cell_size
         self.proj_params = proj_params
 
-    @property
-    def shape(self) -> tuple[int, int]:
-        """
-        Shape of the grid, with y-axis in first position. This is useful when
-        establishing xarray dimensions, which are often ordered (y, x).
-        """
-        return (self.dimensions[1], self.dimensions[0])
+        self.projection = pyproj.Proj(self.proj_params)
 
-    @property
-    def projection(self) -> pyproj.Proj:
-        return pyproj.Proj(**self.proj_params) if self.proj_params else pyproj.Proj("EPSG:4326")
+        # derived properties
+        self.shape = (dimensions[1], dimensions[0])
+        self.center_xy = self.lonlat_to_xy(lon=self.center_lonlat[0], lat=self.center_lonlat[1])
+        self.llc_xy = (
+            self.center_xy[0] + self.origin_xy[0],
+            self.center_xy[1] + self.origin_xy[1]
+        )
+        self.llc_center_xy = (
+            self.llc_xy[0] + (self.cell_size[0] / 2),
+            self.llc_xy[1] + (self.cell_size[1] / 2)
+        )
+        self.cell_area = self.cell_size[0] * self.cell_size[1]
+
 
     def lonlat_to_xy(self, lon, lat) -> tuple[float, float]:
         return self.projection.transform(xx=lon, yy=lat, direction=pyproj.enums.TransformDirection.FORWARD)
 
     def xy_to_lonlat(self, x, y) -> tuple[float, float]:
         return self.projection.transform(xx=x, yy=y, direction=pyproj.enums.TransformDirection.INVERSE)
-
-    @property
-    def center_xy(self) -> tuple[float, float]:
-        """
-        Grid center point in grid projection coordinates, with respect to the
-        projection center point. This is not always (0,0), particularly in
-        subdomains.
-        """
-        return self.lonlat_to_xy(lon=self.center_lonlat[0], lat=self.center_lonlat[1])
-
-    @property
-    def llc_xy(self) -> tuple[float, float]:
-        """
-        Lower left corner coordinates in grid projection coordinates. This is
-        the extreme lower boundary (sometimes refered to as the grid origin) in
-        both x and y dimensions.
-        """
-        return (
-            self.center_xy[0] + self.origin_xy[0],
-            self.center_xy[1] + self.origin_xy[1]
-        )
-
-    @property
-    def llc_center_xy(self) -> tuple[float, float]:
-        """
-        Coordinates for the center point of the lower left corner grid cell
-        in grid projection coordinates. This would be the center point of the
-        grid cell at (0, 0) in grid cell coordinates.
-        """
-        return (
-            self.llc_xy[0] + (self.cell_size[0] / 2),
-            self.llc_xy[1] + (self.cell_size[1] / 2)
-        )
-
-    @property
-    def cell_area(self) -> float:
-        """
-        Area of a single grid cell in grid projection coordinate units.
-        """
-        return self.cell_size[0] * self.cell_size[1]
 
     def cell_coords_x(self) -> np.ndarray[int, np.float64]:
         """
@@ -129,36 +111,28 @@ class Grid:
         """
         return self.llc_xy[1] + np.arange(self.dimensions[1] + 1) * self.cell_size[1]
 
-    def valid_cell_coords(self, coords: tuple[int, int]) -> bool:
+    def valid_cell_coords(self, coord_x: int, coord_y: int) -> bool:
         """
         Return true if the grid cell coords refer to a valid cell in the grid.
         """
         return (
-            coords[0] >= 0 and coords[0] < self.dimensions[0] and
-            coords[1] >= 0 and coords[1] < self.dimensions[1]
+            (coord_x >= 0) & (coord_x < self.dimensions[0]) &
+            (coord_y >= 0) & (coord_y < self.dimensions[1])
         )
 
-    def find_cell(
-        self,
-        xy: tuple[float, float] | None = None,
-        lonlat: tuple[float, float] | None = None,
-    ) -> tuple[int, int] | None:
+    def lonlat_to_cell_index(self, lon: Any, lat: Any) -> tuple[Any, Any, Any]:
         """
-        Return the grid cell coordinates for the cell which contains the
-        point provided in xy or lonlat arguments.
-        :param xy: Search point in grid projection coordinates.
-        :param lonlat: Search point in longitude / latitude coordinates.
-        :return: Grid cell coordinates or None if coords are not in the grid
+        Find the grid cell indices for the cells containing each provided
+        lon/lat coordinate. Return tuple also includes a binary mask in the
+        third position for whether coords are valid and inside the grid extent.
         """
-        if xy is None and lonlat is None:
-            raise ValueError("find_cell: xy or lonlat must be provided")
-        if xy is not None and lonlat is not None:
-            raise ValueError("find_cell: provide only one of xy or lonlat")
+        x, y = self.lonlat_to_xy(lon=lon, lat=lat)
 
-        search_x, search_y = xy if xy is not None else self.lonlat_to_xy(*lonlat)
+        # calculate indices assuming regular grid
+        cell_index_x = np.floor((x - self.llc_xy[0]) / self.cell_size[0]).astype('int')
+        cell_index_y = np.floor((y - self.llc_xy[1]) / self.cell_size[1]).astype('int')
 
-        grid_coords = (
-            int((search_x - self.llc_xy[0]) // self.cell_size[0]),
-            int((search_y - self.llc_xy[1]) // self.cell_size[1])
-        )
-        return grid_coords if self.valid_cell_coords(grid_coords) else None
+        # determine which coords are within the grid
+        mask = self.valid_cell_coords(cell_index_x, cell_index_y)
+
+        return cell_index_x, cell_index_y, mask
