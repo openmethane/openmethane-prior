@@ -120,19 +120,9 @@ def test_grid_valid_cell_coords(input_domain):
     assert not test_grid.valid_cell_coords(test_grid.dimensions[0], 0)
     assert not test_grid.valid_cell_coords(test_grid.dimensions[0], test_grid.dimensions[1])
 
-def test_grid_find_cell(input_domain):
+def test_grid_lonlat_to_cell_index(input_domain):
     test_grid = DomainGrid(input_domain)
 
-    # one of xy or lonlat must be provided
-    with pytest.raises(ValueError, match="xy or lonlat must be provided"):
-        test_grid.find_cell()
-    with pytest.raises(ValueError, match="provide only one of xy or lonlat"):
-        test_grid.find_cell(xy=(0, 0), lonlat=(0, 0))
-
-    # coords inside the grid should succeed
-    assert test_grid.find_cell(xy=test_grid.llc_xy) == (0, 0)
-    # fails due to minute error caused by round-tripping
-    # assert test_grid.find_cell(lonlat=test_grid.xy_to_lonlat(*test_grid.llc_xy)) == (0, 0)
-
-    # coords outside the grid should find None
-    assert test_grid.find_cell(xy=(test_grid.llc_xy[0] - 1, test_grid.llc_xy[1])) == None
+    # test some known locations inside aust10km
+    assert test_grid.lonlat_to_cell_index(144.96, -37.78) == (328, 99, True) # Melbourne, VIC
+    assert test_grid.lonlat_to_cell_index(151.18, -33.87) == (388, 135, True) # Sydney, NSW
