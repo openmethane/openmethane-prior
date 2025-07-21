@@ -111,7 +111,7 @@ class Grid:
         """
         return self.llc_xy[1] + np.arange(self.dimensions[1] + 1) * self.cell_size[1]
 
-    def valid_cell_coords(self, coord_x: int, coord_y: int) -> bool:
+    def valid_cell_coords(self, coord_x: Any, coord_y: Any) -> Any:
         """
         Return true if the grid cell coords refer to a valid cell in the grid.
         """
@@ -119,6 +119,21 @@ class Grid:
             (coord_x >= 0) & (coord_x < self.dimensions[0]) &
             (coord_y >= 0) & (coord_y < self.dimensions[1])
         )
+
+    def xy_to_cell_index(self, x: Any, y: Any) -> tuple[Any, Any, Any]:
+        """
+        Find the grid cell indices for the cells containing each provided
+        grid projection coordinate. Return tuple also includes a binary mask
+        representing if coords are valid and inside the grid extent.
+        """
+        # calculate indices assuming regular grid
+        cell_index_x = np.floor((x - self.llc_xy[0]) / self.cell_size[0]).astype('int')
+        cell_index_y = np.floor((y - self.llc_xy[1]) / self.cell_size[1]).astype('int')
+
+        # determine which coords are within the grid
+        mask = self.valid_cell_coords(cell_index_x, cell_index_y)
+
+        return cell_index_x, cell_index_y, mask
 
     def lonlat_to_cell_index(self, lon: Any, lat: Any) -> tuple[Any, Any, Any]:
         """
@@ -128,11 +143,4 @@ class Grid:
         """
         x, y = self.lonlat_to_xy(lon=lon, lat=lat)
 
-        # calculate indices assuming regular grid
-        cell_index_x = np.floor((x - self.llc_xy[0]) / self.cell_size[0]).astype('int')
-        cell_index_y = np.floor((y - self.llc_xy[1]) / self.cell_size[1]).astype('int')
-
-        # determine which coords are within the grid
-        mask = self.valid_cell_coords(cell_index_x, cell_index_y)
-
-        return cell_index_x, cell_index_y, mask
+        return self.xy_to_cell_index(x, y)
