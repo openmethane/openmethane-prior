@@ -107,7 +107,7 @@ def processEmissions(config: PriorConfig):
 
     for sector in sectorsUsed:
         write_sector(
-            output_path=config.output_domain_file,
+            output_path=config.output_file,
             sector_name=sector.lower(),
             sector_data=convert_to_timescale(methane[sector], domain_grid.cell_area),
             sector_standard_name=sectorEmissionStandardNames[sector],
@@ -117,4 +117,4 @@ def processEmissions(config: PriorConfig):
 if __name__ == "__main__":
     config = load_config_from_env()
     processEmissions(config)
-    sum_sectors(config.output_domain_file)
+    sum_sectors(config.output_file)

@@ -3,6 +3,7 @@ import pathlib
 import shutil
 from datetime import datetime
 from pathlib import Path
+from typing import Generator
 
 import attrs
 import dotenv
@@ -123,8 +124,10 @@ def fetch_input_files(root_dir) -> list[pathlib.Path]:
 
 
 def copy_input_files(
-    cache_path: pathlib.Path, input_path: str | pathlib.Path, cached_fragments: list[pathlib.Path]
-):
+    cache_path: pathlib.Path,
+    input_path: pathlib.Path,
+    cached_fragments: list[pathlib.Path],
+) -> Generator[list[pathlib.Path], None, None]:
     """
     Copy input files from the cache into the input directory
 
@@ -158,7 +161,9 @@ def copy_input_files(
 
 
 @pytest.fixture()
-def input_files(root_dir, fetch_input_files, fetch_published_domain, config) -> list[pathlib.Path]:
+def input_files(
+    root_dir, fetch_input_files, fetch_published_domain, config,
+) -> Generator[list[pathlib.Path], None, None]:
     """
     Ensure that the required input files are in the input directory.
 
@@ -172,7 +177,7 @@ def input_files(root_dir, fetch_input_files, fetch_published_domain, config) -> 
 
 
 @pytest.fixture()
-def input_domain(config, root_dir, input_files) -> xr.Dataset:
+def input_domain(config, root_dir, input_files) -> Generator[xr.Dataset, None, None]:
     """
     Get an input domain
 
@@ -186,14 +191,14 @@ def input_domain(config, root_dir, input_files) -> xr.Dataset:
 
 
 @pytest.fixture(scope="session")
-def output_domain(
+def prior_emissions_ds(
     root_dir,
     fetch_input_files,
     fetch_published_domain,
     start_date,
     end_date,
     tmp_path_factory,
-) -> xr.Dataset:
+) -> Generator[xr.Dataset, None, None]:
     """
     Run the output domain
 
@@ -232,9 +237,9 @@ def output_domain(
         False,
     )
 
-    yield xr.load_dataset(config.output_domain_file)
+    yield xr.load_dataset(config.output_file)
 
-    os.remove(config.output_domain_file)
+    os.remove(config.output_file)
 
     # Manually clean up any leftover files
     for filepath in input_files:

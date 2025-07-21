@@ -185,7 +185,7 @@ def processEmissions(  # noqa: PLR0915
     ncin.close()
 
     write_sector(
-        output_path=config.output_domain_file,
+        output_path=config.output_file,
         sector_name="termite",
         sector_data=resultNd,
         sector_standard_name="termites",
@@ -196,4 +196,4 @@ def processEmissions(  # noqa: PLR0915
 if __name__ == "__main__":
     config = load_config_from_env()
     processEmissions(config)
-    sum_sectors(config.output_domain_file)
+    sum_sectors(config.output_file)

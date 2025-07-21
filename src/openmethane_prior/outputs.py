@@ -23,7 +23,7 @@ import numpy as np
 import numpy.typing as npt
 import xarray as xr
 
-from openmethane_prior.config import PriorConfig
+from openmethane_prior.config import PriorConfig, PublishedInputDomain
 from openmethane_prior.utils import SECS_PER_YEAR, get_version, get_timestamped_command, time_bounds, \
     bounds_from_cell_edges
 
@@ -143,10 +143,13 @@ def create_output_dataset(
             # "vertical": (("vertical"), [0], {}),
         },
         attrs={
+            # data attributes
             "DX": domain_ds.DX,
             "DY": domain_ds.DY,
             "XCELL": domain_ds.XCELL,
             "YCELL": domain_ds.YCELL,
+
+            # meta attributes
             "title": "Open Methane prior emissions estimate",
             "comment": "Gridded prior emissions estimate for methane across Australia",
             "history": get_timestamped_command(),
@@ -160,6 +163,15 @@ def create_output_dataset(
     time_encoding = f"days since {period_start.strftime('%Y-%m-%d')}"
     prior_ds.time.encoding["units"] = time_encoding
     prior_ds.time_bounds.encoding["units"] = time_encoding
+
+    # if the domain is well specified, include details in attributes
+    if type(config.input_domain) == PublishedInputDomain:
+        prior_ds.attrs["domain_name"] = config.input_domain.name
+        prior_ds.attrs["domain_version"] = config.input_domain.version
+        # this seems useful, but with the current config is hard to derive
+        # as only the omDownloadInputs script assembles this URL
+        # prior_ds.attrs["domain_url"] = config.input_domain.url_fragment()
+
 
     return prior_ds
 
@@ -179,10 +191,10 @@ def initialise_output(
     config
         Configuration object
     """
-    config.output_domain_file.parent.mkdir(parents=True, exist_ok=True)
+    config.output_file.parent.mkdir(parents=True, exist_ok=True)
 
     output_ds = create_output_dataset(config, start_date, end_date)
-    output_ds.to_netcdf(config.output_domain_file)
+    output_ds.to_netcdf(config.output_file)
 
 
 def write_sector(
