@@ -64,7 +64,7 @@ def processEmissions(config: PriorConfig, prior_ds: xr.Dataset):  # noqa: PLR091
     # Re-project into domain coordinates
     # - create meshgrids of the lats and lons
     lonmesh, latmesh = np.meshgrid(ls.lon, ls.lat)
-    grid_ix, grid_iy, grid_mask = domain_grid.lonlat_to_cell_index(lonmesh, latmesh)
+    cell_x, cell_y, cell_valid = domain_grid.lonlat_to_cell_index(lonmesh, latmesh)
 
     enteric_as_array = lss.CH4_total.to_numpy()
     livestockCH4 = np.zeros(domain_grid.shape)
@@ -72,9 +72,9 @@ def processEmissions(config: PriorConfig, prior_ds: xr.Dataset):  # noqa: PLR091
     # we're accumulating emissions from fine to coarse grid
     # accumulate in mass units and divide by area at end
     for j in tqdm(range(ls.lat.size)):
-        ix, iy = grid_ix[j,:], grid_iy[j,:]
+        ix, iy = cell_x[j,:], cell_y[j,:]
         # input domain is bigger so mask indices out of range
-        mask = grid_mask[j, :]
+        mask = cell_valid[j, :]
         if mask.any():
             # the following needs to use .at method since iy,ix indices may be repeated and we need to acumulate
             np.add.at(livestockCH4, (iy[mask], ix[mask]), enteric_as_array[j, mask])
@@ -148,7 +148,7 @@ def processEmissions(config: PriorConfig, prior_ds: xr.Dataset):  # noqa: PLR091
         methane[sector] = np.zeros(domain_grid.shape)
 
     print("Mapping land use grid to domain grid")
-    grid_ix, grid_iy, grid_mask = domain_grid.xy_to_cell_index(landUseData.x, landUseData.y)
+    cell_x, cell_y, cell_valid = domain_grid.xy_to_cell_index(landUseData.x, landUseData.y)
 
     print("Assigning methane layers to domain grid")
     for landUseType, _ in usageCounts.items():
@@ -159,7 +159,7 @@ def processEmissions(config: PriorConfig, prior_ds: xr.Dataset):  # noqa: PLR091
         if emission > 0:
             for y, x in sectorPixels:
                 try:
-                    ix, iy = grid_ix.item(x), grid_iy.item(y)
+                    ix, iy = cell_x.item(x), cell_y.item(y)
                     methane[sector][iy, ix] += emission
                 except IndexError:
                     # print("ignoring out of range pixel")

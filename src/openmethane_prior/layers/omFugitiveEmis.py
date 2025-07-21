@@ -69,10 +69,10 @@ def processEmissions(config: PriorConfig, prior_ds: xr.Dataset):
     methane = np.zeros(domain_grid.shape)
 
     for _, facility in fugitiveYear.iterrows():
-        cell_coords = domain_grid.lonlat_to_cell_index(facility["lon"], facility["lat"])
+        cell_x, cell_y, cell_valid = domain_grid.lonlat_to_cell_index(facility["lon"], facility["lat"])
 
-        if cell_coords is not None:
-            methane[cell_coords[1], cell_coords[0]] += facility["emissions_quantity"]
+        if cell_valid:
+            methane[cell_y, cell_x] += facility["emissions_quantity"]
 
     add_sector(
         prior_ds=prior_ds,
