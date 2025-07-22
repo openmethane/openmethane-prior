@@ -30,29 +30,53 @@ class LayerInputs:
     wetland_path: pathlib.Path
 
 
-@attrs.frozen()
-class PublishedInputDomain:
+class InputDomain:
+    path: pathlib.Path
+    name: str
+    version: str
+    domain_index: int
+    slug: str
+
+    def __init__(self,
+            path: str | pathlib.Path,
+            name: str | None = None,
+            version: str | None = None,
+            domain_index: int | None = None,
+            slug: str | None = None,
+        ):
+        self.path = pathlib.Path(path)
+        self.name = name or self.path.stem
+        self.version = version or "v1"
+        self.domain_index = domain_index or 1
+        self.slug = slug or self.name
+
+        # TODO this should be embedded in the domain file as an attribute
+        # TODO remove matching test assertion when this is removed
+        if (self.slug == "aust10km"): self.slug = "10"
+
+class PublishedInputDomain(InputDomain):
     """
     Input domain configuration
 
     Used to specify the published domain to use as the input domain.
     """
+    def __init__(self,
+        name: str,
+        version: str | None = "v1",
+        domain_index: int | None = 1,
+        slug: str | None = None,
+    ):
+        published_path = pathlib.Path(
+            f"domains/{name}/{version}/"
+            f"prior_domain_{name}_{version}.d{domain_index:02}.nc"
+        )
 
-    name: str
-    version: str
-    domain_index: int = 1
-
-    def url_fragment(self) -> str:
-        """
-        Fragment to download the input domain
-
-        Returns
-        -------
-            URL fragment
-        """
-        return (
-            f"domains/{self.name}/{self.version}/"
-            f"prior_domain_{self.name}_{self.version}.d{self.domain_index:02}.nc"
+        super().__init__(
+            path=published_path,
+            name=name,
+            version=version,
+            domain_index=domain_index,
+            slug=slug,
         )
 
 class PriorConfigOptions(typing.TypedDict, total=False):
@@ -60,7 +84,7 @@ class PriorConfigOptions(typing.TypedDict, total=False):
     input_path: pathlib.Path | str
     output_path: pathlib.Path | str
     intermediates_path: pathlib.Path | str
-    input_domain: PublishedInputDomain | str
+    input_domain: InputDomain
     output_filename: str
     layer_inputs: LayerInputs
 
@@ -73,7 +97,7 @@ class PriorConfig:
     output_path: pathlib.Path
     intermediates_path: pathlib.Path
 
-    input_domain: PublishedInputDomain | str
+    input_domain: InputDomain
     """Input domain specification
 
     If provided, use a published domain as the input domain. Otherwise, a file
@@ -127,12 +151,7 @@ class PriorConfig:
 
         Uses a published domain if it is provided otherwise uses a user-specified file name
         """
-        if isinstance(self.input_domain, PublishedInputDomain):
-            return self.as_input_file(self.input_domain.url_fragment())
-        elif isinstance(self.input_domain, str):
-            return self.as_input_file(self.input_domain)
-        else:
-            raise TypeError("Could not interpret the 'input_domain' field")
+        return self.as_input_file(self.input_domain.path)
 
     @property
     def output_file(self):
@@ -155,14 +174,19 @@ def load_config_from_env(**overrides: PriorConfigOptions) -> PriorConfig:
     )
     env.read_env(verbose=True)
 
-    if env.str("DOMAIN_NAME", None) and env.str("DOMAIN_VERSION", None):
+    if env.str("DOMAIN", None):
+        input_domain = InputDomain(
+            path=env.str("DOMAIN"),
+            name=env.str("DOMAIN_NAME", None),
+            version=env.str("DOMAIN_VERSION", None),
+        )
+    elif env.str("DOMAIN_NAME", None) and env.str("DOMAIN_VERSION", None):
         input_domain = PublishedInputDomain(
             name=env.str("DOMAIN_NAME"),
             version=env.str("DOMAIN_VERSION"),
         )
     else:
-        # Default to using a user-specified file as the input domain
-        input_domain = env.str("DOMAIN")
+        raise ValueError("Must specify DOMAIN, or DOMAIN_NAME and DOMAIN_VERSION")
 
     options: PriorConfigOptions = dict(
         remote=env.str("PRIOR_REMOTE"),

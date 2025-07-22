@@ -149,6 +149,11 @@ def create_output_dataset(
             "XCELL": domain_ds.XCELL,
             "YCELL": domain_ds.YCELL,
 
+            # domain
+            "domain_name": config.input_domain.name,
+            "domain_version": config.input_domain.version,
+            "domain_slug": config.input_domain.slug,
+
             # meta attributes
             "title": "Open Methane prior emissions estimate",
             "comment": "Gridded prior emissions estimate for methane across Australia",
@@ -163,15 +168,6 @@ def create_output_dataset(
     time_encoding = f"days since {period_start.strftime('%Y-%m-%d')}"
     prior_ds.time.encoding["units"] = time_encoding
     prior_ds.time_bounds.encoding["units"] = time_encoding
-
-    # if the domain is well specified, include details in attributes
-    if type(config.input_domain) == PublishedInputDomain:
-        prior_ds.attrs["domain_name"] = config.input_domain.name
-        prior_ds.attrs["domain_version"] = config.input_domain.version
-        # this seems useful, but with the current config is hard to derive
-        # as only the omDownloadInputs script assembles this URL
-        # prior_ds.attrs["domain_url"] = config.input_domain.url_fragment()
-
 
     return prior_ds
 
