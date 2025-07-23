@@ -1,5 +1,6 @@
 import os
 import numpy as np
+import pyproj
 import rasterio as rio
 from rasterio.warp import Resampling, calculate_default_transform, reproject
 import xarray as xr
@@ -75,13 +76,20 @@ def reproject_raster_inputs(config: PriorConfig):
 def remap_raster(
     input_field: xr.DataArray,
     config: PriorConfig,
-    AREA_OR_POINT = 'Area'
+    input_crs: pyproj.crs.CRS = 4326, # EPSG:4362
+    AREA_OR_POINT = 'Area',
 ) -> np.ndarray:
     """
-    maps a rasterio dataset onto the domain defined by config.
-    returns np.ndarray
+    Maps a rasterio dataset onto the domain grid defined by config.
+
+    If the input dataset uses a non-standard CRS, input coordinates can be
+    mapped to the grid by specifying input_crs.
+
+    Returns an np.array in the shape of the domain grid, each cell containing
+    the aggregate of raster values who's center point fell within the cell.
     """
     domain_grid = config.domain_grid()
+    projection_transformer = pyproj.Transformer.from_crs(crs_from=input_crs, crs_to=domain_grid.projection.crs, always_xy=True)
 
     result = np.zeros(domain_grid.shape)
 
@@ -107,7 +115,8 @@ def remap_raster(
         lat = input_lats_np.item(j)
         lats = np.array([lat]).repeat(input_field.x.size) # proj needs lats,lons same size
 
-        cell_x, cell_y, mask = domain_grid.lonlat_to_cell_index(input_lons_np, lats)
+        input_x, input_y = projection_transformer.transform(xx=input_lons_np, yy=lats)
+        cell_x, cell_y, mask = domain_grid.xy_to_cell_index(input_x, input_y)
 
         # input domain is bigger so mask indices out of range
         if mask.any():

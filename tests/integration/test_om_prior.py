@@ -77,9 +77,9 @@ def test_009_prior_emissions_ds(prior_emissions_ds):
         "x_bounds": 0.0,
         "y_bounds": 0.02444604212461516,
         "land_mask": 0.39128163098043234,
-        "ch4_sector_agriculture": 2.7554413153547755e-13,
-        "ch4_sector_lulucf": 8.2839841777071689e-13,
-        "ch4_sector_waste": 7.680668803420382e-13,
+        "ch4_sector_agriculture": 2.755457150919664e-13,
+        "ch4_sector_lulucf": 8.283984177707171e-13,
+        "ch4_sector_waste": 7.680668803420377e-13,
         "ch4_sector_livestock": 3.431944865644255e-12,
         "ch4_sector_industrial": 4.640887494513728e-15,
         "ch4_sector_stationary": 8.585641864850575e-14,
@@ -89,10 +89,10 @@ def test_009_prior_emissions_ds(prior_emissions_ds):
         "ch4_sector_termite": 7.934378523123675e-13,
         "ch4_sector_fire": 2.6126792244431096e-13,
         "ch4_sector_wetlands": 1.6133751762828546e-11,
-        "ch4_total": 2.453150176493794e-11,
+        "ch4_total": 2.4531503348494433e-11,
 
         # deprecated
-        "OCH4_TOTAL": 2.453150176493794e-11,
+        "OCH4_TOTAL": 2.4531503348494433e-11,
         "LANDMASK": 0.39128163456916809,
     }
 
