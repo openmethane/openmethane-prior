@@ -1,7 +1,8 @@
 import os
-
+import numpy as np
 import rasterio as rio
 from rasterio.warp import Resampling, calculate_default_transform, reproject
+import xarray as xr
 
 from openmethane_prior.config import PriorConfig
 
@@ -69,3 +70,53 @@ def reproject_raster_inputs(config: PriorConfig):
         str(config.as_intermediate_file(config.layer_inputs.ntl_path)),
         config.crs,
     )
+
+
+def remap_raster(
+    input_field: xr.DataArray,
+    config: PriorConfig,
+    AREA_OR_POINT = 'Area'
+) -> np.ndarray:
+    """
+    maps a rasterio dataset onto the domain defined by config.
+    returns np.ndarray
+    """
+    domain_grid = config.domain_grid()
+
+    result = np.zeros(domain_grid.shape)
+    count = np.zeros_like(result)
+
+    # we accumulate values from each high-res grid in the raster onto our domain then divide by the number
+    # our criterion is that the central point in the high-res lies inside the cell defined on the grid
+    # get input coordinates and resolutions, these are not retained in this data structure despite presence in underlying tiff file
+    input_field_np = input_field.to_numpy()
+
+    # the following needs .to_numpy() because
+    # subtracting xarray matches coordinates, not what we want
+    input_lons_np = input_field.x.to_numpy()
+    input_lats_np = input_field.y.to_numpy()
+    delta_lon = (input_lons_np[1:] - input_lons_np[0:-1]).mean()
+    delta_lat = (input_lats_np[1:] - input_lats_np[0:-1]).mean()
+
+    # correct for source points locating the corner, we want centre
+    if AREA_OR_POINT == 'Area':
+        input_lons_np += delta_lon / 2
+        input_lats_np += delta_lat / 2
+
+    # the raster is defined lat-lon so we need to reproject each row separately onto the LCC grid
+    for j in range(input_lats_np.size):
+        lat = input_lats_np.item(j)
+        lats = np.array([lat]).repeat(input_field.x.size) # proj needs lats,lons same size
+
+        cell_x, cell_y, mask = domain_grid.lonlat_to_cell_index(input_lons_np, lats)
+
+        # input domain is bigger so mask indices out of range
+        if mask.any():
+            # the following needs to use .at method since cell_y,cell_x indices may be repeated and we need to acumulate
+            np.add.at(result, (cell_y[mask], cell_x[mask]), input_field_np[j, mask])
+            np.add.at(count, (cell_y[mask], cell_x[mask]),  1)
+
+    has_vals = count > 0
+    result[has_vals] /= count[has_vals]
+
+    return result

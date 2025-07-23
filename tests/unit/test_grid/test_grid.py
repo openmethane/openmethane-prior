@@ -156,6 +156,94 @@ def test_grid_valid_cell_coords():
     assert not test_grid.valid_cell_coords(8, 0)
     assert not test_grid.valid_cell_coords(8, 10)
 
+    np.testing.assert_array_equal(test_grid.valid_cell_coords(
+        np.array([0, 1, 7, 0, 7, -1]),
+        np.array([0, 1, 0, 9, 9, 0]),
+    ),
+    [True, True, True, True, True, False],
+    )
+
+    test_coords_x = np.array([
+        [0, 1, 7, 8],
+        [0, 1, 7, 8],
+        [0, 1, 7, 8],
+    ])
+    test_coords_y = np.array([
+        [0, 1, 8, 9],
+        [0, 1, 9, 10],
+        [0, 1, 10, 11],
+    ])
+
+    np.testing.assert_array_equal(test_grid.valid_cell_coords(test_coords_x, test_coords_y), [
+        [True, True, True, False],
+        [True, True, True, False],
+        [True, True, False, False],
+    ])
+
+def test_grid_xy_to_cell_index():
+    test_grid = Grid(
+        dimensions=(8, 10),
+        center_lonlat=(45, 45),
+        origin_xy=(-4, -5),
+        cell_size=(1, 2),
+    )
+
+    # coords should be a tuple (int, int, bool)
+    found = test_grid.xy_to_cell_index(41, 40)
+    assert found == (0, 0, True)
+    assert type(found) == tuple
+
+    found_x, found_y, found_mask = found
+    assert type(found_x) == np.int64
+    assert type(found_y) == np.int64
+    assert type(found_mask) == np.bool_
+
+    # set up a grid with a different projection so we can test lon/lat -> x/y conversion
+    # using EPSG:7842, which is GDA2020:
+    # center: 133.38 -34.51
+    test_grid = Grid(
+        dimensions=(80, 40),
+        center_lonlat=(133.38, -34.51),
+        origin_xy=(-40000, -20000),
+        cell_size=(1000, 1000), # EPSG:7842 (GDA2020) uses meters
+        proj_params="EPSG:7844",
+    )
+
+    # multiple values as np.array
+    np_result = test_grid.xy_to_cell_index(
+        x=np.array([-39500, 1300, 35401]),
+        y=np.array([-20000, -12345, -1]),
+    )
+
+    np.testing.assert_allclose(np_result, (
+        [0, 41, 75],
+        [0, 7, 20],
+        [True, True, True],
+    ))
+
+    # multiple values as xr.DataArray
+    xr_result = test_grid.xy_to_cell_index(
+        x=xr.DataArray([-39500, 1300, 35401]),
+        y=xr.DataArray([-20000, -12345, -1]),
+    )
+
+    np.testing.assert_allclose(xr_result, (
+        [0, 41, 75],
+        [0, 7, 20],
+        [True, True, True],
+    ))
+
+    # some points outside the grid
+    in_out = test_grid.xy_to_cell_index(
+        x=np.array([-42500, 1300, 42401]),
+        y=np.array([-20000, -12345, -1]),
+    )
+    np.testing.assert_allclose(in_out, (
+        [-3, 41, 82],
+        [0, 7, 20],
+        [False, True, False],
+    ))
+
 def test_grid_lonlat_to_cell_index():
     test_grid = Grid(
         dimensions=(8, 10),

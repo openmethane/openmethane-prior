@@ -61,81 +61,27 @@ def processEmissions(config: PriorConfig, prior_ds: xr.Dataset):  # noqa: PLR091
 
     domain_grid = config.domain_grid()
 
-    grid_size_y, grid_size_x = domain_grid.shape
-
     # Re-project into domain coordinates
     # - create meshgrids of the lats and lons
     lonmesh, latmesh = np.meshgrid(ls.lon, ls.lat)
+    cell_x, cell_y, cell_valid = domain_grid.lonlat_to_cell_index(lonmesh, latmesh)
 
-    # Transform/reproject - the output is a 2D array of x distances, and a 2D array of y distances
-    print("Reprojecting livestock data")
-    x1, y1 = domain_grid.lonlat_to_xy(lat=latmesh, lon=lonmesh)
-
-    ww = domain_grid.cell_size[0] * grid_size_x
-    hh = domain_grid.cell_size[1] * grid_size_y
-
-    xDomain = np.floor((x1 + ww / 2) / domain_grid.cell_size[0]).astype(int)
-    yDomain = np.floor((y1 + hh / 2) / domain_grid.cell_size[1]).astype(int)
-
-    # calculate areas in m2 of grid cells
-    print("Calculate areas in m2 of livestock data")
-    latEnteric = ls.lat.values
-    lonEnteric = ls.lon.values
-    dlatEnteric = latEnteric[1] - latEnteric[0]
-    dlonEnteric = lonEnteric[1] - lonEnteric[0]
-    lonEnteric_edge = np.zeros(len(lonEnteric) + 1)
-    lonEnteric_edge[0:-1] = lonEnteric - dlonEnteric / 2.0
-    lonEnteric_edge[-1] = lonEnteric[-1] + dlonEnteric / 2.0
-    # lonEnteric_edge = np.around(lonEnteric_edge,2)
-    latEnteric_edge = np.zeros(len(latEnteric) + 1)
-    latEnteric_edge[0:-1] = latEnteric - dlatEnteric / 2.0
-    latEnteric_edge[-1] = latEnteric[-1] + dlatEnteric / 2.0
-    # latEnteric_edge = np.around(latEnteric_edge,2)
-
-    nlonEnteric = len(lonEnteric)
-    nlatEnteric = len(latEnteric)
-
-    areas = np.zeros((nlatEnteric, nlonEnteric))
-    # take advantage of regular grid to compute areas equal for each gridbox at same latitude
-    for iy in range(nlatEnteric):
-        areas[iy, :] = (
-            area_of_rectangle_m2(
-                latEnteric_edge[iy],
-                latEnteric_edge[iy + 1],
-                lonEnteric_edge[0],
-                lonEnteric_edge[-1],
-            )
-            / lonEnteric.size
-        )
-
+    enteric_as_array = lss.CH4_total.to_numpy()
     livestockCH4 = np.zeros(domain_grid.shape)
-    # convert unit from kg/year/cell to kg/year/m2
-    CH4 = lss.CH4_total.values / areas
-
     print("Distribute livestock CH4 (long process)")
-    # Precalculate masks for each row and column of the target for faster processing
-    x_masks = np.asarray([xDomain == i for i in range(grid_size_x)])
-    y_masks = [yDomain == i for i in range(grid_size_y)]
+    # we're accumulating emissions from fine to coarse grid
+    # accumulate in mass units and divide by area at end
+    for j in tqdm(range(ls.lat.size)):
+        ix, iy = cell_x[j,:], cell_y[j,:]
+        # input domain is bigger so mask indices out of range
+        mask = cell_valid[j, :]
+        if mask.any():
+            # the following needs to use .at method since iy,ix indices may be repeated and we need to acumulate
+            np.add.at(livestockCH4, (iy[mask], ix[mask]), enteric_as_array[j, mask])
 
-    for j in tqdm(range(grid_size_y)):
-        if y_masks[j].sum() == 0:
-            # Early exit if no livestock data in this row
-            continue
-
-        # Get a subset of y_data that is of interest for the rest of the loop
-        y_data = CH4[y_masks[j]]
-
-        # Numpy warns about taking means of missing slices
-        # This happens for the cases where the xDomain is empty for the given yDomain
-        with warnings.catch_warnings():
-            warnings.simplefilter(category=RuntimeWarning, action="ignore")
-            filtered_x_masks = x_masks[:, y_masks[j]]
-            filtered_y_data = [y_data[x_mask_subset].mean() for x_mask_subset in filtered_x_masks]
-        assert len(filtered_y_data) == grid_size_x
-
-        livestockCH4[j, :] = np.nan_to_num(filtered_y_data, nan=0)
-
-    livestockCH4Total = (livestockCH4 * domain_grid.cell_area).sum()  # total emissions in kg
+    livestockCH4Total = livestockCH4.sum()
+    # now convert back to flux not emission units
+    livestockCH4 /= domain_grid.cell_area
 
     print("Calculating sectoral emissions")
     # Import a map of land use type numbers to emissions sectors
@@ -202,8 +148,7 @@ def processEmissions(config: PriorConfig, prior_ds: xr.Dataset):  # noqa: PLR091
         methane[sector] = np.zeros(domain_grid.shape)
 
     print("Mapping land use grid to domain grid")
-    xDomain = np.floor((landUseData.x + ww / 2) / domain_grid.cell_size[0]).values.astype(int)
-    yDomain = np.floor((landUseData.y + hh / 2) / domain_grid.cell_size[1]).values.astype(int)
+    cell_x, cell_y, cell_valid = domain_grid.xy_to_cell_index(landUseData.x, landUseData.y)
 
     print("Assigning methane layers to domain grid")
     for landUseType, _ in usageCounts.items():
@@ -214,7 +159,8 @@ def processEmissions(config: PriorConfig, prior_ds: xr.Dataset):  # noqa: PLR091
         if emission > 0:
             for y, x in sectorPixels:
                 try:
-                    methane[sector][yDomain[y]][xDomain[x]] += emission
+                    ix, iy = cell_x.item(x), cell_y.item(y)
+                    methane[sector][iy, ix] += emission
                 except IndexError:
                     # print("ignoring out of range pixel")
                     pass  # it's outside our domain
