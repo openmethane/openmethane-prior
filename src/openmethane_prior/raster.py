@@ -6,6 +6,7 @@ from rasterio.warp import Resampling, calculate_default_transform, reproject
 import xarray as xr
 
 from openmethane_prior.config import PriorConfig
+from openmethane_prior.grid.grid import Grid
 
 
 def reproject_tiff(image, output, dst_crs="EPSG:4326", resampling="nearest", **kwargs):
@@ -75,7 +76,7 @@ def reproject_raster_inputs(config: PriorConfig):
 
 def remap_raster(
     input_field: xr.DataArray,
-    config: PriorConfig,
+    target_grid: Grid,
     input_crs: pyproj.crs.CRS = 4326, # EPSG:4362
     AREA_OR_POINT = 'Area',
 ) -> np.ndarray:
@@ -88,10 +89,9 @@ def remap_raster(
     Returns an np.array in the shape of the domain grid, each cell containing
     the aggregate of raster values who's center point fell within the cell.
     """
-    domain_grid = config.domain_grid()
-    projection_transformer = pyproj.Transformer.from_crs(crs_from=input_crs, crs_to=domain_grid.projection.crs, always_xy=True)
+    projection_transformer = pyproj.Transformer.from_crs(crs_from=input_crs, crs_to=target_grid.projection.crs, always_xy=True)
 
-    result = np.zeros(domain_grid.shape)
+    result = np.zeros(target_grid.shape)
 
     # we accumulate values from each high-res grid in the raster onto our domain then divide by the number
     # our criterion is that the central point in the high-res lies inside the cell defined on the grid
@@ -116,7 +116,7 @@ def remap_raster(
         lats = np.array([lat]).repeat(input_field.x.size) # proj needs lats,lons same size
 
         input_x, input_y = projection_transformer.transform(xx=input_lons_np, yy=lats)
-        cell_x, cell_y, mask = domain_grid.xy_to_cell_index(input_x, input_y)
+        cell_x, cell_y, mask = target_grid.xy_to_cell_index(input_x, input_y)
 
         # input domain is bigger so mask indices out of range
         if mask.any():

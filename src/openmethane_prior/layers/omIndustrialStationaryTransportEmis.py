@@ -56,7 +56,7 @@ def processEmissions(config: PriorConfig, prior_ds: xr.Dataset):
     ntlt = ntlData.sum(axis=0)
     np.nan_to_num(ntlt, copy=False)
 
-    om_ntlt = remap_raster(ntlt, config, AREA_OR_POINT=ntlData.AREA_OR_POINT)
+    om_ntlt = remap_raster(ntlt, config.domain_grid(), AREA_OR_POINT=ntlData.AREA_OR_POINT)
 
     # apply land mask before counting any night lights
     om_ntlt = om_ntlt * prior_ds["land_mask"]

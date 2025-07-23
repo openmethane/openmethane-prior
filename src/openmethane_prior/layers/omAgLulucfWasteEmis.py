@@ -128,7 +128,7 @@ def processEmissions(config: PriorConfig, prior_ds: xr.Dataset):  # noqa: PLR091
         sector_xr = xr.DataArray(sector_mask, coords={ 'y': lu_y, 'x': lu_x  })
 
         # now aggregate to coarser resolution of the domain grid
-        sector_gridded = remap_raster(sector_xr, config, input_crs=lu_crs)
+        sector_gridded = remap_raster(sector_xr, config.domain_grid(), input_crs=lu_crs)
 
         # apply land mask before counting any land use
         sector_gridded *= prior_ds["land_mask"]

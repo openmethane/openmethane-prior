@@ -22,7 +22,7 @@ def test_remap_raster(config, input_files):
     ntl *= 0.
     ntl[test_coord] = 1.
     # now clip to remove offshore lights
-    om_ntl = remap_raster(ntl, config, AREA_OR_POINT = ntl_raw.AREA_OR_POINT)
+    om_ntl = remap_raster(ntl, config.domain_grid(), AREA_OR_POINT = ntl_raw.AREA_OR_POINT)
 
     # now a few tests on outputs
     # only one nonzero point in output
