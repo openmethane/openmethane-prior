@@ -36,7 +36,7 @@ import numpy as np
 import xarray as xr
 from shapely import geometry
 
-from openmethane_prior.config import PriorConfig, load_config_from_env
+from openmethane_prior.config import PriorConfig, load_config_from_env, parse_cli_to_env
 from openmethane_prior.outputs import initialise_output, sum_sectors, write_sector
 from openmethane_prior.utils import (
     area_of_rectangle_m2,
@@ -47,9 +47,14 @@ from openmethane_prior.utils import (
 
 
 def download_GFAS(
-    start_date: datetime.date, end_date: datetime.date, file_name: str | pathlib.Path
+    start_date: datetime.date,
+    end_date: datetime.date,
+    file_name: str | pathlib.Path,
 ):
-    """Download GFAS methane between two dates startDate and endDate, returns nothing"""
+    """
+    Download GFAS methane between start and end date, returning the filename
+    of the retrieved data.
+    """
     dateString = start_date.strftime("%Y-%m-%d") + "/" + end_date.strftime("%Y-%m-%d")
 
     downloadPath = pathlib.Path(file_name);
@@ -71,22 +76,12 @@ def download_GFAS(
     return file_name
 
 
-def processEmissions(config: PriorConfig, startDate, endDate, forceUpdate: bool = False, **kwargs):  # noqa: PLR0915
-    """Remap GFAS fire emissions to the CMAQ domain
-
-    Args:
-    ----
-        startDate, endDate: the date range (datetime objects)
-        kwargs, specific arguments needed for this emission
-
-
-    Returns
-    -------
-        Nothing
-
+def processEmissions(config: PriorConfig, forceUpdate: bool = False, **kwargs):  # noqa: PLR0915
+    """
+    Remap GFAS fire emissions to the CMAQ domain
     """
     gfas_file = download_GFAS(
-        startDate, endDate, file_name=config.as_intermediate_file("gfas-download.nc")
+        config.start_date, config.end_date, file_name=config.as_intermediate_file("gfas-download.nc")
     )
     gfas_ds = nc.Dataset(gfas_file, "r")
 
@@ -246,21 +241,9 @@ def processEmissions(config: PriorConfig, startDate, endDate, forceUpdate: bool 
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Calculate the prior methane emissions estimate for OpenMethane"
-    )
-    parser.add_argument(
-        "--start-date",
-        type=lambda s: datetime.datetime.strptime(s, "%Y-%m-%d"),
-        help="Start date in YYYY-MM-DD format",
-    )
-    parser.add_argument(
-        "--end-date",
-        type=lambda s: datetime.datetime.strptime(s, "%Y-%m-%d"),
-        help="end date in YYYY-MM-DD format",
-    )
-    args = parser.parse_args()
+    parse_cli_to_env()
     config = load_config_from_env()
-    initialise_output(config, args.start_date, args.end_date)
-    processEmissions(config, args.start_date, args.end_date)
+
+    initialise_output(config)
+    processEmissions(config)
     sum_sectors(config.output_file)

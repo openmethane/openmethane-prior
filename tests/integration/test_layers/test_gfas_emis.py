@@ -8,16 +8,12 @@ from openmethane_prior.utils import area_of_rectangle_m2
 
 
 @pytest.mark.skip(reason="Makes no assertions")
-def test_gfas_emis(config, input_files, input_domain, start_date, end_date):  # test totals for GFAS emissions between original and remapped
+def test_gfas_emis(config, input_files, input_domain):  # test totals for GFAS emissions between original and remapped
     # TODO: Check the output correctly
-    initialise_output(config, start_date, end_date)
+    initialise_output(config)
 
-    remapped = processEmissions(
-        config=config,
-        startDate=start_date,
-        endDate=end_date,
-        forceUpdate=True,
-    )
+    remapped = processEmissions(config=config, forceUpdate=True)
+
     GFASfile = config.as_intermediate_file("gfas-download.nc")
     ncin = nc.Dataset(GFASfile, "r", format="NETCDF4")
     latGfas = np.around(np.float64(ncin.variables["latitude"][:]), 3)

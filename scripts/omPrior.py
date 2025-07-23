@@ -18,12 +18,9 @@
 
 """Main entry point for running the openmethane-prior"""
 
-import argparse
-import datetime
-
 import prettyprinter
 
-from openmethane_prior.config import PriorConfig, load_config_from_env
+from openmethane_prior.config import PriorConfig, load_config_from_env, parse_cli_to_env
 from openmethane_prior.inputs import check_input_files
 from openmethane_prior.layers import (
     omAgLulucfWasteEmis,
@@ -41,9 +38,7 @@ from openmethane_prior.verification import verify_emis
 prettyprinter.install_extras(["attrs"])
 
 
-def run_prior(
-    config: PriorConfig, start_date: datetime.date, end_date: datetime.date, skip_reproject: bool
-):
+def run_prior(config: PriorConfig):
     """
     Calculate the prior methane emissions estimate for Open Methane
 
@@ -51,59 +46,36 @@ def run_prior(
     ----------
     config
         Configuration used for the calculation
-    start_date
-        Date to start the prior calculation (UTC timezone)
-    end_date
-        Date to end the prior calculation (UTC timezone)
-    skip_reproject
-        If true, don't reproject the raster datasets onto the domain
     """
+    if (config.start_date is None):
+        raise ValueError("Start date must be provided")
+
     check_input_files(config)
 
     # Initialise the output dataset based on the domain provided in config
-    initialise_output(config, start_date, end_date)
+    initialise_output(config)
 
-    if not skip_reproject:
+    if not config.skip_reproject:
         reproject_raster_inputs(config)
 
     omAgLulucfWasteEmis.processEmissions(config)
     omIndustrialStationaryTransportEmis.processEmissions(config)
     omElectricityEmis.processEmissions(config)
-    omFugitiveEmis.processEmissions(config, start_date, end_date)
+    omFugitiveEmis.processEmissions(config)
 
     omTermiteEmis.processEmissions(config)
-    omGFASEmis.processEmissions(config, start_date, end_date)
-    omWetlandEmis.processEmissions(config, start_date, end_date)
+    omGFASEmis.processEmissions(config)
+    omWetlandEmis.processEmissions(config)
 
     sum_sectors(config.output_file)
     verify_emis(config)
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Calculate the prior methane emissions estimate for OpenMethane"
-    )
-    parser.add_argument(
-        "--start-date",
-        type=lambda s: datetime.datetime.strptime(s, "%Y-%m-%d"),
-        help="Start date in YYYY-MM-DD format",
-    )
-    parser.add_argument(
-        "--end-date",
-        type=lambda s: datetime.datetime.strptime(s, "%Y-%m-%d"),
-        help="end date in YYYY-MM-DD format",
-    )
-    parser.add_argument("--skip-reproject", default=False, action="store_true")
-    args = parser.parse_args()
-
+    parse_cli_to_env()
     config = load_config_from_env()
 
     print("Configuration:")
     prettyprinter.cpprint(config)
 
-    run_prior(
-        config=config,
-        start_date=args.start_date,
-        end_date=args.end_date,
-        skip_reproject=args.skip_reproject,
-    )
+    run_prior(config)
