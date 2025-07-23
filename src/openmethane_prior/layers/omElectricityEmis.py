@@ -55,7 +55,7 @@ def processEmissions(config: PriorConfig, prior_ds: xr.Dataset):
     methane = np.zeros(domain_grid.shape)
 
     for facility in electricityFacilities:
-        cell_coords = domain_grid.find_cell(lonlat=(facility["lng"], facility["lat"]))
+        cell_coords = domain_grid.lonlat_to_cell_index(facility["lng"], facility["lat"])
 
         if cell_coords is not None:
             methane[cell_coords[1], cell_coords[0]] += (facility["capacity"] / totalCapacity) * electricityEmis

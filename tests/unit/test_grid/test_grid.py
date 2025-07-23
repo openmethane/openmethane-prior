@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+import xarray as xr
 
 from openmethane_prior.grid.grid import Grid
 
@@ -143,19 +144,19 @@ def test_grid_valid_cell_coords():
         cell_size=(1, 2),
     )
 
-    assert test_grid.valid_cell_coords((0, 0))
-    assert test_grid.valid_cell_coords((1, 1))
-    assert test_grid.valid_cell_coords((7, 0))
-    assert test_grid.valid_cell_coords((0, 9))
-    assert test_grid.valid_cell_coords((7, 9))
+    assert test_grid.valid_cell_coords(0, 0)
+    assert test_grid.valid_cell_coords(1, 1)
+    assert test_grid.valid_cell_coords(7, 0)
+    assert test_grid.valid_cell_coords(0, 9)
+    assert test_grid.valid_cell_coords(7, 9)
 
-    assert not test_grid.valid_cell_coords((-1, 0))
-    assert not test_grid.valid_cell_coords((0, -1))
-    assert not test_grid.valid_cell_coords((0, 10))
-    assert not test_grid.valid_cell_coords((8, 0))
-    assert not test_grid.valid_cell_coords((8, 10))
+    assert not test_grid.valid_cell_coords(-1, 0)
+    assert not test_grid.valid_cell_coords(0, -1)
+    assert not test_grid.valid_cell_coords(0, 10)
+    assert not test_grid.valid_cell_coords(8, 0)
+    assert not test_grid.valid_cell_coords(8, 10)
 
-def test_grid_find_cell():
+def test_grid_lonlat_to_cell_index():
     test_grid = Grid(
         dimensions=(8, 10),
         center_lonlat=(45, 45),
@@ -163,32 +164,59 @@ def test_grid_find_cell():
         cell_size=(1, 2),
     )
 
-    # one of xy or lonlat must be provided
-    with pytest.raises(ValueError, match="xy or lonlat must be provided"):
-        test_grid.find_cell()
-    with pytest.raises(ValueError, match="provide only one of xy or lonlat"):
-        test_grid.find_cell(xy=(0, 0), lonlat=(0, 0))
-
-    # coords should be a tuple of ints
-    found = test_grid.find_cell(xy=(41, 40))
-    assert found == (0, 0)
+    # coords should be a tuple (int, int, bool)
+    found = test_grid.lonlat_to_cell_index(41, 40)
+    assert found == (0, 0, True)
     assert type(found) == tuple
 
-    found_x, found_y = found
-    assert type(found_x) == int
-    assert type(found_y) == int
+    found_x, found_y, found_mask = found
+    assert type(found_x) == np.int64
+    assert type(found_y) == np.int64
+    assert type(found_mask) == np.bool_
 
-    # coords inside the grid should succeed
-    assert test_grid.find_cell(xy=(41, 40)) == (0, 0)
-    assert test_grid.find_cell(xy=(45, 45)) == (4, 2)
-    assert test_grid.find_cell(xy=(48.9, 59.9)) == (7, 9)
+    # set up a grid with a different projection so we can test lon/lat -> x/y conversion
+    # using EPSG:7844, which is GDA2020:
+    # center: 133.38 -34.51
+    # extent: 93.31, -60.55 x 173.34, -8.47
+    test_grid = Grid(
+        dimensions=(80, 40),
+        center_lonlat=(133.38, -34.51),
+        origin_xy=(-40, -20),
+        cell_size=(1, 1), # EPSG:7844 (GDA2020) uses degrees
+        proj_params="EPSG:7844",
+    )
 
-    assert test_grid.find_cell(xy=test_grid.llc_xy) == (0, 0)
+    # multiple values as np.array
+    np_result = test_grid.lonlat_to_cell_index(
+        lon=np.array([100, 130, 160]),
+        lat=np.array([-40, -45, -50]),
+    )
 
-    # coords outside the grid should find None
-    assert test_grid.find_cell(xy=(40.9, 39.9)) == None
-    assert test_grid.find_cell(xy=(40.9, 40.0)) == None
-    assert test_grid.find_cell(xy=(41.0, 39.9)) == None
-    assert test_grid.find_cell(xy=(48.9, 60)) == None
-    assert test_grid.find_cell(xy=(49.0, 59.9)) == None
-    assert test_grid.find_cell(xy=(49.0, 59.9)) == None
+    np.testing.assert_allclose(np_result, (
+        [6, 36, 66],
+        [14, 9, 4],
+        [True, True, True],
+    ))
+
+    # multiple values as xr.DataArray
+    xr_result = test_grid.lonlat_to_cell_index(
+        lon=xr.DataArray([100.5, 130.5, 160.5]),
+        lat=xr.DataArray([-40.5, -45.5, -50.5]),
+    )
+
+    np.testing.assert_allclose(xr_result, (
+        [7, 37, 67],
+        [14, 9, 4],
+        [True, True, True],
+    ))
+
+    # some points outside the grid
+    in_out = test_grid.lonlat_to_cell_index(
+        lon=np.array([80, 130, 177, 100, 100, 100]),
+        lat=np.array([-40, -45, -50, -55, -40, -13]),
+    )
+    np.testing.assert_allclose(in_out, (
+        [-14, 36, 83, 6, 6, 6], # valid x coords: 0 - 79
+        [14, 9, 4, -1, 14, 41], # valid y coords: 0 - 40
+        [False, True, False, False, True, False],
+    ))
