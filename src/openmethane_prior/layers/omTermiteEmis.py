@@ -188,6 +188,9 @@ def processEmissions(  # noqa: PLR0915
         sector_name="termite",
         sector_data=resultNd,
         sector_standard_name="termites",
+        # source dataset is a coarse grid, cells over water should be
+        # excluded from results because there won't be termites there!
+        apply_landmask=True,
     )
     return resultNd
 

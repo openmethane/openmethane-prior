@@ -222,6 +222,9 @@ def processEmissions(
         sector_name="wetlands",
         sector_data=result_xr,
         sector_standard_name="wetland_biological_processes",
+        # source dataset is a coarse grid, and has emissions over ocean which
+        # definitely shouldn't be classified as wetlands
+        apply_landmask=True,
     )
     return result_nd
 

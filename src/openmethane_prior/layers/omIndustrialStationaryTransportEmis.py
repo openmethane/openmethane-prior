@@ -58,6 +58,9 @@ def processEmissions(config: PriorConfig, prior_ds: xr.Dataset):
 
     om_ntlt = remap_raster(ntlt, config, AREA_OR_POINT=ntlData.AREA_OR_POINT)
 
+    # apply land mask before counting any night lights
+    om_ntlt = om_ntlt * prior_ds["land_mask"]
+
     # we want proportions of total for scaling emissions
     ntltScalar = om_ntlt/om_ntlt.sum()
     sectorData = pd.read_csv(
