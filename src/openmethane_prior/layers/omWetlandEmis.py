@@ -18,9 +18,7 @@
 
 """Processing wetland emissions"""
 
-import argparse
 import bisect
-import datetime
 import itertools
 import os
 
@@ -30,10 +28,9 @@ import xarray as xr
 from shapely import geometry
 
 from openmethane_prior.config import PriorConfig, load_config_from_env, parse_cli_to_env
-from openmethane_prior.outputs import sum_sectors, write_sector, initialise_output
+from openmethane_prior.outputs import add_ch4_total, add_sector, create_output_dataset, write_output_dataset
 from openmethane_prior.utils import (
     area_of_rectangle_m2,
-    date_time_range,
     load_zipped_pickle,
     redistribute_spatially,
     save_zipped_pickle,
@@ -198,37 +195,32 @@ def make_wetland_climatology(config: PriorConfig, forceUpdate: bool = False):  #
 
 def processEmissions(
     config: PriorConfig,
+    prior_ds: xr.Dataset,
     forceUpdate: bool = False,
 ):
     """
     Process wetland emissions for the given date range
     """
     climatology = make_wetland_climatology(config, forceUpdate=forceUpdate)
-    delta = datetime.timedelta(days=1)
     result_nd = []  # will be ndarray once built
-    dates = []
-    for d in date_time_range(config.start_date, config.end_date, delta):
-        dates.append(d)
-        result_nd.append(climatology[d.month - 1, ...])  # d.month is 1-based
-    dates.append(config.end_date)
-    result_nd.append(
-        climatology[config.end_date.month - 1, ...]
-    )  # we want config.end_date included, python doesn't
+    for date in prior_ds["time"].values:
+        result_nd.append(climatology[date.month - 1, ...])  # d.month is 1-based
+
     result_nd = np.array(result_nd)
     result_nd = np.expand_dims(result_nd, 1)  # adding single vertical dimension
-    resultXr = xr.DataArray(
+    result_xr = xr.DataArray(
         result_nd,
         coords={
-            "time": dates,
+            "time": prior_ds["time"].values,
             "vertical": np.array([1]),
             "y": np.arange(result_nd.shape[-2]),
             "x": np.arange(result_nd.shape[-1]),
         },
     )
-    write_sector(
-        output_path=config.output_file,
+    add_sector(
+        prior_ds=prior_ds,
         sector_name="wetlands",
-        sector_data=resultXr,
+        sector_data=result_xr,
         sector_standard_name="wetland_biological_processes",
     )
     return result_nd
@@ -238,6 +230,7 @@ if __name__ == "__main__":
     parse_cli_to_env()
     config = load_config_from_env()
 
-    initialise_output(config)
-    processEmissions(config)
-    sum_sectors(config.output_file)
+    ds = create_output_dataset(config)
+    processEmissions(config, ds)
+    add_ch4_total(ds)
+    write_output_dataset(config, ds)

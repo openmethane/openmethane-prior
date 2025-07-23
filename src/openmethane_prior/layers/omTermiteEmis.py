@@ -25,9 +25,10 @@ import os
 import netCDF4 as nc
 import numpy as np
 from shapely import geometry
+import xarray as xr
 
-from openmethane_prior.config import PriorConfig, load_config_from_env
-from openmethane_prior.outputs import sum_sectors, write_sector
+from openmethane_prior.config import PriorConfig, load_config_from_env, parse_cli_to_env
+from openmethane_prior.outputs import add_ch4_total, add_sector, create_output_dataset, write_output_dataset
 from openmethane_prior.utils import (
     SECS_PER_YEAR,
     area_of_rectangle_m2,
@@ -39,6 +40,7 @@ from openmethane_prior.utils import (
 
 def processEmissions(  # noqa: PLR0915
     config: PriorConfig,
+    prior_ds: xr.Dataset,
     forceUpdate: bool = False,
 ):
     """Remap termite emissions to the CMAQ domain
@@ -181,16 +183,20 @@ def processEmissions(  # noqa: PLR0915
     resultNd /= SECS_PER_YEAR
     ncin.close()
 
-    write_sector(
-        output_path=config.output_file,
+    add_sector(
+        prior_ds=prior_ds,
         sector_name="termite",
         sector_data=resultNd,
         sector_standard_name="termites",
     )
-    return np.array(resultNd)
+    return resultNd
 
 
 if __name__ == "__main__":
+    parse_cli_to_env()
     config = load_config_from_env()
-    processEmissions(config)
-    sum_sectors(config.output_file)
+
+    ds = create_output_dataset(config)
+    processEmissions(config, ds)
+    add_ch4_total(ds)
+    write_output_dataset(config, ds)
