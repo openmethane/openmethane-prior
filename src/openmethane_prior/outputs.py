@@ -179,6 +179,8 @@ def create_output_dataset(config: PriorConfig) -> xr.Dataset:
 
     # disable _FillValue for variables that shouldn't have empty values
     prior_ds.time_bounds.encoding["_FillValue"] = None
+    prior_ds.x.encoding["_FillValue"] = None
+    prior_ds.y.encoding["_FillValue"] = None
     prior_ds.x_bounds.encoding["_FillValue"] = None
     prior_ds.y_bounds.encoding["_FillValue"] = None
 
