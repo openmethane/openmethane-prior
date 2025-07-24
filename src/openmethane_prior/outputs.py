@@ -115,6 +115,7 @@ def create_output_dataset(config: PriorConfig) -> xr.Dataset:
                     "standard_name": "land_binary_mask",
                     "units": "1",
                     "long_name": "land-water mask (1=land, 0=water)",
+                    "grid_mapping": PROJECTION_VAR_NAME,
                 },
             ),
 
