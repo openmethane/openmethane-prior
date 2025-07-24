@@ -1,6 +1,8 @@
 import numpy as np
 import rioxarray as rxr
+import xarray as xr
 
+from openmethane_prior.grid.grid import Grid
 from openmethane_prior.raster import remap_raster
 
 def test_remap_raster(config, input_files):
@@ -38,3 +40,67 @@ def test_remap_raster(config, input_files):
     ])
 
     np.testing.assert_allclose(output_loc, input_loc, atol=distance_tolerance)
+
+def test_remap_raster_area():
+    # target is a regular 4x4 grid from -4,-4 to 4,4
+    target_grid = Grid(
+        dimensions=(4, 4),
+        center_lonlat=(0, 0),
+        origin_xy=(-4, -4),
+        cell_size=(2, 2),
+    )
+    # create a regular 16x16 grid from -8.25,-8.25 to 7.75,7.75
+    # the 0.25 offset is so that it doesn't align with the target grid
+    test_input = xr.DataArray(
+        coords={ "y": np.arange(-8.0, 8.0) - 0.25, "x": np.arange(-8.0, 8.0) - 0.25 },
+        data=np.zeros((16, 16)),
+    )
+    test_input[6, 6] = 1.0 # add a single value at -2.25, -2.25
+
+    # 'Point' means the coord represents the center point of the cell
+    # -2.25,-2.25 should fall into the cell at 0,0
+    result = remap_raster(test_input, target_grid, AREA_OR_POINT='Point')
+    assert result[0, 0] == 1.0
+    assert result[1, 1] == 0.0 # test the negative
+
+    # 'Area' means the coord represents the llc point of the cell
+    # -2.25,-2.25 should be shifted to -1.75, -1.75, falling into 1,1
+    result = remap_raster(test_input, target_grid, AREA_OR_POINT='Area')
+    assert result[0, 0] == 0.0
+    assert result[1, 1] == 1.0 # now falls in 1,1
+
+
+def test_remap_raster_input_projection():
+    test_point = (144.9631, -37.8136) # Melbourne, Australia
+
+    target_grid = Grid(
+        dimensions=(80, 50),
+        center_lonlat=(133.38, -34.51),
+        origin_xy=(-40, -25),
+        cell_size=(1, 1), # cell size of 1 degree
+        proj_params="EPSG:7843", # GDA2020 in lon/lat
+    )
+    target_x, target_y, _ = target_grid.lonlat_to_cell_index(test_point[0], test_point[1])
+
+    # use a Grid to help us define a source dataset in a different projection
+    source_grid = Grid(
+        dimensions=(900, 900),
+        center_lonlat=(133.38, -34.51),
+        origin_xy=(-450000, -450000),
+        cell_size=(5000, 5000), # cell size of 1000 meters
+        proj_params="EPSG:7845", # GDA2020 in meters
+    )
+    test_input = xr.DataArray(
+        coords={ "y": source_grid.cell_coords_y(), "x": source_grid.cell_coords_x() },
+        data=np.zeros((900, 900)),
+    )
+    source_x, source_y, _ = source_grid.lonlat_to_cell_index(test_point[0], test_point[1])
+
+    # add a single value in the cell at -144.9631,-37.8136
+    test_input[source_y, source_x] = 1.0
+
+    # remap to the target grid
+    result = remap_raster(test_input, target_grid, input_crs=source_grid.projection.crs)
+
+    # check that our single value occurs in the right target cell
+    assert result[target_y, target_x] == 1.0
