@@ -56,19 +56,21 @@ def processEmissions(config: PriorConfig, prior_ds: xr.Dataset):
     ntlt = ntlData.sum(axis=0)
     np.nan_to_num(ntlt, copy=False)
 
-    om_ntlt = remap_raster(ntlt, config, AREA_OR_POINT=ntlData.AREA_OR_POINT)
+    om_ntlt = remap_raster(ntlt, config.domain_grid(), AREA_OR_POINT=ntlData.AREA_OR_POINT)
 
     # apply land mask before counting any night lights
     om_ntlt = om_ntlt * prior_ds["land_mask"]
 
     # we want proportions of total for scaling emissions
-    ntltScalar = om_ntlt/om_ntlt.sum()
-    sectorData = pd.read_csv(
+    om_ntlt_proportion = om_ntlt / om_ntlt.sum()
+
+    sector_totals = pd.read_csv(
         config.as_input_file(config.layer_inputs.sectoral_emissions_path)
     ).to_dict(orient="records")[0]
     methane = {}
     for sector in sectorsUsed:
-        methane[sector] = ntltScalar * sectorData[sector] * 1e9
+        # allocate the proportion of the total to each grid cell
+        methane[sector] = om_ntlt_proportion * sector_totals[sector] * 1e9
         add_sector(
             prior_ds=prior_ds,
             sector_name=sector.lower(),
