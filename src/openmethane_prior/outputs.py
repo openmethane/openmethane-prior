@@ -115,6 +115,7 @@ def create_output_dataset(config: PriorConfig) -> xr.Dataset:
                     "standard_name": "land_binary_mask",
                     "units": "1",
                     "long_name": "land-water mask (1=land, 0=water)",
+                    "grid_mapping": PROJECTION_VAR_NAME,
                 },
             ),
 
@@ -177,9 +178,8 @@ def create_output_dataset(config: PriorConfig) -> xr.Dataset:
     prior_ds.cell_name.encoding["zlib"] = True
 
     # disable _FillValue for variables that shouldn't have empty values
-    prior_ds.time_bounds.encoding["_FillValue"] = None
-    prior_ds.x_bounds.encoding["_FillValue"] = None
-    prior_ds.y_bounds.encoding["_FillValue"] = None
+    for var_name in ['time_bounds', 'x', 'y', 'x_bounds', 'y_bounds', 'lat', 'lon']:
+        prior_ds[var_name].encoding["_FillValue"] = None
 
     return prior_ds
 

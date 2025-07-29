@@ -64,6 +64,15 @@ def test_create_output_dataset(config, input_files):
     assert str(output_ds["cell_name"][99, 328].data) == "10.A8.33"
     assert str(output_ds["cell_name"][135, 388].data) == "10.C4.47"
 
+    # ensure georeferenced variables include grid_mapping attribute
+    for var_name in output_ds.data_vars.keys():
+        # variables that do not need grid_mapping are excluded from this check
+        if var_name in ["lat", "lon", "cell_name", "LANDMASK"]:
+            continue
+
+        if "x" in output_ds[var_name].coords and "y"  in output_ds[var_name].coords:
+            assert "grid_mapping" in output_ds[var_name].attrs, f"Georeferenced variable '{var_name}' is missing grid_mapping"
+
 
 def test_expand_sector_dims_errors():
     test_xr = xr.DataArray([1, 2, 3]) # 1-dimensional array
