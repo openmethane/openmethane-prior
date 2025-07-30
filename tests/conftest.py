@@ -220,7 +220,6 @@ def prior_emissions_ds(
         output_path=output_dir,
         start_date=start_date,
         end_date=end_date,
-        skip_reproject=False,
         # Use the test domain to speed things up
         # input_domain=PublishedInputDomain(
         #     name="aust-test",

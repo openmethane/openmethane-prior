@@ -92,7 +92,6 @@ class PriorConfigOptions(typing.TypedDict, total=False):
     layer_inputs: LayerInputs
     start_date: datetime.datetime
     end_date: datetime.datetime
-    skip_reproject: bool
 
 @attrs.frozen
 class PriorConfig:
@@ -118,8 +117,6 @@ class PriorConfig:
 
     start_date: datetime.datetime | None = None
     end_date: datetime.datetime | None = None
-
-    skip_reproject: bool = False
 
     def as_input_file(self, name: str | pathlib.Path) -> pathlib.Path:
         """Return the full path to an input file"""
@@ -222,7 +219,6 @@ def load_config_from_env(**overrides: PriorConfigOptions) -> PriorConfig:
         start_date=env.datetime("START_DATE", None),
         # if END_DATE not set, use START_DATE for a 1-day run
         end_date=env.datetime("END_DATE", None) or env.datetime("START_DATE", None),
-        skip_reproject=env.bool("SKIP_REPROJECT", False),
     )
 
     return PriorConfig(**{**options, **overrides})
@@ -266,5 +262,3 @@ def parse_cli_to_env():
         os.environ["END_DATE"] = args.end_date.strftime("%Y-%m-%d")
     elif args.start_date is not None:
         os.environ["END_DATE"] = args.start_date.strftime("%Y-%m-%d")
-
-    os.environ["SKIP_REPROJECT"] = "True" if args.skip_reproject else "False"
