@@ -62,7 +62,7 @@ def download_GFAS(
     downloadPath = pathlib.Path(file_name);
     downloadPath.parent.mkdir(parents=True, exist_ok=True)
 
-    c = cdsapi.Client()
+    c = cdsapi.Client(progress=False)
 
     c.retrieve(
         "cams-global-fire-emissions-gfas",
