@@ -24,7 +24,6 @@ import numpy as np
 import rasterio
 import rioxarray as rxr
 import xarray as xr
-from tqdm import tqdm
 
 from openmethane_prior.config import PriorConfig, load_config_from_env, parse_cli_to_env
 from openmethane_prior.outputs import (
@@ -72,7 +71,7 @@ def processEmissions(config: PriorConfig, prior_ds: xr.Dataset):  # noqa: PLR091
     logger.info("Distribute livestock CH4 (long process)")
     # we're accumulating emissions from fine to coarse grid
     # accumulate in mass units and divide by area at end
-    for j in tqdm(range(ls.lat.size)):
+    for j in range(ls.lat.size):
         ix, iy = cell_x[j,:], cell_y[j,:]
         # input domain is bigger so mask indices out of range
         mask = cell_valid[j, :]
