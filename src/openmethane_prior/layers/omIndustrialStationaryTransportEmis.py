@@ -32,6 +32,9 @@ from openmethane_prior.outputs import (
     write_output_dataset,
 )
 from openmethane_prior.raster import remap_raster
+import openmethane_prior.logger as logger
+
+logger = logger.get_logger(__name__)
 
 sectorEmissionStandardNames = {
     "industrial": "industrial_processes_and_combustion",
@@ -45,7 +48,7 @@ def processEmissions(config: PriorConfig, prior_ds: xr.Dataset):
     Process emissions for Industrial, Stationary and Transport sectors, adding
     them to the prior dataset.
     """
-    print("processEmissions for Industrial, Stationary and Transport")
+    logger.info("processEmissions for Industrial, Stationary and Transport")
 
     sectorsUsed = ["industrial", "stationary", "transport"]
 

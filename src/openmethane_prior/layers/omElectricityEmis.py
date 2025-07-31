@@ -30,13 +30,16 @@ from openmethane_prior.outputs import (
     create_output_dataset,
     write_output_dataset,
 )
+import openmethane_prior.logger as logger
+
+logger = logger.get_logger(__name__)
 
 def processEmissions(config: PriorConfig, prior_ds: xr.Dataset):
     """
     Process emissions from the electricity sector, adding them to the prior
     dataset.
     """
-    print("processEmissions for Electricity")
+    logger.info("processEmissions for electricity")
 
     electricityEmis = (
         pd.read_csv(config.as_input_file(config.layer_inputs.sectoral_emissions_path)).to_dict(

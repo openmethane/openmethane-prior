@@ -24,7 +24,9 @@ import urllib.parse
 import requests
 
 from openmethane_prior.config import PriorConfig
+import openmethane_prior.logger as logger
 
+logger = logger.get_logger(__name__)
 
 def download_input_file(remote_url: str, url_fragment: str, save_path: pathlib.Path) -> bool:
     """
@@ -51,7 +53,7 @@ def download_input_file(remote_url: str, url_fragment: str, save_path: pathlib.P
     url = urllib.parse.urljoin(remote_url, url_fragment)
 
     if not os.path.exists(save_path):
-        print(f"Downloading {url_fragment} to {save_path} from {url}")
+        logger.info(f"Downloading {url_fragment} to {save_path} from {url}")
 
         save_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -64,7 +66,7 @@ def download_input_file(remote_url: str, url_fragment: str, save_path: pathlib.P
 
         return True
     else:
-        print(f"Skipping {url_fragment} because it already exists at {save_path}")
+        logger.debug(f"Skipping {url_fragment} because it already exists at {save_path}")
 
     return False
 
@@ -75,15 +77,12 @@ def check_input_files(config: PriorConfig):
 
     Exits with an error code of 1 if all required files are not available
     """
-    print("### Checking input files...")
+    logger.debug("Checking input files")
 
     errors = []
 
     if not config.input_domain_file.exists():
-        errors.append(
-            f"Missing file for domain info at {config.input_domain_file}, "
-            f"either specify an input domain to download or copy the domain file to this location."
-        )
+        errors.append(f"\n- {config.input_domain_file.name} (domain info)")
 
     checks = (
         (config.layer_inputs.electricity_path, "electricity facilities"),
@@ -100,14 +99,13 @@ def check_input_files(config: PriorConfig):
 
     for path, desc in checks:
         if not os.path.exists(config.as_input_file(path)):
-            errors.append(f"Missing file for {desc} at {path}")
+            errors.append(f"\n- {path} ({desc})")
 
     ## Print all errors and exit (if we have any errors)
     if len(errors) > 0:
-        print(
-            "Some required files are missing. "
-            "Suggest running omDownloadInputs.py if you're using the default input file set. "
-            "See issues below."
+        logger.warning(
+            "Required inputs are missing. "
+            "The default input set can be fetched by running omDownloadInputs.py. "
+            f"\nMissing inputs:{''.join(errors)}"
         )
-        print("\n".join(errors))
         sys.exit(1)

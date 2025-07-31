@@ -44,7 +44,9 @@ from openmethane_prior.utils import (
     redistribute_spatially,
     save_zipped_pickle,
 )
+import openmethane_prior.logger as logger
 
+logger = logger.get_logger(__name__)
 
 def download_GFAS(
     start_date: datetime.date,
@@ -108,7 +110,7 @@ def processEmissions(config: PriorConfig, prior_ds: xr.Dataset, forceUpdate: boo
     nlonGfas = len(lonGfas)
     nlatGfas = len(latGfas)
 
-    print("Calculate grid cell areas for the GFAS grid")
+    logger.debug("Calculate grid cell areas for the GFAS grid")
     GFASAreas = np.zeros((nlatGfas, nlonGfas))
     # take advantage of  regular grid to compute areas equal for each gridbox at same latitude
     for iy in range(nlatGfas):
