@@ -23,6 +23,9 @@ from openmethane_prior.cell_name import encode_grid_cell_name
 from openmethane_prior.config import PriorConfig
 from openmethane_prior.utils import SECS_PER_YEAR, get_version, get_timestamped_command, time_bounds, \
     bounds_from_cell_edges
+import openmethane_prior.logger as logger
+
+logger = logger.get_logger(__name__)
 
 COORD_NAMES = ["time", "vertical", "y", "x"]
 PROJECTION_VAR_NAME = "lambert_conformal"
@@ -224,7 +227,7 @@ def add_sector(
         whether or not to mask with domain landmask
         note this is performed on a copy so data is unchanged
     """
-    print(f"Adding emissions data for {sector_name}")
+    logger.info(f"Adding emissions data for {sector_name}")
 
     # determine the expected shape of a data layer based on the assumed coords
     expected_shape = tuple([(prior_ds.sizes[coord_name] if coord_name in prior_ds.sizes else 1) for coord_name in COORD_NAMES])
