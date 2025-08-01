@@ -17,7 +17,7 @@
 #
 
 """Main entry point for running the openmethane-prior"""
-
+import logging
 import prettyprinter
 
 from openmethane_prior.config import PriorConfig, load_config_from_env, parse_cli_to_env
@@ -34,6 +34,9 @@ from openmethane_prior.layers import (
 from openmethane_prior.outputs import add_ch4_total, create_output_dataset, write_output_dataset
 from openmethane_prior.raster import reproject_raster_inputs
 from openmethane_prior.verification import verify_emis
+import openmethane_prior.logger as logger
+
+logger = logger.get_logger(__name__)
 
 prettyprinter.install_extras(["attrs"])
 
@@ -77,7 +80,7 @@ if __name__ == "__main__":
     parse_cli_to_env()
     config = load_config_from_env()
 
-    print("Configuration:")
-    prettyprinter.cpprint(config)
+    if logger.level <= logging.DEBUG:
+        prettyprinter.cpprint(config)
 
     run_prior(config)

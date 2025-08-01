@@ -30,7 +30,9 @@ from openmethane_prior.outputs import (
     create_output_dataset,
     write_output_dataset,
 )
+import openmethane_prior.logger as logger
 
+logger = logger.get_logger(__name__)
 
 def processEmissions(config: PriorConfig, prior_ds: xr.Dataset):
     """
@@ -38,7 +40,7 @@ def processEmissions(config: PriorConfig, prior_ds: xr.Dataset):
 
     Adds the ch4_fugitive layer to the output
     """
-    print("processEmissions for fugitives")
+    logger.info("processEmissions for fugitives")
     fugitiveEmis = pd.read_csv(
         config.as_input_file(config.layer_inputs.sectoral_emissions_path)
     ).to_dict(orient="records")[0]["fugitive"]  # national total from inventory

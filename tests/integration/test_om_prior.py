@@ -16,8 +16,7 @@ def test_001_response_for_download_links(config):
     for file_fragment in layer_info.values():
         url = f"{config.remote}{file_fragment}"
         with requests.get(url, stream=True, timeout=30) as response:
-            print(f"Response code for {url}: {response.status_code}")
-            assert response.status_code == 200
+            assert response.status_code == 200, f"Unexpected {response.status_code} response for: {url}"
 
 
 @pytest.mark.skip(reason="Duplicated by other tests")
