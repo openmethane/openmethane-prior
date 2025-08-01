@@ -187,6 +187,28 @@ and end date as below):
 poetry run python src/openmethane_prior/layers/omWetlandEmis.py --start-date 2022-07-01 --end-date 2022-07-01
 ```
 
+### Console output
+
+The detail of console output can be controlled by setting the `LOG_LEVEL` env
+variable. By default, this is set to `INFO`, but more or less can be achieved
+by setting other log levels:
+
+```shell
+# verbose debug output
+LOG_LEVEL=DEBUG poetry run python scripts/omPrior.py --start-date 2022-07-01 --end-date 2022-07-01
+
+# only warnings and errors
+LOG_LEVEL=WARNING poetry run python scripts/omPrior.py --start-date 2022-07-01 --end-date 2022-07-01
+```
+
+Log output can also be written to a file while still logging to the console
+with the `LOG_FILE` env variable.
+
+```shell
+LOG_FILE=/var/log/prior.log poetry run python scripts/omPrior.py --start-date 2022-07-01 --end-date 2022-07-01
+```
+
+
 ## Outputs
 
 Outputs can be found in the `data/outputs` folder. The emissions layers will be written as variables to a copy of the
