@@ -46,14 +46,12 @@ import xarray as xr
 
 from openmethane_prior.config import PriorConfig, load_config_from_env, parse_cli_to_env
 from openmethane_prior.raster import remap_raster
+from openmethane_prior.grid.domain_grid import DomainGrid
 
-
-
-
-def create_domain_info(config: PriorConfig,
-    geometry_file: pathlib.Path,
-    cross_file: pathlib.Path,
-    dot_file: pathlib.Path,
+def create_domain_info(
+        geometry_file: pathlib.Path,
+        cross_file: pathlib.Path,
+        dot_file: pathlib.Path,
         landuse: pathlib.Path,
 ) -> xr.Dataset:
     """
@@ -102,24 +100,22 @@ def create_domain_info(config: PriorConfig,
     print("Loading land use data")
                 # this seems to need two approaches since rioxarray
                 # seems to always convert to float which we don't want but we need it for the other tif attributes
-    landUseData = rxr.open_rasterio(
-        config.as_input_file(config.layer_inputs.land_use_path), masked=True
+    landUseData = rxr.open_rasterio(landuse, masked=True
     )
     lu_x = landUseData.x
     lu_y = landUseData.y
     lu_crs = landUseData.rio.crs
     landUseData.close()
 
-    dataBand = rasterio.open(
-        config.as_input_file(config.layer_inputs.land_use_path),
+    dataBand = rasterio.open(landuse,
         engine='rasterio',
     ).read()
     dataBand = dataBand.squeeze()
     dataBand[dataBand != 0] = 1 # now pure land-oc mask
     sector_xr = xr.DataArray(dataBand, coords={ 'y': lu_y, 'x': lu_x  })
-
+    domain_grid = DomainGrid( domain_ds) 
     # now aggregate to coarser resolution of the domain grid
-    inventory_mask = remap_raster(sector_xr, config.domain_grid(), input_crs=lu_crs)
+    inventory_mask = remap_raster(sector_xr, domain_grid, input_crs=lu_crs)
     # binary choice land or ocean
     inventory_mask = np.where( inventory_mask > 0.5, 1., 0.)
     # now limit to CMAQ land mask
@@ -252,11 +248,8 @@ def main(
     geometry_directory, output_directory = clean_directories(
         geometry_directory, output_directory, name, version
     )
-#    parse_cli_to_env()
-    config = load_config_from_env()
 
     domain = create_domain_info(
-        config,
         geometry_file=geometry_directory / f"geo_em.d{domain_index:02}.nc",
         cross_file=pathlib.Path(cross),
         dot_file=pathlib.Path(dot),
