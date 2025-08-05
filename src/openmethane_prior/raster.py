@@ -100,8 +100,8 @@ def remap_raster(
 
     # the following needs .to_numpy() because
     # subtracting xarray matches coordinates, not what we want
-    input_lons_np = input_field.x.to_numpy()
-    input_lats_np = input_field.y.to_numpy()
+    input_lons_np = input_field.x.to_numpy().copy()
+    input_lats_np = input_field.y.to_numpy().copy()
     delta_lon = (input_lons_np[1:] - input_lons_np[0:-1]).mean()
     delta_lat = (input_lats_np[1:] - input_lats_np[0:-1]).mean()
 
