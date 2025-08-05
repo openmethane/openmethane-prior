@@ -116,11 +116,18 @@ def create_domain_info(
     domain_grid = DomainGrid( domain_ds) 
     # now aggregate to coarser resolution of the domain grid
     inventory_mask = remap_raster(sector_xr, domain_grid, input_crs=lu_crs)
+    # now count pixels in each coarse gridcell by aggregating array of 1
+    dataBand[...] = 1
+    count_mask = remap_raster(sector_xr, domain_grid, input_crs=lu_crs)
+    has_vals = count_mask > 0
+    inventory_mask[has_vals] /= count_mask[has_vals]
     # binary choice land or ocean
     inventory_mask = np.where( inventory_mask > 0.5, 1., 0.)
     # now limit to CMAQ land mask
-    inventory_mask *= domain_ds["LANDMASK"]
-    domain_ds['INVENTORYMASK'] = xr.DataArray( inventory_mask, attrs=domain_ds['LANDMASK'].attrs)
+#    inventory_mask *= domain_ds["LANDMASK"]
+    domain_ds['INVENTORYMASK'] = xr.DataArray(dims=('ROW', 'COL'),
+                                              data=inventory_mask,
+                                              attrs=domain_ds['LANDMASK'].attrs)
     domain_ds["INVENTORYMASK"].attrs["long_name"] = "mask for inventories over domain"
                                                
     return domain_ds
