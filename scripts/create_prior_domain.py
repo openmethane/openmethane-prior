@@ -97,6 +97,7 @@ def create_domain_info(
     landuse_xr = rxr.open_rasterio(landuse_file, masked=True)
     lu_x = landuse_xr.x
     lu_y = landuse_xr.y
+    lu_area = landuse_xr.AREA_OR_POINT
     lu_crs = landuse_xr.rio.crs
     landuse_xr.close()
 
@@ -108,10 +109,10 @@ def create_domain_info(
     sector_xr = xr.DataArray(landuse_rio, coords={ 'y': lu_y, 'x': lu_x  })
     domain_grid = DomainGrid(domain_ds)
     # now aggregate to coarser resolution of the domain grid
-    inventory_mask = remap_raster(sector_xr, domain_grid, input_crs=lu_crs)
+    inventory_mask = remap_raster(sector_xr, domain_grid, input_crs=lu_crs, AREA_OR_POINT=lu_area)
     # now count pixels in each coarse gridcell by aggregating array of 1
     landuse_rio[...] = 1
-    count_mask = remap_raster(sector_xr, domain_grid, input_crs=lu_crs)
+    count_mask = remap_raster(sector_xr, domain_grid, input_crs=lu_crs, AREA_OR_POINT=lu_area)
     has_vals = count_mask > 0
     inventory_mask[has_vals] /= count_mask[has_vals]
     # binary choice land or ocean
