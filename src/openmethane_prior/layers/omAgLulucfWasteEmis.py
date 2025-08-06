@@ -24,7 +24,6 @@ import numpy as np
 import rasterio
 import rioxarray as rxr
 import xarray as xr
-from tqdm import tqdm
 
 from openmethane_prior.config import PriorConfig, load_config_from_env, parse_cli_to_env
 from openmethane_prior.outputs import (
@@ -35,6 +34,9 @@ from openmethane_prior.outputs import (
 )
 from openmethane_prior.utils import SECS_PER_YEAR, mask_array_by_sequence
 from openmethane_prior.raster import remap_raster
+import openmethane_prior.logger as logger
+
+logger = logger.get_logger(__name__)
 
 sectorEmissionStandardNames = {
     "agriculture": "agricultural_production",
@@ -49,10 +51,10 @@ def processEmissions(config: PriorConfig, prior_ds: xr.Dataset):  # noqa: PLR091
     dataset.
     """
     # Load raster land-use data
-    print("processEmissions for Agriculture, LULUCF and waste")
+    logger.info("processEmissions for Agriculture, LULUCF and waste")
 
     ## Calculate livestock CH4
-    print("Calculating livestock CH4")
+    logger.info("Calculating livestock CH4")
     with xr.open_dataset(config.as_input_file(config.layer_inputs.livestock_path)) as lss:
         ls = lss.load()
 
@@ -66,10 +68,10 @@ def processEmissions(config: PriorConfig, prior_ds: xr.Dataset):  # noqa: PLR091
     enteric_as_array = lss.CH4_total.to_numpy()
     livestockCH4Total = enteric_as_array.sum() # for later correcting ag sector
     livestockCH4 = np.zeros(domain_grid.shape)
-    print("Distribute livestock CH4 (long process)")
+    logger.info("Distribute livestock CH4 (long process)")
     # we're accumulating emissions from fine to coarse grid
     # accumulate in mass units and divide by area at end
-    for j in tqdm(range(ls.lat.size)):
+    for j in range(ls.lat.size):
         ix, iy = cell_x[j,:], cell_y[j,:]
         # input domain is bigger so mask indices out of range
         mask = cell_valid[j, :]
@@ -79,7 +81,6 @@ def processEmissions(config: PriorConfig, prior_ds: xr.Dataset):  # noqa: PLR091
     # now convert back to flux not emission units
     livestockCH4 /= domain_grid.cell_area
 
-    print("Calculating sectoral emissions")
     # Import a map of land use type numbers to emissions sectors
     # make a dictionary of all landuse types corresponding to sectors in map
     landuseSectorMap = {}
@@ -104,7 +105,7 @@ def processEmissions(config: PriorConfig, prior_ds: xr.Dataset):  # noqa: PLR091
     # subtract the livestock ch4 from agriculture
     methaneInventoryBySector["agriculture"] -= livestockCH4Total
     # Read the land use type data band
-    print("Loading land use data")
+    logger.debug("Loading land use data")
     # this seems to need two approaches since rioxarray
     # seems to always convert to float which we don't want but we need it for the other tif attributes
     landUseData = rxr.open_rasterio(
@@ -122,7 +123,7 @@ def processEmissions(config: PriorConfig, prior_ds: xr.Dataset):  # noqa: PLR091
     dataBand = dataBand.squeeze()
 
     for sector in landuseSectorMap.keys():
-        print(f"Processing land use for sector {sector}")
+        logger.debug(f"Processing land use for sector {sector}")
         # create a mask of pixels which match the sector code
         sector_mask = mask_array_by_sequence(dataBand, landuseSectorMap[sector])
         sector_xr = xr.DataArray(sector_mask, coords={ 'y': lu_y, 'x': lu_x  })
@@ -143,7 +144,6 @@ def processEmissions(config: PriorConfig, prior_ds: xr.Dataset):  # noqa: PLR091
             sector_standard_name=sectorEmissionStandardNames[sector],
         )
 
-    print("Writing livestock methane layers output file")
     # convert the livestock data from per year to per second and write
     livestock_ch4_s = livestockCH4 / SECS_PER_YEAR
     add_sector(
