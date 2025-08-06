@@ -19,7 +19,6 @@
 
 import os
 import pathlib
-import sys
 import urllib.parse
 import requests
 
@@ -108,4 +107,4 @@ def check_input_files(config: PriorConfig):
             "The default input set can be fetched by running omDownloadInputs.py. "
             f"\nMissing inputs:{''.join(errors)}"
         )
-        sys.exit(1)
+        raise ValueError("Required inputs are missing")

@@ -13,7 +13,7 @@ def test_download_non_relative(tmp_path):
 
 
 def test_check_inputs_missing(config: PriorConfig, caplog: pytest.LogCaptureFixture):
-    with pytest.raises(SystemExit):
+    with pytest.raises(ValueError):
         check_input_files(config)
 
     assert "Required inputs are missing" in caplog.text
@@ -23,6 +23,3 @@ def test_check_inputs_missing(config: PriorConfig, caplog: pytest.LogCaptureFixt
 
 def test_check_inputs(config, input_files):
     check_input_files(config)
-
-
-
