@@ -2,7 +2,7 @@
 #
 # Copyright 2023 The Superpower Institute Ltd.
 #
-# This file is part of OpenMethane.
+# This file is part of Open Methane.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,19 +18,15 @@
 #
 
 """
-Generate domain file for use by the prior
+Generate domain file for use by Open Methane prior and alerts.
 
-The generated file is based on the WRF Geometry file and then is subset to match the CMAQ domain.
-The domain for OpenMethane is a combination of the WRF domain as specified in the setup-wrf
-repository and the value of BTRIM for the CMAQ domain (namely in MCIP).
-The generated domain file is then published to a Cloudflare bucket to be consumed by the prior.
+The generated file is based on the WRF Geometry file and then is subset to
+match the CMAQ domain. The domain for Open Methane is a combination of the WRF
+domain as specified in the setup-wrf repo and the value of BTRIM for the CMAQ
+domain (namely in MCIP).
 
-Each domain file has a domain name and version associated with it.
-
-Initially we are using the semver versioning scheme of `MAJOR.MINOR.PATCH`:
-* increasing MAJOR version means breaking changes (your "bad" case)
-* increasing MINOR version means new features/changes but no change to existing
-* increasing PATCH typically means a bug fix or no-op change
+Each domain file has a domain name and version associated with it. The version
+can be anything, but we recommend a simple, serial increment like v1, v2, etc.
 
 This only needs to be run once for each new domain/modification.
 """
@@ -44,31 +40,29 @@ import rasterio
 import rioxarray as rxr
 import xarray as xr
 
-from openmethane_prior.config import PriorConfig, load_config_from_env, parse_cli_to_env
 from openmethane_prior.raster import remap_raster
 from openmethane_prior.grid.domain_grid import DomainGrid
+import openmethane_prior.logger as logger
+
+logger = logger.get_logger(__name__)
 
 def create_domain_info(
-        geometry_file: pathlib.Path,
-        cross_file: pathlib.Path,
-        dot_file: pathlib.Path,
-        landuse: pathlib.Path,
+    geometry_file: pathlib.Path,
+    cross_file: pathlib.Path,
+    dot_file: pathlib.Path,
+    landuse_file: pathlib.Path,
 ) -> xr.Dataset:
     """
-    Create a new domain from the input WRF domain and subsets it to match the CMAQ domain
+    Create a new domain from the input WRF domain, subset to match the CMAQ
+    domain. An "inventory mask" is added to represent all locations that will
+    be considered within the political or geographic boundary where public
+    emission estimates will be available to allocate within the domain.
 
-    Parameters
-    ----------
-    geometry_file
-        Path to the WRF geometry file
-    cross_file
-        Path to the MCIP cross file
-    dot_file
-        Path to the MCIP dot file
-
-    Returns
-    -------
-        The regridded domain information as an xarray dataset
+    :param geometry_file: Path to the WRF geometry file
+    :param cross_file: Path to the MCIP cross file
+    :param dot_file: Path to the MCIP dot file
+    :param landuse_file: Path to the land use GeoTIFF
+    :return: The re-gridded domain information as an xarray Dataset
     """
     domain_ds = xr.Dataset()
 
@@ -97,37 +91,37 @@ def create_domain_info(
         for var in ["LATD", "LOND"]:
             domain_ds[var] = dotXr[var].rename({"COL": "COL_D", "ROW": "ROW_D"})
 
-    print("Loading land use data")
-                # this seems to need two approaches since rioxarray
-                # seems to always convert to float which we don't want but we need it for the other tif attributes
-    landUseData = rxr.open_rasterio(landuse, masked=True
-    )
-    lu_x = landUseData.x
-    lu_y = landUseData.y
-    lu_crs = landUseData.rio.crs
-    landUseData.close()
+    logger.info("Loading land use data")
+    # this seems to need two approaches since rioxarray
+    # seems to always convert to float which we don't want but we need it for the other tif attributes
+    landuse_xr = rxr.open_rasterio(landuse_file, masked=True)
+    lu_x = landuse_xr.x
+    lu_y = landuse_xr.y
+    lu_crs = landuse_xr.rio.crs
+    landuse_xr.close()
 
-    dataBand = rasterio.open(landuse,
+    landuse_rio = rasterio.open(landuse_file,
         engine='rasterio',
     ).read()
-    dataBand = dataBand.squeeze()
-    dataBand[dataBand != 0] = 1 # now pure land-oc mask
-    sector_xr = xr.DataArray(dataBand, coords={ 'y': lu_y, 'x': lu_x  })
-    domain_grid = DomainGrid( domain_ds) 
+    landuse_rio = landuse_rio.squeeze()
+    landuse_rio[landuse_rio != 0] = 1 # now pure land-oc mask
+    sector_xr = xr.DataArray(landuse_rio, coords={ 'y': lu_y, 'x': lu_x  })
+    domain_grid = DomainGrid(domain_ds)
     # now aggregate to coarser resolution of the domain grid
     inventory_mask = remap_raster(sector_xr, domain_grid, input_crs=lu_crs)
     # now count pixels in each coarse gridcell by aggregating array of 1
-    dataBand[...] = 1
+    landuse_rio[...] = 1
     count_mask = remap_raster(sector_xr, domain_grid, input_crs=lu_crs)
     has_vals = count_mask > 0
     inventory_mask[has_vals] /= count_mask[has_vals]
     # binary choice land or ocean
     inventory_mask = np.where( inventory_mask > 0.5, 1., 0.)
     # now limit to CMAQ land mask
-#    inventory_mask *= domain_ds["LANDMASK"]
-    domain_ds['INVENTORYMASK'] = xr.DataArray(dims=('ROW', 'COL'),
-                                              data=inventory_mask,
-                                              attrs=domain_ds['LANDMASK'].attrs)
+    domain_ds['INVENTORYMASK'] = xr.DataArray(
+        dims=('ROW', 'COL'),
+        data=inventory_mask,
+        attrs=domain_ds['LANDMASK'].attrs,
+    )
     domain_ds["INVENTORYMASK"].attrs["long_name"] = "mask for inventories over domain"
                                                
     return domain_ds
@@ -260,7 +254,7 @@ def main(
         geometry_file=geometry_directory / f"geo_em.d{domain_index:02}.nc",
         cross_file=pathlib.Path(cross),
         dot_file=pathlib.Path(dot),
-        landuse = pathlib.Path(landuse),
+        landuse_file = pathlib.Path(landuse),
     )
 
     filename = f"prior_domain_{name}_{version}.d{domain_index:02}.nc"
