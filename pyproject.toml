@@ -38,6 +38,13 @@ licenseheaders = "^0.8.8"
 ruff = "^0.5.1"
 towncrier = "^24.7.1"
 
+
+[tool.poetry.group.notebooks.dependencies]
+notebook = "^7.2.1"
+matplotlib = "^3.9.1.post1"
+jupytext = "^1.17.2"
+cartopy = "^0.25.0"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
@@ -93,7 +100,7 @@ ignore = [
 convention = "numpy"
 
 [tool.ruff.lint.isort]
-known-first-party = ["src", "scripts"]
+known-first-party = ["src", "scripts", "notebooks"]
 
 [tool.towncrier]
 package = "openmethane_prior"
