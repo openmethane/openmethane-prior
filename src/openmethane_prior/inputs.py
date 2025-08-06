@@ -66,7 +66,7 @@ def download_input_file(remote_url: str, url_fragment: str, save_path: pathlib.P
 
         return True
     else:
-        logger.debug(f"Skipping {url_fragment} because it already exists at {save_path}")
+        logger.info(f"Skipping {url_fragment} because it already exists at {save_path}")
 
     return False
 
