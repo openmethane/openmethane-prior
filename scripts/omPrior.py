@@ -32,7 +32,6 @@ from openmethane_prior.layers import (
     omWetlandEmis,
 )
 from openmethane_prior.outputs import add_ch4_total, create_output_dataset, write_output_dataset
-from openmethane_prior.raster import reproject_raster_inputs
 from openmethane_prior.verification import verify_emis
 import openmethane_prior.logger as logger
 
@@ -57,9 +56,6 @@ def run_prior(config: PriorConfig):
 
     # Initialise the output dataset based on the domain provided in config
     prior_ds = create_output_dataset(config)
-
-    if not config.skip_reproject:
-        reproject_raster_inputs(config)
 
     omAgLulucfWasteEmis.processEmissions(config, prior_ds)
     omIndustrialStationaryTransportEmis.processEmissions(config, prior_ds)
