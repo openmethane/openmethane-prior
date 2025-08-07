@@ -50,7 +50,7 @@ def create_output_dataset(config: PriorConfig) -> xr.Dataset:
     period_end = config.end_date
 
     # generate daily time steps
-    time_steps = xr.date_range(start=period_start, end=period_end, freq="D", use_cftime=True, normalize=True)
+    time_steps = xr.date_range(start=period_start, end=period_end, freq="D", use_cftime=False, normalize=True)
 
     # generate grid cell names
     # TODO: generate and store these when creating the domain file

@@ -149,6 +149,15 @@ def time_bounds(
     return bounds
 
 
+def datetime64_to_datetime( dt: np.datetime64) -> datetime.datetime:
+    """ converts a datetime64 object into a datetime.datetime object.
+    borrows from https://stackoverflow.com/questions/13703720/converting-between-datetime-timestamp-and-datetime64 """
+    epoch = np.datetime64(0,'s')
+    one_second = np.timedelta64(1,'s')
+    seconds_since_epoch = (dt - epoch)/one_second
+    return datetime.datetime.utcfromtimestamp(seconds_since_epoch)
+    
+
 def bounds_from_cell_edges(cell_edges: xr.DataArray) -> np.array:
     """
     Convert an array with [n+1] elements representing the edge coordinates of
