@@ -97,39 +97,40 @@ def create_domain_info(
         for var in ["LATD", "LOND"]:
             domain_ds[var] = dotXr[var].rename({"COL": "COL_D", "ROW": "ROW_D"})
 
-    print("Loading land use data")
-                # this seems to need two approaches since rioxarray
-                # seems to always convert to float which we don't want but we need it for the other tif attributes
-    landUseData = rxr.open_rasterio(landuse, masked=True
-    )
-    lu_x = landUseData.x
-    lu_y = landUseData.y
-    lu_crs = landUseData.rio.crs
-    landUseData.close()
+    if landuse:
+        print("calculating inventory mask")
+        # this seems to need two approaches since rioxarray
+        # seems to always convert to float which we don't want but we need it for the other tif attributes
+        landUseData = rxr.open_rasterio(landuse, masked=True
+                                        )
+        lu_x = landUseData.x
+        lu_y = landUseData.y
+        lu_crs = landUseData.rio.crs
+        landUseData.close()
 
-    dataBand = rasterio.open(landuse,
-        engine='rasterio',
-    ).read()
-    dataBand = dataBand.squeeze()
-    dataBand[dataBand != 0] = 1 # now pure land-oc mask
-    sector_xr = xr.DataArray(dataBand, coords={ 'y': lu_y, 'x': lu_x  })
-    domain_grid = DomainGrid( domain_ds) 
-    # now aggregate to coarser resolution of the domain grid
-    inventory_mask = remap_raster(sector_xr, domain_grid, input_crs=lu_crs)
-    # now count pixels in each coarse gridcell by aggregating array of 1
-    dataBand[...] = 1
-    count_mask = remap_raster(sector_xr, domain_grid, input_crs=lu_crs)
-    has_vals = count_mask > 0
-    inventory_mask[has_vals] /= count_mask[has_vals]
-    # binary choice land or ocean
-    inventory_mask = np.where( inventory_mask > 0.5, 1., 0.)
-    # now limit to CMAQ land mask
-#    inventory_mask *= domain_ds["LANDMASK"]
-    domain_ds['INVENTORYMASK'] = xr.DataArray(dims=('ROW', 'COL'),
-                                              data=inventory_mask,
-                                              attrs=domain_ds['LANDMASK'].attrs)
+        dataBand = rasterio.open(landuse,
+                                 engine='rasterio',
+                                 ).read()
+        dataBand = dataBand.squeeze()
+        dataBand[dataBand != 0] = 1 # now pure land-oc mask
+        sector_xr = xr.DataArray(dataBand, coords={ 'y': lu_y, 'x': lu_x  })
+        domain_grid = DomainGrid( domain_ds) 
+        # now aggregate to coarser resolution of the domain grid
+        inventory_mask = remap_raster(sector_xr, domain_grid, input_crs=lu_crs)
+        # now count pixels in each coarse gridcell by aggregating array of 1
+        dataBand[...] = 1
+        count_mask = remap_raster(sector_xr, domain_grid, input_crs=lu_crs)
+        has_vals = count_mask > 0
+        inventory_mask[has_vals] /= count_mask[has_vals]
+        # binary choice land or ocean
+        inventory_mask = np.where( inventory_mask > 0.5, 1., 0.)
+        domain_ds['INVENTORYMASK'] = xr.DataArray(dims=('ROW', 'COL'),
+                                                  data=inventory_mask,
+                                                  attrs=domain_ds['LANDMASK'].attrs)
+    else:
+        domain_ds['INVENTORYMASK'] = domain_ds['LANDMASK']
     domain_ds["INVENTORYMASK"].attrs["long_name"] = "mask for inventories over domain"
-                                               
+    
     return domain_ds
 
 
