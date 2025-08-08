@@ -40,17 +40,23 @@ import rasterio
 import rioxarray as rxr
 import xarray as xr
 
+from openmethane_prior.cell_name import encode_grid_cell_name
+from openmethane_prior.grid.create_grid import create_grid_from_mcip
 from openmethane_prior.raster import remap_raster
-from openmethane_prior.grid.domain_grid import DomainGrid
+from openmethane_prior.utils import bounds_from_cell_edges, get_timestamped_command, get_version
 import openmethane_prior.logger as logger
 
 logger = logger.get_logger(__name__)
 
+PROJECTION_VAR_NAME = "lambert_conformal"
+
 def create_domain_info(
     geometry_file: pathlib.Path,
     cross_file: pathlib.Path,
-    dot_file: pathlib.Path,
     landuse_file: pathlib.Path,
+    domain_name: str,
+    domain_version: str,
+    domain_slug: str,
 ) -> xr.Dataset:
     """
     Create a new domain from the input WRF domain, subset to match the CMAQ
@@ -60,38 +66,129 @@ def create_domain_info(
 
     :param geometry_file: Path to the WRF geometry file
     :param cross_file: Path to the MCIP cross file
-    :param dot_file: Path to the MCIP dot file
     :param landuse_file: Path to the land use GeoTIFF
+    :param domain_name: The name of the new domain
+    :param domain_version: The version of the domain being generated
+    :param domain_slug: A short, URL-safe name for the domain
     :return: The re-gridded domain information as an xarray Dataset
     """
-    domain_ds = xr.Dataset()
+    geom_xr = xr.open_dataset(geometry_file)
+    mcip_cro_xr = xr.open_dataset(cross_file)
 
-    with xr.open_dataset(geometry_file) as geomXr:
-        for attr in ["DX", "DY", "TRUELAT1", "TRUELAT2", "MOAD_CEN_LAT", "STAND_LON"]:
-            domain_ds.attrs[attr] = geomXr.attrs[attr]
+    domain_grid = create_grid_from_mcip(
+        TRUELAT1=geom_xr.TRUELAT1,
+        TRUELAT2=geom_xr.TRUELAT2,
+        MOAD_CEN_LAT=geom_xr.MOAD_CEN_LAT,
+        STAND_LON=geom_xr.STAND_LON,
+        COLS=mcip_cro_xr.COL.size,
+        ROWS=mcip_cro_xr.ROW.size,
+        XCENT=mcip_cro_xr.XCENT,
+        YCENT=mcip_cro_xr.YCENT,
+        XORIG=mcip_cro_xr.XORIG,
+        YORIG=mcip_cro_xr.YORIG,
+        XCELL=mcip_cro_xr.XCELL,
+        YCELL=mcip_cro_xr.YCELL,
+    )
 
-    with xr.open_dataset(cross_file) as croXr:
-        for var in ["LAT", "LON"]:
-            domain_ds[var] = croXr[var]
-            domain_ds[var] = croXr[var].squeeze(
-                dim="LAY", drop=True
-            )  # copy but remove the 'LAY' dimension
+    logger.info("Creating domain dataset")
 
-        domain_ds["LANDMASK"] = croXr["LWMASK"].squeeze(
-             drop=True
-        )  # copy but remove the 'LAY' dimension
+    # generate grid cell names
+    grid_cell_names = []
+    for y in range(domain_grid.shape[0]):
+        grid_cell_names.append([])
+        for x in range(domain_grid.shape[1]):
+            grid_cell_names[-1].append(encode_grid_cell_name(domain_slug, x, y, "."))
 
-    with xr.open_dataset(dot_file) as dotXr:
-        # some repetition between the geom and grid files here, XCELL=DX and YCELL=DY
-        # - XCELL, YCELL: size of a single cell in m
-        # - XCENT, YCENT: lat/long of grid centre point
-        # - XORIG, YORIG: position of 0,0 cell in grid coordinates (in m)
-        for attr in ["XCELL", "YCELL", "XCENT", "YCENT", "XORIG", "YORIG"]:
-            domain_ds.attrs[attr] = croXr.attrs[attr]
-        for var in ["LATD", "LOND"]:
-            domain_ds[var] = dotXr[var].rename({"COL": "COL_D", "ROW": "ROW_D"})
+    domain_ds = xr.Dataset(
+        coords={
+            "x": (("x"), domain_grid.cell_coords_x(), {
+                "long_name": "x coordinate of projection",
+                "units": "m",
+                "standard_name": "projection_x_coordinate",
+                "bounds": "x_bounds",
+            }),
+            "y": (("y"), domain_grid.cell_coords_y(), {
+                "long_name": "y coordinate of projection",
+                "units": "m",
+                "standard_name": "projection_y_coordinate",
+                "bounds": "y_bounds",
+            }),
+        },
+        data_vars={
+            # meta data
+            "lat": (
+                ("y", "x"),
+                mcip_cro_xr.variables["LAT"].squeeze(),
+                {
+                    "long_name": "latitude coordinate",
+                    "units": "degrees_north",
+                    "standard_name": "latitude",
+                },
+            ),
+            "lon": (
+                ("y", "x"),
+                mcip_cro_xr.variables["LON"].squeeze(),
+                {
+                    "long_name": "longitude coordinate",
+                    "units": "degrees_east",
+                    "standard_name": "longitude",
+                },
+            ),
 
-    logger.info("Loading land use data")
+            # # https://cfconventions.org/Data/cf-conventions/cf-conventions-1.11/cf-conventions.html#cell-boundaries
+            "x_bounds": (("x", "cell_bounds"), bounds_from_cell_edges(domain_grid.cell_bounds_x())),
+            "y_bounds": (("y", "cell_bounds"), bounds_from_cell_edges(domain_grid.cell_bounds_y())),
+
+            # https://cfconventions.org/Data/cf-conventions/cf-conventions-1.11/cf-conventions.html#_lambert_conformal
+            PROJECTION_VAR_NAME: ((), 0, domain_grid.projection.crs.to_cf()),
+
+            "cell_name": (("y", "x"), grid_cell_names, {
+                "long_name": "unique grid cell name",
+            }),
+
+            # data variables
+            "land_mask": (
+                ("y", "x"),
+                mcip_cro_xr.variables["LWMASK"].squeeze().astype(int),
+                {
+                    "standard_name": "land_binary_mask",
+                    "units": "1",
+                    "long_name": "land-water mask (1=land, 0=water)",
+                    "grid_mapping": PROJECTION_VAR_NAME,
+                },
+            ),
+
+            # legacy / deprecated
+            "LANDMASK": (
+                ("y", "x"),
+                mcip_cro_xr.variables["LWMASK"].squeeze(),
+                mcip_cro_xr.variables["LWMASK"].attrs,
+            ),
+        },
+        attrs={
+            # data attributes
+            "DX": geom_xr.DX,
+            "DY": geom_xr.DY,
+            "XCELL": mcip_cro_xr.XCELL,
+            "YCELL": mcip_cro_xr.YCELL,
+            "XORIG": mcip_cro_xr.XORIG,
+            "YORIG": mcip_cro_xr.YORIG,
+
+            # domain
+            "domain_name": domain_name,
+            "domain_version": domain_version,
+            "domain_slug": domain_slug,
+
+            # meta attributes
+            "title": f"Open Methane domain: {domain_name}",
+            "history": get_timestamped_command(),
+            "openmethane_prior_version": get_version(),
+
+            "Conventions": "CF-1.12",
+        },
+    )
+
+    logger.info("Loading land use data to generate inventory mask")
     # this seems to need two approaches since rioxarray
     # seems to always convert to float which we don't want but we need it for the other tif attributes
     landuse_xr = rxr.open_rasterio(landuse_file, masked=True)
@@ -107,9 +204,10 @@ def create_domain_info(
     landuse_rio = landuse_rio.squeeze()
     landuse_rio[landuse_rio != 0] = 1 # now pure land-oc mask
     sector_xr = xr.DataArray(landuse_rio, coords={ 'y': lu_y, 'x': lu_x  })
-    domain_grid = DomainGrid(domain_ds)
+
     # now aggregate to coarser resolution of the domain grid
     inventory_mask = remap_raster(sector_xr, domain_grid, input_crs=lu_crs, AREA_OR_POINT=lu_area)
+
     # now count pixels in each coarse gridcell by aggregating array of 1
     landuse_rio[...] = 1
     count_mask = remap_raster(sector_xr, domain_grid, input_crs=lu_crs, AREA_OR_POINT=lu_area)
@@ -117,14 +215,17 @@ def create_domain_info(
     inventory_mask[has_vals] /= count_mask[has_vals]
     # binary choice land or ocean
     inventory_mask = np.where( inventory_mask > 0.5, 1., 0.)
-    # now limit to CMAQ land mask
-    domain_ds['INVENTORYMASK'] = xr.DataArray(
-        dims=('ROW', 'COL'),
+
+    domain_ds['inventory_mask'] = xr.DataArray(
+        dims=('y', 'x'),
         data=inventory_mask,
-        attrs=domain_ds['LANDMASK'].attrs,
+        attrs={
+            "units": "1",
+            "long_name": "mask for inventories over domain",
+            "grid_mapping": PROJECTION_VAR_NAME,
+        },
     )
-    domain_ds["INVENTORYMASK"].attrs["long_name"] = "mask for inventories over domain"
-                                               
+
     return domain_ds
 
 
@@ -190,6 +291,13 @@ def clean_directories(geometry_directory, output_directory, name, version):
     default=lambda: os.environ.get("DOMAIN_VERSION"),
 )
 @click.option(
+    "--slug",
+    type=str,
+    required=False,
+    help="Short, URL-safe name for the domain",
+    default=lambda: os.environ.get("DOMAIN_SLUG", None),
+)
+@click.option(
     "--domain-index",
     type=int,
     default=1,
@@ -201,13 +309,6 @@ def clean_directories(geometry_directory, output_directory, name, version):
     callback=validate_mcip_path("GRIDCRO2D"),
     required=True,
     help="Path to the GRIDCRO2D file for the domain",
-)
-@click.option(
-    "--dot",
-    type=click.Path(exists=True, file_okay=True),
-    callback=validate_mcip_path("GRIDDOT2D"),
-    required=True,
-    help="Path to the GRIDDOT2D file for the domain",
 )
 @click.option(
     "--landuse",
@@ -231,12 +332,12 @@ def clean_directories(geometry_directory, output_directory, name, version):
 def main(
     name: str,
     version: str,
+    slug: str | None,
     domain_index: int,
     cross: pathlib.Path,
-    dot: pathlib.Path,
     geometry_directory: str,
     output_directory: str | None,
-        landuse: str,
+    landuse: str,
 ):
     """
     Generate domain file for use by the prior
@@ -254,11 +355,13 @@ def main(
     domain = create_domain_info(
         geometry_file=geometry_directory / f"geo_em.d{domain_index:02}.nc",
         cross_file=pathlib.Path(cross),
-        dot_file=pathlib.Path(dot),
-        landuse_file = pathlib.Path(landuse),
+        landuse_file=pathlib.Path(landuse),
+        domain_name=name,
+        domain_version=version,
+        domain_slug=slug if slug is not None else name,
     )
 
-    filename = f"prior_domain_{name}_{version}.d{domain_index:02}.nc"
+    filename = f"domain_{name}_{version}.d{domain_index:02}.nc"
     write_domain_info(domain, output_directory / filename)
 
 
