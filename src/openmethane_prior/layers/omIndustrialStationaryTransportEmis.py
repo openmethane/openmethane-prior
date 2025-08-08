@@ -59,7 +59,7 @@ def processEmissions(config: PriorConfig, prior_ds: xr.Dataset):
     om_ntlt = remap_raster(ntlt, config.domain_grid(), AREA_OR_POINT=ntlData.AREA_OR_POINT)
 
     # limit emissions to land points
-    om_ntlt = om_ntlt * prior_ds["land_mask"]
+    om_ntlt *= config.inventory_dataset()["INVENTORYMASK"]
     
 # now collect total nightlights across inventory domain
     inventory_ntlt = remap_raster(ntlt, config.inventory_grid(), AREA_OR_POINT=ntlData.AREA_OR_POINT)
