@@ -130,8 +130,9 @@ def processEmissions(config: PriorConfig, prior_ds: xr.Dataset):  # noqa: PLR091
         # now aggregate to coarser resolution of the domain grid
         sector_gridded = remap_raster(sector_xr, config.domain_grid(), input_crs=lu_crs)
 
-        # apply land mask before counting any land use
-        sector_gridded *= prior_ds["land_mask"]
+        # apply inventory mask before counting any land use
+        sector_gridded *= config.inventory_dataset()['INVENTORYMASK']
+
 
         sector_gridded /=  sector_gridded.sum() # proportion of national emission in each grid square
         sector_gridded *= methaneInventoryBySector[sector]  # convert to national emissions in kg/gridcell
