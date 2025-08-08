@@ -11,6 +11,8 @@ import pytest
 import xarray as xr
 
 from openmethane_prior.config import PriorConfig, PublishedInputDomain, load_config_from_env
+from openmethane_prior.grid.create_grid import create_grid_from_mcip
+from openmethane_prior.grid.grid import Grid
 from scripts.omDownloadInputs import download_input_files
 from scripts.omPrior import run_prior
 
@@ -243,3 +245,26 @@ def prior_emissions_ds(
     # Manually clean up any leftover files
     for filepath in input_files:
         os.remove(filepath)
+
+
+@pytest.fixture()
+def aust10km_grid() -> Grid:
+    """
+    Return a large Grid with a non-standard projection.
+    :return: Grid
+    """
+    # aust10km projection details
+    return create_grid_from_mcip(
+        TRUELAT1=-15.0,
+        TRUELAT2=-40.0,
+        MOAD_CEN_LAT=-27.643997,
+        STAND_LON=133.302001953125,
+        COLS=454,
+        ROWS=430,
+        XCENT=133.302001953125,
+        YCENT=-27.5,
+        XORIG=-2270000.0,
+        YORIG=-2165629.25,
+        XCELL=10000.0,
+        YCELL=10000.0,
+    )

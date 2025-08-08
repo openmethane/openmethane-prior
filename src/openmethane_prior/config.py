@@ -10,7 +10,9 @@ import pyproj
 import xarray as xr
 from environs import Env
 
-from .grid.domain_grid import DomainGrid
+from .grid.grid import Grid
+from .grid.create_grid import create_grid_from_domain, create_grid_from_mcip
+
 
 @attrs.frozen()
 class LayerInputs:
@@ -53,9 +55,6 @@ class InputDomain:
         self.domain_index = domain_index or 1
         self.slug = slug or self.name
 
-        # TODO this should be embedded in the domain file as an attribute
-        # TODO remove matching test assertion when this is removed
-        if (self.slug == "aust10km"): self.slug = "10"
 
 class PublishedInputDomain(InputDomain):
     """
@@ -138,9 +137,25 @@ class PriorConfig:
         return xr.open_dataset(self.input_domain_file)
 
     @cache
-    def domain_grid(self) -> DomainGrid:
+    def domain_grid(self) -> Grid:
         """Create a Grid from the domain dataset"""
-        return DomainGrid(domain_ds=self.domain_dataset())
+        domain_ds = self.domain_dataset()
+        if ("Conventions" in domain_ds.attrs):
+            return create_grid_from_domain(domain_ds)
+        return create_grid_from_mcip(
+            TRUELAT1=domain_ds.TRUELAT1,
+            TRUELAT2=domain_ds.TRUELAT2,
+            MOAD_CEN_LAT=domain_ds.MOAD_CEN_LAT,
+            STAND_LON=domain_ds.STAND_LON,
+            COLS=domain_ds.COL.size,
+            ROWS=domain_ds.ROW.size,
+            XCENT=domain_ds.XCENT,
+            YCENT=domain_ds.YCENT,
+            XORIG=domain_ds.XORIG,
+            YORIG=domain_ds.YORIG,
+            XCELL=domain_ds.XCELL,
+            YCELL=domain_ds.YCELL,
+        )
 
     @cache
     def domain_projection(self) -> pyproj.Proj:
