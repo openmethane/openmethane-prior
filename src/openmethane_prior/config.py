@@ -165,6 +165,16 @@ class PriorConfig:
         """Query the projection used by the input domain"""
         return self.domain_grid().projection
 
+    @cache
+    def inventory_grid(self) -> DomainGrid:
+        """Create a Grid from the inventory dataset"""
+        return DomainGrid(domain_ds=self.inventory_dataset())
+
+    @cache
+    def inventory_projection(self) -> pyproj.Proj:
+        """Query the projection used by the inventory domain"""
+        return self.inventory_grid().projection
+
     @property
     def crs(self):
         """Return the CRS used by the domain dataset"""
