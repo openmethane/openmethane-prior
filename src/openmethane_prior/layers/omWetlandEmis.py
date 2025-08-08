@@ -81,10 +81,9 @@ def make_wetland_climatology(config: PriorConfig, forceUpdate: bool = False):  #
             )
             / lonWetland.size
         )
+
     # now collect some domain information
-    domain_ds = config.domain_dataset()
-    LAT = domain_ds.variables["LAT"].values.squeeze()
-    cmaqArea = domain_ds.XCELL * domain_ds.YCELL
+    domain_grid = config.domain_grid()
 
     indxPath = config.as_intermediate_file("WETLAND_ind_x.p.gz")
     indyPath = config.as_intermediate_file("WETLAND_ind_y.p.gz")
@@ -101,7 +100,7 @@ def make_wetland_climatology(config: PriorConfig, forceUpdate: bool = False):  #
         coefs = load_zipped_pickle(coefsPath)
         ##
         domShape = []
-        domShape.append(LAT.shape)
+        domShape.append(domain_grid.shape)
     else:
         ind_x = []
         ind_y = []
@@ -113,28 +112,20 @@ def make_wetland_climatology(config: PriorConfig, forceUpdate: bool = False):  #
         ind_y.append([])
         coefs.append([])
 
-        LATD = domain_ds.variables["LATD"].values.squeeze()
-        LOND = domain_ds.variables["LOND"].values.squeeze()
+        cell_bounds_lon, cell_bounds_lat = domain_grid.cell_bounds_lonlat()
 
-        domShape.append(LAT.shape)
+        domShape.append(domain_grid.shape)
 
-        count2 = np.zeros(LAT.shape, dtype=np.float32)
+        count2 = np.zeros(domain_grid.shape, dtype=np.float32)
 
-        for i, j in itertools.product(range(LAT.shape[0]), range(LAT.shape[1])):
+        for i, j in itertools.product(range(domain_grid.shape[0]), range(domain_grid.shape[1])):
             IND_X = []
             IND_Y = []
             COEFS = []
 
-            xvals = np.array([LOND[i, j], LOND[i, j + 1], LOND[i + 1, j], LOND[i + 1, j + 1]])
-            yvals = np.array([LATD[i, j], LATD[i, j + 1], LATD[i + 1, j], LATD[i + 1, j + 1]])
-
-            xy = [
-                [LOND[i, j], LATD[i, j]],
-                [LOND[i, j + 1], LATD[i, j + 1]],
-                [LOND[i + 1, j + 1], LATD[i + 1, j + 1]],
-                [LOND[i + 1, j], LATD[i + 1, j]],
-            ]
-            CMAQ_gridcell = geometry.Polygon(xy)
+            xvals = cell_bounds_lon[i, j]
+            yvals = cell_bounds_lat[i, j]
+            CMAQ_gridcell = geometry.Polygon(zip(xvals, yvals))
 
             xmin = np.min(xvals)
             xmax = np.max(xvals)
@@ -184,11 +175,11 @@ def make_wetland_climatology(config: PriorConfig, forceUpdate: bool = False):  #
         climatology[month, ...] = flux[month::12, ...].mean(
             axis=0
         )  # average over time axis with stride 12
-    cmaqAreas = np.ones(LAT.shape) * cmaqArea  # all grid cells equal area
-    result = np.zeros((12, LAT.shape[0], LAT.shape[1]))
+    cmaq_areas = np.ones(domain_grid.shape) * domain_grid.cell_area  # all grid cells equal area
+    result = np.zeros((12, domain_grid.shape[0], domain_grid.shape[1]))
     for month in range(12):
         result[month, ...] = redistribute_spatially(
-            LAT.shape, ind_x, ind_y, coefs, climatology[month, ...], wetlandAreas, cmaqAreas
+            domain_grid.shape, ind_x, ind_y, coefs, climatology[month, ...], wetlandAreas, cmaq_areas
         )
     ncin.close()
     return np.array(result)

@@ -11,8 +11,8 @@ def test_remap_raster(config, input_files):
     epsilon = 1e-5 # small number
     def maxloc(a): return np.unravel_index(a.argmax(), a.shape)
 
-    lat = config.domain_dataset()['LAT'][...].squeeze()
-    lon = config.domain_dataset()['LON'][...].squeeze()
+    lat = config.domain_dataset()['lat']
+    lon = config.domain_dataset()['lon']
 
     ntl_raw = rxr.open_rasterio(
         config.as_input_file(config.layer_inputs.ntl_path), masked=True
@@ -45,7 +45,6 @@ def test_remap_raster_area():
     # target is a regular 4x4 grid from -4,-4 to 4,4
     target_grid = Grid(
         dimensions=(4, 4),
-        center_lonlat=(0, 0),
         origin_xy=(-4, -4),
         cell_size=(2, 2),
     )
@@ -74,25 +73,23 @@ def test_remap_raster_input_projection():
     test_point = (144.9631, -37.8136) # Melbourne, Australia
 
     target_grid = Grid(
-        dimensions=(80, 50),
-        center_lonlat=(133.38, -34.51),
-        origin_xy=(-40, -25),
-        cell_size=(1, 1), # cell size of 1 degree
+        dimensions=(80, 80),
+        origin_xy=(-40, -40),
+        cell_size=(10, 10), # cell size of 10 degrees
         proj_params="EPSG:7843", # GDA2020 in lon/lat
     )
     target_x, target_y, _ = target_grid.lonlat_to_cell_index(test_point[0], test_point[1])
 
     # use a Grid to help us define a source dataset in a different projection
     source_grid = Grid(
-        dimensions=(900, 900),
-        center_lonlat=(133.38, -34.51),
-        origin_xy=(-450000, -450000),
-        cell_size=(5000, 5000), # cell size of 1000 meters
+        dimensions=(1000, 1000),
+        origin_xy=(-50000000, -50000000),
+        cell_size=(100000, 100000), # cell size of 100km
         proj_params="EPSG:7845", # GDA2020 in meters
     )
     test_input = xr.DataArray(
         coords={ "y": source_grid.cell_coords_y(), "x": source_grid.cell_coords_x() },
-        data=np.zeros((900, 900)),
+        data=np.zeros(source_grid.shape),
     )
     source_x, source_y, _ = source_grid.lonlat_to_cell_index(test_point[0], test_point[1])
 

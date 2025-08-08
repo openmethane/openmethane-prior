@@ -1,7 +1,7 @@
 #
 # Copyright 2023 The Superpower Institute Ltd.
 #
-# This file is part of OpenMethane.
+# This file is part of Open Methane.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -180,3 +180,21 @@ def mask_array_by_sequence(
     for s in sequence:
         result[(array==s)] = True
     return result
+
+
+def list_cf_grid_mappings(
+    ds: xr.Dataset,
+) -> list[str]:
+    """
+    Return a list variables in a Dataset which contain a grid mapping.
+
+    See: https://cfconventions.org/cf-conventions/cf-conventions.html#appendix-grid-mappings
+    :param ds: An xarray.Dataset object which follows CF conventions.
+    :return:
+    """
+    # find any variables containing grid mapping details
+    grid_mappings = []
+    for var in ds.data_vars:
+        if "grid_mapping_name" in ds[var].attrs:
+            grid_mappings.append(var)
+    return grid_mappings

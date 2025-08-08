@@ -78,13 +78,9 @@ def processEmissions(  # noqa: PLR0915
             )
             / lonTerm.size
         )
-    # now collect some domain information
-    domain_ds = config.domain_dataset()
 
-    LATD = domain_ds["LATD"][:].values.squeeze()
-    LOND = domain_ds["LOND"].values.squeeze()
-    LAT = domain_ds.variables["LAT"].values.squeeze()
-    cmaqArea = domain_ds.XCELL * domain_ds.YCELL
+    # now collect some domain information
+    domain_grid = config.domain_grid()
 
     indxPath = config.as_intermediate_file("TERM_ind_x.p.gz")
     indyPath = config.as_intermediate_file("TERM_ind_y.p.gz")
@@ -101,7 +97,7 @@ def processEmissions(  # noqa: PLR0915
         coefs = load_zipped_pickle(coefsPath)
         ##
         domShape = []
-        domShape.append(LAT.shape)
+        domShape.append(domain_grid.shape)
     else:
         ind_x = []
         ind_y = []
@@ -113,25 +109,20 @@ def processEmissions(  # noqa: PLR0915
         ind_y.append([])
         coefs.append([])
 
-        domShape.append(LAT.shape)
+        cell_bounds_lon, cell_bounds_lat = domain_grid.cell_bounds_lonlat()
 
-        count2 = np.zeros(LAT.shape, dtype=np.float32)
+        domShape.append(domain_grid.shape)
 
-        for i, j in itertools.product(range(LAT.shape[0]), range(LAT.shape[1])):
+        count2 = np.zeros(domain_grid.shape, dtype=np.float32)
+
+        for i, j in itertools.product(range(domain_grid.shape[0]), range(domain_grid.shape[1])):
             IND_X = []
             IND_Y = []
             COEFS = []
 
-            xvals = np.array([LOND[i, j], LOND[i, j + 1], LOND[i + 1, j], LOND[i + 1, j + 1]])
-            yvals = np.array([LATD[i, j], LATD[i, j + 1], LATD[i + 1, j], LATD[i + 1, j + 1]])
-
-            xy = [
-                [LOND[i, j], LATD[i, j]],
-                [LOND[i, j + 1], LATD[i, j + 1]],
-                [LOND[i + 1, j + 1], LATD[i + 1, j + 1]],
-                [LOND[i + 1, j], LATD[i + 1, j]],
-            ]
-            CMAQ_gridcell = geometry.Polygon(xy)
+            xvals = cell_bounds_lon[i, j]
+            yvals = cell_bounds_lat[i, j]
+            CMAQ_gridcell = geometry.Polygon(zip(xvals, yvals))
 
             xmin = np.min(xvals)
             xmax = np.max(xvals)
@@ -178,8 +169,8 @@ def processEmissions(  # noqa: PLR0915
     )  # negative are missing values so remove by clipping in place
     subset = subset[-1::-1, :]  # reverse latitudes
     subset *= 1e9 / termAreas  # converting from mtCH4/gridcell to kg/m^2
-    cmaqAreas = np.ones(LAT.shape) * cmaqArea  # all grid cells equal area
-    resultNd = redistribute_spatially(LAT.shape, ind_x, ind_y, coefs, subset, termAreas, cmaqAreas)
+    cmaq_areas = np.ones(domain_grid.shape) * domain_grid.cell_area  # all grid cells equal area
+    resultNd = redistribute_spatially(domain_grid.shape, ind_x, ind_y, coefs, subset, termAreas, cmaq_areas)
     resultNd /= SECS_PER_YEAR
     ncin.close()
 

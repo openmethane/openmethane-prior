@@ -8,53 +8,20 @@ from openmethane_prior.grid.grid import Grid
 def test_grid_attributes():
     test_grid = Grid(
         dimensions=(8, 10),
-        center_lonlat=(45, 45),
         origin_xy=(-4, -5),
         cell_size=(1, 2),
     )
 
     assert test_grid.dimensions == (8, 10)
     assert test_grid.shape == (10, 8)
-    assert test_grid.center_lonlat == (45, 45)
     assert test_grid.origin_xy == (-4, -5)
     assert test_grid.cell_size == (1, 2)
 
-def test_grid_center():
-    test_grid = Grid(
-        dimensions=(8, 10),
-        center_lonlat=(45, 45),
-        origin_xy=(-4, -5),
-        cell_size=(1, 2),
-    )
 
-    grid_center_x, grid_center_y = test_grid.projection(45, 45)
-
-    assert test_grid.center_xy == (grid_center_x, grid_center_y)
-
-
-def test_grid_llc_xy():
-    test_grid = Grid(
-        dimensions=(8, 10),
-        center_lonlat=(45, 45),
-        origin_xy=(-4, -5),
-        cell_size=(1, 2),
-    )
-    assert test_grid.llc_xy == (41.0, 40.0)
-
-def test_grid_llc_center_xy():
-    test_grid = Grid(
-        dimensions=(8, 10),
-        center_lonlat=(45, 45),
-        origin_xy=(-4, -5),
-        cell_size=(1, 2),
-    )
-
-    assert test_grid.llc_center_xy == (41.5, 41.0)
 
 def test_grid_cell_area():
     test_grid = Grid(
         dimensions=(8, 10),
-        center_lonlat=(45, 45),
         origin_xy=(-4, -5),
         cell_size=(1, 2),
     )
@@ -64,7 +31,6 @@ def test_grid_cell_area():
 def test_grid_coords():
     test_grid = Grid(
         dimensions=(8, 10),
-        center_lonlat=(45, 45),
         origin_xy=(-4, -5),
         cell_size=(1, 2),
     )
@@ -80,7 +46,6 @@ def test_grid_coords():
 def test_grid_bounds():
     test_grid = Grid(
         dimensions=(8, 10),
-        center_lonlat=(45, 45),
         origin_xy=(-4, -5),
         cell_size=(1, 2),
     )
@@ -88,25 +53,43 @@ def test_grid_bounds():
     cell_bounds_y = test_grid.cell_bounds_y()
 
     assert len(cell_bounds_x) == 9
-    assert cell_bounds_x[0] == test_grid.llc_xy[0]
+    assert cell_bounds_x[0] == test_grid.origin_xy[0]
 
     assert len(cell_bounds_y) == 11
-    assert cell_bounds_y[0] == test_grid.llc_xy[1]
+    assert cell_bounds_y[0] == test_grid.origin_xy[1]
+
+def test_grid_lonlat_bounds(aust10km_grid):
+    cell_bounds_lons, cell_bounds_lats = aust10km_grid.cell_bounds_lonlat()
+
+    # spot check some cells
+    assert list(zip(cell_bounds_lons[0, 0], cell_bounds_lats[0, 0])) == [
+        (104.96293860625516, -44.766629033148384),
+        (105.08344259589477, -44.78663508563181),
+        (105.11154247745316, -44.70106585755431),
+        (104.9911499141127, -44.68106935695354),
+    ]
+    assert list(zip(cell_bounds_lons[42, 89], cell_bounds_lats[42, 89])) == [
+        (116.59521757719003, -42.544987516315324),
+        (116.71481560699907, -42.55697659818492),
+        (116.73101739397438, -42.46884830052819),
+        (116.61153331444048, -42.456865603153744),
+    ]
 
 def test_grid_xy_to_lonlat():
     test_grid = Grid(
         dimensions=(8, 10),
-        center_lonlat=(45, 45),
         origin_xy=(-4, -5),
         cell_size=(1, 2),
     )
 
-    assert test_grid.xy_to_lonlat(*test_grid.center_xy) == (45, 45)
+    # default projection is in degrees, so lon/lat and x/y are the same
+    np.testing.assert_allclose(test_grid.xy_to_lonlat(0, 0), (0, 0))
+    np.testing.assert_allclose(test_grid.xy_to_lonlat(-1, 0), (-1, 0))
+    np.testing.assert_allclose(test_grid.xy_to_lonlat(-120, 45), (-120, 45))
 
 def test_grid_projection_coordinates():
     test_grid = Grid(
         dimensions=(8, 10),
-        center_lonlat=(45, 45),
         origin_xy=(-4, -5),
         cell_size=(1, 2),
     )
@@ -139,7 +122,6 @@ def test_grid_projection_coordinates():
 def test_grid_valid_cell_coords():
     test_grid = Grid(
         dimensions=(8, 10),
-        center_lonlat=(45, 45),
         origin_xy=(-4, -5),
         cell_size=(1, 2),
     )
@@ -183,13 +165,12 @@ def test_grid_valid_cell_coords():
 def test_grid_xy_to_cell_index():
     test_grid = Grid(
         dimensions=(8, 10),
-        center_lonlat=(45, 45),
         origin_xy=(-4, -5),
         cell_size=(1, 2),
     )
 
     # coords should be a tuple (int, int, bool)
-    found = test_grid.xy_to_cell_index(41, 40)
+    found = test_grid.xy_to_cell_index(-4, -5)
     assert found == (0, 0, True)
     assert type(found) == tuple
 
@@ -203,7 +184,6 @@ def test_grid_xy_to_cell_index():
     # center: 133.38 -34.51
     test_grid = Grid(
         dimensions=(80, 40),
-        center_lonlat=(133.38, -34.51),
         origin_xy=(-40000, -20000),
         cell_size=(1000, 1000), # EPSG:7842 (GDA2020) uses meters
         proj_params="EPSG:7844",
@@ -217,7 +197,7 @@ def test_grid_xy_to_cell_index():
 
     np.testing.assert_allclose(np_result, (
         [0, 41, 75],
-        [0, 7, 20],
+        [0, 7, 19],
         [True, True, True],
     ))
 
@@ -229,7 +209,7 @@ def test_grid_xy_to_cell_index():
 
     np.testing.assert_allclose(xr_result, (
         [0, 41, 75],
-        [0, 7, 20],
+        [0, 7, 19],
         [True, True, True],
     ))
 
@@ -240,20 +220,19 @@ def test_grid_xy_to_cell_index():
     )
     np.testing.assert_allclose(in_out, (
         [-3, 41, 82],
-        [0, 7, 20],
+        [0, 7, 19],
         [False, True, False],
     ))
 
 def test_grid_lonlat_to_cell_index():
     test_grid = Grid(
         dimensions=(8, 10),
-        center_lonlat=(45, 45),
         origin_xy=(-4, -5),
         cell_size=(1, 2),
     )
 
     # coords should be a tuple (int, int, bool)
-    found = test_grid.lonlat_to_cell_index(41, 40)
+    found = test_grid.lonlat_to_cell_index(-4, -5)
     assert found == (0, 0, True)
     assert type(found) == tuple
 
@@ -268,7 +247,6 @@ def test_grid_lonlat_to_cell_index():
     # extent: 93.31, -60.55 x 173.34, -8.47
     test_grid = Grid(
         dimensions=(80, 40),
-        center_lonlat=(133.38, -34.51),
         origin_xy=(-40, -20),
         cell_size=(1, 1), # EPSG:7844 (GDA2020) uses degrees
         proj_params="EPSG:7844",
@@ -276,35 +254,24 @@ def test_grid_lonlat_to_cell_index():
 
     # multiple values as np.array
     np_result = test_grid.lonlat_to_cell_index(
-        lon=np.array([100, 130, 160]),
-        lat=np.array([-40, -45, -50]),
+        lon=np.array([-40.5, -40, 0, 39, 40]), # valid x coords -40 to 39
+        lat=np.array([-20, -20, 0, 19, 20]), # valid y coords -20 to 19
     )
 
     np.testing.assert_allclose(np_result, (
-        [6, 36, 66],
-        [14, 9, 4],
-        [True, True, True],
+        [-1, 0, 40, 79, 80],
+        [0, 0, 20, 39, 40],
+        [False, True, True, True, False],
     ))
 
     # multiple values as xr.DataArray
     xr_result = test_grid.lonlat_to_cell_index(
-        lon=xr.DataArray([100.5, 130.5, 160.5]),
-        lat=xr.DataArray([-40.5, -45.5, -50.5]),
+        lon=xr.DataArray([-40.5, -40, 0, 39, 40]),
+        lat=xr.DataArray([-20, -20, 0, 19, 20]),
     )
 
     np.testing.assert_allclose(xr_result, (
-        [7, 37, 67],
-        [14, 9, 4],
-        [True, True, True],
-    ))
-
-    # some points outside the grid
-    in_out = test_grid.lonlat_to_cell_index(
-        lon=np.array([80, 130, 177, 100, 100, 100]),
-        lat=np.array([-40, -45, -50, -55, -40, -13]),
-    )
-    np.testing.assert_allclose(in_out, (
-        [-14, 36, 83, 6, 6, 6], # valid x coords: 0 - 79
-        [14, 9, 4, -1, 14, 41], # valid y coords: 0 - 40
-        [False, True, False, False, True, False],
+        [-1, 0, 40, 79, 80],
+        [0, 0, 20, 39, 40],
+        [False, True, True, True, False],
     ))

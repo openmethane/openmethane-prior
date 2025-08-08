@@ -62,13 +62,14 @@ def processEmissions(config: PriorConfig, prior_ds: xr.Dataset):
     om_ntlt = remap_raster(ntlt, config.domain_grid(), AREA_OR_POINT=ntlData.AREA_OR_POINT)
 
     # limit emissions to land points
-    om_ntlt *= config.inventory_dataset()["INVENTORYMASK"]
+    om_ntlt *= config.inventory_dataset()["inventory_mask"]
     
-# now collect total nightlights across inventory domain
+    # now collect total nightlights across inventory domain
     inventory_ntlt = remap_raster(ntlt, config.inventory_grid(), AREA_OR_POINT=ntlData.AREA_OR_POINT)
 
     # now mask to region of inventory
-    inventory_ntlt *= config.inventory_dataset()['INVENTORYMASK']
+    inventory_ntlt *= config.inventory_dataset()['inventory_mask']
+
     # we want proportions of total for scaling emissions
     om_ntlt_proportion = om_ntlt / inventory_ntlt.sum()
     """ note that this is the correct scaling since remap_raster accumulates so
