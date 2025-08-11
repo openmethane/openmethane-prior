@@ -56,6 +56,7 @@ def create_domain_info(
     landuse_file: pathlib.Path,
     domain_name: str,
     domain_version: str,
+    domain_index: int,
     domain_slug: str,
 ) -> xr.Dataset:
     """
@@ -69,6 +70,7 @@ def create_domain_info(
     :param landuse_file: Path to the land use GeoTIFF
     :param domain_name: The name of the new domain
     :param domain_version: The version of the domain being generated
+    :param domain_index: The subdomain index
     :param domain_slug: A short, URL-safe name for the domain
     :return: The re-gridded domain information as an xarray Dataset
     """
@@ -177,6 +179,7 @@ def create_domain_info(
             # domain
             "domain_name": domain_name,
             "domain_version": domain_version,
+            "domain_index": domain_index,
             "domain_slug": domain_slug,
 
             # meta attributes
@@ -358,6 +361,7 @@ def main(
         landuse_file=pathlib.Path(landuse),
         domain_name=name,
         domain_version=version,
+        domain_index=domain_index,
         domain_slug=slug if slug is not None else name,
     )
 

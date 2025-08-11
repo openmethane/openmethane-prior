@@ -3,6 +3,7 @@ import numpy
 def test_domain_attributes(input_domain):
     assert type(input_domain.attrs["domain_name"]) == str
     assert type(input_domain.attrs["domain_version"]) == str
+    assert type(input_domain.attrs["domain_index"]) == numpy.int64
     assert type(input_domain.attrs["domain_slug"]) == str
     assert type(input_domain.attrs["title"]) == str
     assert type(input_domain.attrs["history"]) == str
