@@ -93,7 +93,6 @@ class PriorConfigOptions(typing.TypedDict, total=False):
     layer_inputs: LayerInputs
     start_date: datetime.datetime
     end_date: datetime.datetime
-    skip_reproject: bool
 
 @attrs.frozen
 class PriorConfig:
@@ -126,8 +125,6 @@ class PriorConfig:
     start_date: datetime.datetime | None = None
     end_date: datetime.datetime | None = None
 
-    skip_reproject: bool = False
-
     def as_input_file(self, name: str | pathlib.Path) -> pathlib.Path:
         """Return the full path to an input file"""
         return self.input_path / name
@@ -154,7 +151,7 @@ class PriorConfig:
             raise ValueError(f"Missing inventory domain file: {self.inventory_domain_file}")
         return xr.open_dataset(self.inventory_domain_file)
 
-    
+
     @cache
     def domain_grid(self) -> DomainGrid:
         """Create a Grid from the domain dataset"""
@@ -258,7 +255,7 @@ def load_config_from_env(**overrides: PriorConfigOptions) -> PriorConfig:
         output_path=env.path("OUTPUTS", "data/outputs"),
         intermediates_path=env.path("INTERMEDIATES", "data/processed"),
         input_domain=input_domain,
-        inventory_domain=inventory_domain, 
+        inventory_domain=inventory_domain,
         output_filename=env.str("OUTPUT_FILENAME", "prior-emissions.nc"),
         layer_inputs=LayerInputs(
             electricity_path=env.path("CH4_ELECTRICITY"),
@@ -275,7 +272,6 @@ def load_config_from_env(**overrides: PriorConfigOptions) -> PriorConfig:
         ),
         start_date=start_date,
         end_date =end_date,
-        skip_reproject=env.bool("SKIP_REPROJECT", False),
     )
 
     return PriorConfig(**{**options, **overrides})
@@ -319,5 +315,3 @@ def parse_cli_to_env():
         os.environ["END_DATE"] = args.end_date.strftime("%Y-%m-%d")
     elif args.start_date is not None:
         os.environ["END_DATE"] = args.start_date.strftime("%Y-%m-%d")
-
-    os.environ["SKIP_REPROJECT"] = "True" if args.skip_reproject else "False"

@@ -17,7 +17,7 @@
 #
 
 """Main entry point for running the openmethane-prior"""
-
+import logging
 import prettyprinter
 
 from openmethane_prior.config import PriorConfig, load_config_from_env, parse_cli_to_env
@@ -32,8 +32,10 @@ from openmethane_prior.layers import (
     omWetlandEmis,
 )
 from openmethane_prior.outputs import add_ch4_total, create_output_dataset, write_output_dataset
-from openmethane_prior.raster import reproject_raster_inputs
 from openmethane_prior.verification import verify_emis
+import openmethane_prior.logger as logger
+
+logger = logger.get_logger(__name__)
 
 prettyprinter.install_extras(["attrs"])
 
@@ -55,9 +57,6 @@ def run_prior(config: PriorConfig):
     # Initialise the output dataset based on the domain provided in config
     prior_ds = create_output_dataset(config)
 
-    if not config.skip_reproject:
-        reproject_raster_inputs(config)
-
     omAgLulucfWasteEmis.processEmissions(config, prior_ds)
     omIndustrialStationaryTransportEmis.processEmissions(config, prior_ds)
     omElectricityEmis.processEmissions(config, prior_ds)
@@ -77,7 +76,7 @@ if __name__ == "__main__":
     parse_cli_to_env()
     config = load_config_from_env()
 
-    print("Configuration:")
-    prettyprinter.cpprint(config)
+    if logger.level <= logging.DEBUG:
+        prettyprinter.cpprint(config)
 
     run_prior(config)
