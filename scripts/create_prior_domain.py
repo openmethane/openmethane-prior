@@ -42,6 +42,7 @@ import xarray as xr
 
 from openmethane_prior.cell_name import encode_grid_cell_name
 from openmethane_prior.grid.create_grid import create_grid_from_mcip
+from openmethane_prior.grid.grid import Grid
 from openmethane_prior.raster import remap_raster
 from openmethane_prior.utils import bounds_from_cell_edges, get_timestamped_command, get_version
 import openmethane_prior.logger as logger
@@ -53,7 +54,7 @@ PROJECTION_VAR_NAME = "lambert_conformal"
 def create_domain_info(
     geometry_file: pathlib.Path,
     cross_file: pathlib.Path,
-    landuse_file: pathlib.Path,
+    inventory_geotiff_file: pathlib.Path,
     domain_name: str,
     domain_version: str,
     domain_index: int,
@@ -67,7 +68,8 @@ def create_domain_info(
 
     :param geometry_file: Path to the WRF geometry file
     :param cross_file: Path to the MCIP cross file
-    :param landuse_file: Path to the land use GeoTIFF
+    :param inventory_geotiff_file: Path to a GeoTIFF file where non-zero values
+      represent pixels that are inside the inventory area.
     :param domain_name: The name of the new domain
     :param domain_version: The version of the domain being generated
     :param domain_index: The subdomain index
@@ -194,45 +196,56 @@ def create_domain_info(
         },
     )
 
-    logger.info("Loading land use data to generate inventory mask")
-    # this seems to need two approaches since rioxarray
-    # seems to always convert to float which we don't want but we need it for the other tif attributes
-    landuse_xr = rxr.open_rasterio(landuse_file, masked=True)
-    lu_x = landuse_xr.x
-    lu_y = landuse_xr.y
-    lu_area = landuse_xr.AREA_OR_POINT
-    lu_crs = landuse_xr.rio.crs
-    landuse_xr.close()
+    if inventory_geotiff_file:
+        logger.info("Loading land use data to generate inventory mask")
+        inventory_mask = create_mask_from_geotiff(inventory_geotiff_file, domain_grid)
 
-    landuse_rio = rasterio.open(landuse_file,
-        engine='rasterio',
-    ).read()
-    landuse_rio = landuse_rio.squeeze()
-    landuse_rio[landuse_rio != 0] = 1 # now pure land-oc mask
-    sector_xr = xr.DataArray(landuse_rio, coords={ 'y': lu_y, 'x': lu_x  })
-
-    # now aggregate to coarser resolution of the domain grid
-    inventory_mask = remap_raster(sector_xr, domain_grid, input_crs=lu_crs, AREA_OR_POINT=lu_area)
-
-    # now count pixels in each coarse gridcell by aggregating array of 1
-    landuse_rio[...] = 1
-    count_mask = remap_raster(sector_xr, domain_grid, input_crs=lu_crs, AREA_OR_POINT=lu_area)
-    has_vals = count_mask > 0
-    inventory_mask[has_vals] /= count_mask[has_vals]
-    # binary choice land or ocean
-    inventory_mask = np.where( inventory_mask > 0.5, 1., 0.)
-
-    domain_ds['inventory_mask'] = xr.DataArray(
-        dims=('y', 'x'),
-        data=inventory_mask,
-        attrs={
-            "units": "1",
-            "long_name": "mask for inventories over domain",
-            "grid_mapping": PROJECTION_VAR_NAME,
-        },
-    )
+        domain_ds['inventory_mask'] = xr.DataArray(
+            dims=('y', 'x'),
+            data=inventory_mask,
+            attrs={
+                "units": "1",
+                "long_name": "mask for inventories over domain",
+                "grid_mapping": PROJECTION_VAR_NAME,
+            },
+        )
 
     return domain_ds
+
+
+def create_mask_from_geotiff(
+    geotiff_file: pathlib.Path,
+    grid: Grid,
+) -> np.array:
+    # this seems to need two approaches since rioxarray
+    # seems to always convert to float which we don't want but we need it for the other tif attributes
+    geo_xr = rxr.open_rasterio(geotiff_file, masked=True)
+    geo_x = geo_xr.x
+    geo_y = geo_xr.y
+    geo_area = geo_xr.AREA_OR_POINT
+    geo_crs = geo_xr.rio.crs
+    geo_xr.close()
+
+    geo_rio = rasterio.open(
+        geotiff_file,
+        engine='rasterio',
+    ).read()
+    geo_rio = geo_rio.squeeze()
+    geo_rio[geo_rio != 0] = 1 # now pure land-oc mask
+    sector_xr = xr.DataArray(geo_rio, coords={ 'y': geo_y, 'x': geo_x  })
+
+    # now aggregate to coarser resolution of the domain grid
+    mask_np = remap_raster(sector_xr, grid, input_crs=geo_crs, AREA_OR_POINT=geo_area)
+
+    # now count pixels in each coarse gridcell by aggregating array of 1
+    geo_rio[...] = 1
+    count_mask = remap_raster(sector_xr, grid, input_crs=geo_crs, AREA_OR_POINT=geo_area)
+    has_vals = count_mask > 0
+    mask_np[has_vals] /= count_mask[has_vals]
+    # binary choice land or ocean
+    mask_np = np.where( mask_np > 0.5, 1., 0.)
+
+    return mask_np
 
 
 def write_domain_info(domain_ds: xr.Dataset, domain_path: pathlib.Path):
@@ -317,10 +330,10 @@ def clean_directories(geometry_directory, output_directory, name, version):
     help="Path to the GRIDCRO2D file for the domain",
 )
 @click.option(
-    "--landuse",
+    "--inventory-geotiff",
     type=click.Path(exists=True, file_okay=True),
     required=True,
-    help="Path to the GRIDDOT2D file for the domain",
+    help="Path to a GeoTIFF where non-zero values represent pixels covered by the inventory",
 )
 @click.option(
     "--geometry-directory",
@@ -331,7 +344,7 @@ def clean_directories(geometry_directory, output_directory, name, version):
 )
 @click.option(
     "--output-directory",
-    help="Override the output directory",
+    help="Override the output directory. Defaults to geometry directory if not set.",
     default=None,
     type=click.Path(dir_okay=True, file_okay=False),
 )
@@ -343,7 +356,7 @@ def main(
     cross: pathlib.Path,
     geometry_directory: str,
     output_directory: str | None,
-    landuse: str,
+    inventory_geotiff: str,
 ):
     """
     Generate domain file for use by the prior
@@ -361,7 +374,7 @@ def main(
     domain = create_domain_info(
         geometry_file=geometry_directory / f"geo_em.d{domain_index:02}.nc",
         cross_file=pathlib.Path(cross),
-        landuse_file=pathlib.Path(landuse),
+        inventory_geotiff_file=pathlib.Path(inventory_geotiff),
         domain_name=name,
         domain_version=version,
         domain_index=domain_index,
