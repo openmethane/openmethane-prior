@@ -242,12 +242,14 @@ def load_config_from_env(**overrides: PriorConfigOptions) -> PriorConfig:
     else:
         raise ValueError("Must specify INVENTORY_DOMAIN, or INVENTORY_DOMAIN_NAME and INVENTORY_DOMAIN_VERSION")
 
-    start_date=env.date("START_DATE", None)
+    start_date = env.date("START_DATE", None)
     # if END_DATE not set, use START_DATE for a 1-day run
-    end_date=env.date("END_DATE", None) or env.date("START_DATE", None)
+    end_date = env.date("END_DATE", None) or env.date("START_DATE", None)
     # now convert both to datetime.datetime
-    start_date = datetime.datetime.combine(start_date, datetime.time.min)
-    end_date = datetime.datetime.combine( end_date, datetime.time.min)
+    if start_date:
+        start_date = datetime.datetime.combine(start_date, datetime.time.min)
+    if end_date:
+        end_date = datetime.datetime.combine(end_date, datetime.time.min)
 
     options: PriorConfigOptions = dict(
         remote=env.str("PRIOR_REMOTE"),
