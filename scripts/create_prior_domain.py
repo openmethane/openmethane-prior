@@ -164,7 +164,10 @@ def create_domain_info(
             "LANDMASK": (
                 ("y", "x"),
                 mcip_cro_xr.variables["LWMASK"].squeeze(),
-                mcip_cro_xr.variables["LWMASK"].attrs,
+                mcip_cro_xr.variables["LWMASK"].attrs | {
+                    "deprecated": "This variable is deprecated and will be removed in future versions",
+                    "superseded_by": "land_mask",
+                },
             ),
         },
         attrs={
