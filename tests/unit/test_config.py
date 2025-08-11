@@ -41,6 +41,7 @@ def test_prior_config(tmp_path: pathlib.Path, mock_layer_inputs):
         output_path=tmp_path / "out",
         intermediates_path=tmp_path / "inter",
         input_domain=InputDomain("domain-input.nc"),
+        inventory_domain=InputDomain("domain-input.nc"),
         output_filename="out.nc",
         layer_inputs=mock_layer_inputs,
     )
