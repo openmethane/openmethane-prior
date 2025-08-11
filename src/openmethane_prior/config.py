@@ -70,7 +70,7 @@ class PublishedInputDomain(InputDomain):
     ):
         published_path = pathlib.Path(
             f"domains/{name}/{version}/"
-            f"prior_domain_{name}_{version}.d{domain_index:02}.nc"
+            f"domain.{name}.nc"
         )
 
         super().__init__(

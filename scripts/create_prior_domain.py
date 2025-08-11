@@ -365,7 +365,7 @@ def main(
         domain_slug=slug if slug is not None else name,
     )
 
-    filename = f"domain_{name}_{version}.d{domain_index:02}.nc"
+    filename = f"domain.{name}.nc"
     write_domain_info(domain, output_directory / filename)
 
 

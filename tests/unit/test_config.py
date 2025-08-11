@@ -77,5 +77,5 @@ def test_published_input_domain():
     assert test_domain.slug == "dslug"
     assert str(test_domain.path) == (
         f"domains/dname/v9.0.1/"
-        f"prior_domain_dname_v9.0.1.d03.nc"
+        f"domain.dname.nc"
     )
