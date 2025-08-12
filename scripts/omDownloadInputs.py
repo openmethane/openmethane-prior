@@ -74,6 +74,10 @@ if __name__ == "__main__":
     if type(config.input_domain) == PublishedInputDomain:
         layer_fragments.append(str(config.input_domain.path))
 
+    # Add the input domain if it is specified
+    if type(config.inventory_domain) == PublishedInputDomain:
+        layer_fragments.append(str(config.inventory_domain.path))
+
     download_input_files(
         remote=config.remote,
         download_path=config.input_path,

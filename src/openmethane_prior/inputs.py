@@ -83,6 +83,9 @@ def check_input_files(config: PriorConfig):
     if not config.input_domain_file.exists():
         errors.append(f"\n- {config.input_domain_file.name} (domain info)")
 
+    if not config.inventory_domain_file.exists():
+        errors.append(f"\n- {config.inventory_domain_file.name} (inventory domain)")
+
     checks = (
         (config.layer_inputs.electricity_path, "electricity facilities"),
         (config.layer_inputs.coal_path, "Coal facilities"),
