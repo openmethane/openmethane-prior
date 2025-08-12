@@ -199,6 +199,9 @@ def create_domain_info(
         },
     )
 
+    # compress cell_names which take a lot of space
+    domain_ds.cell_name.encoding["zlib"] = True
+
     if inventory_geotiff_file or inventory_from_landmask:
         if inventory_geotiff_file:
             logger.info("Loading land use data to generate inventory mask")
