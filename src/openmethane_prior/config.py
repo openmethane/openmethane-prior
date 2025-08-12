@@ -251,8 +251,8 @@ def load_config_from_env(**overrides: PriorConfigOptions) -> PriorConfig:
         )
     elif env.str("INVENTORY_DOMAIN_NAME", None) and env.str("INVENTORY_DOMAIN_VERSION", None):
         inventory_domain = PublishedInputDomain(
-            name=env.str("DOMAIN_NAME"),
-            version=env.str("DOMAIN_VERSION"),
+            name=env.str("INVENTORY_DOMAIN_NAME"),
+            version=env.str("INVENTORY_DOMAIN_VERSION"),
         ) # note that if nothing is set here the inventory will be the same as the running domain
     else:
         raise ValueError("Must specify INVENTORY_DOMAIN, or INVENTORY_DOMAIN_NAME and INVENTORY_DOMAIN_VERSION")
