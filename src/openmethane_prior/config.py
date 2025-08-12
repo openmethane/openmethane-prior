@@ -88,6 +88,7 @@ class PriorConfigOptions(typing.TypedDict, total=False):
     output_path: pathlib.Path | str
     intermediates_path: pathlib.Path | str
     input_domain: InputDomain
+    inventory_domain: InputDomain
     output_filename: str
     layer_inputs: LayerInputs
     start_date: datetime.datetime
@@ -107,6 +108,12 @@ class PriorConfig:
 
     If provided, use a published domain as the input domain. Otherwise, a file
     specified in the `DOMAIN` env variable is used as the input domain.
+    """
+    inventory_domain: InputDomain
+    """Inventory domain specification
+
+    If provided, use a published domain as the input domain. Otherwise, a file
+    specified in the `INVENTORY_DOMAIN` env variable is used as the input domain.
     """
 
     output_filename: str
@@ -138,6 +145,14 @@ class PriorConfig:
         return xr.open_dataset(self.input_domain_file)
 
     @cache
+    def inventory_dataset(self):
+        """Load the inventory domain dataset"""
+        if not self.inventory_domain_file.exists():
+            raise ValueError(f"Missing inventory domain file: {self.inventory_domain_file}")
+        return xr.open_dataset(self.inventory_domain_file)
+
+
+    @cache
     def domain_grid(self) -> DomainGrid:
         """Create a Grid from the domain dataset"""
         return DomainGrid(domain_ds=self.domain_dataset())
@@ -146,6 +161,16 @@ class PriorConfig:
     def domain_projection(self) -> pyproj.Proj:
         """Query the projection used by the input domain"""
         return self.domain_grid().projection
+
+    @cache
+    def inventory_grid(self) -> DomainGrid:
+        """Create a Grid from the inventory dataset"""
+        return DomainGrid(domain_ds=self.inventory_dataset())
+
+    @cache
+    def inventory_projection(self) -> pyproj.Proj:
+        """Query the projection used by the inventory domain"""
+        return self.inventory_grid().projection
 
     @property
     def crs(self):
@@ -160,6 +185,14 @@ class PriorConfig:
         Uses a published domain if it is provided otherwise uses a user-specified file name
         """
         return self.as_input_file(self.input_domain.path)
+
+    @property
+    def inventory_domain_file(self):
+        """
+        Get the filename of the inventory domain
+
+        """
+        return self.as_input_file(self.inventory_domain.path)
 
     @property
     def output_file(self):
@@ -195,6 +228,28 @@ def load_config_from_env(**overrides: PriorConfigOptions) -> PriorConfig:
         )
     else:
         raise ValueError("Must specify DOMAIN, or DOMAIN_NAME and DOMAIN_VERSION")
+    if env.str("INVENTORY_DOMAIN", None):
+        inventory_domain = InputDomain(
+            path=env.str("INVENTORY_DOMAIN"),
+            name=env.str("INVENTORY_DOMAIN_NAME", None),
+            version=env.str("INVENTORY_DOMAIN_VERSION", None),
+        )
+    elif env.str("INVENTORY_DOMAIN_NAME", None) and env.str("INVENTORY_DOMAIN_VERSION", None):
+        inventory_domain = PublishedInputDomain(
+            name=env.str("DOMAIN_NAME"),
+            version=env.str("DOMAIN_VERSION"),
+        ) # note that if nothing is set here the inventory will be the same as the running domain
+    else:
+        raise ValueError("Must specify INVENTORY_DOMAIN, or INVENTORY_DOMAIN_NAME and INVENTORY_DOMAIN_VERSION")
+
+    start_date = env.date("START_DATE", None)
+    # if END_DATE not set, use START_DATE for a 1-day run
+    end_date = env.date("END_DATE", None) or env.date("START_DATE", None)
+    # now convert both to datetime.datetime
+    if start_date:
+        start_date = datetime.datetime.combine(start_date, datetime.time.min)
+    if end_date:
+        end_date = datetime.datetime.combine(end_date, datetime.time.min)
 
     options: PriorConfigOptions = dict(
         remote=env.str("PRIOR_REMOTE"),
@@ -202,6 +257,7 @@ def load_config_from_env(**overrides: PriorConfigOptions) -> PriorConfig:
         output_path=env.path("OUTPUTS", "data/outputs"),
         intermediates_path=env.path("INTERMEDIATES", "data/processed"),
         input_domain=input_domain,
+        inventory_domain=inventory_domain,
         output_filename=env.str("OUTPUT_FILENAME", "prior-emissions.nc"),
         layer_inputs=LayerInputs(
             electricity_path=env.path("CH4_ELECTRICITY"),
@@ -216,9 +272,8 @@ def load_config_from_env(**overrides: PriorConfigOptions) -> PriorConfig:
             termite_path=env.path("TERMITES"),
             wetland_path=env.path("WETLANDS"),
         ),
-        start_date=env.datetime("START_DATE", None),
-        # if END_DATE not set, use START_DATE for a 1-day run
-        end_date=env.datetime("END_DATE", None) or env.datetime("START_DATE", None),
+        start_date=start_date,
+        end_date =end_date,
     )
 
     return PriorConfig(**{**options, **overrides})

@@ -34,6 +34,7 @@ from openmethane_prior.utils import (
     load_zipped_pickle,
     redistribute_spatially,
     save_zipped_pickle,
+    datetime64_to_datetime,
 )
 
 
@@ -204,7 +205,8 @@ def processEmissions(
     climatology = make_wetland_climatology(config, forceUpdate=forceUpdate)
     result_nd = []  # will be ndarray once built
     for date in prior_ds["time"].values:
-        result_nd.append(climatology[date.month - 1, ...])  # d.month is 1-based
+        month = datetime64_to_datetime(date).month
+        result_nd.append(climatology[month - 1, ...])  # d.month is 1-based
 
     result_nd = np.array(result_nd)
     result_nd = np.expand_dims(result_nd, 1)  # adding single vertical dimension
