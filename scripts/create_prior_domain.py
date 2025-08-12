@@ -55,6 +55,7 @@ def create_domain_info(
     geometry_file: pathlib.Path,
     cross_file: pathlib.Path,
     inventory_geotiff_file: pathlib.Path,
+    inventory_from_landmask: bool,
     domain_name: str,
     domain_version: str,
     domain_index: int,
@@ -69,7 +70,9 @@ def create_domain_info(
     :param geometry_file: Path to the WRF geometry file
     :param cross_file: Path to the MCIP cross file
     :param inventory_geotiff_file: Path to a GeoTIFF file where non-zero values
-      represent pixels that are inside the inventory area.
+      represent pixels that are inside the inventory area
+    :param inventory_from_landmask: If True, create the inventory mask by
+      copying the land mask
     :param domain_name: The name of the new domain
     :param domain_version: The version of the domain being generated
     :param domain_index: The subdomain index
@@ -196,9 +199,12 @@ def create_domain_info(
         },
     )
 
-    if inventory_geotiff_file:
-        logger.info("Loading land use data to generate inventory mask")
-        inventory_mask = create_mask_from_geotiff(inventory_geotiff_file, domain_grid)
+    if inventory_geotiff_file or inventory_from_landmask:
+        if inventory_geotiff_file:
+            logger.info("Loading land use data to generate inventory mask")
+            inventory_mask = create_mask_from_geotiff(inventory_geotiff_file, domain_grid)
+        else:
+            inventory_mask = domain_ds["land_mask"]
 
         domain_ds['inventory_mask'] = xr.DataArray(
             dims=('y', 'x'),
@@ -332,8 +338,15 @@ def clean_directories(geometry_directory, output_directory, name, version):
 @click.option(
     "--inventory-geotiff",
     type=click.Path(exists=True, file_okay=True),
-    required=True,
+    required=False,
     help="Path to a GeoTIFF where non-zero values represent pixels covered by the inventory",
+)
+@click.option(
+    "--inventory-from-landmask",
+    type=bool,
+    is_flag=True,
+    required=False,
+    help="If true, inventory mask will be copied from land mask",
 )
 @click.option(
     "--geometry-directory",
@@ -357,6 +370,7 @@ def main(
     geometry_directory: str,
     output_directory: str | None,
     inventory_geotiff: str,
+    inventory_from_landmask: bool,
 ):
     """
     Generate domain file for use by the prior
@@ -367,6 +381,9 @@ def main(
     if not version.startswith("v"):
         raise click.BadParameter("Version should start with v")
 
+    if inventory_geotiff and inventory_from_landmask:
+        raise click.BadParameter("inventory_geotiff and inventory_from_landmask cannot be used together")
+
     geometry_directory, output_directory = clean_directories(
         geometry_directory, output_directory, name, version
     )
@@ -374,7 +391,8 @@ def main(
     domain = create_domain_info(
         geometry_file=geometry_directory / f"geo_em.d{domain_index:02}.nc",
         cross_file=pathlib.Path(cross),
-        inventory_geotiff_file=pathlib.Path(inventory_geotiff),
+        inventory_geotiff_file=pathlib.Path(inventory_geotiff) if inventory_geotiff is not None else None,
+        inventory_from_landmask=inventory_from_landmask,
         domain_name=name,
         domain_version=version,
         domain_index=domain_index,
