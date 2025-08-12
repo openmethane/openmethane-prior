@@ -45,7 +45,6 @@ def convert_to_timescale(emission, cell_area):
 
 def create_output_dataset(config: PriorConfig) -> xr.Dataset:
     domain_ds = config.domain_dataset()
-    domain_grid = config.domain_grid()
     period_start = config.start_date
     period_end = config.end_date
 
@@ -84,7 +83,6 @@ def create_output_dataset(config: PriorConfig) -> xr.Dataset:
 
             # data variables
             "land_mask": domain_ds["land_mask"],
-            "inventory_mask": domain_ds["inventory_mask"],
 
             # legacy / deprecated
             "LANDMASK": domain_ds["LANDMASK"],

@@ -76,7 +76,6 @@ def test_009_prior_emissions_ds(prior_emissions_ds):
         "x_bounds": 0.0,
         "y_bounds": -15629.25,
         "land_mask": 0.3911433254789468,
-        "inventory_mask": 0.38141071611515215,
         "ch4_sector_agriculture": 2.7554571509196643e-13,
         "ch4_sector_lulucf": 8.283984177707172e-13,
         "ch4_sector_waste": 7.680668803420378e-13,
