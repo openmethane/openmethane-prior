@@ -35,6 +35,13 @@ def regrid_aligned(
     :param to_grid: Target grid to reshape the data to
     :return: 2d dataset of gridded cell values in the target grid
     """
+    # if grids are identical, no regridding is necessary
+    if not to_grid.projection.is_exact_same(from_grid.projection):
+        raise ValueError("both grids must share the same projection in regrid_aligned")
+
+    if to_grid.shape == from_grid.shape and to_grid.cell_size == from_grid.cell_size:
+        return data
+
     data_np = data if type(data) is np.ndarray else data.to_numpy()
 
     source_x_indices = np.digitize(to_grid.cell_coords_x(), from_grid.cell_bounds_x()) - 1
