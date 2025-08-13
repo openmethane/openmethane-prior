@@ -24,6 +24,7 @@ import rioxarray as rxr
 import xarray as xr
 
 from openmethane_prior.config import PriorConfig, load_config_from_env, parse_cli_to_env
+from openmethane_prior.grid.regrid import regrid_aligned
 from openmethane_prior.outputs import (
     convert_to_timescale,
     add_ch4_total,
@@ -62,8 +63,9 @@ def processEmissions(config: PriorConfig, prior_ds: xr.Dataset):
     om_ntlt = remap_raster(ntlt, config.domain_grid(), AREA_OR_POINT=ntlData.AREA_OR_POINT)
 
     # limit emissions to land points
-    om_ntlt *= config.inventory_dataset()["inventory_mask"]
-    
+    inventory_mask_regridded = regrid_aligned(config.inventory_dataset()['inventory_mask'], from_grid=config.inventory_grid(), to_grid=config.domain_grid())
+    om_ntlt *= inventory_mask_regridded
+
     # now collect total nightlights across inventory domain
     inventory_ntlt = remap_raster(ntlt, config.inventory_grid(), AREA_OR_POINT=ntlData.AREA_OR_POINT)
 
@@ -71,7 +73,8 @@ def processEmissions(config: PriorConfig, prior_ds: xr.Dataset):
     inventory_ntlt *= config.inventory_dataset()['inventory_mask']
 
     # we want proportions of total for scaling emissions
-    om_ntlt_proportion = om_ntlt / inventory_ntlt.sum()
+    om_ntlt_proportion = om_ntlt / float(inventory_ntlt.sum())
+
     """ note that this is the correct scaling since remap_raster accumulates so
     that quotient is the proportion of total nightlights in that cell """
     sector_totals = pd.read_csv(
