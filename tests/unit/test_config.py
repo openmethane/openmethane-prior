@@ -69,11 +69,6 @@ def test_input_domain():
     assert test_domain.slug == "dslug"
     assert str(test_domain.path) == "file.nc"
 
-    # TODO remove this when slug is added to the domain file attributes
-    test_domain = InputDomain("aust10km")
-    assert test_domain.name == "aust10km"
-    assert test_domain.slug == "10"
-
 def test_published_input_domain():
     test_domain = PublishedInputDomain(name="dname", version="v9.0.1", domain_index=3, slug="dslug")
     assert test_domain.name == "dname"
@@ -82,5 +77,5 @@ def test_published_input_domain():
     assert test_domain.slug == "dslug"
     assert str(test_domain.path) == (
         f"domains/dname/v9.0.1/"
-        f"prior_domain_dname_v9.0.1.d03.nc"
+        f"domain.dname.nc"
     )

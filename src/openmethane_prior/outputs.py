@@ -19,18 +19,15 @@ import numpy as np
 import numpy.typing as npt
 import xarray as xr
 
-from openmethane_prior.cell_name import encode_grid_cell_name
 from openmethane_prior.config import PriorConfig
 from openmethane_prior.utils import SECS_PER_YEAR, get_version, get_timestamped_command, time_bounds, \
-    bounds_from_cell_edges
+    list_cf_grid_mappings
 import openmethane_prior.logger as logger
 
 logger = logger.get_logger(__name__)
 
 COORD_NAMES = ["time", "vertical", "y", "x"]
-PROJECTION_VAR_NAME = "lambert_conformal"
 COMMON_ATTRIBUTES = {
-    "grid_mapping": PROJECTION_VAR_NAME,
     "units": "kg/m2/s",
 }
 TOTAL_LAYER_NAME = "ch4_total"
@@ -48,100 +45,20 @@ def convert_to_timescale(emission, cell_area):
 
 def create_output_dataset(config: PriorConfig) -> xr.Dataset:
     domain_ds = config.domain_dataset()
-    domain_grid = config.domain_grid()
     period_start = config.start_date
     period_end = config.end_date
 
     # generate daily time steps
     time_steps = xr.date_range(start=period_start, end=period_end, freq="D", use_cftime=False, normalize=True)
 
-    # generate grid cell names
-    # TODO: generate and store these when creating the domain file
-    grid_cell_names = []
-    for y in range(domain_grid.shape[0]):
-        grid_cell_names.append([])
-        for x in range(domain_grid.shape[1]):
-            grid_cell_names[-1].append(encode_grid_cell_name(config.input_domain.slug, x, y, "."))
-
+    # find the domain variable containing the grid mapping
+    grid_mapping_var = list_cf_grid_mappings(domain_ds)[0]
+    
     # copy dimensions and attributes from the domain where the grid is defined
     prior_ds = xr.Dataset(
-        data_vars={
-            # meta data
-            "lat": (
-                ("y", "x"),
-                domain_ds.variables["LAT"].squeeze(),
-                {
-                    "long_name": "latitude coordinate",
-                    "units": "degrees_north",
-                    "standard_name": "latitude",
-                },
-            ),
-            "lon": (
-                ("y", "x"),
-                domain_ds.variables["LON"].squeeze(),
-                {
-                    "long_name": "longitude coordinate",
-                    "units": "degrees_east",
-                    "standard_name": "longitude",
-                },
-            ),
-
-            # # https://cfconventions.org/Data/cf-conventions/cf-conventions-1.11/cf-conventions.html#cell-boundaries
-            "x_bounds": (("x", "cell_bounds"), bounds_from_cell_edges(domain_grid.cell_bounds_x())),
-            "y_bounds": (("y", "cell_bounds"), bounds_from_cell_edges(domain_grid.cell_bounds_y())),
-
-            # https://cfconventions.org/Data/cf-conventions/cf-conventions-1.11/cf-conventions.html#_lambert_conformal
-            PROJECTION_VAR_NAME: (
-                (),
-                0,
-                {
-                    "grid_mapping_name": "lambert_conformal_conic",
-                    "standard_parallel": (domain_ds.TRUELAT1, domain_ds.TRUELAT2),
-                    "longitude_of_central_meridian": domain_ds.STAND_LON,
-                    "latitude_of_projection_origin": domain_ds.MOAD_CEN_LAT,
-                    "proj4": config.domain_projection().to_proj4(),
-                },
-            ),
-            "time_bounds": (
-                ("time", "time_period"),
-                time_bounds(time_steps),
-            ),
-            "cell_name": (("y", "x"), grid_cell_names, {
-                "long_name": "unique grid cell name",
-            }),
-
-            # data variables
-            "land_mask": (
-                ("y", "x"),
-                domain_ds.variables["LANDMASK"].squeeze().astype(int),
-                {
-                    "standard_name": "land_binary_mask",
-                    "units": "1",
-                    "long_name": "land-water mask (1=land, 0=water)",
-                    "grid_mapping": PROJECTION_VAR_NAME,
-                },
-            ),
-
-            # legacy / deprecated
-            "LANDMASK": (
-                ("y", "x"),
-                domain_ds.variables["LANDMASK"].squeeze(),
-                domain_ds.variables["LANDMASK"].attrs,
-            ),
-        },
         coords={
-            "x": (("x"), domain_grid.cell_coords_x(), {
-                "long_name": "x coordinate of projection",
-                "units": "m",
-                "standard_name": "projection_x_coordinate",
-                "bounds": "x_bounds",
-            }),
-            "y": (("y"), domain_grid.cell_coords_y(), {
-                "long_name": "y coordinate of projection",
-                "units": "m",
-                "standard_name": "projection_y_coordinate",
-                "bounds": "y_bounds",
-            }),
+            "x": domain_ds.coords["x"],
+            "y": domain_ds.coords["y"],
             "time": (("time"), time_steps, {
                 "standard_name": "time",
                 "bounds": "time_bounds",
@@ -149,6 +66,26 @@ def create_output_dataset(config: PriorConfig) -> xr.Dataset:
             # this dimension currently has no coordinate values, so it is left
             # as a dimension without coordinates
             # "vertical": (("vertical"), [0], {}),
+        },
+        data_vars={
+            # meta data
+            "lat": domain_ds["lat"],
+            "lon": domain_ds["lon"],
+            "x_bounds": domain_ds["x_bounds"],
+            "y_bounds": domain_ds["y_bounds"],
+            grid_mapping_var: domain_ds[grid_mapping_var],
+            "cell_name": domain_ds["cell_name"],
+
+            "time_bounds": (
+                ("time", "time_period"),
+                time_bounds(time_steps),
+            ),
+
+            # data variables
+            "land_mask": domain_ds["land_mask"],
+
+            # legacy / deprecated
+            "LANDMASK": domain_ds["LANDMASK"],
         },
         attrs={
             # data attributes
@@ -158,9 +95,9 @@ def create_output_dataset(config: PriorConfig) -> xr.Dataset:
             "YCELL": domain_ds.YCELL,
 
             # domain
-            "domain_name": config.input_domain.name,
-            "domain_version": config.input_domain.version,
-            "domain_slug": config.input_domain.slug,
+            "domain_name": domain_ds.domain_name,
+            "domain_version": domain_ds.domain_version,
+            "domain_slug": domain_ds.domain_slug,
 
             # meta attributes
             "title": "Open Methane prior emissions estimate",
@@ -253,9 +190,13 @@ def add_sector(
     # enable compression for layer data variables
     sector_data.encoding["zlib"] = True
 
+    # find the domain variable containing the grid mapping
+    grid_mapping_var = list_cf_grid_mappings(prior_ds)[0]
+
     sector_data.attrs = COMMON_ATTRIBUTES | {
         "standard_name": TOTAL_LAYER_ATTRIBUTES["standard_name"],
         "long_name": sector_long_name or f"expected flux of methane caused by sector: {sector_name}",
+        "grid_mapping": grid_mapping_var,
     }
     if sector_standard_name is not None:
         sector_data.attrs["standard_name"] += f"_due_to_emission_from_{sector_standard_name}"
@@ -314,6 +255,9 @@ def add_ch4_total(prior_ds: xr.Dataset):
 
     This adds the `ch4_total` variable to the output dataset.
     """
+    # find the domain variable containing the grid mapping
+    grid_mapping_var = list_cf_grid_mappings(prior_ds)[0]
+
     sectors = [var_name for var_name in prior_ds.data_vars.keys() if var_name.startswith(SECTOR_PREFIX)]
 
     # now check to find largest shape because we'll broadcast everything else to that
@@ -331,7 +275,9 @@ def add_ch4_total(prior_ds: xr.Dataset):
         prior_ds[TOTAL_LAYER_NAME] = (
             COORD_NAMES[:],
             summed,
-            COMMON_ATTRIBUTES | TOTAL_LAYER_ATTRIBUTES
+            COMMON_ATTRIBUTES | TOTAL_LAYER_ATTRIBUTES | {
+                "grid_mapping": grid_mapping_var,
+            }
         )
 
         # enable compression for total layer which may be duplicated

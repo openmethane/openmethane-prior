@@ -26,6 +26,7 @@ import rioxarray as rxr
 import xarray as xr
 
 from openmethane_prior.config import PriorConfig, load_config_from_env, parse_cli_to_env
+from openmethane_prior.grid.regrid import regrid_aligned
 from openmethane_prior.outputs import (
     convert_to_timescale,
     add_ch4_total,
@@ -132,9 +133,10 @@ def processEmissions(config: PriorConfig, prior_ds: xr.Dataset):  # noqa: PLR091
         sector_gridded = remap_raster(sector_xr, config.domain_grid(), input_crs=lu_crs)
 
         # apply inventory mask before counting any land use
-        sector_gridded *= config.inventory_dataset()['INVENTORYMASK']
+        inventory_mask_regridded = regrid_aligned(config.inventory_dataset()['inventory_mask'], from_grid=config.inventory_grid(), to_grid=config.domain_grid())
+        sector_gridded *= inventory_mask_regridded
 
-
+        # allocate inventory emissions proportional to each grid cell
         sector_gridded /=  sector_gridded.sum() # proportion of national emission in each grid square
         sector_gridded *= methaneInventoryBySector[sector]  # convert to national emissions in kg/gridcell
 

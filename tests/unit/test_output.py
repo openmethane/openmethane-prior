@@ -22,12 +22,12 @@ def test_create_output_dataset(config, input_files):
     output_ds = create_output_dataset(config)
 
     # validate input domain hasn't changed before we assert about output
-    assert domain_ds.sizes["COL"] == 454, "reference domain COL dimension has changed"
-    assert domain_ds.sizes["ROW"] == 430, "reference domain ROW dimension has changed"
+    assert domain_ds.sizes["x"] == 454, "reference domain x dimension has changed"
+    assert domain_ds.sizes["y"] == 430, "reference domain y dimension has changed"
 
     # dimensions
-    assert output_ds.sizes["x"] == domain_ds.sizes["COL"], "x dimension doesnt match domain"
-    assert output_ds.sizes["y"] == domain_ds.sizes["ROW"], "y dimension doesnt match domain"
+    assert output_ds.sizes["x"] == domain_ds.sizes["x"], "x dimension doesnt match domain"
+    assert output_ds.sizes["y"] == domain_ds.sizes["y"], "y dimension doesnt match domain"
 
     # attributes
     assert output_ds.attrs["DX"] == domain_ds.attrs["DX"]
@@ -43,10 +43,7 @@ def test_create_output_dataset(config, input_files):
     assert output_ds.attrs["domain_slug"] == "10"
 
     # projection
-    assert output_ds["lambert_conformal"].attrs["grid_mapping_name"] == "lambert_conformal_conic"
-    assert output_ds["lambert_conformal"].attrs["standard_parallel"] == (domain_ds.attrs["TRUELAT1"], domain_ds.attrs["TRUELAT2"])
-    assert output_ds["lambert_conformal"].attrs["longitude_of_central_meridian"] == domain_ds.attrs["STAND_LON"]
-    assert output_ds["lambert_conformal"].attrs["latitude_of_projection_origin"] == domain_ds.attrs["MOAD_CEN_LAT"]
+    assert output_ds["lambert_conformal"].attrs == domain_ds["lambert_conformal"].attrs
 
     # bounds
     assert output_ds["time"].size == (config.end_date - config.start_date).days + 1 # one time step per day, end inclusive
@@ -67,7 +64,7 @@ def test_create_output_dataset(config, input_files):
     # ensure georeferenced variables include grid_mapping attribute
     for var_name in output_ds.data_vars.keys():
         # variables that do not need grid_mapping are excluded from this check
-        if var_name in ["lat", "lon", "cell_name", "LANDMASK"]:
+        if var_name in ["lat", "lon", "cell_name", "land_mask", "LANDMASK"]:
             continue
 
         if "x" in output_ds[var_name].coords and "y"  in output_ds[var_name].coords:

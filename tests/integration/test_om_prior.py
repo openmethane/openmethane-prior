@@ -42,8 +42,8 @@ def test_004_omDownloadInputs(root_dir, input_files, config):
         "EntericFermentation.nc",
         "termite_emissions_2010-2016.nc",
         "DLEM_totflux_CRU_diagnostic.nc",
-        "domains/aust-test/v1/prior_domain_aust-test_v1.d01.nc",
-        "domains/aust10km/v1/prior_domain_aust10km_v1.d01.nc",
+        "domains/aust-test/v1/domain.aust-test.nc",
+        "domains/aust10km/v1/domain.aust10km.nc",
     ]
 
     assert sorted([str(fn.relative_to(config.input_path)) for fn in input_files]) == sorted(
@@ -74,8 +74,8 @@ def test_009_prior_emissions_ds(prior_emissions_ds):
         "lat": -26.9831600189209,
         "lon": 133.302001953125,
         "x_bounds": 0.0,
-        "y_bounds": 0.02444604212461516,
-        "land_mask": 0.39128163098043234,
+        "y_bounds": -15629.25,
+        "land_mask": 0.3911433254789468,
         "ch4_sector_agriculture": 2.7554571509196643e-13,
         "ch4_sector_lulucf": 8.283984177707172e-13,
         "ch4_sector_waste": 7.680668803420378e-13,
@@ -85,14 +85,14 @@ def test_009_prior_emissions_ds(prior_emissions_ds):
         "ch4_sector_transport": 1.856354997805524e-14,
         "ch4_sector_electricity": 2.3204437472569124e-14,
         "ch4_sector_fugitive": 1.906824649308364e-12,
-        "ch4_sector_termite": 7.934378523123675e-13,
+        "ch4_sector_termite": 7.932366785992628e-13,
         "ch4_sector_fire": 2.6126792244431096e-13,
-        "ch4_sector_wetlands": 1.6133751762828546e-11,
-        "ch4_total": 2.453150334849442e-11,
+        "ch4_sector_wetlands": 1.613239158894345e-11,
+        "ch4_total": 2.4529942058503018e-11,
 
         # deprecated
-        "OCH4_TOTAL": 2.453150334849442e-11,
-        "LANDMASK": 0.39128163456916809,
+        "OCH4_TOTAL": 2.4529942058503018e-11,
+        "LANDMASK": 0.3911433219909668,
     }
 
     assert mean_values == expected_values
