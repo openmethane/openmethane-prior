@@ -133,8 +133,7 @@ def processEmissions(config: PriorConfig, prior_ds: xr.Dataset):  # noqa: PLR091
         sector_gridded = remap_raster(sector_xr, config.domain_grid(), input_crs=lu_crs)
 
         # apply inventory mask before counting any land use
-        inventory_mask_regridded = regrid_aligned(config.inventory_dataset()['inventory_mask'], config.inventory_grid(), config.domain_grid())
-        inventory_mask_regridded[inventory_mask_regridded != 0] = 1 # now pure land-oc mask
+        inventory_mask_regridded = regrid_aligned(config.inventory_dataset()['inventory_mask'], from_grid=config.inventory_grid(), to_grid=config.domain_grid())
         sector_gridded *= inventory_mask_regridded
 
         # allocate inventory emissions proportional to each grid cell

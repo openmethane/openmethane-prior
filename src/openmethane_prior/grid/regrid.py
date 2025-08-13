@@ -27,23 +27,17 @@ def regrid_aligned(
     to_grid: Grid,
 ) -> np.array:
     """
-    Re-grids and subsets a dataset to a shape defined by to_grid. The source
-    data and the to_grid must share the same projection.
+    Re-grids a dataset to a shape defined by to_grid, using a nearest neighbor
+    strategy. Values are **not** conserved, so this is mostly useful for masks.
+    The source data and the to_grid must share the same projection.
     :param data: 2d gridded data
     :param from_grid: Grid of the source data
     :param to_grid: Target grid to reshape the data to
     :return: 2d dataset of gridded cell values in the target grid
     """
-    regridded_data = np.zeros(to_grid.shape, dtype=data.dtype)
-    target_cell_ratio = to_grid.cell_area / from_grid.cell_area
-    target_coords_x = to_grid.cell_coords_x()
-    target_coords_y = to_grid.cell_coords_y()
+    data_np = data if type(data) is np.ndarray else data.to_numpy()
 
-    for iy, ix in itertools.product(range(regridded_data.shape[0]), range(regridded_data.shape[1])):
-        # find the cell indexes for each target cell in the source data grid
-        source_ix, source_iy, source_mask = from_grid.xy_to_cell_index(target_coords_x[ix], target_coords_y[iy])
-
-        if source_mask:
-            regridded_data[iy, ix] = data[source_iy, source_ix] * target_cell_ratio
-
-    return regridded_data
+    source_x_indices = np.digitize(to_grid.cell_coords_x(), from_grid.cell_bounds_x()) - 1
+    source_y_indices = np.digitize(to_grid.cell_coords_y(), from_grid.cell_bounds_y()) - 1
+    xmesh, ymesh = np.meshgrid(source_x_indices, source_y_indices)
+    return data_np[ymesh, xmesh]
