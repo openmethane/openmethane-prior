@@ -135,9 +135,13 @@ def processEmissions(config: PriorConfig, prior_ds: xr.Dataset):  # noqa: PLR091
         # apply inventory mask before counting any land use
         inventory_mask_regridded = regrid_aligned(config.inventory_dataset()['inventory_mask'], from_grid=config.inventory_grid(), to_grid=config.domain_grid())
         sector_gridded *= inventory_mask_regridded
+        
+        inventory_gridded = remap_raster(sector_xr, config.inventory_grid(), input_crs=lu_crs)
+        # now mask to region of inventory
+        inventory_gridded *= config.inventory_dataset()['inventory_mask']
 
         # allocate inventory emissions proportional to each grid cell
-        sector_gridded /=  sector_gridded.sum() # proportion of national emission in each grid square
+        sector_gridded /=  inventory_gridded.sum().item() # proportion of national emission in each grid square
         sector_gridded *= methaneInventoryBySector[sector]  # convert to national emissions in kg/gridcell
 
         add_sector(
