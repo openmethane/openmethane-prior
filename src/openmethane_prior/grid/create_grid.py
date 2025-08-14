@@ -32,9 +32,13 @@ def create_grid_from_domain(
     # find the domain variable containing the grid mapping
     grid_mapping = list_cf_grid_mappings(domain_ds)[0]
 
+    # the origin should be the coords of the llc boundary
+    origin_x = domain_ds["x_bounds"].min()
+    origin_y = domain_ds["y_bounds"].min()
+
     return Grid(
         dimensions=(domain_ds.sizes["x"], domain_ds.sizes["y"]),
-        origin_xy=(domain_ds.XORIG, domain_ds.YORIG),
+        origin_xy=(float(origin_x), float(origin_y)),
         cell_size=(domain_ds.XCELL, domain_ds.YCELL),
         proj_params=pyproj.CRS.from_cf(domain_ds[grid_mapping].attrs),
     )
