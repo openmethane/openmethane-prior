@@ -181,8 +181,6 @@ def create_domain_info(
             "DY": geom_xr.DY,
             "XCELL": mcip_cro_xr.XCELL,
             "YCELL": mcip_cro_xr.YCELL,
-            "XORIG": mcip_cro_xr.XORIG,
-            "YORIG": mcip_cro_xr.YORIG,
 
             # domain
             "domain_name": domain_name,

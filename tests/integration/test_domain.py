@@ -19,5 +19,3 @@ def test_domain_attributes(input_domain):
     assert input_domain.attrs['XCELL'] > 0
     assert type(input_domain.attrs["YCELL"]) == numpy.float64
     assert input_domain.attrs['YCELL'] > 0
-    assert type(input_domain.attrs["XORIG"]) == numpy.float64
-    assert type(input_domain.attrs["YORIG"]) == numpy.float64
