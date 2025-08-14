@@ -73,7 +73,7 @@ def processEmissions(config: PriorConfig, prior_ds: xr.Dataset):
     inventory_ntlt *= config.inventory_dataset()['inventory_mask']
 
     # we want proportions of total for scaling emissions
-    om_ntlt_proportion = om_ntlt / float(inventory_ntlt.sum())
+    om_ntlt_proportion = om_ntlt / inventory_ntlt.sum().item()
 
     """ note that this is the correct scaling since remap_raster accumulates so
     that quotient is the proportion of total nightlights in that cell """
