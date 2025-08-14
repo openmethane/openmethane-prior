@@ -141,7 +141,7 @@ def processEmissions(config: PriorConfig, prior_ds: xr.Dataset):  # noqa: PLR091
         inventory_gridded *= config.inventory_dataset()['inventory_mask']
 
         # allocate inventory emissions proportional to each grid cell
-        sector_gridded /=  inventory_gridded.sum() # proportion of national emission in each grid square
+        sector_gridded /=  inventory_gridded.sum().item() # proportion of national emission in each grid square
         sector_gridded *= methaneInventoryBySector[sector]  # convert to national emissions in kg/gridcell
 
         add_sector(
