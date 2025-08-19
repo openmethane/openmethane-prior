@@ -275,3 +275,76 @@ def test_grid_lonlat_to_cell_index():
         [0, 0, 20, 39, 40],
         [False, True, True, True, False],
     ))
+
+def test_grid_eq():
+    test_grid_a = Grid(
+        dimensions=(8, 10),
+        origin_xy=(-4, -5),
+        cell_size=(1, 2),
+    )
+    test_grid_b = Grid(
+        dimensions=(8, 10),
+        origin_xy=(-4, -5),
+        cell_size=(1, 2),
+    )
+
+    assert test_grid_a == test_grid_a
+    assert test_grid_a == test_grid_b
+
+    assert test_grid_a != Grid(dimensions=(9, 10), origin_xy=(-4, -5), cell_size=(1, 2))
+    assert test_grid_a != Grid(dimensions=(8, 10), origin_xy=(0, -5), cell_size=(1, 2))
+    assert test_grid_a != Grid(dimensions=(8, 10), origin_xy=(-4, -5), cell_size=(1, 1))
+    assert test_grid_a != Grid(dimensions=(8, 10), origin_xy=(-4, -5), cell_size=(1, 2), proj_params="EPSG:7844")
+
+
+def test_grid_is_aligned():
+    test_grid_a = Grid(
+        dimensions=(8, 10),
+        origin_xy=(-4, -5),
+        cell_size=(1, 2),
+    )
+    test_grid_b = Grid(
+        dimensions=(24, 30),
+        origin_xy=(-12, -15),
+        cell_size=(1, 1),
+    )
+
+    assert test_grid_a.is_aligned(test_grid_a) # same grid
+    assert test_grid_a.is_aligned(test_grid_b) # same projection
+
+    test_grid_c = Grid(
+        dimensions=(10, 10), origin_xy=(-5, -5), cell_size=(1, 1),
+        proj_params=dict(
+            proj="lcc",
+            lat_1=-15.0,
+            lat_2=-40.0,
+            lat_0=-27.5,
+            lon_0=132,
+        ),
+    )
+    test_grid_d = Grid(
+        dimensions=(10, 10), origin_xy=(-5, -5), cell_size=(1, 1),
+        proj_params=dict(
+            proj="lcc",
+            lat_1=-15.0,
+            lat_2=-40.0,
+            lat_0=-27.5,
+            lon_0=132,
+            x_0=100,
+            y_0=0,
+        ),
+    )
+
+    assert test_grid_c.is_aligned(test_grid_d)
+    assert not test_grid_c.is_aligned(test_grid_a)
+
+    test_grid_e = Grid(
+        dimensions=(10, 10), origin_xy=(-5, -5), cell_size=(1, 1),
+        proj_params="EPSG:4188"
+    )
+    test_grid_f = Grid(
+        dimensions=(10, 10), origin_xy=(-5, -5), cell_size=(1, 1),
+        proj_params="EPSG:4299"
+    )
+    with pytest.raises(NotImplementedError):
+        test_grid_e.is_aligned(test_grid_f)

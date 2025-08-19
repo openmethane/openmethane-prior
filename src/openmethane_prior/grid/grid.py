@@ -72,6 +72,31 @@ class Grid:
         self.cell_area = self.cell_size[0] * self.cell_size[1]
 
 
+    def __eq__(self, other):
+        return (
+            self.dimensions == other.dimensions
+            and self.origin_xy == other.origin_xy
+            and self.llc_center_xy == other.llc_center_xy
+            and self.cell_size == other.cell_size
+            and self.projection.is_exact_same(other.projection)
+        )
+
+    def is_aligned(self, other):
+        if self == other or self.projection.is_exact_same(other.projection):
+            return True
+
+        # can't be aligned if the projection type is different
+        if self.projection.name != other.projection.name:
+            return False
+
+        # lambert projections are aligned if parameters are the same, ignoring x/y offset
+        if self.projection.name == "lcc":
+            self_srs_parts = [part for part in self.projection.srs.split(" ") if not (part.startswith("+x_0") or part.startswith("+y_0"))]
+            other_srs_parts = [part for part in other.projection.srs.split(" ") if not (part.startswith("+x_0") or part.startswith("+y_0"))]
+            return " ".join(self_srs_parts) == " ".join(other_srs_parts)
+
+        raise NotImplementedError("non-lambert projections comparisons are not implemented")
+
     def lonlat_to_xy(self, lon, lat) -> tuple[float, float]:
         return self.projection.transform(xx=lon, yy=lat, direction=pyproj.enums.TransformDirection.FORWARD)
 
