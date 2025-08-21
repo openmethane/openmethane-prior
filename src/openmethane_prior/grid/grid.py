@@ -95,7 +95,8 @@ class Grid:
             other_srs_parts = [part for part in other.projection.srs.split(" ") if not (part.startswith("+x_0") or part.startswith("+y_0"))]
             return " ".join(self_srs_parts) == " ".join(other_srs_parts)
 
-        raise NotImplementedError("non-lambert projections comparisons are not implemented")
+        # non-lambert projections comparisons are not implemented
+        return False
 
     def lonlat_to_xy(self, lon, lat) -> tuple[float, float]:
         return self.projection.transform(xx=lon, yy=lat, direction=pyproj.enums.TransformDirection.FORWARD)

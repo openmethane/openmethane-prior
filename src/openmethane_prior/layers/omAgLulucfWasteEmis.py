@@ -26,7 +26,7 @@ import rioxarray as rxr
 import xarray as xr
 
 from openmethane_prior.config import PriorConfig, load_config_from_env, parse_cli_to_env
-from openmethane_prior.grid.regrid import regrid_aligned
+from openmethane_prior.grid.regrid import regrid_data
 from openmethane_prior.outputs import (
     convert_to_timescale,
     add_ch4_total,
@@ -123,7 +123,7 @@ def processEmissions(config: PriorConfig, prior_ds: xr.Dataset):  # noqa: PLR091
     ).read()
     dataBand = dataBand.squeeze()
 
-    inventory_mask_regridded = regrid_aligned(config.inventory_dataset()['inventory_mask'], from_grid=config.inventory_grid(), to_grid=config.domain_grid())
+    inventory_mask_regridded = regrid_data(config.inventory_dataset()['inventory_mask'], from_grid=config.inventory_grid(), to_grid=config.domain_grid())
 
     for sector in landuseSectorMap.keys():
         logger.debug(f"Processing land use for sector {sector}")

@@ -346,5 +346,5 @@ def test_grid_is_aligned():
         dimensions=(10, 10), origin_xy=(-5, -5), cell_size=(1, 1),
         proj_params="EPSG:4299"
     )
-    with pytest.raises(NotImplementedError):
-        test_grid_e.is_aligned(test_grid_f)
+
+    assert test_grid_e.is_aligned(test_grid_f) == False
