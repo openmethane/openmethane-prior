@@ -17,6 +17,7 @@
 #
 import itertools
 import numpy as np
+import pyproj
 
 from .grid import Grid
 
@@ -35,16 +36,23 @@ def regrid_aligned(
     :param to_grid: Target grid to reshape the data to
     :return: 2d dataset of gridded cell values in the target grid
     """
-    # if grids are identical, no regridding is necessary
-    if not to_grid.projection.is_exact_same(from_grid.projection):
-        raise ValueError("both grids must share the same projection in regrid_aligned")
-
-    if to_grid.shape == from_grid.shape and to_grid.cell_size == from_grid.cell_size:
+    # if grids are exactly the same, no regridding is necessary
+    if from_grid == to_grid:
         return data
 
-    data_np = data if type(data) is np.ndarray else data.to_numpy()
+    # if grids share the same base projection, we can apply an efficient
+    # regridding method using np.digitize
+    if to_grid.is_aligned(from_grid):
+        # transform to_grid coordinates into from_grid coordinates to
+        # efficiently bin them
+        grid_transform = pyproj.Transformer.from_crs(crs_from=to_grid.projection.crs, crs_to=from_grid.projection.crs)
+        to_grid_x_transformed, to_grid_y_transformed = grid_transform.transform(xx=to_grid.cell_coords_x(), yy=to_grid.cell_coords_y())
 
-    source_x_indices = np.digitize(to_grid.cell_coords_x(), from_grid.cell_bounds_x()) - 1
-    source_y_indices = np.digitize(to_grid.cell_coords_y(), from_grid.cell_bounds_y()) - 1
-    xmesh, ymesh = np.meshgrid(source_x_indices, source_y_indices)
-    return data_np[ymesh, xmesh]
+        data_np = data if type(data) is np.ndarray else data.to_numpy()
+
+        source_x_indices = np.digitize(to_grid_x_transformed, from_grid.cell_bounds_x()) - 1
+        source_y_indices = np.digitize(to_grid_y_transformed, from_grid.cell_bounds_y()) - 1
+        xmesh, ymesh = np.meshgrid(source_x_indices, source_y_indices)
+        return data_np[ymesh, xmesh]
+
+    raise NotImplementedError("regridding from unaligned projections not implemented")
