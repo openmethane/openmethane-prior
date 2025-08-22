@@ -42,7 +42,7 @@ def test_004_omDownloadInputs(root_dir, input_files, config):
         "EntericFermentation.nc",
         "termite_emissions_2010-2016.nc",
         "DLEM_totflux_CRU_diagnostic.nc",
-        "domains/aust-test/v1/domain.aust-test.nc",
+        "domains/au-test/v1/domain.au-test.nc",
         "domains/aust10km/v1/domain.aust10km.nc",
     ]
 
