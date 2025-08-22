@@ -21,6 +21,9 @@ import pyproj
 from shapely import geometry
 
 from .grid import Grid
+import openmethane_prior.logger as logger
+
+logger = logger.get_logger(__name__)
 
 def regrid_data(
     data: np.ndarray,
@@ -37,13 +40,16 @@ def regrid_data(
     """
     # if grids are exactly the same, no regridding is necessary
     if from_grid == to_grid:
+        logger.debug("identical grids, skip regridding")
         return data
 
     # if grids share the same base projection, we can apply an efficient
     # regridding method using np.digitize
     if to_grid.is_aligned(from_grid):
+        logger.debug("aligned grids, fast regridding")
         return regrid_aligned(data=data, from_grid=from_grid, to_grid=to_grid)
 
+    logger.debug("unaligned grids, slow regridding")
     return regrid_any(data=data, from_grid=from_grid, to_grid=to_grid)
 
 
