@@ -111,6 +111,7 @@ def regrid_any(
         to_grid_cell_polygon = geometry.Polygon(zip(to_grid_bounds_lon[to_grid_iy, to_grid_ix], to_grid_bounds_lat[to_grid_iy, to_grid_ix]))
 
         largest_intersection = 0
+        total_intersection = 0
         for from_grid_iy, from_grid_ix in itertools.product(range(from_grid.shape[0]), range(from_grid.shape[1])):
             from_grid_cell_polygon = geometry.Polygon(zip(from_grid_bounds_lon[from_grid_iy, from_grid_ix], from_grid_bounds_lat[from_grid_iy, from_grid_ix]))
             intersection = from_grid_cell_polygon.intersection(to_grid_cell_polygon)
@@ -119,15 +120,18 @@ def regrid_any(
             if intersection.area <= 0:
                 continue
 
-            # if the source cell covers more than 50% of the target cell, we
-            # wont find a larger intersection, so we can stop looking
-            if intersection.area / to_grid_cell_polygon.area > 0.5:
-                regridded_data[to_grid_iy, to_grid_ix] = data[from_grid_iy, from_grid_ix]
-                break
+            # accumulate the sum of the area that has been considered
+            total_intersection += intersection.area
 
             # take the value from the target cell with the largest proportion
-            if intersection.area / to_grid_cell_polygon.area > largest_intersection:
-                largest_intersection = intersection.area / to_grid_cell_polygon.area
+            cell_intersection_ratio = intersection.area / to_grid_cell_polygon.area
+            if cell_intersection_ratio > largest_intersection:
+                largest_intersection = cell_intersection_ratio
                 regridded_data[to_grid_iy, to_grid_ix] = data[from_grid_iy, from_grid_ix]
+
+            # if we've seen a cell with an intersection larger than the remaining area,
+            # we've found the largest intersection
+            if largest_intersection > to_grid_cell_polygon.area - total_intersection:
+                break
 
     return regridded_data
