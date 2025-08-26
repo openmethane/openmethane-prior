@@ -22,8 +22,8 @@ def test_create_output_dataset(config, input_files):
     output_ds = create_output_dataset(config)
 
     # validate input domain hasn't changed before we assert about output
-    assert domain_ds.sizes["x"] == 454, "reference domain x dimension has changed"
-    assert domain_ds.sizes["y"] == 430, "reference domain y dimension has changed"
+    assert domain_ds.sizes["x"] == 10, "reference domain x dimension has changed"
+    assert domain_ds.sizes["y"] == 10, "reference domain y dimension has changed"
 
     # dimensions
     assert output_ds.sizes["x"] == domain_ds.sizes["x"], "x dimension doesnt match domain"
@@ -31,16 +31,16 @@ def test_create_output_dataset(config, input_files):
 
     # attributes
     assert output_ds.attrs["DX"] == domain_ds.attrs["DX"]
-    assert output_ds.attrs["DY"] == 10000
+    assert output_ds.attrs["DY"] == domain_ds.attrs["DY"]
     assert output_ds.attrs["title"] == "Open Methane prior emissions estimate"
     assert output_ds.attrs["Conventions"] == "CF-1.12"
     assert isinstance(output_ds.attrs["comment"], str)
     assert isinstance(output_ds.attrs["history"], str)
     assert isinstance(output_ds.attrs["openmethane_prior_version"], str)
 
-    assert output_ds.attrs["domain_name"] == "aust10km"
+    assert output_ds.attrs["domain_name"] == "au-test"
     assert output_ds.attrs["domain_version"] == "v1"
-    assert output_ds.attrs["domain_slug"] == "10"
+    assert output_ds.attrs["domain_slug"] == "test"
 
     # projection
     assert output_ds["lambert_conformal"].attrs == domain_ds["lambert_conformal"].attrs
@@ -56,10 +56,10 @@ def test_create_output_dataset(config, input_files):
     assert output_ds["y_bounds"].shape == (output_ds["y"].size, 2)
 
     # grid cell names
-    assert str(output_ds["cell_name"][0, 0].data) == "10.0.0"
-    assert str(output_ds["cell_name"][31, 32].data) == "10.10.Z"
-    assert str(output_ds["cell_name"][99, 328].data) == "10.A8.33"
-    assert str(output_ds["cell_name"][135, 388].data) == "10.C4.47"
+    assert str(output_ds["cell_name"][0, 0].data) == "test.0.0"
+    assert str(output_ds["cell_name"][0, 2].data) == "test.2.0"
+    assert str(output_ds["cell_name"][2, 0].data) == "test.0.2"
+    assert str(output_ds["cell_name"][9, 9].data) == "test.9.9"
 
     # ensure georeferenced variables include grid_mapping attribute
     for var_name in output_ds.data_vars.keys():

@@ -11,8 +11,11 @@ def test_remap_raster(config, input_files):
     epsilon = 1e-5 # small number
     def maxloc(a): return np.unravel_index(a.argmax(), a.shape)
 
-    lat = config.domain_dataset()['lat']
-    lon = config.domain_dataset()['lon']
+    domain_dataset = config.inventory_dataset()
+    domain_grid = config.inventory_grid()
+
+    lat = domain_dataset['lat']
+    lon = domain_dataset['lon']
 
     ntl_raw = rxr.open_rasterio(
         config.as_input_file(config.layer_inputs.ntl_path), masked=True
@@ -24,7 +27,7 @@ def test_remap_raster(config, input_files):
     ntl *= 0.
     ntl[test_coord] = 1.
     # now clip to remove offshore lights
-    om_ntl = remap_raster(ntl, config.domain_grid(), AREA_OR_POINT = ntl_raw.AREA_OR_POINT)
+    om_ntl = remap_raster(ntl, domain_grid, AREA_OR_POINT = ntl_raw.AREA_OR_POINT)
 
     # now a few tests on outputs
     # only one nonzero point in output

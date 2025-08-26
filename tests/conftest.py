@@ -10,7 +10,7 @@ import dotenv
 import pytest
 import xarray as xr
 
-from openmethane_prior.config import PriorConfig, PublishedInputDomain, load_config_from_env
+from openmethane_prior.config import PriorConfig, PublishedInputDomain, load_config_from_env, PriorConfigOptions
 from openmethane_prior.grid.create_grid import create_grid_from_mcip
 from openmethane_prior.grid.grid import Grid
 from scripts.omDownloadInputs import download_input_files
@@ -37,22 +37,29 @@ def env(monkeypatch, root_dir):
     os.environ.update(initial_env)
 
 
+@pytest.fixture(scope="session")
+def config_params(start_date, end_date) -> PriorConfigOptions:
+    return dict(
+        start_date=start_date,
+        end_date=end_date,
+        input_domain=PublishedInputDomain(name="au-test", version="v1"),
+        inventory_domain=PublishedInputDomain(name="aust10km", version="v1"),
+    )
+
+
 @pytest.fixture()
-def config(tmp_path_factory, start_date, end_date) -> PriorConfig:
+def config(tmp_path_factory, config_params) -> PriorConfig:
     """Default configuration
 
     Uses a new temporary directory for each test
     """
     data_dir = tmp_path_factory.mktemp("data")
-
     return load_config_from_env(
+        **config_params,
         input_path=data_dir / "inputs",
         intermediates_path=data_dir / "intermediates",
         output_path=data_dir / "outputs",
-        start_date=start_date,
-        end_date=end_date,
     )
-
 
 @pytest.fixture(scope="session")
 def start_date() -> datetime.date:
@@ -60,7 +67,7 @@ def start_date() -> datetime.date:
 
     Uses the same range of dates for each test
     """
-    return datetime.strptime("2022-07-01", "%Y-%m-%d")
+    return datetime.strptime("2022-12-07", "%Y-%m-%d")
 
 
 @pytest.fixture(scope="session")
@@ -69,7 +76,7 @@ def end_date() -> datetime.date:
 
     Uses the same range of dates for each test
     """
-    return datetime.strptime("2022-07-02", "%Y-%m-%d")
+    return datetime.strptime("2022-12-08", "%Y-%m-%d")
 
 
 @pytest.fixture(scope="session")
@@ -86,8 +93,8 @@ def fetch_published_domain(root_dir) -> list[pathlib.Path]:
     """
     config = load_config_from_env()
     published_domains = [
-        PublishedInputDomain(name="au-test", version="v1"),
-        PublishedInputDomain(name="aust10km", version="v1"),
+        PublishedInputDomain(name="au-test", version="v1"), # domain
+        PublishedInputDomain(name="aust10km", version="v1"), # inventory
     ]
 
     fragments = [str(domain.path) for domain in published_domains]
@@ -103,7 +110,7 @@ def fetch_published_domain(root_dir) -> list[pathlib.Path]:
 
 # Fixture to download and later remove all input files
 @pytest.fixture(scope="session")
-def fetch_input_files(root_dir) -> list[pathlib.Path]:
+def fetch_input_files(root_dir, config_params) -> list[pathlib.Path]:
     """
     Fetch and cache the input files.
 
@@ -114,7 +121,7 @@ def fetch_input_files(root_dir) -> list[pathlib.Path]:
     -------
         List of cached input files
     """
-    config = load_config_from_env()
+    config = load_config_from_env(**config_params)
 
     fragments = [str(f) for f in attrs.asdict(config.layer_inputs).values()]
 
@@ -199,8 +206,7 @@ def prior_emissions_ds(
     root_dir,
     fetch_input_files,
     fetch_published_domain,
-    start_date,
-    end_date,
+    config_params,
     tmp_path_factory,
 ) -> Generator[xr.Dataset, None, None]:
     """
@@ -217,16 +223,10 @@ def prior_emissions_ds(
     output_dir = tmp_path_factory.mktemp("outputs")
 
     config = load_config_from_env(
+        **config_params,
         input_path=input_dir,
         intermediates_path=intermediate_dir,
         output_path=output_dir,
-        start_date=start_date,
-        end_date=end_date,
-        # Use the test domain to speed things up
-        # input_domain=PublishedInputDomain(
-        #     name="au-test",
-        #     version="v1",
-        # ),
     )
 
     # Use the factory method as input_files has "function" scope

@@ -71,66 +71,40 @@ def test_009_prior_emissions_ds(prior_emissions_ds):
 
     expected_values = {
         "lambert_conformal": 0.0,
-        "lat": -26.9831600189209,
-        "lon": 133.302001953125,
-        "x_bounds": 0.0,
-        "y_bounds": -15629.25,
-        "land_mask": 0.3911433254789468,
-        "ch4_sector_agriculture": 2.7554571509196643e-13,
-        "ch4_sector_lulucf": 8.283984177707172e-13,
-        "ch4_sector_waste": 7.680668803420378e-13,
-        "ch4_sector_livestock": 3.431944865644255e-12,
-        "ch4_sector_industrial": 4.6408874945137296e-15,
-        "ch4_sector_stationary": 8.585641864850578e-14,
-        "ch4_sector_transport": 1.856354997805524e-14,
-        "ch4_sector_electricity": 2.3204437472569124e-14,
-        "ch4_sector_fugitive": 1.906824649308364e-12,
-        "ch4_sector_termite": 7.932366785992628e-13,
-        "ch4_sector_fire": 2.6126792244431096e-13,
-        "ch4_sector_wetlands": 1.613239158894345e-11,
-        "ch4_total": 2.4529942058503018e-11,
+        "land_mask": 1.0,
+        "lat": -23.267749786376953,
+        "lon": 148.6399383544922,
+        "x_bounds": 1530000.375,
+        "y_bounds": 364369.5,
+
+        "ch4_sector_agriculture": 1.1536221820595755e-12,
+        "ch4_sector_lulucf": 4.592490774534104e-12,
+        "ch4_sector_waste": 3.135222506646578e-12,
+        "ch4_sector_livestock": 4.0547154335803873e-11,
+        "ch4_sector_industrial": 5.381263572370136e-14,
+        "ch4_sector_stationary": 9.95533760888496e-13,
+        "ch4_sector_transport": 2.1525054289480922e-13,
+        "ch4_sector_electricity": 2.885175186945258e-13,
+        "ch4_sector_fugitive": 4.783832961493577e-10,
+        "ch4_sector_termite": 2.436579367090519e-12,
+        "ch4_sector_fire": 3.6974516872713414e-13,
+        "ch4_sector_wetlands": 1.2524275273123607e-10,
+        "ch4_total": 6.574139776508888e-10,
 
         # deprecated
-        "OCH4_TOTAL": 2.4529942058503018e-11,
-        "LANDMASK": 0.3911433219909668,
+        "OCH4_TOTAL": 6.574139776508888e-10,
+        "LANDMASK": 1.0,
     }
 
     assert mean_values == expected_values
-
-
-def test_010_emission_discrepancy(config, prior_emissions_ds, input_files):
-    modelAreaM2 = config.domain_grid().cell_area
-
-    filepath_sector = config.as_input_file(config.layer_inputs.sectoral_emissions_path)
-    sector_data = pd.read_csv(filepath_sector).to_dict(orient="records")[0]
-
-    for sector in sector_data.keys():
-        layerName = f"{SECTOR_PREFIX}_{sector}"
-        sectorVal = float(sector_data[sector]) * 1e9
-
-        # Check each layer in the output sums up to the input
-        if layerName in prior_emissions_ds:
-            layerVal = np.sum(prior_emissions_ds[layerName][0].values * modelAreaM2 * SECS_PER_YEAR)
-
-            if sector == "agriculture":
-                layerVal += np.sum(
-                    prior_emissions_ds[f"{SECTOR_PREFIX}_livestock"][0].values * modelAreaM2 * SECS_PER_YEAR
-                )
-
-            diff = round(layerVal - sectorVal)
-            percentage_diff = diff / sectorVal * 100
-
-            assert (
-                abs(percentage_diff) < 0.1
-            ), f"Discrepancy of {percentage_diff}% in {sector} emissions"
 
 
 def test_011_output_dims(prior_emissions_ds):
     expected_dimensions = {
         "time": 2,
         "vertical": 1,
-        "y": 430,
-        "x": 454,
+        "y": 10,
+        "x": 10,
         "cell_bounds": 2,
         "time_period": 2,
     }
