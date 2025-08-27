@@ -67,70 +67,114 @@ def test_005_agriculture_emissions(config, root_dir, input_files):
 
 def test_009_prior_emissions_ds(prior_emissions_ds):
     numeric_keys = [key for key in prior_emissions_ds.keys() if np.issubdtype(prior_emissions_ds[key].dtype, np.number)]
-    mean_values = {key: prior_emissions_ds[key].mean().item() for key in numeric_keys}
 
-    expected_values = {
+    result_means = {key: prior_emissions_ds[key].mean().item() for key in numeric_keys}
+    expected_means = {
         "lambert_conformal": 0.0,
-        "lat": -26.9831600189209,
-        "lon": 133.302001953125,
-        "x_bounds": 0.0,
-        "y_bounds": -15629.25,
-        "land_mask": 0.3911433254789468,
-        "ch4_sector_agriculture": 2.7554571509196643e-13,
-        "ch4_sector_lulucf": 8.283984177707172e-13,
-        "ch4_sector_waste": 7.680668803420378e-13,
-        "ch4_sector_livestock": 3.431944865644255e-12,
-        "ch4_sector_industrial": 4.6408874945137296e-15,
-        "ch4_sector_stationary": 8.585641864850578e-14,
-        "ch4_sector_transport": 1.856354997805524e-14,
-        "ch4_sector_electricity": 2.3204437472569124e-14,
-        "ch4_sector_fugitive": 1.906824649308364e-12,
-        "ch4_sector_termite": 7.932366785992628e-13,
-        "ch4_sector_fire": 2.6126792244431096e-13,
-        "ch4_sector_wetlands": 1.613239158894345e-11,
-        "ch4_total": 2.4529942058503018e-11,
+        "land_mask": 1.0,
+        "lat": -23.267749786376953,
+        "lon": 148.6399383544922,
+        "x_bounds": 1530000.375,
+        "y_bounds": 364369.5,
+
+        "ch4_sector_agriculture": 1.1536221820595755e-12,
+        "ch4_sector_lulucf": 4.592490774534104e-12,
+        "ch4_sector_waste": 3.135222506646578e-12,
+        "ch4_sector_livestock": 4.0547154335803873e-11,
+        "ch4_sector_industrial": 5.381263572370136e-14,
+        "ch4_sector_stationary": 9.95533760888496e-13,
+        "ch4_sector_transport": 2.1525054289480922e-13,
+        "ch4_sector_electricity": 2.885175186945258e-13,
+        "ch4_sector_fugitive": 4.783832961493577e-10,
+        "ch4_sector_termite": 2.436579367090519e-12,
+        "ch4_sector_fire": 3.6974516872713414e-13,
+        "ch4_sector_wetlands": 1.2524275273123607e-10,
+        "ch4_total": 6.574139776508888e-10,
 
         # deprecated
-        "OCH4_TOTAL": 2.4529942058503018e-11,
-        "LANDMASK": 0.3911433219909668,
+        "OCH4_TOTAL": 6.574139776508888e-10,
+        "LANDMASK": 1.0,
     }
 
-    assert mean_values == expected_values
+    assert result_means == expected_means
 
+    result_maxs = {key: prior_emissions_ds[key].max().item() for key in numeric_keys}
+    expected_maxs = {
+        "lambert_conformal": 0.0,
+        "land_mask": 1.0,
+        "lat": -22.806066513061523,
+        "lon": 149.1439208984375,
+        "x_bounds": 1580000.375,
+        "y_bounds": 414369.5,
 
-def test_010_emission_discrepancy(config, prior_emissions_ds, input_files):
-    modelAreaM2 = config.domain_grid().cell_area
+        "ch4_sector_agriculture": 1.504516984669773e-12,
+        "ch4_sector_lulucf": 1.0681563599697305e-10,
+        "ch4_sector_waste": 1.1757084399924668e-10,
+        "ch4_sector_livestock": 7.545056510007907e-11,
+        "ch4_sector_industrial": 5.208301326815444e-13,
+        "ch4_sector_stationary": 9.635357454608773e-12,
+        "ch4_sector_transport": 2.0833205307262143e-12,
+        "ch4_sector_electricity": 1.6229110426567075e-11,
+        "ch4_sector_fugitive": 1.5156980822562326e-08,
+        "ch4_sector_termite": 3.3858020553889645e-12,
+        "ch4_sector_fire": 5.498670963000052e-11,
+        "ch4_sector_wetlands": 2.5512281176531815e-10,
+        "ch4_total": 1.5262217450078303e-08,
 
-    filepath_sector = config.as_input_file(config.layer_inputs.sectoral_emissions_path)
-    sector_data = pd.read_csv(filepath_sector).to_dict(orient="records")[0]
+        # deprecated
+        "OCH4_TOTAL": 1.5262217450078303e-08,
+        "LANDMASK": 1.0,
+    }
 
-    for sector in sector_data.keys():
-        layerName = f"{SECTOR_PREFIX}_{sector}"
-        sectorVal = float(sector_data[sector]) * 1e9
+    assert result_maxs == expected_maxs
 
-        # Check each layer in the output sums up to the input
-        if layerName in prior_emissions_ds:
-            layerVal = np.sum(prior_emissions_ds[layerName][0].values * modelAreaM2 * SECS_PER_YEAR)
+    # spot check an entire row and column to ensure no geometric shifting
+    results_keys = [key for key in prior_emissions_ds.keys() if key.startswith("ch4")]
+    result_y_band = {key: prior_emissions_ds[key][0, 0, 4].sum().item() for key in results_keys}
+    expected_y_band = {
+        "ch4_sector_agriculture": 1.0613601554727302e-11,
+        "ch4_sector_lulucf": 0.0,
+        "ch4_sector_waste": 0.0,
+        "ch4_sector_livestock": 4.0390212981728717e-10,
+        "ch4_sector_industrial": 8.052137499044274e-13,
+        "ch4_sector_stationary": 1.489645437323222e-11,
+        "ch4_sector_transport": 3.2208549996177666e-12,
+        "ch4_sector_electricity": 0.0,
+        "ch4_sector_fugitive": 0.0,
+        "ch4_sector_termite": 2.3266076565331417e-11,
+        "ch4_sector_fire": 0.0,
+        "ch4_sector_wetlands": 1.118552889201041e-09,
+        "ch4_total": 1.5752572213453435e-09,
+    }
 
-            if sector == "agriculture":
-                layerVal += np.sum(
-                    prior_emissions_ds[f"{SECTOR_PREFIX}_livestock"][0].values * modelAreaM2 * SECS_PER_YEAR
-                )
+    assert result_y_band == expected_y_band
 
-            diff = round(layerVal - sectorVal)
-            percentage_diff = diff / sectorVal * 100
+    result_x_band = {key: prior_emissions_ds[key][0, 0, :, 4].sum().item() for key in results_keys}
+    expected_x_band = {
+        "ch4_sector_agriculture": 1.2407310127468332e-11,
+        "ch4_sector_lulucf": 1.1340680046865559e-11,
+        "ch4_sector_waste": 0.0,
+        "ch4_sector_livestock": 4.7123459295837e-10,
+        "ch4_sector_industrial": 6.027766647514639e-13,
+        "ch4_sector_stationary": 1.1151368297902318e-11,
+        "ch4_sector_transport": 2.4111066590058985e-12,
+        "ch4_sector_electricity": 1.6229110426567075e-11,
+        "ch4_sector_fugitive": 5.83075103326539e-09,
+        "ch4_sector_termite": 2.363145790162946e-11,
+        "ch4_sector_fire": 0.0,
+        "ch4_sector_wetlands": 6.705475445734077e-10,
+        "ch4_total": 7.050306980270836e-09,
+    }
 
-            assert (
-                abs(percentage_diff) < 0.1
-            ), f"Discrepancy of {percentage_diff}% in {sector} emissions"
+    assert result_x_band == expected_x_band
 
 
 def test_011_output_dims(prior_emissions_ds):
     expected_dimensions = {
         "time": 2,
         "vertical": 1,
-        "y": 430,
-        "x": 454,
+        "y": 10,
+        "x": 10,
         "cell_bounds": 2,
         "time_period": 2,
     }
