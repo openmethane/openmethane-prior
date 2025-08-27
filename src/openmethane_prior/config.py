@@ -12,6 +12,7 @@ from environs import Env
 
 from .grid.grid import Grid
 from .grid.create_grid import create_grid_from_domain, create_grid_from_mcip
+from .utils import is_url
 
 
 @attrs.frozen()
@@ -35,59 +36,13 @@ class LayerInputs:
     wetland_path: pathlib.Path
 
 
-class InputDomain:
-    path: pathlib.Path
-    name: str
-    version: str
-    domain_index: int
-    slug: str
-
-    def __init__(self,
-            path: str | pathlib.Path,
-            name: str | None = None,
-            version: str | None = None,
-            domain_index: int | None = None,
-            slug: str | None = None,
-        ):
-        self.path = pathlib.Path(path)
-        self.name = name or self.path.stem
-        self.version = version or "v1"
-        self.domain_index = domain_index or 1
-        self.slug = slug or self.name
-
-
-class PublishedInputDomain(InputDomain):
-    """
-    Input domain configuration
-
-    Used to specify the published domain to use as the input domain.
-    """
-    def __init__(self,
-        name: str,
-        version: str | None = "v1",
-        domain_index: int | None = 1,
-        slug: str | None = None,
-    ):
-        published_path = pathlib.Path(
-            f"domains/{name}/{version}/"
-            f"domain.{name}.nc"
-        )
-
-        super().__init__(
-            path=published_path,
-            name=name,
-            version=version,
-            domain_index=domain_index,
-            slug=slug,
-        )
-
 class PriorConfigOptions(typing.TypedDict, total=False):
     remote: str
     input_path: pathlib.Path | str
     output_path: pathlib.Path | str
     intermediates_path: pathlib.Path | str
-    input_domain: InputDomain
-    inventory_domain: InputDomain
+    domain_path: pathlib.Path | str
+    inventory_domain_path: pathlib.Path | str
     output_filename: str
     layer_inputs: LayerInputs
     start_date: datetime.datetime
@@ -102,18 +57,12 @@ class PriorConfig:
     output_path: pathlib.Path
     intermediates_path: pathlib.Path
 
-    input_domain: InputDomain
-    """Input domain specification
-
-    If provided, use a published domain as the input domain. Otherwise, a file
-    specified in the `DOMAIN` env variable is used as the input domain.
-    """
-    inventory_domain: InputDomain
-    """Inventory domain specification
-
-    If provided, use a published domain as the input domain. Otherwise, a file
-    specified in the `INVENTORY_DOMAIN` env variable is used as the input domain.
-    """
+    domain_path: pathlib.Path | str
+    """URL or file path to the domain of interest. Relative paths
+    will be interpreted relative to input_path"""
+    inventory_domain_path: pathlib.Path | str
+    """URL or file path to the inventory domain of interest. Relative paths
+    will be interpreted relative to input_path"""
 
     output_filename: str
     """Filename to write the prior output to as a NetCDFv4 file in
@@ -139,9 +88,9 @@ class PriorConfig:
     @cache
     def domain_dataset(self):
         """Load the input domain dataset"""
-        if not self.input_domain_file.exists():
-            raise ValueError(f"Missing domain file: {self.input_domain_file}")
-        return xr.open_dataset(self.input_domain_file)
+        if not self.domain_file.exists():
+            raise ValueError(f"Missing domain file: {self.domain_file}")
+        return xr.open_dataset(self.domain_file)
 
     @cache
     def inventory_dataset(self):
@@ -193,21 +142,29 @@ class PriorConfig:
         return self.domain_projection().crs
 
     @property
-    def input_domain_file(self):
+    def domain_file(self):
         """
         Get the filename of the input domain
 
-        Uses a published domain if it is provided otherwise uses a user-specified file name
+        If specified as a URL, this assumes the file has been downloaded by
+        omDownloadInputs.py
         """
-        return self.as_input_file(self.input_domain.path)
+        if is_url(self.domain_path):
+            return self.as_input_file(os.path.basename(self.domain_path))
+        elif not self.domain_path.startswith("/"):
+            return self.as_input_file(self.domain_path)
+        return pathlib.Path(self.domain_path)
 
     @property
     def inventory_domain_file(self):
         """
         Get the filename of the inventory domain
-
         """
-        return self.as_input_file(self.inventory_domain.path)
+        if is_url(self.inventory_domain_path):
+            return self.as_input_file(os.path.basename(self.inventory_domain_path))
+        elif not self.inventory_domain_path.startswith("/"):
+            return self.as_input_file(self.inventory_domain_path)
+        return pathlib.Path(self.inventory_domain_path)
 
     @property
     def output_file(self):
@@ -230,33 +187,6 @@ def load_config_from_env(**overrides: PriorConfigOptions) -> PriorConfig:
     )
     env.read_env(verbose=True)
 
-    if env.str("DOMAIN", None):
-        input_domain = InputDomain(
-            path=env.str("DOMAIN"),
-            name=env.str("DOMAIN_NAME", None),
-            version=env.str("DOMAIN_VERSION", None),
-        )
-    elif env.str("DOMAIN_NAME", None) and env.str("DOMAIN_VERSION", None):
-        input_domain = PublishedInputDomain(
-            name=env.str("DOMAIN_NAME"),
-            version=env.str("DOMAIN_VERSION"),
-        )
-    else:
-        raise ValueError("Must specify DOMAIN, or DOMAIN_NAME and DOMAIN_VERSION")
-    if env.str("INVENTORY_DOMAIN", None):
-        inventory_domain = InputDomain(
-            path=env.str("INVENTORY_DOMAIN"),
-            name=env.str("INVENTORY_DOMAIN_NAME", None),
-            version=env.str("INVENTORY_DOMAIN_VERSION", None),
-        )
-    elif env.str("INVENTORY_DOMAIN_NAME", None) and env.str("INVENTORY_DOMAIN_VERSION", None):
-        inventory_domain = PublishedInputDomain(
-            name=env.str("INVENTORY_DOMAIN_NAME"),
-            version=env.str("INVENTORY_DOMAIN_VERSION"),
-        ) # note that if nothing is set here the inventory will be the same as the running domain
-    else:
-        raise ValueError("Must specify INVENTORY_DOMAIN, or INVENTORY_DOMAIN_NAME and INVENTORY_DOMAIN_VERSION")
-
     start_date = env.date("START_DATE", None)
     # if END_DATE not set, use START_DATE for a 1-day run
     end_date = env.date("END_DATE", None) or env.date("START_DATE", None)
@@ -271,8 +201,8 @@ def load_config_from_env(**overrides: PriorConfigOptions) -> PriorConfig:
         input_path=env.path("INPUTS", "data/inputs"),
         output_path=env.path("OUTPUTS", "data/outputs"),
         intermediates_path=env.path("INTERMEDIATES", "data/processed"),
-        input_domain=input_domain,
-        inventory_domain=inventory_domain,
+        domain_path=env.str("DOMAIN"),
+        inventory_domain_path=env.str("INVENTORY_DOMAIN"),
         output_filename=env.str("OUTPUT_FILENAME", "prior-emissions.nc"),
         layer_inputs=LayerInputs(
             electricity_path=env.path("CH4_ELECTRICITY"),

@@ -2,7 +2,7 @@ import os
 import pathlib
 import pytest
 
-from openmethane_prior.config import PriorConfig, LayerInputs, InputDomain, PublishedInputDomain
+from openmethane_prior.config import PriorConfig, LayerInputs
 
 
 # This fixture will allow each test to setup the required env variables and
@@ -40,8 +40,8 @@ def test_prior_config(tmp_path: pathlib.Path, mock_layer_inputs):
         input_path=tmp_path / "in",
         output_path=tmp_path / "out",
         intermediates_path=tmp_path / "inter",
-        input_domain=InputDomain("domain-input.nc"),
-        inventory_domain=InputDomain("domain-input.nc"),
+        domain_path="domain-input.nc",
+        inventory_domain_path="domain-input.nc",
         output_filename="out.nc",
         layer_inputs=mock_layer_inputs,
     )
@@ -50,32 +50,6 @@ def test_prior_config(tmp_path: pathlib.Path, mock_layer_inputs):
     assert test_config.as_output_file("test.nc") == tmp_path / "out" / "test.nc"
     assert test_config.as_intermediate_file("test.nc") == tmp_path / "inter" / "test.nc"
 
-    assert test_config.input_domain_file == tmp_path / "in" / "domain-input.nc"
+    assert test_config.domain_file == tmp_path / "in" / "domain-input.nc"
+    assert test_config.inventory_domain_file == tmp_path / "in" / "domain-input.nc"
     assert test_config.output_file == tmp_path / "out" / "out.nc"
-
-def test_input_domain():
-    test_defaults = InputDomain("default.nc")
-    assert str(test_defaults.path) == "default.nc"
-    assert test_defaults.name == "default"
-    assert test_defaults.version == "v1"
-    assert test_defaults.domain_index == 1
-    assert test_defaults.slug == "default"
-    assert str(test_defaults.path) == "default.nc"
-
-    test_domain = InputDomain(name="dname", version="v9.0.1", domain_index=33, slug="dslug", path="./file.nc")
-    assert test_domain.name == "dname"
-    assert test_domain.version == "v9.0.1"
-    assert test_domain.domain_index == 33
-    assert test_domain.slug == "dslug"
-    assert str(test_domain.path) == "file.nc"
-
-def test_published_input_domain():
-    test_domain = PublishedInputDomain(name="dname", version="v9.0.1", domain_index=3, slug="dslug")
-    assert test_domain.name == "dname"
-    assert test_domain.version == "v9.0.1"
-    assert test_domain.domain_index == 3
-    assert test_domain.slug == "dslug"
-    assert str(test_domain.path) == (
-        f"domains/dname/v9.0.1/"
-        f"domain.dname.nc"
-    )
