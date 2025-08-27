@@ -107,31 +107,46 @@ def regrid_any(
     from_grid_bounds_lon, from_grid_bounds_lat = from_grid.cell_bounds_lonlat()
     to_grid_bounds_lon, to_grid_bounds_lat = to_grid.cell_bounds_lonlat()
 
+    # find a subset of the from_grid that should be examined
+    to_grid_bounds = [
+        to_grid_bounds_lon.min(), to_grid_bounds_lat.min(),
+        to_grid_bounds_lon.max(), to_grid_bounds_lat.max(),
+    ]
+    # TODO: this may not by a perfect envelope due to curvature
+    from_grid_search_space = [
+        from_grid.lonlat_to_cell_index(to_grid_bounds[0], to_grid_bounds[1]),
+        from_grid.lonlat_to_cell_index(to_grid_bounds[2], to_grid_bounds[3]),
+    ]
+
     for to_grid_iy, to_grid_ix in itertools.product(range(to_grid.shape[0]), range(to_grid.shape[1])):
         to_grid_cell_polygon = geometry.Polygon(zip(to_grid_bounds_lon[to_grid_iy, to_grid_ix], to_grid_bounds_lat[to_grid_iy, to_grid_ix]))
 
+        # search the source grid for the cell with the largest intersection
         largest_intersection = 0
         total_intersection = 0
-        for from_grid_iy, from_grid_ix in itertools.product(range(from_grid.shape[0]), range(from_grid.shape[1])):
-            from_grid_cell_polygon = geometry.Polygon(zip(from_grid_bounds_lon[from_grid_iy, from_grid_ix], from_grid_bounds_lat[from_grid_iy, from_grid_ix]))
-            intersection = from_grid_cell_polygon.intersection(to_grid_cell_polygon)
 
-            # cells dont overlap
-            if intersection.area <= 0:
-                continue
+        for from_grid_iy in range(from_grid_search_space[0][1], from_grid_search_space[1][1]):
+            for from_grid_ix in range(from_grid_search_space[0][0], from_grid_search_space[1][0]):
 
-            # accumulate the sum of the area that has been considered
-            total_intersection += intersection.area
+                from_grid_cell_polygon = geometry.Polygon(zip(from_grid_bounds_lon[from_grid_iy, from_grid_ix], from_grid_bounds_lat[from_grid_iy, from_grid_ix]))
+                intersection = from_grid_cell_polygon.intersection(to_grid_cell_polygon)
 
-            # take the value from the target cell with the largest proportion
-            cell_intersection_ratio = intersection.area / to_grid_cell_polygon.area
-            if cell_intersection_ratio > largest_intersection:
-                largest_intersection = cell_intersection_ratio
-                regridded_data[to_grid_iy, to_grid_ix] = data[from_grid_iy, from_grid_ix]
+                # cells dont overlap
+                if intersection.area <= 0:
+                    continue
 
-            # if we've seen a cell with an intersection larger than the remaining area,
-            # we've found the largest intersection
-            if largest_intersection > to_grid_cell_polygon.area - total_intersection:
-                break
+                # accumulate the sum of the area that has been considered
+                total_intersection += intersection.area
+
+                # take the value from the target cell with the largest proportion
+                cell_intersection_ratio = intersection.area / to_grid_cell_polygon.area
+                if cell_intersection_ratio > largest_intersection:
+                    largest_intersection = cell_intersection_ratio
+                    regridded_data[to_grid_iy, to_grid_ix] = data[from_grid_iy, from_grid_ix]
+
+                # if we've seen a cell with an intersection larger than the remaining area,
+                # we've found the largest intersection
+                if largest_intersection > to_grid_cell_polygon.area - total_intersection:
+                    break
 
     return regridded_data
