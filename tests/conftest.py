@@ -10,7 +10,7 @@ import dotenv
 import pytest
 import xarray as xr
 
-from openmethane_prior.config import PriorConfig, PublishedInputDomain, load_config_from_env, PriorConfigOptions
+from openmethane_prior.config import PriorConfig, load_config_from_env, PriorConfigOptions
 from openmethane_prior.grid.create_grid import create_grid_from_mcip
 from openmethane_prior.grid.grid import Grid
 from scripts.omDownloadInputs import download_input_files
@@ -42,8 +42,8 @@ def config_params(start_date, end_date) -> PriorConfigOptions:
     return dict(
         start_date=start_date,
         end_date=end_date,
-        input_domain=PublishedInputDomain(name="au-test", version="v1"),
-        inventory_domain=PublishedInputDomain(name="aust10km", version="v1"),
+        domain_path="https://openmethane.s3.amazonaws.com/domains/au-test/v1/domain.au-test.nc",
+        inventory_domain_path="https://openmethane.s3.amazonaws.com/domains/aust10km/v1/domain.aust10km.nc",
     )
 
 
@@ -93,16 +93,14 @@ def fetch_published_domain(root_dir) -> list[pathlib.Path]:
     """
     config = load_config_from_env()
     published_domains = [
-        PublishedInputDomain(name="au-test", version="v1"), # domain
-        PublishedInputDomain(name="aust10km", version="v1"), # inventory
+        "https://openmethane.s3.amazonaws.com/domains/au-test/v1/domain.au-test.nc", # domain
+        "https://openmethane.s3.amazonaws.com/domains/aust10km/v1/domain.aust10km.nc", # inventory
     ]
-
-    fragments = [str(domain.path) for domain in published_domains]
 
     downloaded_files = download_input_files(
         remote=config.remote,
         download_path=root_dir / ".cache",
-        fragments=fragments,
+        fragments=published_domains,
     )
 
     return downloaded_files
@@ -196,7 +194,7 @@ def input_domain(config, root_dir, input_files) -> Generator[xr.Dataset, None, N
     -------
         The input domain as an xarray dataset
     """
-    assert config.input_domain_file.exists()
+    assert config.domain_file.exists()
 
     yield config.domain_dataset()
 

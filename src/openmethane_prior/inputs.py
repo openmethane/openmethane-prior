@@ -24,6 +24,7 @@ import requests
 
 from openmethane_prior.config import PriorConfig
 import openmethane_prior.logger as logger
+from openmethane_prior.utils import is_url
 
 logger = logger.get_logger(__name__)
 
@@ -49,7 +50,7 @@ def download_input_file(remote_url: str, url_fragment: str, save_path: pathlib.P
     -------
         True if the file was downloaded, False if a cached file was found
     """
-    url = urllib.parse.urljoin(remote_url, url_fragment)
+    url = url_fragment if is_url(url_fragment) else urllib.parse.urljoin(remote_url, url_fragment)
 
     if not os.path.exists(save_path):
         logger.info(f"Downloading {url_fragment} to {save_path} from {url}")
@@ -80,11 +81,11 @@ def check_input_files(config: PriorConfig):
 
     errors = []
 
-    if not config.input_domain_file.exists():
-        errors.append(f"\n- {config.input_domain_file.name} (domain info)")
+    if not config.domain_file.exists():
+        errors.append(f"\n- {config.domain_file} (domain info)")
 
     if not config.inventory_domain_file.exists():
-        errors.append(f"\n- {config.inventory_domain_file.name} (inventory domain)")
+        errors.append(f"\n- {config.inventory_domain_file} (inventory domain)")
 
     checks = (
         (config.layer_inputs.electricity_path, "electricity facilities"),

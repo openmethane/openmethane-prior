@@ -30,6 +30,7 @@ import typing
 
 import numpy as np
 from numpy.typing import ArrayLike
+from urllib.parse import urlparse
 import xarray as xr
 
 T = typing.TypeVar("T", bound=ArrayLike | float)
@@ -198,3 +199,13 @@ def list_cf_grid_mappings(
         if "grid_mapping_name" in ds[var].attrs:
             grid_mappings.append(var)
     return grid_mappings
+
+
+def is_url(maybe_url: str) -> bool:
+    """
+    Returns true if the provided string is formatted like a valid URL.
+    :param maybe_url: string to check
+    :return:
+    """
+    parsed = urlparse(maybe_url)
+    return parsed.scheme != "" and parsed.netloc != ""

@@ -20,18 +20,21 @@
 
 This downloads the input files that rarely change and can be cached between runs.
 """
-
+import os.path
 import pathlib
 from collections.abc import Iterable
 
 import attrs
 
-from openmethane_prior.config import load_config_from_env, PublishedInputDomain
+from openmethane_prior.config import load_config_from_env
 from openmethane_prior.inputs import download_input_file
+from openmethane_prior.utils import is_url
 
 
 def download_input_files(
-    remote: str, download_path: pathlib.Path, fragments: Iterable[str]
+    remote: str,
+    download_path: pathlib.Path,
+    fragments: Iterable[str],
 ) -> list[pathlib.Path]:
     """
     Download input files from a remote location
@@ -55,7 +58,10 @@ def download_input_files(
     """
     downloaded_files = []
     for url_fragment in fragments:
-        save_path = download_path / url_fragment
+        file_fragment = url_fragment
+        if is_url(file_fragment):
+            file_fragment = os.path.basename(url_fragment)
+        save_path = download_path / file_fragment
 
         if not save_path.resolve().is_relative_to(download_path.resolve()):
             raise ValueError(f"Check download fragment: {url_fragment}")
@@ -70,13 +76,11 @@ if __name__ == "__main__":
 
     layer_fragments = [str(frag) for frag in attrs.asdict(config.layer_inputs).values()]
 
-    # Add the input domain if it is specified
-    if type(config.input_domain) == PublishedInputDomain:
-        layer_fragments.append(str(config.input_domain.path))
-
-    # Add the input domain if it is specified
-    if type(config.inventory_domain) == PublishedInputDomain:
-        layer_fragments.append(str(config.inventory_domain.path))
+    # Download domain and inventory domain if not already present
+    if not config.domain_file.exists() and is_url(config.domain_path):
+        layer_fragments.append(config.domain_path)
+    if not config.inventory_domain_file.exists() and is_url(config.inventory_domain_path):
+        layer_fragments.append(config.inventory_domain_path)
 
     download_input_files(
         remote=config.remote,

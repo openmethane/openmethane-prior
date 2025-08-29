@@ -6,7 +6,7 @@ import sys
 import xarray as xr
 
 from openmethane_prior.utils import get_command, get_timestamped_command, time_bounds, bounds_from_cell_edges, \
-    mask_array_by_sequence
+    mask_array_by_sequence, is_url
 
 
 def test_get_command():
@@ -65,3 +65,22 @@ def test_mask_array_by_sequence():
         mask_array_by_sequence(test_array, (2, 4, 6)),
         [False, True, False, True, False, True],
     )
+
+
+def test_is_url():
+    cases = [
+        ("http://example.com", True),
+        ("https://example.com", True),
+        ("//example.com", False), # "//" scheme not supported
+        ("http", False),
+        ("http://", False),
+        ("https", False),
+        ("https://", False),
+        ("example.com", False),
+        ("", False),
+        ("http://example.com/path/to/file.txt", True),
+        ("https://example.com/path/to/file.txt", True),
+    ]
+
+    for test_url, expected in cases:
+        assert is_url(test_url) == expected
