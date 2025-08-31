@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "openmethane_prior"
-version = "1.1.0"
+version = "1.1.1a0"
 description = "Method to calculate a gridded, prior emissions estimate for methane across Australia."
 authors = [
      "Peter Rayner <peter.rayner@superpowerinstitute.com.au>",
