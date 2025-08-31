@@ -19,6 +19,18 @@ of rst and use slightly different categories.
 
 <!-- towncrier release notes start -->
 
+## openmethane-prior v1.1.0 (2025-08-31)
+
+### ⚠️ Breaking Changes
+
+- Replace INVENTORY_DOMAIN_NAME and INVENTORY_DOMAIN_VERSION env variables with INVENTORY_DOMAIN_FILE for specifying the inventory domain ([#118](https://github.com/openmethane/openmethane-prior/pulls/118))
+- Replace DOMAIN_NAME and DOMAIN_VERSION env variables with DOMAIN_FILE for specifying the input domain ([#118](https://github.com/openmethane/openmethane-prior/pulls/118))
+
+### 🎉 Improvements
+
+- Update tests to use au-test domain instead of full aust10km domain ([#116](https://github.com/openmethane/openmethane-prior/pulls/116))
+
+
 ## openmethane-prior v1.0.0 (2025-08-22)
 
 ### ⚠️ Breaking Changes
