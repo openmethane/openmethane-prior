@@ -23,7 +23,6 @@ See the project readme for more information about configuring
 the required credentials.
 """
 
-import argparse
 import bisect
 import datetime
 import itertools
@@ -38,6 +37,7 @@ from shapely import geometry
 
 from openmethane_prior.config import PriorConfig, load_config_from_env, parse_cli_to_env
 from openmethane_prior.outputs import add_ch4_total, add_sector, create_output_dataset, write_output_dataset
+from openmethane_prior.sector.sector import SectorMeta
 from openmethane_prior.utils import (
     area_of_rectangle_m2,
     load_zipped_pickle,
@@ -47,6 +47,11 @@ from openmethane_prior.utils import (
 import openmethane_prior.logger as logger
 
 logger = logger.get_logger(__name__)
+
+sector_meta = SectorMeta(
+    name="fire",
+    cf_standard_name="fires",
+)
 
 def download_GFAS(
     start_date: datetime.date,
@@ -226,9 +231,8 @@ def processEmissions(config: PriorConfig, prior_ds: xr.Dataset, forceUpdate: boo
     )
     add_sector(
         prior_ds=prior_ds,
-        sector_name="fire",
         sector_data=resultXr,
-        sector_standard_name="fires",
+        sector_meta=sector_meta,
     )
     return resultNd
 

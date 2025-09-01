@@ -31,8 +31,14 @@ from openmethane_prior.outputs import (
     write_output_dataset,
 )
 import openmethane_prior.logger as logger
+from openmethane_prior.sector.sector import SectorMeta
 
 logger = logger.get_logger(__name__)
+
+sector_meta = SectorMeta(
+    name="fugitive",
+    cf_standard_name="extraction_production_and_transport_of_fuel",
+)
 
 def processEmissions(config: PriorConfig, prior_ds: xr.Dataset):
     """
@@ -78,9 +84,8 @@ def processEmissions(config: PriorConfig, prior_ds: xr.Dataset):
 
     add_sector(
         prior_ds=prior_ds,
-        sector_name="fugitive",
         sector_data=convert_to_timescale(methane, domain_grid.cell_area),
-        sector_standard_name="extraction_production_and_transport_of_fuel",
+        sector_meta=sector_meta,
     )
 
 

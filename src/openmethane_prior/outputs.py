@@ -20,6 +20,7 @@ import numpy.typing as npt
 import xarray as xr
 
 from openmethane_prior.config import PriorConfig
+from openmethane_prior.sector.sector import SectorMeta
 from openmethane_prior.utils import SECS_PER_YEAR, get_version, get_timestamped_command, time_bounds, \
     list_cf_grid_mappings
 import openmethane_prior.logger as logger
@@ -139,10 +140,8 @@ def write_output_dataset(
 
 def add_sector(
     prior_ds: xr.Dataset,
-    sector_name: str,
     sector_data: xr.DataArray | npt.ArrayLike,
-    sector_standard_name: str = None,
-    sector_long_name: str = None,
+    sector_meta: SectorMeta,
     apply_landmask: bool = False,
 ):
     """
@@ -152,19 +151,15 @@ def add_sector(
     ----------
     prior_ds
         DataSet where sector data should be added
-    sector_name
-        Name
     sector_data
         Data to add to the output file
-    sector_standard_name
-        CF Conventions suffix to add to the "standard_name" attribute
-    sector_long_name
-        CF Conventions "long_name" attribute
+    sector_meta
+        Name and meta details of the sector being added to the output
     apply_landmask
         whether or not to mask with domain landmask
         note this is performed on a copy so data is unchanged
     """
-    logger.info(f"Adding emissions data for {sector_name}")
+    logger.info(f"Adding emissions data for {sector_meta.name}")
 
     # determine the expected shape of a data layer based on the assumed coords
     expected_shape = tuple([(prior_ds.sizes[coord_name] if coord_name in prior_ds.sizes else 1) for coord_name in COORD_NAMES])
@@ -174,7 +169,7 @@ def add_sector(
         # verify that time steps for the sector data match the parent coordinates exactly
         for time_step in sector_data.coords["time"].values:
             if time_step not in prior_ds.coords["time"].values:
-                raise ValueError(f"Layer {sector_name} time step {time_step} not found in dataset")
+                raise ValueError(f"Layer {sector_meta.name} time step {time_step} not found in dataset")
     else:
         # some layers only generate 2 or 3-dimensional data, which needs
         # to be expanded into the same dimensions as the other layers
@@ -195,15 +190,15 @@ def add_sector(
 
     sector_data.attrs = COMMON_ATTRIBUTES | {
         "standard_name": TOTAL_LAYER_ATTRIBUTES["standard_name"],
-        "long_name": sector_long_name or f"expected flux of methane caused by sector: {sector_name}",
+        "long_name": sector_meta.cf_long_name or f"expected flux of methane caused by sector: {sector_meta.name}",
         "grid_mapping": grid_mapping_var,
     }
-    if sector_standard_name is not None:
-        sector_data.attrs["standard_name"] += f"_due_to_emission_from_{sector_standard_name}"
+    if sector_meta.cf_standard_name is not None:
+        sector_data.attrs["standard_name"] += f"_due_to_emission_from_{sector_meta.cf_standard_name}"
 
     _, aligned_sector_data = xr.align(prior_ds, sector_data, join="override")
 
-    sector_var_name = f"{SECTOR_PREFIX}_{sector_name}"
+    sector_var_name = f"{SECTOR_PREFIX}_{sector_meta.name}"
     prior_ds[sector_var_name] = aligned_sector_data
 
     return prior_ds

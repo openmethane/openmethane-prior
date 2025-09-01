@@ -29,6 +29,7 @@ import xarray as xr
 
 from openmethane_prior.config import PriorConfig, load_config_from_env, parse_cli_to_env
 from openmethane_prior.outputs import add_ch4_total, add_sector, create_output_dataset, write_output_dataset
+from openmethane_prior.sector.sector import SectorMeta
 from openmethane_prior.utils import (
     SECS_PER_YEAR,
     area_of_rectangle_m2,
@@ -37,6 +38,10 @@ from openmethane_prior.utils import (
     save_zipped_pickle,
 )
 
+sector_meta = SectorMeta(
+    name="termite",
+    cf_standard_name="termites",
+)
 
 def processEmissions(  # noqa: PLR0915
     config: PriorConfig,
@@ -176,9 +181,8 @@ def processEmissions(  # noqa: PLR0915
 
     add_sector(
         prior_ds=prior_ds,
-        sector_name="termite",
         sector_data=resultNd,
-        sector_standard_name="termites",
+        sector_meta=sector_meta,
         # source dataset is a coarse grid, cells over water should be
         # excluded from results because there won't be termites there!
         apply_landmask=True,
