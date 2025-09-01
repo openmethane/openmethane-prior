@@ -34,13 +34,23 @@ from openmethane_prior.outputs import (
 )
 from openmethane_prior.raster import remap_raster
 import openmethane_prior.logger as logger
+from openmethane_prior.sector.sector import SectorMeta
 
 logger = logger.get_logger(__name__)
 
-sectorEmissionStandardNames = {
-    "industrial": "industrial_processes_and_combustion",
-    "stationary": "industrial_energy_production",
-    "transport": "land_transport",
+sector_meta_map = {
+    "industrial": SectorMeta(
+        name="industrial",
+        cf_standard_name="industrial_processes_and_combustion",
+    ),
+    "stationary": SectorMeta(
+        name="stationary",
+        cf_standard_name="industrial_energy_production",
+    ),
+    "transport": SectorMeta(
+        name="transport",
+        cf_standard_name="land_transport",
+    ),
 }
 
 
@@ -50,8 +60,6 @@ def processEmissions(config: PriorConfig, prior_ds: xr.Dataset):
     them to the prior dataset.
     """
     logger.info("processEmissions for Industrial, Stationary and Transport")
-
-    sectorsUsed = ["industrial", "stationary", "transport"]
 
     ntlData = rxr.open_rasterio(
         config.as_input_file(config.layer_inputs.ntl_path), masked=False
@@ -80,15 +88,14 @@ def processEmissions(config: PriorConfig, prior_ds: xr.Dataset):
     sector_totals = pd.read_csv(
         config.as_input_file(config.layer_inputs.sectoral_emissions_path)
     ).to_dict(orient="records")[0]
-    methane = {}
-    for sector in sectorsUsed:
+
+    for sector, sector_meta in sector_meta_map.items():
         # allocate the proportion of the total to each grid cell
-        methane[sector] = om_ntlt_proportion * sector_totals[sector] * 1e9
+        sector_emissions = om_ntlt_proportion * sector_totals[sector] * 1e9
         add_sector(
             prior_ds=prior_ds,
-            sector_name=sector.lower(),
-            sector_data=convert_to_timescale(methane[sector], config.domain_grid().cell_area),
-            sector_standard_name=sectorEmissionStandardNames[sector],
+            sector_data=convert_to_timescale(sector_emissions, config.domain_grid().cell_area),
+            sector_meta=sector_meta,
         )
 
 
