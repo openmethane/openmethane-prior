@@ -43,20 +43,24 @@ logger = logger.get_logger(__name__)
 sector_meta_map = {
     "agriculture": SectorMeta(
         name="agriculture",
+        emission_category="anthropogenic",
         cf_standard_name="agricultural_production",
     ),
     "lulucf": SectorMeta(
         name="lulucf",
+        emission_category="anthropogenic",
         cf_standard_name="anthropogenic_land_use_change",
     ),
     "waste": SectorMeta(
         name="waste",
+        emission_category="anthropogenic",
         cf_standard_name="waste_treatment_and_disposal",
     ),
 }
 
 livestock_sector_meta = SectorMeta(
     name="livestock",
+    emission_category="anthropogenic",
     cf_standard_name="domesticated_livestock",
 )
 

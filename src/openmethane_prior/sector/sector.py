@@ -18,7 +18,12 @@
 
 import attrs
 
-@attrs.frozen()
+emission_categories = [
+    "natural", # originating in natural processes
+    "anthropogenic", # originating in human activity
+]
+
+@attrs.define
 class SectorMeta:
     """
     SectorMeta describes a methane emission source or sources by name
@@ -27,6 +32,16 @@ class SectorMeta:
     name: str
     """A machine-friendly sector name that will be used in the name of the
     output variable, like `ch4_sector_{name}`"""
+
+    emission_category: str = attrs.field()
+    """The origin or cause of the emissions. Valid values are:
+      - natural
+      - anthropogenic
+    """
+    @emission_category.validator
+    def check_emission_category(self, attribute, value):
+        if value not in emission_categories:
+            raise ValueError(f"emission_category must be one of {', '.join(emission_categories)}")
 
     cf_standard_name: str = None
     """The suffix of the CF Conventions `standard_name` attribute, which will

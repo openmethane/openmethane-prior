@@ -40,6 +40,7 @@ from openmethane_prior.utils import (
 
 sector_meta = SectorMeta(
     name="wetlands",
+    emission_category="natural",
     cf_standard_name="wetland_biological_processes",
 )
 

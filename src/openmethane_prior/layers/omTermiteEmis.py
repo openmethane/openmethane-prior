@@ -40,6 +40,7 @@ from openmethane_prior.utils import (
 
 sector_meta = SectorMeta(
     name="termite",
+    emission_category="natural",
     cf_standard_name="termites",
 )
 

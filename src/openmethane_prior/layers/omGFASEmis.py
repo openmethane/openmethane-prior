@@ -50,6 +50,7 @@ logger = logger.get_logger(__name__)
 
 sector_meta = SectorMeta(
     name="fire",
+    emission_category="natural",
     cf_standard_name="fires",
 )
 

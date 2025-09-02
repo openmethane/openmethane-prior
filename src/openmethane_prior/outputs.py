@@ -191,6 +191,7 @@ def add_sector(
     sector_data.attrs = COMMON_ATTRIBUTES | {
         "standard_name": TOTAL_LAYER_ATTRIBUTES["standard_name"],
         "long_name": sector_meta.cf_long_name or f"expected flux of methane caused by sector: {sector_meta.name}",
+        "emission_category": sector_meta.emission_category,
         "grid_mapping": grid_mapping_var,
     }
     if sector_meta.cf_standard_name is not None:
