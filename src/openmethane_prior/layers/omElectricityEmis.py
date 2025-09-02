@@ -37,6 +37,7 @@ logger = logger.get_logger(__name__)
 
 sector_meta = SectorMeta(
     name="electricity",
+    natural=False,
     cf_standard_name="energy_production_and_distribution",
 )
 

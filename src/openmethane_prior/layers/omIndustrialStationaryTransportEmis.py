@@ -41,14 +41,17 @@ logger = logger.get_logger(__name__)
 sector_meta_map = {
     "industrial": SectorMeta(
         name="industrial",
+        natural=False,
         cf_standard_name="industrial_processes_and_combustion",
     ),
     "stationary": SectorMeta(
         name="stationary",
+        natural=False,
         cf_standard_name="industrial_energy_production",
     ),
     "transport": SectorMeta(
         name="transport",
+        natural=False,
         cf_standard_name="land_transport",
     ),
 }

@@ -37,6 +37,7 @@ logger = logger.get_logger(__name__)
 
 sector_meta = SectorMeta(
     name="fugitive",
+    natural=False,
     cf_standard_name="extraction_production_and_transport_of_fuel",
 )
 

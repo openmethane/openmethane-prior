@@ -157,6 +157,7 @@ def test_add_sector_defaults(config, input_files):
 
     assert test_ds[sector_var].attrs["standard_name"] == "surface_upward_mass_flux_of_methane"
     assert test_ds[sector_var].attrs["long_name"] == "expected flux of methane caused by sector: test_sector"
+    assert test_ds[sector_var].attrs["natural"] == True
     assert test_ds[sector_var].attrs["units"] == "kg/m2/s"
     assert test_ds[sector_var].attrs["grid_mapping"] == test_ds["land_mask"].attrs["grid_mapping"]
 
@@ -166,6 +167,7 @@ def test_add_sector_meta(config, input_files):
 
     sector_meta = SectorMeta(
         name="test_sector",
+        natural=False,
         cf_standard_name="standard_name_suffix",
         cf_long_name="test long name",
     )
@@ -188,5 +190,6 @@ def test_add_sector_meta(config, input_files):
     assert test_ds[sector_var].attrs["standard_name"] == \
            "surface_upward_mass_flux_of_methane_due_to_emission_from_standard_name_suffix"
     assert test_ds[sector_var].attrs["long_name"] == "test long name"
+    assert test_ds[sector_var].attrs["natural"] == False
     assert test_ds[sector_var].attrs["units"] == "kg/m2/s"
     assert test_ds[sector_var].attrs["grid_mapping"] == test_ds["land_mask"].attrs["grid_mapping"]

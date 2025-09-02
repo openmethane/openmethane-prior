@@ -28,6 +28,8 @@ class SectorMeta:
     """A machine-friendly sector name that will be used in the name of the
     output variable, like `ch4_sector_{name}`"""
 
+    natural: bool = True
+
     cf_standard_name: str = None
     """The suffix of the CF Conventions `standard_name` attribute, which will
     be appended to `surface_upward_mass_flux_of_methane_due_to_emission_from_{cf_standard_name}`

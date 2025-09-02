@@ -195,6 +195,8 @@ def add_sector(
     }
     if sector_meta.cf_standard_name is not None:
         sector_data.attrs["standard_name"] += f"_due_to_emission_from_{sector_meta.cf_standard_name}"
+    if sector_meta.natural is not None:
+        sector_data.attrs["natural"] = sector_meta.natural
 
     _, aligned_sector_data = xr.align(prior_ds, sector_data, join="override")
 
