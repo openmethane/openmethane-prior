@@ -169,6 +169,7 @@ def test_add_sector_meta(config, input_files):
     sector_meta = SectorMeta(
         name="test_sector",
         emission_category="anthropogenic",
+        unfccc_categories=["1.A"],
         cf_standard_name="standard_name_suffix",
         cf_long_name="test long name",
     )

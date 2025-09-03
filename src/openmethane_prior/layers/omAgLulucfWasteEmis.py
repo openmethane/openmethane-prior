@@ -44,16 +44,28 @@ sector_meta_map = {
     "agriculture": SectorMeta(
         name="agriculture",
         emission_category="anthropogenic",
+        unfccc_categories=[ # All Agriculture, except Enteric Fermentation
+            "3.B", # Manure Management
+            "3.C", # Rice Cultivation
+            "3.D", # Agricultural Soils
+            "3.E", # Prescribed Burning of Savannas
+            "3.F", # Field Burning of Agricultural Residues
+            "3.G", # Liming
+            "3.H", # Urea Application
+            "3.I", # Other Carbon-containing Fertilisers
+        ],
         cf_standard_name="agricultural_production",
     ),
     "lulucf": SectorMeta(
         name="lulucf",
         emission_category="anthropogenic",
+        unfccc_categories=["4"], # Land Use, Land-Use Change and Forestry
         cf_standard_name="anthropogenic_land_use_change",
     ),
     "waste": SectorMeta(
         name="waste",
         emission_category="anthropogenic",
+        unfccc_categories=["5"], # Waste
         cf_standard_name="waste_treatment_and_disposal",
     ),
 }
@@ -61,6 +73,7 @@ sector_meta_map = {
 livestock_sector_meta = SectorMeta(
     name="livestock",
     emission_category="anthropogenic",
+    unfccc_categories=["3.A"], # Enteric Fermentation
     cf_standard_name="domesticated_livestock",
 )
 

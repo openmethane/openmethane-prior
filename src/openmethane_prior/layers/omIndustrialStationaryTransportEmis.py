@@ -42,16 +42,26 @@ sector_meta_map = {
     "industrial": SectorMeta(
         name="industrial",
         emission_category="anthropogenic",
+        unfccc_categories=["2"], # Industrial Processes
         cf_standard_name="industrial_processes_and_combustion",
     ),
     "stationary": SectorMeta(
         name="stationary",
         emission_category="anthropogenic",
+        unfccc_categories=[ # all Energy sectors not in industrial/transport
+            "1.A.1.b", # Petroleum refining
+            "1.A.1.c", # Manufacture of solid fuels and other energy industries
+            "1.A.2", # Manufacturing industries and construction
+            "1.A.4", # Other sectors
+            "1.A.5", # Other (as specified in table 1.A(a) sheet 4)
+            "1.C CO2", # Transport and storage
+        ],
         cf_standard_name="industrial_energy_production",
     ),
     "transport": SectorMeta(
         name="transport",
         emission_category="anthropogenic",
+        unfccc_categories=["1.A.3"], # Transport
         cf_standard_name="land_transport",
     ),
 }

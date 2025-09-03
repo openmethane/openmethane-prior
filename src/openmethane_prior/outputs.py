@@ -194,6 +194,8 @@ def add_sector(
         "emission_category": sector_meta.emission_category,
         "grid_mapping": grid_mapping_var,
     }
+    if sector_meta.unfccc_categories is not None:
+        sector_data.attrs["unfccc_categories"] = sector_meta.unfccc_categories
     if sector_meta.cf_standard_name is not None:
         sector_data.attrs["standard_name"] += f"_due_to_emission_from_{sector_meta.cf_standard_name}"
 

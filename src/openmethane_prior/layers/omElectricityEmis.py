@@ -38,6 +38,7 @@ logger = logger.get_logger(__name__)
 sector_meta = SectorMeta(
     name="electricity",
     emission_category="anthropogenic",
+    unfccc_categories=["1.A.1.a"], # Public electricity and heat production
     cf_standard_name="energy_production_and_distribution",
 )
 

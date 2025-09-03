@@ -43,6 +43,17 @@ class SectorMeta:
         if value not in emission_categories:
             raise ValueError(f"emission_category must be one of {', '.join(emission_categories)}")
 
+    unfccc_categories: list[str] = attrs.field(default=None)
+    """List of UNFCCC CRT category codes for sectors which are represented in
+    the emissions.
+    """
+    @unfccc_categories.validator
+    def check_unfccc_categories(self, attribute, value):
+        if self.emission_category == "natural" and value is not None:
+            raise ValueError("natural emissions cannot have unfccc_categories")
+        if self.emission_category == "anthropogenic" and (value is None or len(value) == 0):
+            raise ValueError("anthropogenic emissions must have a value in unfccc_categories")
+
     cf_standard_name: str = None
     """The suffix of the CF Conventions `standard_name` attribute, which will
     be appended to `surface_upward_mass_flux_of_methane_due_to_emission_from_{cf_standard_name}`
