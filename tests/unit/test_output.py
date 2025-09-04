@@ -2,7 +2,9 @@ import numpy as np
 import xarray as xr
 import pytest
 
-from openmethane_prior.outputs import create_output_dataset, expand_sector_dims, write_output_dataset
+from openmethane_prior.outputs import create_output_dataset, expand_sector_dims, write_output_dataset, add_sector
+from openmethane_prior.sector.sector import SectorMeta
+
 
 def test_write_output_dataset(config, input_files):
     output_ds = create_output_dataset(config)
@@ -130,3 +132,66 @@ def test_expand_sector_dims_add_time_steps():
     assert list(expanded[1][0][1]) == [4, 5]
     assert list(expanded[2][0][0]) == [1, 2]
     assert list(expanded[2][0][1]) == [4, 5]
+
+def test_add_sector_defaults(config, input_files):
+    test_ds = create_output_dataset(config)
+
+    sector_meta = SectorMeta(
+        name="test_sector",
+        emission_category="natural",
+    )
+    sector_shape = (test_ds.sizes["time"], 1, config.domain_grid().shape[0], config.domain_grid().shape[1])
+    sector_data = np.zeros(sector_shape)
+
+    assert sector_meta.name not in test_ds
+
+    add_sector(
+        prior_ds=test_ds,
+        sector_data=sector_data,
+        sector_meta=sector_meta,
+    )
+
+    sector_var = f"ch4_sector_{sector_meta.name}"
+
+    assert sector_var in test_ds
+    assert test_ds[sector_var].shape == sector_shape
+
+    assert test_ds[sector_var].attrs["standard_name"] == "surface_upward_mass_flux_of_methane"
+    assert test_ds[sector_var].attrs["long_name"] == "expected flux of methane caused by sector: test_sector"
+    assert test_ds[sector_var].attrs["emission_category"] == "natural"
+    assert test_ds[sector_var].attrs["units"] == "kg/m2/s"
+    assert test_ds[sector_var].attrs["grid_mapping"] == test_ds["land_mask"].attrs["grid_mapping"]
+
+
+def test_add_sector_meta(config, input_files):
+    test_ds = create_output_dataset(config)
+
+    sector_meta = SectorMeta(
+        name="test_sector",
+        emission_category="anthropogenic",
+        unfccc_categories=["1.A"],
+        cf_standard_name="standard_name_suffix",
+        cf_long_name="test long name",
+    )
+    sector_shape = (test_ds.sizes["time"], 1, config.domain_grid().shape[0], config.domain_grid().shape[1])
+    sector_data = np.zeros(sector_shape)
+
+    assert sector_meta.name not in test_ds
+
+    add_sector(
+        prior_ds=test_ds,
+        sector_data=sector_data,
+        sector_meta=sector_meta,
+    )
+
+    sector_var = f"ch4_sector_{sector_meta.name}"
+
+    assert sector_var in test_ds
+    assert test_ds[sector_var].shape == sector_shape
+
+    assert test_ds[sector_var].attrs["standard_name"] == \
+           "surface_upward_mass_flux_of_methane_due_to_emission_from_standard_name_suffix"
+    assert test_ds[sector_var].attrs["long_name"] == "test long name"
+    assert test_ds[sector_var].attrs["emission_category"] == "anthropogenic"
+    assert test_ds[sector_var].attrs["units"] == "kg/m2/s"
+    assert test_ds[sector_var].attrs["grid_mapping"] == test_ds["land_mask"].attrs["grid_mapping"]
