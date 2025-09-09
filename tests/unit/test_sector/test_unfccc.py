@@ -1,5 +1,6 @@
 
-from openmethane_prior.sector.unfccc import Category, create_category_list, find_category_by_name
+from openmethane_prior.sector.unfccc import Category, create_category_list, find_category_by_name, \
+    is_code_in_code_family
 
 
 def test_unfccc_create_category_list():
@@ -45,3 +46,16 @@ def test_unfccc_find_category_by_name():
     assert find_category_by_name(category_list, ["Energy", "N/A", "", ""]).code == "1"
     assert find_category_by_name(category_list, ["Energy", "Fuel Combustion", "N/A", ""]).code == "1.A"
     assert find_category_by_name(category_list, ["Industrial Processes", "N/A", "", ""]).code == "2"
+
+
+def test_unfccc_is_code_in_code_family():
+    test_family = ["1.A.1.b", "1.A.1.c", "1.A.2", "1.A.4", "1.A.5", "1.C"]
+
+    assert is_code_in_code_family("1.A.1.b", test_family)
+    assert is_code_in_code_family("1.A.2.a", test_family)
+    assert is_code_in_code_family("1.C", test_family)
+    assert is_code_in_code_family("1.C.1", test_family)
+
+    assert not is_code_in_code_family("1.A.1.a", test_family)
+    assert not is_code_in_code_family("1.D", test_family)
+    assert not is_code_in_code_family("2", test_family)
