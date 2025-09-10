@@ -17,12 +17,15 @@
 #
 
 import calendar
+import csv
 import datetime
 
 import attrs
 from typing import Iterable
 
-from openmethane_prior.sector.unfccc import Category, find_category_by_name, is_code_in_code_family
+from openmethane_prior.config import PriorConfig
+from openmethane_prior.sector.unfccc import Category, find_category_by_name, is_code_in_code_family, \
+    create_category_list
 
 
 @attrs.define
@@ -128,3 +131,15 @@ def get_sector_emissions_by_code(
             aggregated_emission += emissions.ch4_emissions[start_date.year] * period_annual_fraction
 
     return aggregated_emission
+
+def load_inventory(config: PriorConfig) -> list[SectorEmission]:
+    """Load a CH4 inventory from configured input files"""
+    with open(config.as_input_file(config.layer_inputs.unfccc_categories_path), newline='') as codes_file:
+        reader = csv.reader(codes_file)
+        next(reader) # skip header row
+        categories = create_category_list(categories=reader)
+
+    with open(config.as_input_file(config.layer_inputs.inventory_path), newline='') as inventory_file:
+        reader = csv.reader(inventory_file)
+        next(reader) # skip header row
+        return create_emissions_inventory(categories=categories, inventory_list=reader)
