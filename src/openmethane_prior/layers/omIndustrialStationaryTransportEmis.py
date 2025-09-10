@@ -54,7 +54,7 @@ sector_meta_map = {
             "1.A.2", # Manufacturing industries and construction
             "1.A.4", # Other sectors
             "1.A.5", # Other (as specified in table 1.A(a) sheet 4)
-            "1.C CO2", # Transport and storage
+            "1.C", # Transport and storage
         ],
         cf_standard_name="industrial_energy_production",
     ),
