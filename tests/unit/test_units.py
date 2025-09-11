@@ -1,5 +1,19 @@
+from datetime import date
+from openmethane_prior.units import kg_to_kg_m2_s, kg_to_period_cell_flux, seconds_in_period
 
-from openmethane_prior.units import kg_to_kg_m2_s, kg_to_period_cell_flux
+
+def test_units_seconds_in_period():
+    seconds_in_day = 24 * 60 * 60
+
+    assert seconds_in_period(date(2022, 12, 7), date(2022, 12, 7)) == seconds_in_day
+    assert seconds_in_period(date(2022, 12, 7), date(2022, 12, 8)) == seconds_in_day * 2
+    assert seconds_in_period(date(2022, 12, 1), date(2022, 12, 31)) == seconds_in_day * 31
+    assert seconds_in_period(date(2022, 1, 1), date(2022, 12, 31)) == seconds_in_day * 365
+
+    # leap year
+    assert seconds_in_period(date(2020, 2, 28), date(2020, 3, 1)) == seconds_in_day * 3
+    # non-leap year
+    assert seconds_in_period(date(2021, 2, 28), date(2021, 3, 1)) == seconds_in_day * 2
 
 
 def test_units_kg_to_kg_m2_s():

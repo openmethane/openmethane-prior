@@ -16,6 +16,7 @@
 # limitations under the License.
 #
 
+import datetime
 import typing
 from numpy.typing import ArrayLike
 
@@ -23,18 +24,25 @@ from openmethane_prior.config import PriorConfig
 
 T = typing.TypeVar("T", bound=ArrayLike | float)
 
+
+SECONDS_PER_DAY = 24 * 60 * 60
+def seconds_in_period(start_date: datetime.date, end_date: datetime.date) -> int:
+    """Returns the number of seconds in the period of days starting at midnight
+    at the start of start_date, until midnight at the end of end_date."""
+    return((end_date - start_date).days + 1) * SECONDS_PER_DAY
+
+
 def kg_to_kg_m2_s(mass_kg: float, area_m2: float, time_s: float) -> float:
     """Convert from total mass, to flux over an area."""
     return mass_kg / area_m2 / time_s
 
 
-SECONDS_PER_DAY = 24 * 60 * 60
 def kg_to_period_cell_flux(mass_kg: T, config: PriorConfig) -> float:
     """Convert from the total emission in a cell over the configured time
     period, to kg/m2/s within the cell."""
     return kg_to_kg_m2_s(
         mass_kg=mass_kg,
         area_m2=config.domain_grid().cell_area,
-        time_s=((config.end_date - config.start_date).days + 1) * SECONDS_PER_DAY
+        time_s=seconds_in_period(config.start_date, config.end_date)
     )
 
