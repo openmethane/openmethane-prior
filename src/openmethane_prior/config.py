@@ -28,7 +28,6 @@ class LayerInputs:
     oil_gas_path: pathlib.Path
     coal_path: pathlib.Path
     land_use_path: pathlib.Path
-    sectoral_emissions_path: pathlib.Path
     sectoral_mapping_path: pathlib.Path
     ntl_path: pathlib.Path
     aus_shapefile_path: pathlib.Path
@@ -212,7 +211,6 @@ def load_config_from_env(**overrides: PriorConfigOptions) -> PriorConfig:
             oil_gas_path=env.path("CH4_OILGAS"),
             coal_path=env.path("CH4_COAL"),
             land_use_path=env.path("LAND_USE"),
-            sectoral_emissions_path=env.path("SECTORAL_EMISSIONS"),
             sectoral_mapping_path=env.path("SECTORAL_MAPPING"),
             ntl_path=env.path("NTL"),
             aus_shapefile_path=env.path("AUSF"),

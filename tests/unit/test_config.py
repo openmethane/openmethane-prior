@@ -27,7 +27,6 @@ def mock_layer_inputs(tmp_path):
         oil_gas_path=pathlib.Path("./CH4_OILGAS.nc"),
         coal_path=pathlib.Path("./CH4_COAL.nc"),
         land_use_path=pathlib.Path("./LAND_USE.nc"),
-        sectoral_emissions_path=pathlib.Path("./SECTORAL_EMISSIONS.nc"),
         sectoral_mapping_path=pathlib.Path("./SECTORAL_MAPPING.nc"),
         ntl_path=pathlib.Path("./NTL.nc"),
         aus_shapefile_path=pathlib.Path("./AUSF.nc"),
