@@ -19,14 +19,12 @@
 """Processing industrial stationary transport emissions"""
 
 import numpy as np
-import pandas as pd
 import rioxarray as rxr
 import xarray as xr
 
 from openmethane_prior.config import PriorConfig, load_config_from_env, parse_cli_to_env
 from openmethane_prior.grid.regrid import regrid_data
 from openmethane_prior.outputs import (
-    convert_to_timescale,
     add_ch4_total,
     add_sector,
     create_output_dataset,
@@ -34,7 +32,9 @@ from openmethane_prior.outputs import (
 )
 from openmethane_prior.raster import remap_raster
 import openmethane_prior.logger as logger
+from openmethane_prior.sector.inventory import load_inventory, get_sector_emissions_by_code
 from openmethane_prior.sector.sector import SectorMeta
+from openmethane_prior.units import kg_to_period_cell_flux
 
 logger = logger.get_logger(__name__)
 
@@ -98,16 +98,23 @@ def processEmissions(config: PriorConfig, prior_ds: xr.Dataset):
 
     """ note that this is the correct scaling since remap_raster accumulates so
     that quotient is the proportion of total nightlights in that cell """
-    sector_totals = pd.read_csv(
-        config.as_input_file(config.layer_inputs.sectoral_emissions_path)
-    ).to_dict(orient="records")[0]
+
+    # load the national inventory data, ready to calculate sectoral totals
+    emissions_inventory = load_inventory(config)
 
     for sector, sector_meta in sector_meta_map.items():
+        sector_total_emissions = get_sector_emissions_by_code(
+            emissions_inventory=emissions_inventory,
+            start_date=config.start_date,
+            end_date=config.end_date,
+            category_codes=sector_meta_map[sector].unfccc_categories,
+        )
+
         # allocate the proportion of the total to each grid cell
-        sector_emissions = om_ntlt_proportion * sector_totals[sector] * 1e9
+        sector_emissions = om_ntlt_proportion * sector_total_emissions
         add_sector(
             prior_ds=prior_ds,
-            sector_data=convert_to_timescale(sector_emissions, config.domain_grid().cell_area),
+            sector_data=kg_to_period_cell_flux(sector_emissions, config),
             sector_meta=sector_meta,
         )
 
