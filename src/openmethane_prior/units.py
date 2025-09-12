@@ -25,11 +25,21 @@ from openmethane_prior.config import PriorConfig
 T = typing.TypeVar("T", bound=ArrayLike | float)
 
 
+def days_in_period(
+    start_date: datetime.date,
+    end_date: datetime.date,
+    inclusive: bool = True,
+) -> int:
+    """Returns the number of days in the period of days starting at midnight
+    at the start of start_date, until midnight at the end of end_date."""
+    return (end_date - start_date).days + (1 if inclusive else 0)
+
+
 SECONDS_PER_DAY = 24 * 60 * 60
 def seconds_in_period(start_date: datetime.date, end_date: datetime.date) -> int:
     """Returns the number of seconds in the period of days starting at midnight
     at the start of start_date, until midnight at the end of end_date."""
-    return((end_date - start_date).days + 1) * SECONDS_PER_DAY
+    return days_in_period(start_date, end_date) * SECONDS_PER_DAY
 
 
 def kg_to_kg_m2_s(mass_kg: float, area_m2: float, time_s: float) -> float:

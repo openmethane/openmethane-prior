@@ -33,6 +33,7 @@ from openmethane_prior.layers.omElectricityEmis import sector_meta as electricit
 from openmethane_prior.layers.omFugitiveEmis import sector_meta as fugitive_sector_meta
 
 import openmethane_prior.logger as logger
+from openmethane_prior.units import days_in_period
 
 logger = logger.get_logger(__name__)
 
@@ -58,7 +59,7 @@ def verify_emis(config: PriorConfig, prior_ds: xr.Dataset, atol: float = MAX_ABS
     m2s_to_kg = config.domain_grid().cell_area * 24 * 60 * 60
     ds_start_date = pd.to_datetime(prior_ds['time'][0].item()).date()
     ds_end_date = pd.to_datetime(prior_ds['time'][-1].item()).date()
-    period_days = (ds_end_date - ds_start_date).days + 1
+    period_days = days_in_period(ds_start_date, ds_end_date)
 
     total_expected_vs_actual = []
 

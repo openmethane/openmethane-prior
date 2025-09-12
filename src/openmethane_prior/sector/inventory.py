@@ -26,6 +26,7 @@ from typing import Iterable
 from openmethane_prior.config import PriorConfig
 from openmethane_prior.sector.unfccc import Category, find_category_by_name, is_code_in_code_family, \
     create_category_list
+from openmethane_prior.units import days_in_period
 
 
 @attrs.define
@@ -119,9 +120,8 @@ def get_sector_emissions_by_code(
     """
     if start_date.year != end_date.year:
         raise ValueError("periods spanning multiple years are not supported")
-    period_days = (end_date - start_date).days + 1 # end date inclusive
     year_days = 365 if not calendar.isleap(start_date.year) else 366
-    period_annual_fraction = period_days / year_days
+    period_annual_fraction = days_in_period(start_date, end_date) / year_days
 
     aggregated_emission = 0.0
     for emissions in emissions_inventory:
