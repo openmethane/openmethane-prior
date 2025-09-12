@@ -29,6 +29,84 @@ cover the exact same domain, or the spatial proxy must be masked.
 
 The spatialised estimates are then regridded onto the Open Methane grid.
 
+# General data sources
+
+Some data sources are used by multiple sectors of the prior.
+
+## Australian UNFCCC Inventory
+
+Australia reports GHG emissions broken down by gas and by sector under its
+UNFCCC obligations. The data is available via the
+[National Greenhouse Accounts](https://greenhouseaccounts.climatechange.gov.au/)
+web tool, and also via a "Bulk data API".
+
+For the prior we're only interested in CH4 emissions, so the full UNFCCC sector
+dataset was fetched and filtered with jq:
+
+```shell
+curl -s https://greenhouseaccounts.climatechange.gov.au/OData/AR5_ParisInventory_AUSTRALIA \
+  | jq --raw-output '
+    (["InventoryYear_ID", "UNFCCC_Level_1", "UNFCCC_Level_2", "UNFCCC_Level_3", "UNFCCC_Level_4", "UNFCCC_Level_5", "Gg"] | @csv),
+    (
+      .value[]
+      | select(.Gas_Level_0 == "CH4")
+      | [.InventoryYear_ID, .UNFCCC_Level_1, .UNFCCC_Level_2, .UNFCCC_Level_3, .UNFCCC_Level_4, .UNFCCC_Level_5, .Gg]
+      | @csv
+    )
+  ' \
+  > AR5_ParisInventory_AUSTRALIA_CH4.csv
+```
+
+This series of commands:
+- fetches the full dataset
+- constructs a CSV header row
+- filters the dataset to only items with `"Gas_Level_0": "CH4"`
+- selects the attributes of interest
+- outputs in CSV format
+
+This filtered dataset is available in our public data store:
+https://openmethane.s3.amazonaws.com/prior/inputs/AR5_ParisInventory_AUSTRALIA_CH4.csv
+
+## UNFCCC CRT categories 
+
+To allocate inventory emissions to prior sectors, we utilise the
+`unfccc_categories` in each sector, which contain UNFCCC CRT category codes,
+like "5" (Waste), "3.B" (Agriculture - Enteric Fermentation). However, the
+[Australian UNFCCC Inventory](#Australian_UNFCCC_Inventory) doesn't include
+category codes, only full names of the UNFCCC categories (some of which are
+not exact from the original definitions).
+
+A mapping from Australia's inventory categories to UNFCCC has been created to
+assist this process. The mapping was created manually by fetching all the
+category names present in the Australian inventory, and assigning the correct
+code to each category.
+
+File can be created initially by finding unique categories in the bulk data:
+
+```shell
+curl -s https://greenhouseaccounts.climatechange.gov.au/OData/AR5_ParisInventory_AUSTRALIA \
+  | jq --raw-output '
+    (["UNFCCC_Code", "UNFCCC_Level_1", "UNFCCC_Level_2", "UNFCCC_Level_3", "UNFCCC_Level_4"] | @csv),
+    (
+      .value[]
+      | select(.Gas_Level_0 == "CH4")
+      | ["", .UNFCCC_Level_1, .UNFCCC_Level_2, .UNFCCC_Level_3, .UNFCCC_Level_4]
+      | @csv
+    )
+  ' \
+  | uniq \
+  > UNFCCC-codes.csv
+```
+
+Note: this excludes level 5 categorisation, where codes are sometimes harder to
+identify and prior sectors are unlikely to model categories to this level.
+
+This generates a file with empty values for "UNFCCC_Code" which must then be
+populated manually.
+
+The completed mapping is available in our public data store:
+https://openmethane.s3.amazonaws.com/prior/inputs/UNFCCC-codes-AU.csv
+
 
 # Data Sources
 

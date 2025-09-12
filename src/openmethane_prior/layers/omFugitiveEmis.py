@@ -24,14 +24,15 @@ import xarray as xr
 
 from openmethane_prior.config import PriorConfig, load_config_from_env, parse_cli_to_env
 from openmethane_prior.outputs import (
-    convert_to_timescale,
     add_ch4_total,
     add_sector,
     create_output_dataset,
     write_output_dataset,
 )
 import openmethane_prior.logger as logger
+from openmethane_prior.sector.inventory import load_inventory, get_sector_emissions_by_code
 from openmethane_prior.sector.sector import SectorMeta
+from openmethane_prior.units import kg_to_period_cell_flux
 
 logger = logger.get_logger(__name__)
 
@@ -49,10 +50,16 @@ def processEmissions(config: PriorConfig, prior_ds: xr.Dataset):
     Adds the ch4_fugitive layer to the output
     """
     logger.info("processEmissions for fugitives")
-    fugitiveEmis = pd.read_csv(
-        config.as_input_file(config.layer_inputs.sectoral_emissions_path)
-    ).to_dict(orient="records")[0]["fugitive"]  # national total from inventory
-    fugitiveEmis *= 1e9  # convert to kg
+
+    # read the total emissions over the sector (in kg)
+    emissions_inventory = load_inventory(config)
+    sector_total_emissions = get_sector_emissions_by_code(
+        emissions_inventory=emissions_inventory,
+        start_date=config.start_date,
+        end_date=config.end_date,
+        category_codes=sector_meta.unfccc_categories,
+    )
+
     # now read climate_trace facilities emissions for coal, oil and gas
     coalFacilities = pd.read_csv(config.as_input_file(config.layer_inputs.coal_path))
     oilGasFacilities = pd.read_csv(config.as_input_file(config.layer_inputs.oil_gas_path))
@@ -71,7 +78,7 @@ def processEmissions(config: PriorConfig, prior_ds: xr.Dataset):
     fugitiveYear = fugitiveCH4.loc[mask, :]
     # normalise emissions to match inventory total
     fugitiveYear.loc[:, "emissions_quantity"] *= (
-        fugitiveEmis / fugitiveYear["emissions_quantity"].sum()
+        sector_total_emissions / fugitiveYear["emissions_quantity"].sum()
     )
 
     domain_grid = config.domain_grid()
@@ -86,7 +93,7 @@ def processEmissions(config: PriorConfig, prior_ds: xr.Dataset):
 
     add_sector(
         prior_ds=prior_ds,
-        sector_data=convert_to_timescale(methane, domain_grid.cell_area),
+        sector_data=kg_to_period_cell_flux(methane, config),
         sector_meta=sector_meta,
     )
 

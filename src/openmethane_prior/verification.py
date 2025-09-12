@@ -25,8 +25,15 @@ from colorama import Fore
 
 from openmethane_prior.config import PriorConfig, load_config_from_env
 from openmethane_prior.outputs import SECTOR_PREFIX
-from openmethane_prior.utils import SECS_PER_YEAR
+from openmethane_prior.sector.inventory import load_inventory, get_sector_emissions_by_code
+
+from openmethane_prior.layers.omIndustrialStationaryTransportEmis import sector_meta_map as ntlt_sector_meta
+from openmethane_prior.layers.omAgLulucfWasteEmis import sector_meta_map as landuse_sector_meta
+from openmethane_prior.layers.omElectricityEmis import sector_meta as electricity_sector_meta
+from openmethane_prior.layers.omFugitiveEmis import sector_meta as fugitive_sector_meta
+
 import openmethane_prior.logger as logger
+from openmethane_prior.units import days_in_period
 
 logger = logger.get_logger(__name__)
 
@@ -35,44 +42,59 @@ MAX_ABS_DIFF = 0.1
 
 def verify_emis(config: PriorConfig, prior_ds: xr.Dataset, atol: float = MAX_ABS_DIFF):
     """Check output sector emissions to make sure they tally up to the input emissions"""
-    sector_data = pd.read_csv(
-        config.as_input_file(config.layer_inputs.sectoral_emissions_path)
-    ).to_dict(orient="records")[0]
+    if config.domain_grid() != config.inventory_grid():
+        # TODO: is there a sense check we can do on smaller domains?
+        logger.info("SKIPPING verify_emis: only supported when domain and inventory domain are identical")
+        return
+
+    emissions_inventory = load_inventory(config)
+
+    inventory_sectors = [
+        fugitive_sector_meta,
+        electricity_sector_meta,
+        *ntlt_sector_meta.values(),
+        *landuse_sector_meta.values(),
+    ]
+
+    m2s_to_kg = config.domain_grid().cell_area * 24 * 60 * 60
+    ds_start_date = pd.to_datetime(prior_ds['time'][0].item()).date()
+    ds_end_date = pd.to_datetime(prior_ds['time'][-1].item()).date()
+    period_days = days_in_period(ds_start_date, ds_end_date)
+
+    total_expected_vs_actual = []
+
+    # Load Livestock inventory and check prior values don't exceed data source
+    with xr.open_dataset(config.as_input_file(config.layer_inputs.livestock_path)) as lss:
+        ls = lss.load()
+    livestock_inventory_total = round(np.sum(ls["CH4_total"].values)) * (period_days / 365)
+    livestock_prior_total = float(prior_ds[f"{SECTOR_PREFIX}_livestock"].sum()) * m2s_to_kg
+    total_expected_vs_actual.append(("livestock", livestock_inventory_total, livestock_prior_total))
+
+
+    # Check each layer in the output sums up to the input
+    for sector in inventory_sectors:
+        ds_var_name = f"{SECTOR_PREFIX}_{sector.name}"
+        inventory_total = get_sector_emissions_by_code(
+            emissions_inventory=emissions_inventory,
+            start_date=ds_start_date,
+            end_date=ds_end_date,
+            category_codes=sector.unfccc_categories,
+        )
+
+        if ds_var_name in prior_ds:
+            # convert emissions in each day in kg/m2/s to kg and sum them
+            prior_total = float(prior_ds[ds_var_name].sum()) * m2s_to_kg
+            total_expected_vs_actual.append((sector.name, inventory_total, prior_total))
 
     passed = []
     failed = []
+    for sector_name, expected, actual in total_expected_vs_actual:
+        pct_diff = round(actual - expected) / expected * 100
 
-    # Load Livestock inventory and check that it doesn't exceed total agriculture inventory
-    with xr.open_dataset(config.as_input_file(config.layer_inputs.livestock_path)) as lss:
-        ls = lss.load()
-    livestock_inventory_total = round(np.sum(ls["CH4_total"].values))
-    agriculture_inventory_total = round(sector_data["agriculture"] * 1e9)
-    agriculture_remaining = (agriculture_inventory_total - livestock_inventory_total) / 1e9
-
-    if agriculture_remaining > 0:
-        passed.append(f"Livestock CH4 within bounds of total agriculture CH4: {agriculture_remaining}")
-    else:
-        failed.append(f"Livestock CH4 exceeds bounds of total agriculture CH4: {agriculture_remaining}")
-
-    # Check each layer in the output sums up to the input
-    m2s_to_kg = config.domain_grid().cell_area * SECS_PER_YEAR
-    for sector in sector_data.keys():
-        layerName = f"{SECTOR_PREFIX}_{sector}"
-        sectorVal = float(sector_data[sector]) * 1e9
-
-        if layerName in prior_ds:
-            layerVal = np.sum(prior_ds[layerName][0].values * m2s_to_kg)
-
-            if sector == "agriculture":
-                layerVal += np.sum(prior_ds[f"{SECTOR_PREFIX}_livestock"][0].values * m2s_to_kg)
-
-            diff = round(layerVal - sectorVal)
-            pct_diff = diff / sectorVal * 100
-
-            if abs(pct_diff) > atol:
-                failed.append(f"Discrepancy of {pct_diff}% in {sector} emissions")
-            else:
-                passed.append(f"{sector} emissions OK, discrepancy is {abs(pct_diff)}% of total")
+        if abs(pct_diff) > atol:
+            failed.append(f"Discrepancy of {pct_diff}% in {sector_name} emissions")
+        else:
+            passed.append(f"{sector_name} emissions OK, discrepancy is {abs(pct_diff)}% of total")
 
     for passed_msg in passed:
         logger.debug(f"{Fore.GREEN}PASSED{Fore.RESET} - {passed_msg}")

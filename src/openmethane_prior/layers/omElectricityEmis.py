@@ -24,14 +24,15 @@ import xarray as xr
 
 from openmethane_prior.config import PriorConfig, load_config_from_env, parse_cli_to_env
 from openmethane_prior.outputs import (
-    convert_to_timescale,
     add_ch4_total,
     add_sector,
     create_output_dataset,
     write_output_dataset,
 )
 import openmethane_prior.logger as logger
+from openmethane_prior.sector.inventory import load_inventory, get_sector_emissions_by_code
 from openmethane_prior.sector.sector import SectorMeta
+from openmethane_prior.units import kg_to_period_cell_flux
 
 logger = logger.get_logger(__name__)
 
@@ -49,12 +50,15 @@ def processEmissions(config: PriorConfig, prior_ds: xr.Dataset):
     """
     logger.info("processEmissions for electricity")
 
-    electricityEmis = (
-        pd.read_csv(config.as_input_file(config.layer_inputs.sectoral_emissions_path)).to_dict(
-            orient="records"
-        )[0]["electricity"]
-        * 1e9
+    # read the total emissions over the sector (in kg)
+    emissions_inventory = load_inventory(config)
+    sector_total_emissions = get_sector_emissions_by_code(
+        emissions_inventory=emissions_inventory,
+        start_date=config.start_date,
+        end_date=config.end_date,
+        category_codes=sector_meta.unfccc_categories,
     )
+
     electricityFacilities = pd.read_csv(
         config.as_input_file(config.layer_inputs.electricity_path), header=0
     ).to_dict(orient="records")
@@ -69,11 +73,11 @@ def processEmissions(config: PriorConfig, prior_ds: xr.Dataset):
         cell_x, cell_y, cell_valid = domain_grid.lonlat_to_cell_index(facility["lng"], facility["lat"])
 
         if cell_valid:
-            methane[cell_y, cell_x] += (facility["capacity"] / totalCapacity) * electricityEmis
+            methane[cell_y, cell_x] += (facility["capacity"] / totalCapacity) * sector_total_emissions
 
     add_sector(
         prior_ds=prior_ds,
-        sector_data=convert_to_timescale(methane, domain_grid.cell_area),
+        sector_data=kg_to_period_cell_flux(methane, config),
         sector_meta=sector_meta,
     )
 
