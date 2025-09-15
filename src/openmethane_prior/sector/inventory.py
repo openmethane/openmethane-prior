@@ -60,20 +60,6 @@ def find_existing_emission(
     return None
 
 
-def parse_emission(emission_json: str) -> float:
-    """
-    Emissions come from a JSON format converted to CSV, where very small values
-    might be encoded like "1.230000E-7", a form of scientific notation.
-    Returns a parsed value cast to float.
-    """
-    emission_split = emission_json.split("E")
-
-    if len(emission_split) == 2:
-        emission_value, emission_scale = emission_split
-        return float(emission_value) * pow(10, int(emission_scale))
-    return float(emission_json)
-
-
 def create_emissions_inventory(
     categories: list[Category],
     inventory_list: Iterable[list[str]],
@@ -101,7 +87,7 @@ def create_emissions_inventory(
             sector_emission.ch4_emissions[int(year)] = 0
 
         # inventory numbers are in kilotonnes, we want to work in kg
-        sector_emission.ch4_emissions[int(year)] += kt_to_kg(parse_emission(emission))
+        sector_emission.ch4_emissions[int(year)] += kt_to_kg(float(emission))
 
     return emissions_list
 
