@@ -42,9 +42,9 @@ class SectorEmission:
     """Emissions recorded for the sector in kg per annum."""
 
 
-def kt_to_kg(gigatonnes: float) -> float:
+def kt_to_kg(kilotonnes: float) -> float:
     """Convert measures in kilotonnes to kilograms."""
-    return gigatonnes * 1e6
+    return kilotonnes * 1e6
 
 
 def find_existing_emission(
