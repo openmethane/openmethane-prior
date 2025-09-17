@@ -29,6 +29,7 @@ from shapely import geometry
 
 from openmethane_prior.config import PriorConfig, load_config_from_env, parse_cli_to_env
 from openmethane_prior.outputs import add_ch4_total, add_sector, create_output_dataset, write_output_dataset
+from openmethane_prior.sector.sector import SectorMeta
 from openmethane_prior.utils import (
     area_of_rectangle_m2,
     load_zipped_pickle,
@@ -37,6 +38,11 @@ from openmethane_prior.utils import (
     datetime64_to_datetime,
 )
 
+sector_meta = SectorMeta(
+    name="wetlands",
+    emission_category="natural",
+    cf_standard_name="wetland_biological_processes",
+)
 
 def make_wetland_climatology(config: PriorConfig, forceUpdate: bool = False):  # noqa: PLR0915
     """
@@ -212,9 +218,8 @@ def processEmissions(
     )
     add_sector(
         prior_ds=prior_ds,
-        sector_name="wetlands",
         sector_data=result_xr,
-        sector_standard_name="wetland_biological_processes",
+        sector_meta=sector_meta,
         # source dataset is a coarse grid, and has emissions over ocean which
         # definitely shouldn't be classified as wetlands
         apply_landmask=True,

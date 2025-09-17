@@ -33,18 +33,49 @@ from openmethane_prior.outputs import (
     add_sector,
     create_output_dataset, write_output_dataset,
 )
+from openmethane_prior.sector.sector import SectorMeta
 from openmethane_prior.utils import SECS_PER_YEAR, mask_array_by_sequence
 from openmethane_prior.raster import remap_raster
 import openmethane_prior.logger as logger
 
 logger = logger.get_logger(__name__)
 
-sectorEmissionStandardNames = {
-    "agriculture": "agricultural_production",
-    "lulucf": "anthropogenic_land_use_change",
-    "waste": "waste_treatment_and_disposal",
+sector_meta_map = {
+    "agriculture": SectorMeta(
+        name="agriculture",
+        emission_category="anthropogenic",
+        unfccc_categories=[ # All Agriculture, except Enteric Fermentation
+            "3.B", # Manure Management
+            "3.C", # Rice Cultivation
+            "3.D", # Agricultural Soils
+            "3.E", # Prescribed Burning of Savannas
+            "3.F", # Field Burning of Agricultural Residues
+            "3.G", # Liming
+            "3.H", # Urea Application
+            "3.I", # Other Carbon-containing Fertilisers
+        ],
+        cf_standard_name="agricultural_production",
+    ),
+    "lulucf": SectorMeta(
+        name="lulucf",
+        emission_category="anthropogenic",
+        unfccc_categories=["4"], # Land Use, Land-Use Change and Forestry
+        cf_standard_name="anthropogenic_land_use_change",
+    ),
+    "waste": SectorMeta(
+        name="waste",
+        emission_category="anthropogenic",
+        unfccc_categories=["5"], # Waste
+        cf_standard_name="waste_treatment_and_disposal",
+    ),
 }
 
+livestock_sector_meta = SectorMeta(
+    name="livestock",
+    emission_category="anthropogenic",
+    unfccc_categories=["3.A"], # Enteric Fermentation
+    cf_standard_name="domesticated_livestock",
+)
 
 def processEmissions(config: PriorConfig, prior_ds: xr.Dataset):  # noqa: PLR0912, PLR0915
     """
@@ -147,18 +178,16 @@ def processEmissions(config: PriorConfig, prior_ds: xr.Dataset):  # noqa: PLR091
 
         add_sector(
             prior_ds=prior_ds,
-            sector_name=sector.lower(),
             sector_data=convert_to_timescale(sector_gridded, cell_area=domain_grid.cell_area),
-            sector_standard_name=sectorEmissionStandardNames[sector],
+            sector_meta=sector_meta_map[sector],
         )
 
     # convert the livestock data from per year to per second and write
     livestock_ch4_s = livestockCH4 / SECS_PER_YEAR
     add_sector(
         prior_ds=prior_ds,
-        sector_name="livestock",
         sector_data=livestock_ch4_s,
-        sector_standard_name="domesticated_livestock",
+        sector_meta=livestock_sector_meta,
     )
 
 
