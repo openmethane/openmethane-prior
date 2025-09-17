@@ -33,8 +33,10 @@ from openmethane_prior.outputs import (
     add_sector,
     create_output_dataset, write_output_dataset,
 )
+from openmethane_prior.sector.inventory import load_inventory, get_sector_emissions_by_code
 from openmethane_prior.sector.sector import SectorMeta
-from openmethane_prior.utils import SECS_PER_YEAR, mask_array_by_sequence
+from openmethane_prior.units import kg_to_period_cell_flux
+from openmethane_prior.utils import mask_array_by_sequence
 from openmethane_prior.raster import remap_raster
 import openmethane_prior.logger as logger
 
@@ -110,8 +112,12 @@ def processEmissions(config: PriorConfig, prior_ds: xr.Dataset):  # noqa: PLR091
         if mask.any():
             # the following needs to use .at method since iy,ix indices may be repeated and we need to acumulate
             np.add.at(livestockCH4, (iy[mask], ix[mask]), enteric_as_array[j, mask])
-    # now convert back to flux not emission units
-    livestockCH4 /= domain_grid.cell_area
+
+    add_sector(
+        prior_ds=prior_ds,
+        sector_data=convert_to_timescale(livestockCH4, domain_grid.cell_area),
+        sector_meta=livestock_sector_meta,
+    )
 
     # Import a map of land use type numbers to emissions sectors
     # make a dictionary of all landuse types corresponding to sectors in map
@@ -127,15 +133,10 @@ def processEmissions(config: PriorConfig, prior_ds: xr.Dataset):  # noqa: PLR091
                     landuseSectorMap[sector].append(int(value))
                 else:
                     landuseSectorMap[sector] = [int(value)]
-    # Import a map of emissions per sector, store it to hash table
-    methaneInventoryBySector = {}
-    with open(config.as_input_file(config.layer_inputs.sectoral_emissions_path), newline="") as f:
-        reader = csv.reader(f)
-        headers = next(reader                       ) # first line
-        row = next(reader)
-        methaneInventoryBySector = {h:float(row[i])*1e9 for i,h in enumerate(headers)} # converting from mtCH4 to kgCH4
-    # subtract the livestock ch4 from agriculture
-    methaneInventoryBySector["agriculture"] -= livestockCH4Total
+
+    # load the national inventory data, ready to calculate sectoral totals
+    emissions_inventory = load_inventory(config)
+
     # Read the land use type data band
     logger.debug("Loading land use data")
     # this seems to need two approaches since rioxarray
@@ -172,23 +173,23 @@ def processEmissions(config: PriorConfig, prior_ds: xr.Dataset):  # noqa: PLR091
         # now mask to region of inventory
         inventory_gridded *= config.inventory_dataset()['inventory_mask']
 
-        # allocate inventory emissions proportional to each grid cell
-        sector_gridded /=  inventory_gridded.sum().item() # proportion of national emission in each grid square
-        sector_gridded *= methaneInventoryBySector[sector]  # convert to national emissions in kg/gridcell
+        # calculate the proportion of inventory emissions in each grid cell
+        sector_gridded /=  inventory_gridded.sum().item()
+
+        sector_total_emissions = get_sector_emissions_by_code(
+            emissions_inventory=emissions_inventory,
+            start_date=config.start_date,
+            end_date=config.end_date,
+            category_codes=sector_meta_map[sector].unfccc_categories,
+        )
+        # distribute the emissions reported for the entire sector
+        sector_gridded *= sector_total_emissions
 
         add_sector(
             prior_ds=prior_ds,
-            sector_data=convert_to_timescale(sector_gridded, cell_area=domain_grid.cell_area),
+            sector_data=kg_to_period_cell_flux(sector_gridded, config),
             sector_meta=sector_meta_map[sector],
         )
-
-    # convert the livestock data from per year to per second and write
-    livestock_ch4_s = livestockCH4 / SECS_PER_YEAR
-    add_sector(
-        prior_ds=prior_ds,
-        sector_data=livestock_ch4_s,
-        sector_meta=livestock_sector_meta,
-    )
 
 
 if __name__ == "__main__":

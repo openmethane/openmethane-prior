@@ -88,11 +88,12 @@ def check_input_files(config: PriorConfig):
         errors.append(f"\n- {config.inventory_domain_file} (inventory domain)")
 
     checks = (
+        (config.layer_inputs.inventory_path, "emissions inventory"),
+        (config.layer_inputs.unfccc_categories_path, "UNFCCC codes"),
         (config.layer_inputs.electricity_path, "electricity facilities"),
         (config.layer_inputs.coal_path, "Coal facilities"),
         (config.layer_inputs.oil_gas_path, "Oilgas facilities"),
         (config.layer_inputs.land_use_path, "land use"),
-        (config.layer_inputs.sectoral_emissions_path, "sectoral emissions"),
         (config.layer_inputs.sectoral_mapping_path, "sectoral emissions mappings"),
         (config.layer_inputs.ntl_path, "night time lights"),
         (config.layer_inputs.livestock_path, "livestock data"),

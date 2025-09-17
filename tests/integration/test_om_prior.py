@@ -31,11 +31,12 @@ def test_002_cdsapi_connection(root_dir, tmp_path, start_date, end_date):
 
 def test_004_omDownloadInputs(root_dir, input_files, config):
     EXPECTED_FILES = [
+        "AR5_ParisInventory_AUSTRALIA_CH4.csv",
         "ch4-electricity.csv",
         "coal-mining_emissions-sources.csv",
         "oil-and-gas-production-and-transport_emissions-sources.csv",
         "NLUM_ALUMV8_250m_2015_16_alb.tif",
-        "ch4-sectoral-emissions.csv",
+        "UNFCCC-codes-AU.csv",
         "landuse-sector-map.csv",
         "nasa-nighttime-lights.tiff",
         "AUS_2021_AUST_SHP_GDA2020.zip",
@@ -50,19 +51,19 @@ def test_004_omDownloadInputs(root_dir, input_files, config):
         EXPECTED_FILES
     )
 
-
-def test_005_agriculture_emissions(config, root_dir, input_files):
-    filepath_livestock = config.as_input_file(config.layer_inputs.livestock_path)
-    livestock_data = xr.open_dataset(filepath_livestock)
-
-    filepath_sector = config.as_input_file(config.layer_inputs.sectoral_emissions_path)
-    sector_data = pd.read_csv(filepath_sector).to_dict(orient="records")[0]
-
-    lsVal = round(np.sum(livestock_data["CH4_total"].values))
-    agVal = round(sector_data["agriculture"] * 1e9)
-    agDX = agVal - lsVal
-
-    assert agDX > 0, f"Livestock CH4 exceeds bounds of total agriculture CH4: {agDX / 1e9}"
+#
+# def test_005_agriculture_emissions(config, root_dir, input_files):
+#     filepath_livestock = config.as_input_file(config.layer_inputs.livestock_path)
+#     livestock_data = xr.open_dataset(filepath_livestock)
+#
+#     filepath_sector = config.as_input_file(config.layer_inputs.sectoral_emissions_path)
+#     sector_data = pd.read_csv(filepath_sector).to_dict(orient="records")[0]
+#
+#     lsVal = round(np.sum(livestock_data["CH4_total"].values))
+#     agVal = round(sector_data["agriculture"] * 1e9)
+#     agDX = agVal - lsVal
+#
+#     assert agDX > 0, f"Livestock CH4 exceeds bounds of total agriculture CH4: {agDX / 1e9}"
 
 
 def test_009_prior_emissions_ds(prior_emissions_ds):
@@ -77,22 +78,22 @@ def test_009_prior_emissions_ds(prior_emissions_ds):
         "x_bounds": 1530000.375,
         "y_bounds": 364369.5,
 
-        "ch4_sector_agriculture": 1.1536221820595755e-12,
-        "ch4_sector_lulucf": 4.592490774534104e-12,
-        "ch4_sector_waste": 3.135222506646578e-12,
+        "ch4_sector_agriculture": 1.819010994856642e-12,
+        "ch4_sector_lulucf": 5.597882496026664e-12,
+        "ch4_sector_waste": 3.2309244166864934e-12,
         "ch4_sector_livestock": 4.0547154335803873e-11,
-        "ch4_sector_industrial": 5.381263572370136e-14,
-        "ch4_sector_stationary": 9.95533760888496e-13,
-        "ch4_sector_transport": 2.1525054289480922e-13,
-        "ch4_sector_electricity": 2.885175186945258e-13,
-        "ch4_sector_fugitive": 4.783832961493577e-10,
+        "ch4_sector_industrial": 5.645377828854301e-14,
+        "ch4_sector_stationary": 8.9951585930315e-13,
+        "ch4_sector_transport": 2.0972791286013642e-13,
+        "ch4_sector_electricity": 2.283888848991229e-13,
+        "ch4_sector_fugitive": 4.662622971875453e-10,
         "ch4_sector_termite": 2.436579367090519e-12,
         "ch4_sector_fire": 3.6974516872713414e-13,
         "ch4_sector_wetlands": 1.2524275273123607e-10,
-        "ch4_total": 6.574139776508888e-10,
+        "ch4_total": 6.469004331105554e-10,
 
         # deprecated
-        "OCH4_TOTAL": 6.574139776508888e-10,
+        "OCH4_TOTAL": 6.469004331105554e-10,
         "LANDMASK": 1.0,
     }
 
@@ -100,29 +101,29 @@ def test_009_prior_emissions_ds(prior_emissions_ds):
 
     result_maxs = {key: prior_emissions_ds[key].max().item() for key in numeric_keys}
     expected_maxs = {
-        "lambert_conformal": 0.0,
-        "land_mask": 1.0,
+        "lambert_conformal": 0,
+        "land_mask": 1,
         "lat": -22.806066513061523,
         "lon": 149.1439208984375,
         "x_bounds": 1580000.375,
         "y_bounds": 414369.5,
 
-        "ch4_sector_agriculture": 1.504516984669773e-12,
-        "ch4_sector_lulucf": 1.0681563599697305e-10,
-        "ch4_sector_waste": 1.1757084399924668e-10,
+        "ch4_sector_agriculture": 2.3722956957857355e-12,
+        "ch4_sector_lulucf": 1.3019979971763157e-10,
+        "ch4_sector_waste": 1.211596656257435e-10,
         "ch4_sector_livestock": 7.545056510007907e-11,
-        "ch4_sector_industrial": 5.208301326815444e-13,
-        "ch4_sector_stationary": 9.635357454608773e-12,
-        "ch4_sector_transport": 2.0833205307262143e-12,
-        "ch4_sector_electricity": 1.6229110426567075e-11,
-        "ch4_sector_fugitive": 1.5156980822562326e-08,
+        "ch4_sector_industrial": 5.463926537135979e-13,
+        "ch4_sector_stationary": 8.706040097264147e-12,
+        "ch4_sector_transport": 2.0298692902317285e-12,
+        "ch4_sector_electricity": 1.284687477557566e-11,
+        "ch4_sector_fugitive": 1.4772942018755247e-08,
         "ch4_sector_termite": 3.3858020553889645e-12,
         "ch4_sector_fire": 5.498670963000052e-11,
         "ch4_sector_wetlands": 2.5512281176531815e-10,
-        "ch4_total": 1.5262217450078303e-08,
+        "ch4_total": 1.4878273070171758e-08,
 
         # deprecated
-        "OCH4_TOTAL": 1.5262217450078303e-08,
+        "OCH4_TOTAL": 1.4878273070171758e-08,
         "LANDMASK": 1.0,
     }
 
@@ -132,38 +133,38 @@ def test_009_prior_emissions_ds(prior_emissions_ds):
     results_keys = [key for key in prior_emissions_ds.keys() if key.startswith("ch4")]
     result_y_band = {key: prior_emissions_ds[key][0, 0, 4].sum().item() for key in results_keys}
     expected_y_band = {
-        "ch4_sector_agriculture": 1.0613601554727302e-11,
+        "ch4_sector_agriculture": 1.67353386778753e-11,
         "ch4_sector_lulucf": 0.0,
         "ch4_sector_waste": 0.0,
         "ch4_sector_livestock": 4.0390212981728717e-10,
-        "ch4_sector_industrial": 8.052137499044274e-13,
-        "ch4_sector_stationary": 1.489645437323222e-11,
-        "ch4_sector_transport": 3.2208549996177666e-12,
+        "ch4_sector_industrial": 8.447339161268685e-13,
+        "ch4_sector_stationary": 1.3459711244899672e-11,
+        "ch4_sector_transport": 3.1382183181070133e-12,
         "ch4_sector_electricity": 0.0,
         "ch4_sector_fugitive": 0.0,
         "ch4_sector_termite": 2.3266076565331417e-11,
         "ch4_sector_fire": 0.0,
         "ch4_sector_wetlands": 1.118552889201041e-09,
-        "ch4_total": 1.5752572213453435e-09,
+        "ch4_total": 1.5798990988248708e-09,
     }
 
     assert result_y_band == expected_y_band
 
     result_x_band = {key: prior_emissions_ds[key][0, 0, :, 4].sum().item() for key in results_keys}
     expected_x_band = {
-        "ch4_sector_agriculture": 1.2407310127468332e-11,
-        "ch4_sector_lulucf": 1.1340680046865559e-11,
+        "ch4_sector_agriculture": 1.9563626540336016e-11,
+        "ch4_sector_lulucf": 1.3823390714122407e-11,
         "ch4_sector_waste": 0.0,
         "ch4_sector_livestock": 4.7123459295837e-10,
-        "ch4_sector_industrial": 6.027766647514639e-13,
-        "ch4_sector_stationary": 1.1151368297902318e-11,
-        "ch4_sector_transport": 2.4111066590058985e-12,
-        "ch4_sector_electricity": 1.6229110426567075e-11,
-        "ch4_sector_fugitive": 5.83075103326539e-09,
+        "ch4_sector_industrial": 6.323611496026155e-13,
+        "ch4_sector_stationary": 1.0075833719532698e-11,
+        "ch4_sector_transport": 2.3492454907470443e-12,
+        "ch4_sector_electricity": 1.284687477557566e-11,
+        "ch4_sector_fugitive": 5.683014839736737e-09,
         "ch4_sector_termite": 2.363145790162946e-11,
         "ch4_sector_fire": 0.0,
         "ch4_sector_wetlands": 6.705475445734077e-10,
-        "ch4_total": 7.050306980270836e-09,
+        "ch4_total": 6.907719766909539e-09,
     }
 
     assert result_x_band == expected_x_band

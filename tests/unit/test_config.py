@@ -21,11 +21,12 @@ def env(monkeypatch, root_dir):
 def mock_layer_inputs(tmp_path):
     # mock paths to fake filenames
     return LayerInputs(
+        inventory_path=pathlib.Path("./CH4_INVENTORY_CSV.csv"),
+        unfccc_categories_path=pathlib.Path("./UNFCCC_SECTOR_AU_MAPPING.csv"),
         electricity_path=pathlib.Path("./CH4_ELECTRICITY.nc"),
         oil_gas_path=pathlib.Path("./CH4_OILGAS.nc"),
         coal_path=pathlib.Path("./CH4_COAL.nc"),
         land_use_path=pathlib.Path("./LAND_USE.nc"),
-        sectoral_emissions_path=pathlib.Path("./SECTORAL_EMISSIONS.nc"),
         sectoral_mapping_path=pathlib.Path("./SECTORAL_MAPPING.nc"),
         ntl_path=pathlib.Path("./NTL.nc"),
         aus_shapefile_path=pathlib.Path("./AUSF.nc"),
