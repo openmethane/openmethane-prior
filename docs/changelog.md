@@ -19,6 +19,14 @@ of rst and use slightly different categories.
 
 <!-- towncrier release notes start -->
 
+## openmethane-prior v1.2.0 (2025-09-18)
+
+### 🆕 Features
+
+- Add UNFCCC category classification to prior sector layers ([#121](https://github.com/openmethane/openmethane-prior/pulls/121))
+- Source inventory data from [National Greenhouse Accounts](https://greenhouseaccounts.climatechange.gov.au/) "Paris Agreement" dataset ([#122](https://github.com/openmethane/openmethane-prior/pulls/122))
+
+
 ## openmethane-prior v1.1.0 (2025-08-31)
 
 ### ⚠️ Breaking Changes
