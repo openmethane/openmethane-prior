@@ -170,19 +170,6 @@ def bounds_from_cell_edges(cell_edges: xr.DataArray) -> np.array:
     return np.column_stack([lower_bounds, upper_bounds])
 
 
-def mask_array_by_sequence(
-    array: np.ndarray,
-    sequence: list|tuple|str,
-) -> np.ndarray:
-    """
-    Returns true for all elements that match any member of sequence
-    """
-    result = np.zeros_like(array).astype('int')
-    for s in sequence:
-        result[(array==s)] = True
-    return result
-
-
 def list_cf_grid_mappings(
     ds: xr.Dataset,
 ) -> list[str]:
