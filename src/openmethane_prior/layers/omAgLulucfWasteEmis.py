@@ -36,7 +36,6 @@ from openmethane_prior.outputs import (
 from openmethane_prior.sector.inventory import load_inventory, get_sector_emissions_by_code
 from openmethane_prior.sector.sector import SectorMeta
 from openmethane_prior.units import kg_to_period_cell_flux
-from openmethane_prior.utils import mask_array_by_sequence
 from openmethane_prior.raster import remap_raster
 import openmethane_prior.logger as logger
 
@@ -160,7 +159,7 @@ def processEmissions(config: PriorConfig, prior_ds: xr.Dataset):  # noqa: PLR091
     for sector in landuseSectorMap.keys():
         logger.debug(f"Processing land use for sector {sector}")
         # create a mask of pixels which match the sector code
-        sector_mask = mask_array_by_sequence(dataBand, landuseSectorMap[sector])
+        sector_mask = np.isin(dataBand, landuseSectorMap[sector])
         sector_xr = xr.DataArray(sector_mask, coords={ 'y': lu_y, 'x': lu_x  })
 
         # now aggregate to coarser resolution of the domain grid
