@@ -29,6 +29,7 @@ cdsapi = "^0.7.3"
 shapely = "^2.0.4"
 environs = "^11.0.0"
 prettyprinter = "^0.18.0"
+pytest-mock = "^3.15.1"
 
 [tool.poetry.group.tests.dependencies]
 pytest = "^8.2.1"
