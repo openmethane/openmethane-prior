@@ -1,7 +1,7 @@
 import datetime
 import pytest
 
-from openmethane_prior.sector.inventory import get_sector_emissions_by_code, load_inventory
+from openmethane_prior.inventory.inventory import get_sector_emissions_by_code, load_inventory
 
 from openmethane_prior.layers.omIndustrialStationaryTransportEmis import sector_meta_map as ntlt_sector_meta
 from openmethane_prior.layers.omAgLulucfWasteEmis import sector_meta_map as landuse_sector_meta

@@ -25,7 +25,7 @@ from colorama import Fore
 
 from openmethane_prior.config import PriorConfig, load_config_from_env
 from openmethane_prior.outputs import SECTOR_PREFIX
-from openmethane_prior.sector.inventory import load_inventory, get_sector_emissions_by_code
+from openmethane_prior.inventory.inventory import load_inventory, get_sector_emissions_by_code
 
 from openmethane_prior.layers.omIndustrialStationaryTransportEmis import sector_meta_map as ntlt_sector_meta
 from openmethane_prior.layers.omAgLulucfWasteEmis import sector_meta_map as landuse_sector_meta

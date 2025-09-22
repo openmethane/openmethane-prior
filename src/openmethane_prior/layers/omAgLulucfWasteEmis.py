@@ -33,7 +33,7 @@ from openmethane_prior.outputs import (
     add_sector,
     create_output_dataset, write_output_dataset,
 )
-from openmethane_prior.sector.inventory import load_inventory, get_sector_emissions_by_code
+from openmethane_prior.inventory.inventory import load_inventory, get_sector_emissions_by_code
 from openmethane_prior.sector.sector import SectorMeta
 from openmethane_prior.units import kg_to_period_cell_flux
 from openmethane_prior.raster import remap_raster
