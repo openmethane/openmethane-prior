@@ -23,7 +23,7 @@ import datetime
 from typing import Iterable
 
 from openmethane_prior.config import PriorConfig
-from openmethane_prior.sector.unfccc import Category, find_category_by_name, is_code_in_code_family, \
+from openmethane_prior.inventory.unfccc import Category, find_category_by_name, is_code_in_code_family, \
     create_category_list
 from openmethane_prior.units import days_in_period
 from openmethane_prior.logger import get_logger, DuplicateFilter
