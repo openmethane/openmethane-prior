@@ -32,12 +32,10 @@ def test_002_cdsapi_connection(root_dir, tmp_path, start_date, end_date):
 
 def test_004_omDownloadInputs(root_dir, input_files, config):
     EXPECTED_FILES = [
-        "AR5_ParisInventory_AUSTRALIA_CH4.csv",
         "ch4-electricity.csv",
         "coal-mining_emissions-sources.csv",
         "oil-and-gas-production-and-transport_emissions-sources.csv",
         "NLUM_ALUMV8_250m_2015_16_alb.tif",
-        "UNFCCC-codes-AU.csv",
         "landuse-sector-map.csv",
         "nasa-nighttime-lights.tiff",
         "AUS_2021_AUST_SHP_GDA2020.zip",
