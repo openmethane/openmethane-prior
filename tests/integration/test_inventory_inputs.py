@@ -1,8 +1,9 @@
 import datetime
 import pytest
 
-from openmethane_prior.inventory.inventory import get_sector_emissions_by_code, load_inventory
-
+from openmethane_prior.data_manager.manager import DataManager
+from openmethane_prior.inventory.data import create_inventory
+from openmethane_prior.inventory.inventory import get_sector_emissions_by_code
 from openmethane_prior.layers.omIndustrialStationaryTransportEmis import sector_meta_map as ntlt_sector_meta
 from openmethane_prior.layers.omAgLulucfWasteEmis import sector_meta_map as landuse_sector_meta
 from openmethane_prior.layers.omElectricityEmis import sector_meta as electricity_sector_meta
@@ -11,7 +12,8 @@ from openmethane_prior.layers.omFugitiveEmis import sector_meta as fugitive_sect
 
 @pytest.fixture()
 def emissions_inventory(config, input_files):
-    return load_inventory(config)
+    data_manager = DataManager(data_path=config.input_path)
+    return create_inventory(data_manager=data_manager)
 
 @pytest.fixture()
 def all_sector_meta():

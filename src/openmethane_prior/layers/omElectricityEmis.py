@@ -24,6 +24,7 @@ import xarray as xr
 
 from openmethane_prior.config import PriorConfig, load_config_from_env, parse_cli_to_env
 from openmethane_prior.data_manager.manager import DataManager
+from openmethane_prior.inventory.data import create_inventory
 from openmethane_prior.outputs import (
     add_ch4_total,
     add_sector,
@@ -31,7 +32,7 @@ from openmethane_prior.outputs import (
     write_output_dataset,
 )
 import openmethane_prior.logger as logger
-from openmethane_prior.inventory.inventory import load_inventory, get_sector_emissions_by_code
+from openmethane_prior.inventory.inventory import get_sector_emissions_by_code
 from openmethane_prior.sector.config import PriorSectorConfig
 from openmethane_prior.sector.sector import SectorMeta
 from openmethane_prior.units import kg_to_period_cell_flux
@@ -54,7 +55,7 @@ def processEmissions(sector_config: PriorSectorConfig, prior_ds: xr.Dataset):
     config = sector_config.prior_config
 
     # read the total emissions over the sector (in kg)
-    emissions_inventory = load_inventory(config)
+    emissions_inventory = create_inventory(data_manager=sector_config.data_manager)
     sector_total_emissions = get_sector_emissions_by_code(
         emissions_inventory=emissions_inventory,
         start_date=config.start_date,

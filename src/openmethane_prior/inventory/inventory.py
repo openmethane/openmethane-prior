@@ -129,15 +129,3 @@ def get_sector_emissions_by_code(
             aggregated_emission += emissions.ch4_emissions[inventory_year] * period_annual_fraction
 
     return aggregated_emission
-
-def load_inventory(config: PriorConfig) -> list[SectorEmission]:
-    """Load a CH4 inventory from configured input files"""
-    with open(config.as_input_file(config.layer_inputs.unfccc_categories_path), newline='') as codes_file:
-        reader = csv.reader(codes_file)
-        next(reader) # skip header row
-        categories = create_category_list(categories=reader)
-
-    with open(config.as_input_file(config.layer_inputs.inventory_path), newline='') as inventory_file:
-        reader = csv.reader(inventory_file)
-        next(reader) # skip header row
-        return create_emissions_inventory(categories=categories, inventory_list=reader)
