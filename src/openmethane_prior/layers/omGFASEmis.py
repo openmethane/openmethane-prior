@@ -22,7 +22,7 @@ This downloads files from [ADS](https://atmosphere.copernicus.eu/data).
 See the project readme for more information about configuring
 the required credentials.
 """
-
+import attrs
 import bisect
 import datetime
 import itertools
@@ -33,6 +33,8 @@ import pathlib
 import cdsapi
 import numpy as np
 import xarray as xr
+from openmethane_prior.data_manager.manager import DataManager
+from openmethane_prior.data_manager.source import DataSource
 from openmethane_prior.sector.config import PriorSectorConfig
 from shapely import geometry
 
@@ -55,46 +57,53 @@ sector_meta = SectorMeta(
     cf_standard_name="fires",
 )
 
-def download_GFAS(
-    start_date: datetime.date,
-    end_date: datetime.date,
-    file_name: str | pathlib.Path,
-):
-    """
-    Download GFAS methane between start and end date, returning the filename
-    of the retrieved data.
-    """
-    dateString = start_date.strftime("%Y-%m-%d") + "/" + end_date.strftime("%Y-%m-%d")
 
-    downloadPath = pathlib.Path(file_name);
-    downloadPath.parent.mkdir(parents=True, exist_ok=True)
+@attrs.define()
+class GFASDataSource(DataSource):
+    # kw_only=True is required by attrs to add a required attribute "after"
+    # the non-required attributes defined in DataSource
+    start_date: datetime.date = attrs.field(kw_only=True)
+    end_date: datetime.date = attrs.field(kw_only=True)
 
-    c = cdsapi.Client(progress=False)
+    def __attrs_post_init__(self):
+        if self.file_name is None:
+            self.file_name = f"gfas_{self.start_date.strftime('%Y-%m-%d')}_{self.end_date.strftime('%Y-%m-%d')}.nc"
 
-    c.retrieve(
-        "cams-global-fire-emissions-gfas",
-        {
-            "date": dateString,
-            "format": "netcdf",
-            "variable": [
-                "wildfire_flux_of_methane",
-            ],
-        },
-        file_name,
-    )
-    return file_name
+    def fetch(self, data_path: pathlib.Path) -> pathlib.Path:
+        """
+        Download GFAS methane between start and end date, returning the filename
+        of the retrieved data.
+        """
+        save_path = data_path / self.file_name
 
+        c = cdsapi.Client(progress=False)
+        c.retrieve(
+            "cams-global-fire-emissions-gfas",
+            {
+                "date": f"{self.start_date.strftime('%Y-%m-%d')}/{self.end_date.strftime('%Y-%m-%d')}",
+                "format": "netcdf",
+                "variable": [
+                    "wildfire_flux_of_methane",
+                ],
+            },
+            save_path,
+        )
 
-def processEmissions(sector_config: PriorSectorConfig, prior_ds: xr.Dataset, forceUpdate: bool = False, **kwargs):  # noqa: PLR0915
+        return save_path
+
+def processEmissions(sector_config: PriorSectorConfig, prior_ds: xr.Dataset, forceUpdate: bool = False):  # noqa: PLR0915
     """
     Remap GFAS fire emissions to the CMAQ domain
     """
     config = sector_config.prior_config
 
-    gfas_file = download_GFAS(
-        config.start_date, config.end_date, file_name=config.as_intermediate_file("gfas-download.nc")
+    gfas_data_source = GFASDataSource(
+        name="gfas",
+        start_date=config.start_date,
+        end_date=config.end_date,
     )
-    gfas_ds = nc.Dataset(gfas_file, "r")
+    gfas_asset = sector_config.data_manager.get_asset(gfas_data_source)
+    gfas_ds = nc.Dataset(gfas_asset.path, "r")
 
     # dates are labelled at midnight at end of chosen day (hence looks like next day), subtract one day to fix
     oneDay = np.timedelta64(1, "D")

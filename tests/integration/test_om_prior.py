@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 import requests
 
-from openmethane_prior.layers.omGFASEmis import download_GFAS
+from openmethane_prior.layers.omGFASEmis import GFASDataSource
 
 
 @pytest.mark.skip(reason="Duplicated by test_004_omDownloadInputs")
@@ -18,12 +18,16 @@ def test_001_response_for_download_links(config):
 
 @pytest.mark.skip(reason="Duplicated by other tests")
 def test_002_cdsapi_connection(root_dir, tmp_path, start_date, end_date):
-    filepath = tmp_path / "sub" / "test_download_cdsapi.nc"
-    filepath.parent.mkdir(parents=True)
+    data_path = tmp_path / "sub"
+    data_path.mkdir(parents=True)
+    gfas_source = GFASDataSource(
+        name="cdsapi-test",
+        start_date=start_date,
+        end_date=end_date,
+    )
+    gfas_source.fetch(data_path=data_path)
 
-    download_GFAS(start_date=start_date, end_date=end_date, file_name=filepath)
-
-    assert os.path.exists(filepath)
+    assert os.path.exists(data_path / gfas_source.file_name)
 
 
 def test_004_omDownloadInputs(root_dir, input_files, config):
