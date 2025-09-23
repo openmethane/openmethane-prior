@@ -64,11 +64,12 @@ def verify_emis(config: PriorConfig, prior_ds: xr.Dataset, atol: float = MAX_ABS
     total_expected_vs_actual = []
 
     # Load Livestock inventory and check prior values don't exceed data source
-    with xr.open_dataset(config.as_input_file(config.layer_inputs.livestock_path)) as lss:
-        ls = lss.load()
-    livestock_inventory_total = round(np.sum(ls["CH4_total"].values)) * (period_days / 365)
-    livestock_prior_total = float(prior_ds[f"{SECTOR_PREFIX}_livestock"].sum()) * m2s_to_kg
-    total_expected_vs_actual.append(("livestock", livestock_inventory_total, livestock_prior_total))
+    if f"{SECTOR_PREFIX}_livestock" in prior_ds:
+        with xr.open_dataset(config.as_input_file(config.layer_inputs.livestock_path)) as lss:
+            ls = lss.load()
+        livestock_inventory_total = round(np.sum(ls["CH4_total"].values)) * (period_days / 365)
+        livestock_prior_total = float(prior_ds[f"{SECTOR_PREFIX}_livestock"].sum()) * m2s_to_kg
+        total_expected_vs_actual.append(("livestock", livestock_inventory_total, livestock_prior_total))
 
 
     # Check each layer in the output sums up to the input
