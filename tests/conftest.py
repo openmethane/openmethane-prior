@@ -11,8 +11,11 @@ import pytest
 import xarray as xr
 
 from openmethane_prior.config import PriorConfig, load_config_from_env, PriorConfigOptions
+from openmethane_prior.data_manager.manager import DataManager
 from openmethane_prior.grid.create_grid import create_grid_from_mcip
 from openmethane_prior.grid.grid import Grid
+from openmethane_prior.sector.config import PriorSectorConfig
+
 from scripts.omDownloadInputs import download_input_files
 from scripts.omPrior import run_prior
 
@@ -60,6 +63,14 @@ def config(tmp_path_factory, config_params) -> PriorConfig:
         intermediates_path=data_dir / "intermediates",
         output_path=data_dir / "outputs",
     )
+
+
+@pytest.fixture()
+def sector_config(config) -> PriorSectorConfig:
+    data_manager = DataManager(data_path=config.input_path)
+    sector_config = PriorSectorConfig(prior_config=config, data_manager=data_manager)
+    return sector_config
+
 
 @pytest.fixture(scope="session")
 def start_date() -> datetime.date:

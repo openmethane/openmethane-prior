@@ -1,14 +1,11 @@
 import os
 import attrs
 import numpy as np
-import pandas as pd
 import pytest
 import requests
-import xarray as xr
 
 from openmethane_prior.layers.omGFASEmis import download_GFAS
-from openmethane_prior.outputs import SECTOR_PREFIX
-from openmethane_prior.utils import SECS_PER_YEAR
+
 
 @pytest.mark.skip(reason="Duplicated by test_004_omDownloadInputs")
 def test_001_response_for_download_links(config):

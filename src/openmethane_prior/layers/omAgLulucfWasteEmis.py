@@ -26,6 +26,7 @@ import rioxarray as rxr
 import xarray as xr
 
 from openmethane_prior.config import PriorConfig, load_config_from_env, parse_cli_to_env
+from openmethane_prior.data_manager.manager import DataManager
 from openmethane_prior.grid.regrid import regrid_data
 from openmethane_prior.outputs import (
     convert_to_timescale,
@@ -34,6 +35,7 @@ from openmethane_prior.outputs import (
     create_output_dataset, write_output_dataset,
 )
 from openmethane_prior.inventory.inventory import load_inventory, get_sector_emissions_by_code
+from openmethane_prior.sector.config import PriorSectorConfig
 from openmethane_prior.sector.sector import SectorMeta
 from openmethane_prior.units import kg_to_period_cell_flux
 from openmethane_prior.raster import remap_raster
@@ -78,13 +80,14 @@ livestock_sector_meta = SectorMeta(
     cf_standard_name="domesticated_livestock",
 )
 
-def processEmissions(config: PriorConfig, prior_ds: xr.Dataset):  # noqa: PLR0912, PLR0915
+def processEmissions(sector_config: PriorSectorConfig, prior_ds: xr.Dataset):
     """
     Process Agriculture LULUCF and Waste emissions, adding them to the prior
     dataset.
     """
     # Load raster land-use data
     logger.info("processEmissions for Agriculture, LULUCF and waste")
+    config = sector_config.prior_config
 
     ## Calculate livestock CH4
     logger.info("Calculating livestock CH4")
@@ -194,9 +197,11 @@ def processEmissions(config: PriorConfig, prior_ds: xr.Dataset):  # noqa: PLR091
 if __name__ == "__main__":
     parse_cli_to_env()
     config = load_config_from_env()
+    data_manager = DataManager(data_path=config.input_path)
+    sector_config = PriorSectorConfig(prior_config=config, data_manager=data_manager)
 
     ds = create_output_dataset(config)
-    processEmissions(config, ds)
+    processEmissions(sector_config, ds)
     add_ch4_total(ds)
     write_output_dataset(config, ds)
 
