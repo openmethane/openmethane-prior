@@ -25,10 +25,12 @@ import os
 import netCDF4 as nc
 import numpy as np
 import xarray as xr
+from openmethane_prior.data_manager.manager import DataManager
 from shapely import geometry
 
 from openmethane_prior.config import PriorConfig, load_config_from_env, parse_cli_to_env
 from openmethane_prior.outputs import add_ch4_total, add_sector, create_output_dataset, write_output_dataset
+from openmethane_prior.sector.config import PriorSectorConfig
 from openmethane_prior.sector.sector import SectorMeta
 from openmethane_prior.utils import (
     area_of_rectangle_m2,
@@ -192,13 +194,15 @@ def make_wetland_climatology(config: PriorConfig, forceUpdate: bool = False):  #
 
 
 def processEmissions(
-    config: PriorConfig,
+    sector_config: PriorSectorConfig,
     prior_ds: xr.Dataset,
     forceUpdate: bool = False,
 ):
     """
     Process wetland emissions for the given date range
     """
+    config = sector_config.prior_config
+
     climatology = make_wetland_climatology(config, forceUpdate=forceUpdate)
     result_nd = []  # will be ndarray once built
     for date in prior_ds["time"].values:
@@ -230,8 +234,10 @@ def processEmissions(
 if __name__ == "__main__":
     parse_cli_to_env()
     config = load_config_from_env()
+    data_manager = DataManager(data_path=config.input_path)
+    sector_config = PriorSectorConfig(prior_config=config, data_manager=data_manager)
 
     ds = create_output_dataset(config)
-    processEmissions(config, ds)
+    processEmissions(sector_config, ds)
     add_ch4_total(ds)
     write_output_dataset(config, ds)
