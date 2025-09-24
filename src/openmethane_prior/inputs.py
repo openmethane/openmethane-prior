@@ -19,56 +19,13 @@
 
 import os
 import pathlib
-import urllib.parse
-import requests
+import urllib.request
 
 from openmethane_prior.config import PriorConfig
 import openmethane_prior.logger as logger
 from openmethane_prior.utils import is_url
 
 logger = logger.get_logger(__name__)
-
-def download_input_file(remote_url: str, url_fragment: str, save_path: pathlib.Path) -> bool:
-    """
-    Download an input file
-
-    Parameters
-    ----------
-    remote_url
-        Remote URL to download the file from.
-    url_fragment
-        URL fragment to download.
-
-        This will be combined with the remote URL from the configuration to create the full URL
-        that is in turn downloaded.
-    save_path
-        Path to save the downloaded file to.
-
-        If an existing file is found at this location, the download is skipped.
-
-    Returns
-    -------
-        True if the file was downloaded, False if a cached file was found
-    """
-    url = url_fragment if is_url(url_fragment) else urllib.parse.urljoin(remote_url, url_fragment)
-
-    if not os.path.exists(save_path):
-        logger.info(f"Downloading {url_fragment} to {save_path} from {url}")
-
-        save_path.parent.mkdir(parents=True, exist_ok=True)
-
-        with requests.get(url, stream=True, timeout=30) as response:
-            response.raise_for_status()
-
-            with open(save_path, mode="wb") as file:
-                for chunk in response.iter_content(chunk_size=10 * 1024):
-                    file.write(chunk)
-
-        return True
-    else:
-        logger.info(f"Skipping {url_fragment} because it already exists at {save_path}")
-
-    return False
 
 
 def check_input_files(config: PriorConfig):
@@ -79,20 +36,31 @@ def check_input_files(config: PriorConfig):
     """
     logger.debug("Checking input files")
 
-    errors = []
+    config.input_path.mkdir(parents=True, exist_ok=True)
 
+    errors = []
     if not config.domain_file.exists():
-        errors.append(f"\n- {config.domain_file} (domain info)")
+        if is_url(config.domain_path):
+            save_path, response = urllib.request.urlretrieve(
+                url=config.domain_path,
+                filename=config.domain_file,
+            )
+        else:
+            errors.append(f"\n- {config.domain_file} (domain info)")
 
     if not config.inventory_domain_file.exists():
-        errors.append(f"\n- {config.inventory_domain_file} (inventory domain)")
-
+        if is_url(config.inventory_domain_path):
+            save_path, response = urllib.request.urlretrieve(
+                url=config.inventory_domain_path,
+                filename=config.inventory_domain_file,
+            )
+        else:
+            errors.append(f"\n- {config.inventory_domain_file} (inventory domain)")
 
     ## Print all errors and exit (if we have any errors)
     if len(errors) > 0:
         logger.warning(
             "Required inputs are missing. "
-            "The default input set can be fetched by running omDownloadInputs.py. "
             f"\nMissing inputs:{''.join(errors)}"
         )
         raise ValueError("Required inputs are missing")

@@ -7,15 +7,6 @@ import requests
 from openmethane_prior.layers.omGFASEmis import GFASDataSource
 
 
-@pytest.mark.skip(reason="Duplicated by test_004_omDownloadInputs")
-def test_001_response_for_download_links(config):
-    layer_info = attrs.asdict(config.layer_inputs)
-    for file_fragment in layer_info.values():
-        url = f"{config.remote}{file_fragment}"
-        with requests.get(url, stream=True, timeout=30) as response:
-            assert response.status_code == 200, f"Unexpected {response.status_code} response for: {url}"
-
-
 @pytest.mark.skip(reason="Duplicated by other tests")
 def test_002_cdsapi_connection(root_dir, tmp_path, start_date, end_date):
     data_path = tmp_path / "sub"
@@ -28,18 +19,6 @@ def test_002_cdsapi_connection(root_dir, tmp_path, start_date, end_date):
     gfas_source.fetch(data_path=data_path)
 
     assert os.path.exists(data_path / gfas_source.file_name)
-
-
-def test_004_omDownloadInputs(root_dir, input_files, config):
-    EXPECTED_FILES = [
-        "AUS_2021_AUST_SHP_GDA2020.zip",
-        "domain.au-test.nc",
-        "domain.aust10km.nc",
-    ]
-
-    assert sorted([str(fn.relative_to(config.input_path)) for fn in input_files]) == sorted(
-        EXPECTED_FILES
-    )
 
 
 def test_009_prior_emissions_ds(prior_emissions_ds):

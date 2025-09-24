@@ -2,11 +2,11 @@ import os
 import pathlib
 import pytest
 
-from openmethane_prior.config import PriorConfig, LayerInputs
+from openmethane_prior.config import PriorConfig
 
 
 # This fixture will allow each test to setup the required env variables and
-# then reset back to the intial env before the next test
+# then reset back to the initial env before the next test
 @pytest.fixture(autouse=True)
 def env(monkeypatch, root_dir):
     initial_env = dict(os.environ)
@@ -17,23 +17,15 @@ def env(monkeypatch, root_dir):
     os.environ.clear()
     os.environ.update(initial_env)
 
-@pytest.fixture
-def mock_layer_inputs(tmp_path):
-    # mock paths to fake filenames
-    return LayerInputs(
-        aus_shapefile_path=pathlib.Path("./AUSF.nc"),
-    )
 
-def test_prior_config(tmp_path: pathlib.Path, mock_layer_inputs):
+def test_prior_config(tmp_path: pathlib.Path):
     test_config = PriorConfig(
-        remote="http://example.com",
         input_path=tmp_path / "in",
         output_path=tmp_path / "out",
         intermediates_path=tmp_path / "inter",
         domain_path="domain-input.nc",
         inventory_domain_path="domain-input.nc",
         output_filename="out.nc",
-        layer_inputs=mock_layer_inputs,
     )
 
     assert test_config.as_input_file("test.nc") == tmp_path / "in" / "test.nc"
