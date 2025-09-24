@@ -18,7 +18,6 @@ def test_check_inputs_missing(config: PriorConfig, caplog: pytest.LogCaptureFixt
 
     assert "Required inputs are missing" in caplog.text
     assert "(domain info)" in caplog.text
-    assert f"{config.layer_inputs.termite_path} (termite data)" in caplog.text
 
 
 def test_check_inputs(config, input_files):

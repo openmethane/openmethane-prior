@@ -25,6 +25,7 @@ import os
 import netCDF4 as nc
 import numpy as np
 from openmethane_prior.data_manager.manager import DataManager
+from openmethane_prior.data_manager.source import DataSource
 from shapely import geometry
 import xarray as xr
 
@@ -46,6 +47,11 @@ sector_meta = SectorMeta(
     cf_standard_name="termites",
 )
 
+termites_data_source = DataSource(
+    name="termites",
+    url="https://openmethane.s3.amazonaws.com/prior/inputs/termite_emissions_2010-2016.nc",
+)
+
 def processEmissions(  # noqa: PLR0915
     sector_config: PriorSectorConfig,
     prior_ds: xr.Dataset,
@@ -54,7 +60,8 @@ def processEmissions(  # noqa: PLR0915
     """Remap termite emissions to the CMAQ domain"""
     config = sector_config.prior_config
 
-    ncin = nc.Dataset(config.as_input_file(config.layer_inputs.termite_path), "r")
+    termites_asset = sector_config.data_manager.get_asset(termites_data_source)
+    ncin = nc.Dataset(termites_asset.path, "r")
     latTerm = np.around(np.float64(ncin.variables["lat"][:]), 3)
     latTerm = latTerm[-1::-1]  # we need it south-north
     lonTerm = np.around(np.float64(ncin.variables["lon"][:]), 3)
