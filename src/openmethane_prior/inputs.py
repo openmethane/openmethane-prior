@@ -87,13 +87,6 @@ def check_input_files(config: PriorConfig):
     if not config.inventory_domain_file.exists():
         errors.append(f"\n- {config.inventory_domain_file} (inventory domain)")
 
-    checks = (
-        (config.layer_inputs.wetland_path, "wetlands data"),
-    )
-
-    for path, desc in checks:
-        if not os.path.exists(config.as_input_file(path)):
-            errors.append(f"\n- {path} ({desc})")
 
     ## Print all errors and exit (if we have any errors)
     if len(errors) > 0:
