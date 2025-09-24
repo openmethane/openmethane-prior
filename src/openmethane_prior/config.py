@@ -22,7 +22,6 @@ class LayerInputs:
 
     These files are downloaded to the `INPUTS` directory via `scripts/omDownloadInputs.py`.
     """
-    electricity_path: pathlib.Path
     oil_gas_path: pathlib.Path
     coal_path: pathlib.Path
     ntl_path: pathlib.Path
@@ -200,7 +199,6 @@ def load_config_from_env(**overrides: PriorConfigOptions) -> PriorConfig:
         inventory_domain_path=env.str("INVENTORY_DOMAIN_FILE"),
         output_filename=env.str("OUTPUT_FILENAME", "prior-emissions.nc"),
         layer_inputs=LayerInputs(
-            electricity_path=env.path("CH4_ELECTRICITY"),
             oil_gas_path=env.path("CH4_OILGAS"),
             coal_path=env.path("CH4_COAL"),
             ntl_path=env.path("NTL"),
