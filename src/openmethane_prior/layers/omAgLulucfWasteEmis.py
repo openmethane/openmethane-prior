@@ -27,6 +27,7 @@ import xarray as xr
 
 from openmethane_prior.config import PriorConfig, load_config_from_env, parse_cli_to_env
 from openmethane_prior.data_manager.manager import DataManager
+from openmethane_prior.data_manager.source import DataSource
 from openmethane_prior.grid.regrid import regrid_data
 from openmethane_prior.inventory.data import create_inventory
 from openmethane_prior.outputs import (
@@ -81,6 +82,20 @@ livestock_sector_meta = SectorMeta(
     cf_standard_name="domesticated_livestock",
 )
 
+livestock_data_source = DataSource(
+    name="enteric-fermentation",
+    url="https://openmethane.s3.amazonaws.com/prior/inputs/EntericFermentation.nc",
+)
+alum_sector_mapping_data_source = DataSource(
+    name="alum-sector-mapping",
+    url="https://openmethane.s3.amazonaws.com/prior/inputs/landuse-sector-map.csv",
+)
+# source: https://www.agriculture.gov.au/abares/aclump/land-use/land-use-of-australia-2010-11_2015-16
+landuse_map_data_source = DataSource(
+    name="landuse-map",
+    url="https://openmethane.s3.amazonaws.com/prior/inputs/NLUM_ALUMV8_250m_2015_16_alb.tif",
+)
+
 def processEmissions(sector_config: PriorSectorConfig, prior_ds: xr.Dataset):
     """
     Process Agriculture LULUCF and Waste emissions, adding them to the prior
@@ -92,7 +107,8 @@ def processEmissions(sector_config: PriorSectorConfig, prior_ds: xr.Dataset):
 
     ## Calculate livestock CH4
     logger.info("Calculating livestock CH4")
-    with xr.open_dataset(config.as_input_file(config.layer_inputs.livestock_path)) as lss:
+    livestock_asset = sector_config.data_manager.get_asset(livestock_data_source)
+    with xr.open_dataset(livestock_asset.path) as lss:
         ls = lss.load()
 
     domain_grid = config.domain_grid()
@@ -125,8 +141,8 @@ def processEmissions(sector_config: PriorSectorConfig, prior_ds: xr.Dataset):
     # Import a map of land use type numbers to emissions sectors
     # make a dictionary of all landuse types corresponding to sectors in map
     landuseSectorMap = {}
-    sectoral_mapping_file = config.as_input_file(config.layer_inputs.sectoral_mapping_path)
-    with open(sectoral_mapping_file, newline="") as f:
+    sector_mapping_asset = sector_config.data_manager.get_asset(alum_sector_mapping_data_source)
+    with open(sector_mapping_asset.path, newline="") as f:
         reader = csv.reader(f)
         next(reader)  # toss headers
 
@@ -144,18 +160,14 @@ def processEmissions(sector_config: PriorSectorConfig, prior_ds: xr.Dataset):
     logger.debug("Loading land use data")
     # this seems to need two approaches since rioxarray
     # seems to always convert to float which we don't want but we need it for the other tif attributes
-    landUseData = rxr.open_rasterio(
-        config.as_input_file(config.layer_inputs.land_use_path), masked=True
-    )
+    landuse_asset = sector_config.data_manager.get_asset(landuse_map_data_source)
+    landUseData = rxr.open_rasterio(landuse_asset.path, masked=True)
     lu_x = landUseData.x
     lu_y = landUseData.y
     lu_crs = landUseData.rio.crs
     landUseData.close()
 
-    dataBand = rasterio.open(
-        config.as_input_file(config.layer_inputs.land_use_path),
-        engine='rasterio',
-    ).read()
+    dataBand = rasterio.open(landuse_asset.path, engine='rasterio').read()
     dataBand = dataBand.squeeze()
 
     inventory_mask_regridded = regrid_data(config.inventory_dataset()['inventory_mask'], from_grid=config.inventory_grid(), to_grid=config.domain_grid())

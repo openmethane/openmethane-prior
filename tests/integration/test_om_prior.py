@@ -35,11 +35,8 @@ def test_004_omDownloadInputs(root_dir, input_files, config):
         "ch4-electricity.csv",
         "coal-mining_emissions-sources.csv",
         "oil-and-gas-production-and-transport_emissions-sources.csv",
-        "NLUM_ALUMV8_250m_2015_16_alb.tif",
-        "landuse-sector-map.csv",
         "nasa-nighttime-lights.tiff",
         "AUS_2021_AUST_SHP_GDA2020.zip",
-        "EntericFermentation.nc",
         "termite_emissions_2010-2016.nc",
         "DLEM_totflux_CRU_diagnostic.nc",
         "domain.au-test.nc",
@@ -49,20 +46,6 @@ def test_004_omDownloadInputs(root_dir, input_files, config):
     assert sorted([str(fn.relative_to(config.input_path)) for fn in input_files]) == sorted(
         EXPECTED_FILES
     )
-
-#
-# def test_005_agriculture_emissions(config, root_dir, input_files):
-#     filepath_livestock = config.as_input_file(config.layer_inputs.livestock_path)
-#     livestock_data = xr.open_dataset(filepath_livestock)
-#
-#     filepath_sector = config.as_input_file(config.layer_inputs.sectoral_emissions_path)
-#     sector_data = pd.read_csv(filepath_sector).to_dict(orient="records")[0]
-#
-#     lsVal = round(np.sum(livestock_data["CH4_total"].values))
-#     agVal = round(sector_data["agriculture"] * 1e9)
-#     agDX = agVal - lsVal
-#
-#     assert agDX > 0, f"Livestock CH4 exceeds bounds of total agriculture CH4: {agDX / 1e9}"
 
 
 def test_009_prior_emissions_ds(prior_emissions_ds):

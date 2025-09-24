@@ -91,10 +91,7 @@ def check_input_files(config: PriorConfig):
         (config.layer_inputs.electricity_path, "electricity facilities"),
         (config.layer_inputs.coal_path, "Coal facilities"),
         (config.layer_inputs.oil_gas_path, "Oilgas facilities"),
-        (config.layer_inputs.land_use_path, "land use"),
-        (config.layer_inputs.sectoral_mapping_path, "sectoral emissions mappings"),
         (config.layer_inputs.ntl_path, "night time lights"),
-        (config.layer_inputs.livestock_path, "livestock data"),
         (config.layer_inputs.termite_path, "termite data"),
         (config.layer_inputs.wetland_path, "wetlands data"),
     )
