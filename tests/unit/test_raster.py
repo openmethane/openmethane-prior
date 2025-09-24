@@ -1,8 +1,10 @@
 import numpy as np
 import rioxarray as rxr
 import xarray as xr
+from openmethane_prior.data_manager.manager import DataManager
 
 from openmethane_prior.grid.grid import Grid
+from openmethane_prior.layers.omIndustrialStationaryTransportEmis import night_lights_data_source
 from openmethane_prior.raster import remap_raster
 
 def test_remap_raster(config, input_files):
@@ -17,9 +19,10 @@ def test_remap_raster(config, input_files):
     lat = domain_dataset['lat']
     lon = domain_dataset['lon']
 
-    ntl_raw = rxr.open_rasterio(
-        config.as_input_file(config.layer_inputs.ntl_path), masked=True
-    )
+    data_manager = DataManager(data_path=config.input_path)
+    night_lights_asset = data_manager.get_asset(night_lights_data_source)
+    ntl_raw = rxr.open_rasterio(night_lights_asset.path, masked=True)
+
     # filter nans
     np.nan_to_num(ntl_raw, copy=False)
     ntl = ntl_raw.sum(axis=0)

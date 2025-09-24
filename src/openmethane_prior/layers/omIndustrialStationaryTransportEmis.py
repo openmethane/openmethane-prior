@@ -24,6 +24,7 @@ import xarray as xr
 
 from openmethane_prior.config import PriorConfig, load_config_from_env, parse_cli_to_env
 from openmethane_prior.data_manager.manager import DataManager
+from openmethane_prior.data_manager.source import DataSource
 from openmethane_prior.grid.regrid import regrid_data
 from openmethane_prior.inventory.data import create_inventory
 from openmethane_prior.outputs import (
@@ -69,6 +70,10 @@ sector_meta_map = {
     ),
 }
 
+night_lights_data_source = DataSource(
+    name="nighttime-lights",
+    url="https://openmethane.s3.amazonaws.com/prior/inputs/nasa-nighttime-lights.tiff",
+)
 
 def processEmissions(sector_config: PriorSectorConfig, prior_ds: xr.Dataset):
     """
@@ -78,9 +83,10 @@ def processEmissions(sector_config: PriorSectorConfig, prior_ds: xr.Dataset):
     logger.info("processEmissions for Industrial, Stationary and Transport")
 
     config = sector_config.prior_config
-    ntlData = rxr.open_rasterio(
-        config.as_input_file(config.layer_inputs.ntl_path), masked=False
-    )
+
+    night_lights_asset = sector_config.data_manager.get_asset(night_lights_data_source)
+    ntlData = rxr.open_rasterio(night_lights_asset.path, masked=False)
+
     # sum over three bands
     ntlt = ntlData.sum(axis=0)
     np.nan_to_num(ntlt, copy=False)
