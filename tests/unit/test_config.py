@@ -22,7 +22,6 @@ def mock_layer_inputs(tmp_path):
     # mock paths to fake filenames
     return LayerInputs(
         aus_shapefile_path=pathlib.Path("./AUSF.nc"),
-        wetland_path=pathlib.Path("./WETLANDS.nc"),
     )
 
 def test_prior_config(tmp_path: pathlib.Path, mock_layer_inputs):

@@ -2,15 +2,20 @@ import netCDF4 as nc
 import numpy as np
 import pytest
 
-from openmethane_prior.layers.omWetlandEmis import make_wetland_climatology
+from openmethane_prior.data_manager.manager import DataManager
+from openmethane_prior.layers.omWetlandEmis import make_wetland_climatology, wetlands_data_source
 from openmethane_prior.utils import area_of_rectangle_m2
 
 @pytest.mark.skip(reason="Makes no assertions")
 def test_wetland_emis(config, input_files):
     # TODO: convert into an actual test
     """Test totals for WETLAND emissions between original and remapped"""
+    data_manager = DataManager(data_path=config.input_path)
+
     remapped = make_wetland_climatology(config=config, forceUpdate=True)
-    ncin = nc.Dataset(config.as_input_file(config.layer_inputs.wetland_path), "r")
+
+    wetlands_asset = data_manager.get_asset(wetlands_data_source)
+    ncin = nc.Dataset(wetlands_asset.path, "r")
     latWetland = np.around(np.float64(ncin.variables["lat"][:]), 3)
     lonWetland = np.around(np.float64(ncin.variables["lon"][:]), 3)
     dlatWetland = latWetland[0] - latWetland[1]
