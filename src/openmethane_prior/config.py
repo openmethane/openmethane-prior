@@ -25,11 +25,8 @@ class LayerInputs:
     electricity_path: pathlib.Path
     oil_gas_path: pathlib.Path
     coal_path: pathlib.Path
-    land_use_path: pathlib.Path
-    sectoral_mapping_path: pathlib.Path
     ntl_path: pathlib.Path
     aus_shapefile_path: pathlib.Path
-    livestock_path: pathlib.Path
     termite_path: pathlib.Path
     wetland_path: pathlib.Path
 
@@ -206,11 +203,8 @@ def load_config_from_env(**overrides: PriorConfigOptions) -> PriorConfig:
             electricity_path=env.path("CH4_ELECTRICITY"),
             oil_gas_path=env.path("CH4_OILGAS"),
             coal_path=env.path("CH4_COAL"),
-            land_use_path=env.path("LAND_USE"),
-            sectoral_mapping_path=env.path("SECTORAL_MAPPING"),
             ntl_path=env.path("NTL"),
             aus_shapefile_path=env.path("AUSF"),
-            livestock_path=env.path("LIVESTOCK_DATA"),
             termite_path=env.path("TERMITES"),
             wetland_path=env.path("WETLANDS"),
         ),
