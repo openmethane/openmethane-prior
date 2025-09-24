@@ -32,8 +32,6 @@ def test_002_cdsapi_connection(root_dir, tmp_path, start_date, end_date):
 
 def test_004_omDownloadInputs(root_dir, input_files, config):
     EXPECTED_FILES = [
-        "coal-mining_emissions-sources.csv",
-        "oil-and-gas-production-and-transport_emissions-sources.csv",
         "nasa-nighttime-lights.tiff",
         "AUS_2021_AUST_SHP_GDA2020.zip",
         "termite_emissions_2010-2016.nc",
