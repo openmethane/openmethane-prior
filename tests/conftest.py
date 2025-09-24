@@ -14,9 +14,9 @@ from openmethane_prior.config import PriorConfig, load_config_from_env, PriorCon
 from openmethane_prior.data_manager.manager import DataManager
 from openmethane_prior.grid.create_grid import create_grid_from_mcip
 from openmethane_prior.grid.grid import Grid
+from openmethane_prior.inputs import check_input_files
 from openmethane_prior.sector.config import PriorSectorConfig
 
-from scripts.omDownloadInputs import download_input_files
 from scripts.omPrior import run_prior
 
 
@@ -91,7 +91,12 @@ def end_date() -> datetime.date:
 
 
 @pytest.fixture(scope="session")
-def fetch_published_domain(root_dir) -> list[pathlib.Path]:
+def cache_dir(root_dir) -> pathlib.Path:
+    return root_dir / ".cache"
+
+
+@pytest.fixture(scope="session")
+def fetch_published_domain(cache_dir) -> list[pathlib.Path]:
     """
     Fetch and cache the domain files.
 
@@ -102,45 +107,18 @@ def fetch_published_domain(root_dir) -> list[pathlib.Path]:
     -------
         List of cached input files
     """
-    config = load_config_from_env()
-    published_domains = [
-        "https://openmethane.s3.amazonaws.com/domains/au-test/v1/domain.au-test.nc", # domain
-        "https://openmethane.s3.amazonaws.com/domains/aust10km/v1/domain.aust10km.nc", # inventory
-    ]
-
-    downloaded_files = download_input_files(
-        remote=config.remote,
-        download_path=root_dir / ".cache",
-        fragments=published_domains,
+    config = load_config_from_env(
+        input_path=cache_dir,
+        domain_path="https://openmethane.s3.amazonaws.com/domains/au-test/v1/domain.au-test.nc",
+        inventory_domain_path="https://openmethane.s3.amazonaws.com/domains/aust10km/v1/domain.aust10km.nc",
     )
 
-    return downloaded_files
+    check_input_files(config)
 
-
-# Fixture to download and later remove all input files
-@pytest.fixture(scope="session")
-def fetch_input_files(root_dir, config_params) -> list[pathlib.Path]:
-    """
-    Fetch and cache the input files.
-
-    Don't use this fixture directly,
-    instead use `input_files` to copy the files to the input directory.
-
-    Returns
-    -------
-        List of cached input files
-    """
-    config = load_config_from_env(**config_params)
-
-    fragments = [str(f) for f in attrs.asdict(config.layer_inputs).values()]
-
-    downloaded_files = download_input_files(
-        remote=config.remote,
-        download_path=root_dir / ".cache",
-        fragments=fragments,
-    )
-
-    return downloaded_files
+    return list({ # use a set to remove duplicates
+        config.domain_file,
+        config.inventory_domain_file,
+    })
 
 
 def copy_input_files(
@@ -181,23 +159,21 @@ def copy_input_files(
 
 
 @pytest.fixture()
-def input_files(
-    root_dir, fetch_input_files, fetch_published_domain, config,
-) -> Generator[list[pathlib.Path], None, None]:
+def input_files(cache_dir, fetch_published_domain, config) -> Generator[list[pathlib.Path], None, None]:
     """
     Ensure that the required input files are in the input directory.
 
     The input files are copied from a local cache `.cache`
     """
-    cache_dir = root_dir / ".cache"
-    files_to_copy = fetch_input_files + fetch_published_domain
+
+    files_to_copy = fetch_published_domain
 
     fragments = [file.relative_to(cache_dir) for file in files_to_copy]
     yield from copy_input_files(cache_dir, config.input_path, fragments)
 
 
 @pytest.fixture()
-def input_domain(config, root_dir, input_files) -> Generator[xr.Dataset, None, None]:
+def input_domain(config, input_files) -> Generator[xr.Dataset, None, None]:
     """
     Get an input domain
 
@@ -212,8 +188,7 @@ def input_domain(config, root_dir, input_files) -> Generator[xr.Dataset, None, N
 
 @pytest.fixture(scope="session")
 def prior_emissions_ds(
-    root_dir,
-    fetch_input_files,
+    cache_dir,
     fetch_published_domain,
     config_params,
     tmp_path_factory,
@@ -239,11 +214,10 @@ def prior_emissions_ds(
     )
 
     # Use the factory method as input_files has "function" scope
-    cache_dir = root_dir / ".cache"
     input_fragments = [
-        file.relative_to(cache_dir) for file in fetch_input_files + fetch_published_domain
+        file.relative_to(cache_dir) for file in fetch_published_domain
     ]
-    input_files = next(copy_input_files(root_dir / ".cache", config.input_path, input_fragments))
+    input_files = next(copy_input_files(cache_dir, config.input_path, input_fragments))
 
     run_prior(config)
 
