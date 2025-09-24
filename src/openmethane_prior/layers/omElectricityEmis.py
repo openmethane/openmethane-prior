@@ -24,6 +24,7 @@ import xarray as xr
 
 from openmethane_prior.config import PriorConfig, load_config_from_env, parse_cli_to_env
 from openmethane_prior.data_manager.manager import DataManager
+from openmethane_prior.data_manager.source import DataSource
 from openmethane_prior.inventory.data import create_inventory
 from openmethane_prior.outputs import (
     add_ch4_total,
@@ -46,6 +47,11 @@ sector_meta = SectorMeta(
     cf_standard_name="energy_production_and_distribution",
 )
 
+electricity_facilities_data_source = DataSource(
+    name="electricity-facilities",
+    url="https://openmethane.s3.amazonaws.com/prior/inputs/ch4-electricity.csv",
+)
+
 def processEmissions(sector_config: PriorSectorConfig, prior_ds: xr.Dataset):
     """
     Process emissions from the electricity sector, adding them to the prior
@@ -63,9 +69,8 @@ def processEmissions(sector_config: PriorSectorConfig, prior_ds: xr.Dataset):
         category_codes=sector_meta.unfccc_categories,
     )
 
-    electricityFacilities = pd.read_csv(
-        config.as_input_file(config.layer_inputs.electricity_path), header=0
-    ).to_dict(orient="records")
+    electricity_facilities_asset = sector_config.data_manager.get_asset(electricity_facilities_data_source)
+    electricityFacilities = pd.read_csv(electricity_facilities_asset.path).to_dict(orient="records")
 
     domain_grid = config.domain_grid()
 

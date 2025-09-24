@@ -21,7 +21,6 @@ def env(monkeypatch, root_dir):
 def mock_layer_inputs(tmp_path):
     # mock paths to fake filenames
     return LayerInputs(
-        electricity_path=pathlib.Path("./CH4_ELECTRICITY.nc"),
         oil_gas_path=pathlib.Path("./CH4_OILGAS.nc"),
         coal_path=pathlib.Path("./CH4_COAL.nc"),
         ntl_path=pathlib.Path("./NTL.nc"),
