@@ -22,7 +22,6 @@ class LayerInputs:
 
     These files are downloaded to the `INPUTS` directory via `scripts/omDownloadInputs.py`.
     """
-    ntl_path: pathlib.Path
     aus_shapefile_path: pathlib.Path
     termite_path: pathlib.Path
     wetland_path: pathlib.Path
@@ -197,7 +196,6 @@ def load_config_from_env(**overrides: PriorConfigOptions) -> PriorConfig:
         inventory_domain_path=env.str("INVENTORY_DOMAIN_FILE"),
         output_filename=env.str("OUTPUT_FILENAME", "prior-emissions.nc"),
         layer_inputs=LayerInputs(
-            ntl_path=env.path("NTL"),
             aus_shapefile_path=env.path("AUSF"),
             termite_path=env.path("TERMITES"),
             wetland_path=env.path("WETLANDS"),

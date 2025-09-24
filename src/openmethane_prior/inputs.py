@@ -88,7 +88,6 @@ def check_input_files(config: PriorConfig):
         errors.append(f"\n- {config.inventory_domain_file} (inventory domain)")
 
     checks = (
-        (config.layer_inputs.ntl_path, "night time lights"),
         (config.layer_inputs.termite_path, "termite data"),
         (config.layer_inputs.wetland_path, "wetlands data"),
     )
