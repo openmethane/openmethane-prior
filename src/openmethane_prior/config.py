@@ -15,36 +15,13 @@ from .grid.create_grid import create_grid_from_domain, create_grid_from_mcip
 from .utils import is_url
 
 
-@attrs.frozen()
-class LayerInputs:
-    """
-    Filename fragments for the files required to generate the layers.
-
-    These files are downloaded to the `INPUTS` directory via `scripts/omDownloadInputs.py`.
-    """
-    inventory_path: pathlib.Path
-    unfccc_categories_path: pathlib.Path
-    electricity_path: pathlib.Path
-    oil_gas_path: pathlib.Path
-    coal_path: pathlib.Path
-    land_use_path: pathlib.Path
-    sectoral_mapping_path: pathlib.Path
-    ntl_path: pathlib.Path
-    aus_shapefile_path: pathlib.Path
-    livestock_path: pathlib.Path
-    termite_path: pathlib.Path
-    wetland_path: pathlib.Path
-
-
 class PriorConfigOptions(typing.TypedDict, total=False):
-    remote: str
     input_path: pathlib.Path | str
     output_path: pathlib.Path | str
     intermediates_path: pathlib.Path | str
     domain_path: pathlib.Path | str
     inventory_domain_path: pathlib.Path | str
     output_filename: str
-    layer_inputs: LayerInputs
     start_date: datetime.datetime
     end_date: datetime.datetime
 
@@ -52,7 +29,6 @@ class PriorConfigOptions(typing.TypedDict, total=False):
 class PriorConfig:
     """Configuration used to describe the prior data sources and the output directories."""
 
-    remote: str
     input_path: pathlib.Path
     output_path: pathlib.Path
     intermediates_path: pathlib.Path
@@ -67,8 +43,6 @@ class PriorConfig:
     output_filename: str
     """Filename to write the prior output to as a NetCDFv4 file in
     `output_path`"""
-
-    layer_inputs: LayerInputs
 
     start_date: datetime.datetime | None = None
     end_date: datetime.datetime | None = None
@@ -143,12 +117,7 @@ class PriorConfig:
 
     @property
     def domain_file(self):
-        """
-        Get the filename of the input domain
-
-        If specified as a URL, this assumes the file has been downloaded by
-        omDownloadInputs.py
-        """
+        """Filesystem path of the input domain"""
         if is_url(self.domain_path):
             return self.as_input_file(os.path.basename(self.domain_path))
         elif not self.domain_path.startswith("/"):
@@ -157,9 +126,7 @@ class PriorConfig:
 
     @property
     def inventory_domain_file(self):
-        """
-        Get the filename of the inventory domain
-        """
+        """Filesystem path of the inventory domain"""
         if is_url(self.inventory_domain_path):
             return self.as_input_file(os.path.basename(self.inventory_domain_path))
         elif not self.inventory_domain_path.startswith("/"):
@@ -197,27 +164,12 @@ def load_config_from_env(**overrides: PriorConfigOptions) -> PriorConfig:
         end_date = datetime.datetime.combine(end_date, datetime.time.min)
 
     options: PriorConfigOptions = dict(
-        remote=env.str("PRIOR_REMOTE"),
         input_path=env.path("INPUTS", "data/inputs"),
         output_path=env.path("OUTPUTS", "data/outputs"),
         intermediates_path=env.path("INTERMEDIATES", "data/processed"),
         domain_path=env.str("DOMAIN_FILE"),
         inventory_domain_path=env.str("INVENTORY_DOMAIN_FILE"),
         output_filename=env.str("OUTPUT_FILENAME", "prior-emissions.nc"),
-        layer_inputs=LayerInputs(
-            inventory_path=env.path("CH4_INVENTORY_CSV"),
-            unfccc_categories_path=env.path("UNFCCC_SECTOR_AU_MAPPING"),
-            electricity_path=env.path("CH4_ELECTRICITY"),
-            oil_gas_path=env.path("CH4_OILGAS"),
-            coal_path=env.path("CH4_COAL"),
-            land_use_path=env.path("LAND_USE"),
-            sectoral_mapping_path=env.path("SECTORAL_MAPPING"),
-            ntl_path=env.path("NTL"),
-            aus_shapefile_path=env.path("AUSF"),
-            livestock_path=env.path("LIVESTOCK_DATA"),
-            termite_path=env.path("TERMITES"),
-            wetland_path=env.path("WETLANDS"),
-        ),
         start_date=start_date,
         end_date =end_date,
     )

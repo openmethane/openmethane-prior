@@ -19,12 +19,8 @@ clean:  ## remove generated temporary files
 clean-all:  ## remove all temporary files including downloaded data
 	rm -r data
 
-.PHONY: download
-download: ## Download the data for the project
-	poetry run python scripts/omDownloadInputs.py
-
 .PHONY: run-example
-run-example:  download ## Run the project for an example period
+run-example:  ## Run the project for an example period
 	poetry run python scripts/omPrior.py --start-date 2022-07-01 --end-date 2022-07-01
 
 .PHONY: ruff-fixes
