@@ -19,11 +19,11 @@
 """Process emissions from the electricity sector"""
 
 import numpy as np
-import pandas as pd
 import xarray as xr
 
-from openmethane_prior.config import PriorConfig, load_config_from_env, parse_cli_to_env
+from openmethane_prior.config import load_config_from_env, parse_cli_to_env
 from openmethane_prior.data_manager.manager import DataManager
+from openmethane_prior.data_manager.parsers import parse_csv
 from openmethane_prior.data_manager.source import DataSource
 from openmethane_prior.inventory.data import create_inventory
 from openmethane_prior.outputs import (
@@ -50,6 +50,7 @@ sector_meta = SectorMeta(
 electricity_facilities_data_source = DataSource(
     name="electricity-facilities",
     url="https://openmethane.s3.amazonaws.com/prior/inputs/ch4-electricity.csv",
+    parse=parse_csv,
 )
 
 def processEmissions(sector_config: PriorSectorConfig, prior_ds: xr.Dataset):
@@ -70,15 +71,15 @@ def processEmissions(sector_config: PriorSectorConfig, prior_ds: xr.Dataset):
     )
 
     electricity_facilities_asset = sector_config.data_manager.get_asset(electricity_facilities_data_source)
-    electricityFacilities = pd.read_csv(electricity_facilities_asset.path).to_dict(orient="records")
+    electricity_facilities_records = electricity_facilities_asset.data.to_dict(orient="records")
 
     domain_grid = config.domain_grid()
 
-    totalCapacity = sum(item["capacity"] for item in electricityFacilities)
+    totalCapacity = sum(item["capacity"] for item in electricity_facilities_records)
 
     methane = np.zeros(domain_grid.shape)
 
-    for facility in electricityFacilities:
+    for facility in electricity_facilities_records:
         cell_x, cell_y, cell_valid = domain_grid.lonlat_to_cell_index(facility["lng"], facility["lat"])
 
         if cell_valid:

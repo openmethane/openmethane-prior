@@ -22,8 +22,9 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
-from openmethane_prior.config import PriorConfig, load_config_from_env, parse_cli_to_env
+from openmethane_prior.config import load_config_from_env, parse_cli_to_env
 from openmethane_prior.data_manager.manager import DataManager
+from openmethane_prior.data_manager.parsers import parse_csv
 from openmethane_prior.data_manager.source import DataSource
 from openmethane_prior.inventory.data import create_inventory
 from openmethane_prior.outputs import (
@@ -51,10 +52,12 @@ sector_meta = SectorMeta(
 coal_facilities_data_source = DataSource(
     name="coal-facilities",
     url="https://openmethane.s3.amazonaws.com/prior/inputs/coal-mining_emissions-sources.csv",
+    parse=parse_csv,
 )
 oil_gas_facilities_data_source = DataSource(
     name="oil-gas-facilities",
     url="https://openmethane.s3.amazonaws.com/prior/inputs/oil-and-gas-production-and-transport_emissions-sources.csv",
+    parse=parse_csv,
 )
 
 def processEmissions(sector_config: PriorSectorConfig, prior_ds: xr.Dataset):
@@ -77,10 +80,8 @@ def processEmissions(sector_config: PriorSectorConfig, prior_ds: xr.Dataset):
 
     # now read climate_trace facilities emissions for coal, oil and gas
     coal_facilities_asset = sector_config.data_manager.get_asset(coal_facilities_data_source)
-    coal_facilities = pd.read_csv(coal_facilities_asset.path)
     oil_gas_facilities_asset = sector_config.data_manager.get_asset(oil_gas_facilities_data_source)
-    oil_gas_facilities = pd.read_csv(oil_gas_facilities_asset.path)
-    fugitiveFacilities = pd.concat((coal_facilities, oil_gas_facilities))
+    fugitiveFacilities = pd.concat((coal_facilities_asset.data, oil_gas_facilities_asset.data))
 
     # select gas and year
     fugitiveCH4 = fugitiveFacilities.loc[fugitiveFacilities["gas"] == "ch4"]
