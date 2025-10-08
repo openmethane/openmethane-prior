@@ -78,3 +78,24 @@ def test_inventory_get_sector_emissions_by_code(category_list):
 
     # search finds both categories, and takes the fraction of the year
     assert multi_emissions == (1.1 + 0.7) * (31 / 365) * 1e6
+
+    future_emissions = get_sector_emissions_by_code(
+        emissions_inventory=inventory,
+        category_codes=["1.A", "2"], # multiple codes
+        start_date=datetime.date(1997, 1, 1),
+        end_date=datetime.date(1997, 1, 31),
+    )
+
+    # search finds no emissions for 1997, uses last available year 1995
+    assert future_emissions == (3.3 + 0.13) * (31 / 365) * 1e6
+
+    past_emissions = get_sector_emissions_by_code(
+        emissions_inventory=inventory,
+        category_codes=["1.A", "2"], # multiple codes
+        start_date=datetime.date(1990, 1, 1),
+        end_date=datetime.date(1990, 1, 31),
+    )
+
+    # search finds no emissions for 1990, uses first available year 1993
+    assert multi_emissions == (1.1 + 0.7) * (31 / 365) * 1e6
+

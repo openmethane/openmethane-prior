@@ -74,4 +74,12 @@ def get_logger(package_name: str) -> logging.Logger:
 
     return logger
 
-
+# see: https://stackoverflow.com/a/44692178
+class DuplicateFilter(logging.Filter):
+    """Logging filter that prevents duplicate log lines. Use with caution!"""
+    def filter(self, record):
+        current_log = (record.module, record.levelno, record.msg)
+        if current_log != getattr(self, "last_log", None):
+            self.last_log = current_log
+            return True
+        return False
