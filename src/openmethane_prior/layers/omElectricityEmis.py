@@ -19,10 +19,13 @@
 """Process emissions from the electricity sector"""
 
 import numpy as np
-import pandas as pd
 import xarray as xr
 
-from openmethane_prior.config import PriorConfig, load_config_from_env, parse_cli_to_env
+from openmethane_prior.config import load_config_from_env, parse_cli_to_env
+from openmethane_prior.data_manager.manager import DataManager
+from openmethane_prior.data_manager.parsers import parse_csv
+from openmethane_prior.data_manager.source import DataSource
+from openmethane_prior.inventory.data import inventory_data_source
 from openmethane_prior.outputs import (
     add_ch4_total,
     add_sector,
@@ -30,7 +33,8 @@ from openmethane_prior.outputs import (
     write_output_dataset,
 )
 import openmethane_prior.logger as logger
-from openmethane_prior.sector.inventory import load_inventory, get_sector_emissions_by_code
+from openmethane_prior.inventory.inventory import get_sector_emissions_by_code
+from openmethane_prior.sector.config import PriorSectorConfig
 from openmethane_prior.sector.sector import SectorMeta
 from openmethane_prior.units import kg_to_period_cell_flux
 
@@ -43,15 +47,22 @@ sector_meta = SectorMeta(
     cf_standard_name="energy_production_and_distribution",
 )
 
-def processEmissions(config: PriorConfig, prior_ds: xr.Dataset):
+electricity_facilities_data_source = DataSource(
+    name="electricity-facilities",
+    url="https://openmethane.s3.amazonaws.com/prior/inputs/ch4-electricity.csv",
+    parse=parse_csv,
+)
+
+def processEmissions(sector_config: PriorSectorConfig, prior_ds: xr.Dataset):
     """
     Process emissions from the electricity sector, adding them to the prior
     dataset.
     """
     logger.info("processEmissions for electricity")
+    config = sector_config.prior_config
 
     # read the total emissions over the sector (in kg)
-    emissions_inventory = load_inventory(config)
+    emissions_inventory = sector_config.data_manager.get_asset(inventory_data_source).data
     sector_total_emissions = get_sector_emissions_by_code(
         emissions_inventory=emissions_inventory,
         start_date=config.start_date,
@@ -59,17 +70,16 @@ def processEmissions(config: PriorConfig, prior_ds: xr.Dataset):
         category_codes=sector_meta.unfccc_categories,
     )
 
-    electricityFacilities = pd.read_csv(
-        config.as_input_file(config.layer_inputs.electricity_path), header=0
-    ).to_dict(orient="records")
+    electricity_facilities_asset = sector_config.data_manager.get_asset(electricity_facilities_data_source)
+    electricity_facilities_records = electricity_facilities_asset.data.to_dict(orient="records")
 
     domain_grid = config.domain_grid()
 
-    totalCapacity = sum(item["capacity"] for item in electricityFacilities)
+    totalCapacity = sum(item["capacity"] for item in electricity_facilities_records)
 
     methane = np.zeros(domain_grid.shape)
 
-    for facility in electricityFacilities:
+    for facility in electricity_facilities_records:
         cell_x, cell_y, cell_valid = domain_grid.lonlat_to_cell_index(facility["lng"], facility["lat"])
 
         if cell_valid:
@@ -85,8 +95,10 @@ def processEmissions(config: PriorConfig, prior_ds: xr.Dataset):
 if __name__ == "__main__":
     parse_cli_to_env()
     config = load_config_from_env()
+    data_manager = DataManager(data_path=config.input_path, prior_config=config)
+    sector_config = PriorSectorConfig(prior_config=config, data_manager=data_manager)
 
     ds = create_output_dataset(config)
-    processEmissions(config, ds)
+    processEmissions(sector_config, ds)
     add_ch4_total(ds)
     write_output_dataset(config, ds)

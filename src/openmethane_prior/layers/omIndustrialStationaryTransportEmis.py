@@ -17,13 +17,16 @@
 #
 
 """Processing industrial stationary transport emissions"""
-
+import pathlib
 import numpy as np
 import rioxarray as rxr
 import xarray as xr
 
-from openmethane_prior.config import PriorConfig, load_config_from_env, parse_cli_to_env
+from openmethane_prior.config import load_config_from_env, parse_cli_to_env
+from openmethane_prior.data_manager.manager import DataManager
+from openmethane_prior.data_manager.source import ConfiguredDataSource, DataSource
 from openmethane_prior.grid.regrid import regrid_data
+from openmethane_prior.inventory.data import inventory_data_source
 from openmethane_prior.outputs import (
     add_ch4_total,
     add_sector,
@@ -32,7 +35,8 @@ from openmethane_prior.outputs import (
 )
 from openmethane_prior.raster import remap_raster
 import openmethane_prior.logger as logger
-from openmethane_prior.sector.inventory import load_inventory, get_sector_emissions_by_code
+from openmethane_prior.inventory.inventory import get_sector_emissions_by_code
+from openmethane_prior.sector.config import PriorSectorConfig
 from openmethane_prior.sector.sector import SectorMeta
 from openmethane_prior.units import kg_to_period_cell_flux
 
@@ -66,41 +70,54 @@ sector_meta_map = {
     ),
 }
 
+def parse_ntlt_data_source(data_source: ConfiguredDataSource):
+    prior_config = data_source.prior_config
+    ntlData = rxr.open_rasterio(data_source.data_path / data_source.file_name, masked=False)
 
-def processEmissions(config: PriorConfig, prior_ds: xr.Dataset):
+    # sum over three bands
+    ntlt = ntlData.sum(axis=0)
+    np.nan_to_num(ntlt, copy=False)
+
+    om_ntlt = remap_raster(ntlt, prior_config.domain_grid(), AREA_OR_POINT=ntlData.AREA_OR_POINT)
+
+    # limit emissions to land points
+    inventory_mask_regridded = regrid_data(prior_config.inventory_dataset()['inventory_mask'], from_grid=prior_config.inventory_grid(), to_grid=prior_config.domain_grid())
+    om_ntlt *= inventory_mask_regridded
+
+    # now collect total nightlights across inventory domain
+    inventory_ntlt = remap_raster(ntlt, prior_config.inventory_grid(), AREA_OR_POINT=ntlData.AREA_OR_POINT)
+
+    # now mask to region of inventory
+    inventory_ntlt *= prior_config.inventory_dataset()['inventory_mask']
+
+    # we want proportions of total for scaling emissions
+    return om_ntlt / inventory_ntlt.sum().item()
+
+
+night_lights_data_source = DataSource(
+    name="nighttime-lights",
+    url="https://openmethane.s3.amazonaws.com/prior/inputs/nasa-nighttime-lights.tiff",
+    parse=parse_ntlt_data_source,
+)
+
+def processEmissions(sector_config: PriorSectorConfig, prior_ds: xr.Dataset):
     """
     Process emissions for Industrial, Stationary and Transport sectors, adding
     them to the prior dataset.
     """
     logger.info("processEmissions for Industrial, Stationary and Transport")
 
-    ntlData = rxr.open_rasterio(
-        config.as_input_file(config.layer_inputs.ntl_path), masked=False
-    )
-    # sum over three bands
-    ntlt = ntlData.sum(axis=0)
-    np.nan_to_num(ntlt, copy=False)
+    config = sector_config.prior_config
 
-    om_ntlt = remap_raster(ntlt, config.domain_grid(), AREA_OR_POINT=ntlData.AREA_OR_POINT)
-
-    # limit emissions to land points
-    inventory_mask_regridded = regrid_data(config.inventory_dataset()['inventory_mask'], from_grid=config.inventory_grid(), to_grid=config.domain_grid())
-    om_ntlt *= inventory_mask_regridded
-
-    # now collect total nightlights across inventory domain
-    inventory_ntlt = remap_raster(ntlt, config.inventory_grid(), AREA_OR_POINT=ntlData.AREA_OR_POINT)
-
-    # now mask to region of inventory
-    inventory_ntlt *= config.inventory_dataset()['inventory_mask']
 
     # we want proportions of total for scaling emissions
-    om_ntlt_proportion = om_ntlt / inventory_ntlt.sum().item()
+    om_ntlt_proportion = sector_config.data_manager.get_asset(night_lights_data_source)
 
     """ note that this is the correct scaling since remap_raster accumulates so
     that quotient is the proportion of total nightlights in that cell """
 
     # load the national inventory data, ready to calculate sectoral totals
-    emissions_inventory = load_inventory(config)
+    emissions_inventory = sector_config.data_manager.get_asset(inventory_data_source).data
 
     for sector, sector_meta in sector_meta_map.items():
         sector_total_emissions = get_sector_emissions_by_code(
@@ -111,7 +128,7 @@ def processEmissions(config: PriorConfig, prior_ds: xr.Dataset):
         )
 
         # allocate the proportion of the total to each grid cell
-        sector_emissions = om_ntlt_proportion * sector_total_emissions
+        sector_emissions = om_ntlt_proportion.data * sector_total_emissions
         add_sector(
             prior_ds=prior_ds,
             sector_data=kg_to_period_cell_flux(sector_emissions, config),
@@ -122,8 +139,10 @@ def processEmissions(config: PriorConfig, prior_ds: xr.Dataset):
 if __name__ == "__main__":
     parse_cli_to_env()
     config = load_config_from_env()
+    data_manager = DataManager(data_path=config.input_path, prior_config=config)
+    sector_config = PriorSectorConfig(prior_config=config, data_manager=data_manager)
 
     ds = create_output_dataset(config)
-    processEmissions(config, ds)
+    processEmissions(sector_config, ds)
     add_ch4_total(ds)
     write_output_dataset(config, ds)

@@ -21,6 +21,7 @@ import logging
 import prettyprinter
 
 from openmethane_prior.config import PriorConfig, load_config_from_env, parse_cli_to_env
+from openmethane_prior.data_manager.manager import DataManager
 from openmethane_prior.inputs import check_input_files
 from openmethane_prior.layers import (
     omAgLulucfWasteEmis,
@@ -32,12 +33,23 @@ from openmethane_prior.layers import (
     omWetlandEmis,
 )
 from openmethane_prior.outputs import add_ch4_total, create_output_dataset, write_output_dataset
+from openmethane_prior.sector.config import PriorSectorConfig
 from openmethane_prior.verification import verify_emis
 import openmethane_prior.logger as logger
 
 logger = logger.get_logger(__name__)
 
 prettyprinter.install_extras(["attrs"])
+
+all_sectors = [
+    omAgLulucfWasteEmis,
+    omIndustrialStationaryTransportEmis,
+    omElectricityEmis,
+    omFugitiveEmis,
+    omTermiteEmis,
+    omWetlandEmis,
+    omGFASEmis,
+]
 
 
 def run_prior(config: PriorConfig):
@@ -52,19 +64,21 @@ def run_prior(config: PriorConfig):
     if (config.start_date is None):
         raise ValueError("Start date must be provided")
 
+    data_manager = DataManager(data_path=config.input_path, prior_config=config)
     check_input_files(config)
 
     # Initialise the output dataset based on the domain provided in config
     prior_ds = create_output_dataset(config)
 
-    omAgLulucfWasteEmis.processEmissions(config, prior_ds)
-    omIndustrialStationaryTransportEmis.processEmissions(config, prior_ds)
-    omElectricityEmis.processEmissions(config, prior_ds)
-    omFugitiveEmis.processEmissions(config, prior_ds)
+    sector_config = PriorSectorConfig(prior_config=config, data_manager=data_manager)
 
-    omTermiteEmis.processEmissions(config, prior_ds)
-    omGFASEmis.processEmissions(config, prior_ds)
-    omWetlandEmis.processEmissions(config, prior_ds)
+    for sector in all_sectors:
+        # all sector modules must implement a processEmissions method
+        # TODO: implement an abstract class interface
+        if not callable(sector.processEmissions):
+            raise ValueError("Prior sector module must export a processEmissions function")
+
+        sector.processEmissions(sector_config, prior_ds)
 
     add_ch4_total(prior_ds)
     verify_emis(config, prior_ds)

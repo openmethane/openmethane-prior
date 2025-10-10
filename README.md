@@ -53,16 +53,12 @@ You can read the instructions out and run the commands by hand if you wish.
 
 ### Input Data
 
-To download all the required input files, run:
+Input data will be downloaded on-demand by the layers that use it while running
+omPrior.py. To inspect where data is fetched from, look for instances of
+`DataSource` defined in each layer.
 
-```console
-make download
-```
-
-This will download input files that match the data in `.env`,
-so you have a working set to get started with.
-
-The downloaded files will be stored in `data/inputs` by default.
+The downloaded files will be stored in the path specified in `INPUTS` env var
+(`data/inputs` by default).
 
 ### Domain Info
 
@@ -204,11 +200,11 @@ For details about all data sources used by the prior, see [Data sources](./docs/
 ## Data directories
 
 * `data/inputs` 
-This folder should contain all the required input files, which should be referenced in the `.env` file at the root.
-A set of input files has been included in the repository so that it functions out of the box (see [Input Data](#input-data)), but you can add your own
-data here.
-* `data/inputs/domains` The domain of interest is stored in this folder (see [domain info](#domain-info)).
-* `data/intermediates` This folder contains any intermediate files generated through the process. Everything within this folder should be ignored.
+  This folder should contain all the required input files. Any missing input data
+  will be fetched automatically while running the prior (see
+  [Input Data](#input-data) for more detail).
+* `data/intermediates` This folder contains any intermediate files generated
+  through the process. Everything within this folder should be ignored.
 * `data/outputs` Outputs files will be saved here.
 
 
@@ -220,13 +216,16 @@ To carry out the steps described above in a Docker container, first build the Do
 make build
 ```
 
-Then run the commands to download the input data in the docker container
+Then run the commands to with the project path mounted as a volume:
 
 ```
-docker run --rm -v </your/path/to/openmethane-prior>:/opt/project openmethane-prior python scripts/omDownloadInputs.py
+docker run --rm -v </your/path/to/openmethane-prior>:/opt/project openmethane-prior python scripts/omPrior.py --start-date 2022-12-07
 ```
 
 Replace the python files according to the commands in the Makefile for the other steps.
+
+Note: the CDS API credentials will also need to be provided via .env file to run
+via docker.
 
 ## For developers
 
