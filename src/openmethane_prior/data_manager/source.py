@@ -24,6 +24,7 @@ import pathlib
 import urllib.request
 
 from openmethane_prior.config import PriorConfig
+from openmethane_prior.data_manager.asset import DataAsset
 
 
 def file_path_from_url(_self: DataSource, prior_config: PriorConfig) -> str:
@@ -105,6 +106,10 @@ class DataSource:
     to parse the data in the layer implementation so it can be freed.
     """
 
+    data_sources: list[DataSource] = attrs.field(factory=list)
+    """If this data source depends on other data sources, they can be provided
+    in data_sources to ensure they will be loaded first."""
+
 
 @attrs.define()
 class ConfiguredDataSource:
@@ -137,6 +142,9 @@ class ConfiguredDataSource:
     prior_config: PriorConfig
     """Configuration for the current run of the prior"""
 
+    data_assets: list[DataAsset]
+    """Assets loaded from DataSources defined in DataSource.data_sources"""
+
     @property
     def parseable(self) -> bool:
         return self.source_parse is not None
@@ -159,6 +167,7 @@ def configure_data_source(
         data_source: DataSource,
         prior_config: PriorConfig,
         data_path: pathlib.Path,
+        data_assets: list[DataAsset] = None,
 ):
     """Create a ConfiguredDataSource from a DataSource and a PriorConfig"""
     file_path = data_source.file_path
@@ -175,4 +184,5 @@ def configure_data_source(
         source_parse=data_source.parse,
         prior_config=prior_config,
         data_path=data_path,
+        data_assets=data_assets if data_assets is not None else [],
     )
