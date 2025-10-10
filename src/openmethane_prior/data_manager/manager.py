@@ -52,10 +52,17 @@ class DataManager:
             if existing_source.url and existing_source.url != source.url:
                 logger.warn(f"multiple DataSource instances with name '{source.name}' providing different URLs")
 
+        # if data source depends on other data, prepare dependencies first
+        dependency_assets: list[DataAsset] = []
+        for data_source_dependency in source.data_sources:
+            # TODO: add circular dependency detection?
+            dependency_assets.append(self.get_asset(data_source_dependency))
+
         self.data_sources[source.name] = configure_data_source(
             data_source=source,
             prior_config=self.prior_config,
             data_path=self.data_path,
+            data_assets=dependency_assets,
         )
         return self.data_sources[source.name]
 
