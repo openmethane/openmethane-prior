@@ -87,3 +87,37 @@ def test_manager_get_asset(tmp_path, config, mocker: MockerFixture):
     # fetch is not called again, the same asset is returned
     assert mock_fetch.call_count == 1
     assert test_second_asset is test_asset
+
+
+def test_manager_get_asset_parsed(tmp_path, mocker: MockerFixture, config):
+    data_path = tmp_path / "data"
+    mock_fetch = mocker.stub(name="mock_fetch")
+    mock_fetch.return_value = data_path / "filename.csv"
+    mock_parse = mocker.stub(name="mock_parse")
+    mock_parse.return_value = "data"
+
+    test_manager = DataManager(data_path=data_path, prior_config=config)
+    test_data_source = DataSource(
+        name="test-unfccc-codes",
+        url="https://openmethane.s3.amazonaws.com/prior/inputs/UNFCCC-codes-AU.csv",
+        fetch=mock_fetch,
+        parse=mock_parse,
+    )
+
+    assert mock_fetch.call_count == 0
+    assert mock_parse.call_count == 0
+
+    test_asset = test_manager.get_asset(test_data_source)
+
+    assert mock_fetch.call_count == 1
+    assert mock_parse.call_count == 1
+    assert test_asset.name == "test-unfccc-codes"
+    assert test_asset.path == data_path / "filename.csv"
+    assert test_asset.data == "data"
+
+    test_second_asset = test_manager.get_asset(test_data_source)
+
+    # fetch is not called again, the same asset is returned
+    assert mock_fetch.call_count == 1
+    assert mock_parse.call_count == 1
+    assert test_second_asset is test_asset
