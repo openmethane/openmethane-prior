@@ -65,9 +65,6 @@ def gfas_fetch(data_source: ConfiguredDataSource) -> pathlib.Path:
     Download GFAS methane between start and end date, returning the filename
     of the retrieved data.
     """
-    save_path = data_source.data_path / data_source.file_name
-    save_path.parent.mkdir(parents=True, exist_ok=True)
-
     start_date_fmt = data_source.prior_config.start_date.strftime('%Y-%m-%d')
     end_date_fmt = data_source.prior_config.end_date.strftime('%Y-%m-%d')
 
@@ -81,10 +78,10 @@ def gfas_fetch(data_source: ConfiguredDataSource) -> pathlib.Path:
                 "wildfire_flux_of_methane",
             ],
         },
-        save_path,
+        data_source.asset_path,
     )
 
-    return save_path
+    return data_source.asset_path
 
 gfas_data_source = DataSource(
     name="gfas",

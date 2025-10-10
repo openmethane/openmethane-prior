@@ -62,21 +62,19 @@ class DataManager:
     def prepare_asset(self, source: ConfiguredDataSource) -> DataAsset:
         """Fetch and process data sources, turning them into data assets that
         are ready to be used."""
-        expected_save_path = self.data_path / source.file_name
-
         # if the file is already present on the filesystem, do not attempt to
         # re-fetch it
-        if expected_save_path.exists():
+        if source.asset_path.exists():
             data_asset = DataAsset(
                 name=source.name,
-                path=expected_save_path,
+                path=source.asset_path,
             )
         else:
-            save_path = source.fetch(source)
+            save_path = source.fetch()
 
             # warn and move on
-            if save_path != expected_save_path:
-                logger.warn(f"asset '{source.name}' actual save path '{save_path}' does not match expected save path '{expected_save_path}'")
+            if save_path != source.asset_path:
+                logger.warn(f"asset '{source.name}' actual path '{save_path}' does not match asset_path '{source.asset_path}'")
 
             data_asset = DataAsset(
                 name=source.name,

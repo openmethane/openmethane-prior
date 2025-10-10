@@ -38,14 +38,10 @@ def basic_fetch(data_source: ConfiguredDataSource) -> pathlib.Path:
     if data_source.url is None:
         raise ValueError("DataSource must have url set to use default fetch")
 
-    full_path = data_source.data_path / data_source.file_name
-    full_path.parent.mkdir(parents=True, exist_ok=True)
-
     save_path, response = urllib.request.urlretrieve(
         url=data_source.url,
-        # try to use a predictable save path so we can check if the file
-        # already exists
-        filename=full_path,
+        # predictable path so we can check if the file already exists
+        filename=data_source.asset_path,
     )
     # urlretrieve will throw on non-successful fetches
 
@@ -107,7 +103,10 @@ class ConfiguredDataSource:
     file_name: str
     """The name of the file that this data source will be downloaded to"""
 
-    fetch: Callable[[ConfiguredDataSource], pathlib.Path]
+    asset_path: pathlib.Path
+    """The full path to the fetched file asset"""
+
+    source_fetch: Callable[[ConfiguredDataSource], pathlib.Path]
     """Method to fetch the data if it is not already present"""
 
     data_path: pathlib.Path
@@ -115,6 +114,13 @@ class ConfiguredDataSource:
 
     prior_config: PriorConfig
     """Configuration for the current run of the prior"""
+
+    def fetch(self):
+        """Fetches the data to the data_path using the provided source_fetch
+         method
+        """
+        self.asset_path.parent.mkdir(parents=True, exist_ok=True)
+        return self.source_fetch(self)
 
 
 def configure_data_source(
@@ -131,7 +137,8 @@ def configure_data_source(
         name=data_source.name,
         url=data_source.url,
         file_name=file_name,
-        fetch=data_source.fetch,
+        asset_path=data_path / file_name,
+        source_fetch=data_source.fetch,
         prior_config=prior_config,
         data_path=data_path,
     )

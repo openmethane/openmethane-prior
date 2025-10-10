@@ -50,9 +50,12 @@ def test_source_fetch_default(tmp_path, config):
     )
     configured_data_source = configure_data_source(test_data_source, config, data_path)
 
-    save_path = configured_data_source.fetch(configured_data_source)
+    assert not configured_data_source.asset_path.exists()
+
+    save_path = configured_data_source.fetch()
 
     assert save_path.exists()
+    assert save_path == configured_data_source.asset_path
     assert save_path == data_path / "UNFCCC-codes-AU.csv"
 
     with (pytest.raises(URLError) as e):
@@ -60,4 +63,4 @@ def test_source_fetch_default(tmp_path, config):
             name="invalid-url",
             url="https://invalid",
         ), config, data_path)
-        bad_data_source.fetch(bad_data_source)
+        bad_data_source.fetch()
