@@ -23,6 +23,9 @@ import pandas as pd
 import xarray as xr
 
 from openmethane_prior.config import PriorConfig, load_config_from_env, parse_cli_to_env
+from openmethane_prior.data_manager.manager import DataManager
+from openmethane_prior.data_manager.source import DataSource
+from openmethane_prior.inventory.data import create_inventory
 from openmethane_prior.outputs import (
     add_ch4_total,
     add_sector,
@@ -30,7 +33,8 @@ from openmethane_prior.outputs import (
     write_output_dataset,
 )
 import openmethane_prior.logger as logger
-from openmethane_prior.sector.inventory import load_inventory, get_sector_emissions_by_code
+from openmethane_prior.inventory.inventory import get_sector_emissions_by_code
+from openmethane_prior.sector.config import PriorSectorConfig
 from openmethane_prior.sector.sector import SectorMeta
 from openmethane_prior.units import kg_to_period_cell_flux
 
@@ -43,16 +47,27 @@ sector_meta = SectorMeta(
     cf_standard_name="extraction_production_and_transport_of_fuel",
 )
 
-def processEmissions(config: PriorConfig, prior_ds: xr.Dataset):
+
+coal_facilities_data_source = DataSource(
+    name="coal-facilities",
+    url="https://openmethane.s3.amazonaws.com/prior/inputs/coal-mining_emissions-sources.csv",
+)
+oil_gas_facilities_data_source = DataSource(
+    name="oil-gas-facilities",
+    url="https://openmethane.s3.amazonaws.com/prior/inputs/oil-and-gas-production-and-transport_emissions-sources.csv",
+)
+
+def processEmissions(sector_config: PriorSectorConfig, prior_ds: xr.Dataset):
     """
     Process the fugitive methane emissions
 
     Adds the ch4_fugitive layer to the output
     """
     logger.info("processEmissions for fugitives")
+    config = sector_config.prior_config
 
     # read the total emissions over the sector (in kg)
-    emissions_inventory = load_inventory(config)
+    emissions_inventory = create_inventory(data_manager=sector_config.data_manager)
     sector_total_emissions = get_sector_emissions_by_code(
         emissions_inventory=emissions_inventory,
         start_date=config.start_date,
@@ -61,9 +76,11 @@ def processEmissions(config: PriorConfig, prior_ds: xr.Dataset):
     )
 
     # now read climate_trace facilities emissions for coal, oil and gas
-    coalFacilities = pd.read_csv(config.as_input_file(config.layer_inputs.coal_path))
-    oilGasFacilities = pd.read_csv(config.as_input_file(config.layer_inputs.oil_gas_path))
-    fugitiveFacilities = pd.concat((coalFacilities, oilGasFacilities))
+    coal_facilities_asset = sector_config.data_manager.get_asset(coal_facilities_data_source)
+    coal_facilities = pd.read_csv(coal_facilities_asset.path)
+    oil_gas_facilities_asset = sector_config.data_manager.get_asset(oil_gas_facilities_data_source)
+    oil_gas_facilities = pd.read_csv(oil_gas_facilities_asset.path)
+    fugitiveFacilities = pd.concat((coal_facilities, oil_gas_facilities))
 
     # select gas and year
     fugitiveCH4 = fugitiveFacilities.loc[fugitiveFacilities["gas"] == "ch4"]
@@ -101,8 +118,10 @@ def processEmissions(config: PriorConfig, prior_ds: xr.Dataset):
 if __name__ == "__main__":
     parse_cli_to_env()
     config = load_config_from_env()
+    data_manager = DataManager(data_path=config.input_path, prior_config=config)
+    sector_config = PriorSectorConfig(prior_config=config, data_manager=data_manager)
 
     ds = create_output_dataset(config)
-    processEmissions(config, ds)
+    processEmissions(sector_config, ds)
     add_ch4_total(ds)
     write_output_dataset(config, ds)

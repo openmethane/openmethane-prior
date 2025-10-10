@@ -1,69 +1,19 @@
 import os
-import attrs
 import numpy as np
-import pandas as pd
 import pytest
-import requests
-import xarray as xr
 
-from openmethane_prior.layers.omGFASEmis import download_GFAS
-from openmethane_prior.outputs import SECTOR_PREFIX
-from openmethane_prior.utils import SECS_PER_YEAR
-
-@pytest.mark.skip(reason="Duplicated by test_004_omDownloadInputs")
-def test_001_response_for_download_links(config):
-    layer_info = attrs.asdict(config.layer_inputs)
-    for file_fragment in layer_info.values():
-        url = f"{config.remote}{file_fragment}"
-        with requests.get(url, stream=True, timeout=30) as response:
-            assert response.status_code == 200, f"Unexpected {response.status_code} response for: {url}"
+from openmethane_prior.layers.omGFASEmis import gfas_data_source
+from openmethane_prior.sector.config import PriorSectorConfig
 
 
 @pytest.mark.skip(reason="Duplicated by other tests")
-def test_002_cdsapi_connection(root_dir, tmp_path, start_date, end_date):
-    filepath = tmp_path / "sub" / "test_download_cdsapi.nc"
-    filepath.parent.mkdir(parents=True)
+def test_002_cdsapi_connection(tmp_path, sector_config: PriorSectorConfig):
+    data_path = tmp_path / "sub"
+    data_path.mkdir(parents=True)
 
-    download_GFAS(start_date=start_date, end_date=end_date, file_name=filepath)
+    gfas_asset = sector_config.data_manager.get_asset(gfas_data_source)
 
-    assert os.path.exists(filepath)
-
-
-def test_004_omDownloadInputs(root_dir, input_files, config):
-    EXPECTED_FILES = [
-        "AR5_ParisInventory_AUSTRALIA_CH4.csv",
-        "ch4-electricity.csv",
-        "coal-mining_emissions-sources.csv",
-        "oil-and-gas-production-and-transport_emissions-sources.csv",
-        "NLUM_ALUMV8_250m_2015_16_alb.tif",
-        "UNFCCC-codes-AU.csv",
-        "landuse-sector-map.csv",
-        "nasa-nighttime-lights.tiff",
-        "AUS_2021_AUST_SHP_GDA2020.zip",
-        "EntericFermentation.nc",
-        "termite_emissions_2010-2016.nc",
-        "DLEM_totflux_CRU_diagnostic.nc",
-        "domain.au-test.nc",
-        "domain.aust10km.nc",
-    ]
-
-    assert sorted([str(fn.relative_to(config.input_path)) for fn in input_files]) == sorted(
-        EXPECTED_FILES
-    )
-
-#
-# def test_005_agriculture_emissions(config, root_dir, input_files):
-#     filepath_livestock = config.as_input_file(config.layer_inputs.livestock_path)
-#     livestock_data = xr.open_dataset(filepath_livestock)
-#
-#     filepath_sector = config.as_input_file(config.layer_inputs.sectoral_emissions_path)
-#     sector_data = pd.read_csv(filepath_sector).to_dict(orient="records")[0]
-#
-#     lsVal = round(np.sum(livestock_data["CH4_total"].values))
-#     agVal = round(sector_data["agriculture"] * 1e9)
-#     agDX = agVal - lsVal
-#
-#     assert agDX > 0, f"Livestock CH4 exceeds bounds of total agriculture CH4: {agDX / 1e9}"
+    assert os.path.exists(gfas_asset.path)
 
 
 def test_009_prior_emissions_ds(prior_emissions_ds):
