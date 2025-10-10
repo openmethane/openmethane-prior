@@ -1,7 +1,6 @@
 import netCDF4 as nc
 import numpy as np
 import pytest
-from openmethane_prior.data_manager.manager import DataManager
 
 from openmethane_prior.outputs import create_output_dataset
 from openmethane_prior.layers.omTermiteEmis import processEmissions, termites_data_source
@@ -9,10 +8,9 @@ from openmethane_prior.sector.config import PriorSectorConfig
 from openmethane_prior.utils import area_of_rectangle_m2
 
 @pytest.mark.skip(reason="Makes no assertions")
-def test_termite_emis(config, input_files, input_domain):
+def test_termite_emis(config, input_files, data_manager):
     # TODO: Check the output correctly
     prior_ds = create_output_dataset(config)
-    data_manager = DataManager(data_path=config.input_path)
     sector_config = PriorSectorConfig(prior_config=config, data_manager=data_manager)
 
     remapped = processEmissions(sector_config=sector_config, prior_ds=prior_ds, forceUpdate=True)

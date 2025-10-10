@@ -1,24 +1,19 @@
 import os
-import attrs
 import numpy as np
 import pytest
-import requests
 
-from openmethane_prior.layers.omGFASEmis import GFASDataSource
+from openmethane_prior.layers.omGFASEmis import gfas_data_source
+from openmethane_prior.sector.config import PriorSectorConfig
 
 
 @pytest.mark.skip(reason="Duplicated by other tests")
-def test_002_cdsapi_connection(root_dir, tmp_path, start_date, end_date):
+def test_002_cdsapi_connection(tmp_path, sector_config: PriorSectorConfig):
     data_path = tmp_path / "sub"
     data_path.mkdir(parents=True)
-    gfas_source = GFASDataSource(
-        name="cdsapi-test",
-        start_date=start_date,
-        end_date=end_date,
-    )
-    gfas_source.fetch(data_path=data_path)
 
-    assert os.path.exists(data_path / gfas_source.file_name)
+    gfas_asset = sector_config.data_manager.get_asset(gfas_data_source)
+
+    assert os.path.exists(gfas_asset.path)
 
 
 def test_009_prior_emissions_ds(prior_emissions_ds):

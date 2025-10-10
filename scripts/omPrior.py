@@ -64,7 +64,7 @@ def run_prior(config: PriorConfig):
     if (config.start_date is None):
         raise ValueError("Start date must be provided")
 
-    data_manager = DataManager(data_path=config.input_path)
+    data_manager = DataManager(data_path=config.input_path, prior_config=config)
     check_input_files(config)
 
     # Initialise the output dataset based on the domain provided in config

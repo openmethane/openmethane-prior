@@ -18,8 +18,9 @@
 import attrs
 import pathlib
 
+from openmethane_prior.config import PriorConfig
 from openmethane_prior.data_manager.asset import DataAsset
-from openmethane_prior.data_manager.source import DataSource
+from openmethane_prior.data_manager.source import DataSource, configure_data_source, ConfiguredDataSource
 
 import openmethane_prior.logger as logger
 
@@ -32,13 +33,16 @@ class DataManager:
     data_path: pathlib.Path
     """Folder on the filesystem where fetched data will be stored"""
 
-    data_sources: dict[str, DataSource] = attrs.Factory(dict)
+    prior_config: PriorConfig
+    """Configuration for the current run of the prior"""
+
+    data_sources: dict[str, ConfiguredDataSource] = attrs.Factory(dict)
     """All data sources managed by this data manager, by 'name'"""
 
     data_assets: dict[str, DataAsset] = attrs.Factory(dict)
     """All data assets that have been fetched and processed"""
 
-    def add_source(self, source: DataSource):
+    def add_source(self, source: DataSource) -> ConfiguredDataSource:
         """Add a data source to this data manager"""
         # a DataSource with the same name was already added
         # this may not be a problem if the DataSource is used by more than
@@ -48,9 +52,14 @@ class DataManager:
             if existing_source.url and existing_source.url != source.url:
                 logger.warn(f"multiple DataSource instances with name '{source.name}' providing different URLs")
 
-        self.data_sources[source.name] = source
+        self.data_sources[source.name] = configure_data_source(
+            data_source=source,
+            prior_config=self.prior_config,
+            data_path=self.data_path,
+        )
+        return self.data_sources[source.name]
 
-    def prepare_asset(self, source: DataSource) -> DataAsset:
+    def prepare_asset(self, source: ConfiguredDataSource) -> DataAsset:
         """Fetch and process data sources, turning them into data assets that
         are ready to be used."""
         expected_save_path = self.data_path / source.file_name
@@ -63,7 +72,7 @@ class DataManager:
                 path=expected_save_path,
             )
         else:
-            save_path = source.fetch(self.data_path)
+            save_path = source.fetch(source)
 
             # warn and move on
             if save_path != expected_save_path:
@@ -81,10 +90,10 @@ class DataManager:
 
     def get_asset(self, source: DataSource) -> DataAsset | None:
         """Get a data asset by fetching and processing a data source."""
-        self.add_source(source)
+        configured_source = self.add_source(source)
 
         asset = self.data_assets.get(source.name)
         if asset is None:
-            asset = self.prepare_asset(source)
+            asset = self.prepare_asset(configured_source)
 
         return asset

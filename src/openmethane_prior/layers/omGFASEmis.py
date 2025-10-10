@@ -34,7 +34,7 @@ import cdsapi
 import numpy as np
 import xarray as xr
 from openmethane_prior.data_manager.manager import DataManager
-from openmethane_prior.data_manager.source import DataSource
+from openmethane_prior.data_manager.source import DataSource, ConfiguredDataSource
 from openmethane_prior.sector.config import PriorSectorConfig
 from shapely import geometry
 
@@ -57,39 +57,40 @@ sector_meta = SectorMeta(
     cf_standard_name="fires",
 )
 
+def gfas_file_name(data_source: DataSource, prior_config: PriorConfig) -> str:
+    return f"gfas_{prior_config.start_date.strftime('%Y-%m-%d')}_{prior_config.end_date.strftime('%Y-%m-%d')}.nc"
 
-@attrs.define()
-class GFASDataSource(DataSource):
-    # kw_only=True is required by attrs to add a required attribute "after"
-    # the non-required attributes defined in DataSource
-    start_date: datetime.date = attrs.field(kw_only=True)
-    end_date: datetime.date = attrs.field(kw_only=True)
+def gfas_fetch(data_source: ConfiguredDataSource) -> pathlib.Path:
+    """
+    Download GFAS methane between start and end date, returning the filename
+    of the retrieved data.
+    """
+    save_path = data_source.data_path / data_source.file_name
+    save_path.parent.mkdir(parents=True, exist_ok=True)
 
-    def __attrs_post_init__(self):
-        if self.file_name is None:
-            self.file_name = f"gfas_{self.start_date.strftime('%Y-%m-%d')}_{self.end_date.strftime('%Y-%m-%d')}.nc"
+    start_date_fmt = data_source.prior_config.start_date.strftime('%Y-%m-%d')
+    end_date_fmt = data_source.prior_config.end_date.strftime('%Y-%m-%d')
 
-    def fetch(self, data_path: pathlib.Path) -> pathlib.Path:
-        """
-        Download GFAS methane between start and end date, returning the filename
-        of the retrieved data.
-        """
-        save_path = data_path / self.file_name
+    c = cdsapi.Client(progress=False)
+    c.retrieve(
+        "cams-global-fire-emissions-gfas",
+        {
+            "date": f"{start_date_fmt}/{end_date_fmt}",
+            "format": "netcdf",
+            "variable": [
+                "wildfire_flux_of_methane",
+            ],
+        },
+        save_path,
+    )
 
-        c = cdsapi.Client(progress=False)
-        c.retrieve(
-            "cams-global-fire-emissions-gfas",
-            {
-                "date": f"{self.start_date.strftime('%Y-%m-%d')}/{self.end_date.strftime('%Y-%m-%d')}",
-                "format": "netcdf",
-                "variable": [
-                    "wildfire_flux_of_methane",
-                ],
-            },
-            save_path,
-        )
+    return save_path
 
-        return save_path
+gfas_data_source = DataSource(
+    name="gfas",
+    file_name=gfas_file_name,
+    fetch=gfas_fetch,
+)
 
 def processEmissions(sector_config: PriorSectorConfig, prior_ds: xr.Dataset, forceUpdate: bool = False):  # noqa: PLR0915
     """
@@ -97,11 +98,6 @@ def processEmissions(sector_config: PriorSectorConfig, prior_ds: xr.Dataset, for
     """
     config = sector_config.prior_config
 
-    gfas_data_source = GFASDataSource(
-        name="gfas",
-        start_date=config.start_date,
-        end_date=config.end_date,
-    )
     gfas_asset = sector_config.data_manager.get_asset(gfas_data_source)
     gfas_ds = nc.Dataset(gfas_asset.path, "r")
 
@@ -253,7 +249,7 @@ def processEmissions(sector_config: PriorSectorConfig, prior_ds: xr.Dataset, for
 if __name__ == "__main__":
     parse_cli_to_env()
     config = load_config_from_env()
-    data_manager = DataManager(data_path=config.input_path)
+    data_manager = DataManager(data_path=config.input_path, prior_config=config)
     sector_config = PriorSectorConfig(prior_config=config, data_manager=data_manager)
 
     ds = create_output_dataset(config)

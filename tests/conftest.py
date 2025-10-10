@@ -5,7 +5,6 @@ from datetime import datetime
 from pathlib import Path
 from typing import Generator
 
-import attrs
 import dotenv
 import pytest
 import xarray as xr
@@ -66,8 +65,13 @@ def config(tmp_path_factory, config_params) -> PriorConfig:
 
 
 @pytest.fixture()
+def data_manager(config) -> DataManager:
+    return DataManager(data_path=config.input_path, prior_config=config)
+
+
+@pytest.fixture()
 def sector_config(config) -> PriorSectorConfig:
-    data_manager = DataManager(data_path=config.input_path)
+    data_manager = DataManager(data_path=config.input_path, prior_config=config)
     sector_config = PriorSectorConfig(prior_config=config, data_manager=data_manager)
     return sector_config
 

@@ -94,7 +94,7 @@ def processEmissions(sector_config: PriorSectorConfig, prior_ds: xr.Dataset):
 if __name__ == "__main__":
     parse_cli_to_env()
     config = load_config_from_env()
-    data_manager = DataManager(data_path=config.input_path)
+    data_manager = DataManager(data_path=config.input_path, prior_config=config)
     sector_config = PriorSectorConfig(prior_config=config, data_manager=data_manager)
 
     ds = create_output_dataset(config)

@@ -49,7 +49,7 @@ def verify_emis(config: PriorConfig, prior_ds: xr.Dataset, atol: float = MAX_ABS
         logger.info("SKIPPING verify_emis: only supported when domain and inventory domain are identical")
         return
 
-    data_manager = DataManager(data_path=config.input_path)
+    data_manager = DataManager(data_path=config.input_path, prior_config=config)
     emissions_inventory = create_inventory(data_manager=data_manager)
 
     inventory_sectors = [
