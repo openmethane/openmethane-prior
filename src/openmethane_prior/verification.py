@@ -25,7 +25,7 @@ from colorama import Fore
 
 from openmethane_prior.config import PriorConfig, load_config_from_env
 from openmethane_prior.data_manager.manager import DataManager
-from openmethane_prior.inventory.data import create_inventory
+from openmethane_prior.inventory.data import inventory_data_source
 from openmethane_prior.outputs import SECTOR_PREFIX
 from openmethane_prior.inventory.inventory import get_sector_emissions_by_code
 
@@ -50,7 +50,7 @@ def verify_emis(config: PriorConfig, prior_ds: xr.Dataset, atol: float = MAX_ABS
         return
 
     data_manager = DataManager(data_path=config.input_path, prior_config=config)
-    emissions_inventory = create_inventory(data_manager=data_manager)
+    emissions_inventory = data_manager.get_asset(inventory_data_source).data
 
     inventory_sectors = [
         fugitive_sector_meta,
