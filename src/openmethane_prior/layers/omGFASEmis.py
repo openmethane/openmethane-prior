@@ -85,7 +85,7 @@ def gfas_fetch(data_source: ConfiguredDataSource) -> pathlib.Path:
 
 gfas_data_source = DataSource(
     name="gfas",
-    file_name=gfas_file_name,
+    file_path=gfas_file_name,
     fetch=gfas_fetch,
 )
 

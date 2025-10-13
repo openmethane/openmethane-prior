@@ -26,9 +26,9 @@ import urllib.request
 from openmethane_prior.config import PriorConfig
 
 
-def file_name_from_url(_self: DataSource, prior_config: PriorConfig) -> str:
+def file_path_from_url(_self: DataSource, prior_config: PriorConfig) -> str:
     if _self.url is None:
-        raise ValueError("DataSource: if url is not specified, file_name must be provided")
+        raise ValueError("DataSource: if url is not specified, file_path must be provided")
     return os.path.basename(_self.url)
 
 
@@ -55,6 +55,10 @@ class DataSource:
     single file, detailing where or how to fetch it and, if necessary, how it
     should be preprocessed.
 
+    If no url or fetch method is configured and only a file_path is provided,
+    it's recommended to include some instructions for users on how to obtain
+    the file.
+
     When a DataSource has been fetched and processed, it is represented by
     a DataAsset.
     """
@@ -65,15 +69,17 @@ class DataSource:
     url: str = attrs.field(default=None)
     """Publicly accessible URL where this data can be downloaded"""
 
-    file_name: str | Callable[[DataSource, PriorConfig], str] = attrs.field(
-        default=file_name_from_url,
+    file_path: str | pathlib.Path | Callable[[DataSource, PriorConfig], str] = attrs.field(
+        default=file_path_from_url,
     )
-    """The name of the file that this data source will be downloaded to.
-    Defaults to the filename (part after the last /) of the url, but if the
-    downloaded file will have a different name, it should be specified here.
+    """Optional path to the file on the local filesystem. By default this is
+    derived automatically from the url parameter and should not be specified.
+    If the downloaded file will have a different file name or a fetch method
+    is provided, then file_path should be set to the expected filename.
 
-    This is used to determine if the file is already in the data path, so
-    fetching can be skipped on subsequent runs.
+    If no url or fetch method is provided, this can be set to an absolute path,
+    or a path relative to the DataManager data_path. It's recommended to
+    provide some guidance to users on how the file can be obtained.
     
     Can be provided as a string, or a function."""
 
@@ -90,8 +96,8 @@ class DataSource:
 class ConfiguredDataSource:
     """
     ConfiguredDataSource is derived from a DataSource once specific prior
-    parameters have been introduced. It has a static file_name, even when the
-    DataSource ir originated from has a file_name function, etc.
+    parameters have been introduced. It has a static file_path, even when the
+    DataSource it originated from has a file_path function, etc.
     """
 
     name: str
@@ -99,9 +105,6 @@ class ConfiguredDataSource:
 
     url: str
     """Publicly accessible URL where this data can be downloaded"""
-
-    file_name: str
-    """The name of the file that this data source will be downloaded to"""
 
     asset_path: pathlib.Path
     """The full path to the fetched file asset"""
@@ -129,15 +132,16 @@ def configure_data_source(
         data_path: pathlib.Path,
 ):
     """Create a ConfiguredDataSource from a DataSource and a PriorConfig"""
-    file_name = data_source.file_name
-    if callable(file_name):
-        file_name = file_name(data_source, prior_config)
+    file_path = data_source.file_path
+    if callable(file_path):
+        file_path = file_path(data_source, prior_config)
+
+    asset_path = file_path if os.path.isabs(file_path) else data_path / file_path
 
     return ConfiguredDataSource(
         name=data_source.name,
         url=data_source.url,
-        file_name=file_name,
-        asset_path=data_path / file_name,
+        asset_path=pathlib.Path(asset_path),
         source_fetch=data_source.fetch,
         prior_config=prior_config,
         data_path=data_path,
