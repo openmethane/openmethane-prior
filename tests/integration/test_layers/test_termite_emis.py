@@ -3,16 +3,21 @@ import numpy as np
 import pytest
 
 from openmethane_prior.outputs import create_output_dataset
-from openmethane_prior.layers.omTermiteEmis import processEmissions
+from openmethane_prior.layers.omTermiteEmis import processEmissions, termites_data_source
+from openmethane_prior.sector.config import PriorSectorConfig
 from openmethane_prior.utils import area_of_rectangle_m2
 
 @pytest.mark.skip(reason="Makes no assertions")
-def test_termite_emis(config, input_files, input_domain):
+def test_termite_emis(config, input_files, data_manager):
     # TODO: Check the output correctly
     prior_ds = create_output_dataset(config)
+    sector_config = PriorSectorConfig(prior_config=config, data_manager=data_manager)
 
-    remapped = processEmissions(config=config, prior_ds=prior_ds, forceUpdate=True)
-    ncin = nc.Dataset(config.as_input_file(config.layer_inputs.termite_path), "r")
+    remapped = processEmissions(sector_config=sector_config, prior_ds=prior_ds, forceUpdate=True)
+
+    termites_asset = data_manager.get_asset(termites_data_source)
+    ncin = nc.Dataset(termites_asset.path, "r")
+
     latTerm = np.around(np.float64(ncin.variables["lat"][:]), 3)
     latTerm = latTerm[-1::-1]  # reversing order, we need south first
     lonTerm = np.around(np.float64(ncin.variables["lon"][:]), 3)

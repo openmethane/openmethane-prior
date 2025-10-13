@@ -16,9 +16,6 @@ fi
 export START_DATE=${START_DATE:-2022-07-22}
 export END_DATE=${END_DATE:-2022-07-22}
 
-echo "Download static inputs"
-python scripts/omDownloadInputs.py
-
 echo "Preparing the prior"
 python scripts/omPrior.py --start-date $START_DATE --end-date $END_DATE
 
