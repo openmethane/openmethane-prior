@@ -25,11 +25,11 @@ import rasterio
 import rioxarray as rxr
 import xarray as xr
 
-from openmethane_prior.config import PriorConfig, load_config_from_env, parse_cli_to_env
+from openmethane_prior.config import load_config_from_env, parse_cli_to_env
 from openmethane_prior.data_manager.manager import DataManager
 from openmethane_prior.data_manager.source import DataSource
 from openmethane_prior.grid.regrid import regrid_data
-from openmethane_prior.inventory.data import create_inventory
+from openmethane_prior.inventory.data import inventory_data_source
 from openmethane_prior.outputs import (
     convert_to_timescale,
     add_ch4_total,
@@ -154,7 +154,7 @@ def processEmissions(sector_config: PriorSectorConfig, prior_ds: xr.Dataset):
                     landuseSectorMap[sector] = [int(value)]
 
     # load the national inventory data, ready to calculate sectoral totals
-    emissions_inventory = create_inventory(data_manager=sector_config.data_manager)
+    emissions_inventory = sector_config.data_manager.get_asset(inventory_data_source).data
 
     # Read the land use type data band
     logger.debug("Loading land use data")
