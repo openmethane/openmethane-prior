@@ -20,7 +20,7 @@ import pathlib
 
 from openmethane_prior.config import PriorConfig
 from openmethane_prior.data_manager.asset import DataAsset
-from openmethane_prior.data_manager.source import DataSource, configure_data_source, ConfiguredDataSource
+from openmethane_prior.data_manager.source import configure_data_source, ConfiguredDataSource, DataSource
 
 import openmethane_prior.logger as logger
 
@@ -70,6 +70,7 @@ class DataManager:
                 path=source.asset_path,
             )
         else:
+            logger.info(f"Fetching '{source.name}' data source")
             save_path = source.fetch()
 
             # warn and move on
@@ -81,17 +82,23 @@ class DataManager:
                 path=save_path,
             )
 
-        # cache the asset for any subsequent get calls
-        self.data_assets[source.name] = data_asset
+        # if the DataSource has a "prepare" method to parse or process the
+        # data, call it and add the result to the asset
+        if source.parseable:
+            logger.debug(f"Parsing '{source.name}' data source")
+            data_asset.data = source.parse()
 
         return data_asset
 
-    def get_asset(self, source: DataSource) -> DataAsset | None:
+    def get_asset(self, source: DataSource) -> DataAsset:
         """Get a data asset by fetching and processing a data source."""
         configured_source = self.add_source(source)
 
         asset = self.data_assets.get(source.name)
         if asset is None:
             asset = self.prepare_asset(configured_source)
+
+            # cache the asset for any subsequent get calls
+            self.data_assets[source.name] = asset
 
         return asset

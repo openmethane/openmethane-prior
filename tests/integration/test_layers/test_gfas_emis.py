@@ -16,7 +16,7 @@ def test_gfas_emis(config, input_files, data_manager):  # test totals for GFAS e
 
     remapped = processEmissions(sector_config=sector_config, prior_ds=prior_ds, forceUpdate=True)
 
-    GFASfile = config.as_input_file(f"gfas_{config.start_date.strftime('%Y-%m-%d')}_{config.end_date.strftime('%Y-%m-%d')}.nc")
+    GFASfile = config.input_path / f"gfas_{config.start_date.strftime('%Y-%m-%d')}_{config.end_date.strftime('%Y-%m-%d')}.nc"
     ncin = nc.Dataset(GFASfile, "r", format="NETCDF4")
     latGfas = np.around(np.float64(ncin.variables["latitude"][:]), 3)
     lonGfas = np.around(np.float64(ncin.variables["longitude"][:]), 3)

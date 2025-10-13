@@ -16,7 +16,7 @@
 # limitations under the License.
 #
 from __future__ import annotations
-from typing import Callable
+from typing import Any, Callable
 
 import attrs
 import os
@@ -91,6 +91,20 @@ class DataSource:
     URL, then this method can be omitted and the url attribute can be provided
     instead."""
 
+    parse: Callable[[ConfiguredDataSource], Any] | None = attrs.field(
+        default=None,
+    )
+    """An optional method which can read in the fetched data file and parse it
+    into a data structure which is usable directly by sector modules.
+    The parse method has access to prior configuration so it can use prior
+    parameters such as start and end date, or domain grids.
+    
+    Note: parsed data structures will persist in memory after being read
+    until the program exits. If a parsed data structure will result in a large
+    memory footprint and will only be used by a single sector, it may be better
+    to parse the data in the layer implementation so it can be freed.
+    """
+
 
 @attrs.define()
 class ConfiguredDataSource:
@@ -110,7 +124,12 @@ class ConfiguredDataSource:
     """The full path to the fetched file asset"""
 
     source_fetch: Callable[[ConfiguredDataSource], pathlib.Path]
-    """Method to fetch the data if it is not already present"""
+    """Method to fetch the data if it is not already present.
+    Not to be called directly, use .fetch() instead."""
+
+    source_parse: Callable[[ConfiguredDataSource], Any] | None
+    """Method to parse fetched data into a usable data structure.
+    Not to be called directly, use .parse() instead."""
 
     data_path: pathlib.Path
     """Path where input data should be saved"""
@@ -118,12 +137,22 @@ class ConfiguredDataSource:
     prior_config: PriorConfig
     """Configuration for the current run of the prior"""
 
+    @property
+    def parseable(self) -> bool:
+        return self.source_parse is not None
+
     def fetch(self):
         """Fetches the data to the data_path using the provided source_fetch
          method
         """
         self.asset_path.parent.mkdir(parents=True, exist_ok=True)
         return self.source_fetch(self)
+
+    def parse(self):
+        """Reads and parses the asset data using the provided source_parse
+        method
+        """
+        return self.source_parse(self)
 
 
 def configure_data_source(
@@ -143,6 +172,7 @@ def configure_data_source(
         url=data_source.url,
         asset_path=pathlib.Path(asset_path),
         source_fetch=data_source.fetch,
+        source_parse=data_source.parse,
         prior_config=prior_config,
         data_path=data_path,
     )

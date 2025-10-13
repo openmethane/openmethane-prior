@@ -15,24 +15,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-import attrs
-import pathlib
-import typing
+import pandas as pd
+
+from openmethane_prior.data_manager.source import ConfiguredDataSource
 
 
-@attrs.define()
-class DataAsset:
-    """
-    DataAsset is a file which is ready to be used. Usually it would represent a
-    DataSource which has been fetched and processed.
-    """
-
-    name: str
-    """Unique, machine-friendly name that can be used to identify this data"""
-
-    path: pathlib.Path
-    """Path on the local file system where the data is stored"""
-
-    data: typing.Any = None
-    """If created from a DataSource with a parse() method, contains the parsed
-    data"""
+def parse_csv(data_source: ConfiguredDataSource) -> pd.DataFrame:
+    return pd.read_csv(data_source.asset_path)
