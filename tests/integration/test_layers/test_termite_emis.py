@@ -2,10 +2,10 @@ import netCDF4 as nc
 import numpy as np
 import pytest
 
-from openmethane_prior.outputs import create_output_dataset
-from openmethane_prior.layers.omTermiteEmis import processEmissions, termites_data_source
-from openmethane_prior.sector.config import PriorSectorConfig
-from openmethane_prior.utils import area_of_rectangle_m2
+from openmethane_prior.lib.outputs import create_output_dataset
+from openmethane_prior.sectors.omTermiteEmis import processEmissions, termites_data_source
+from openmethane_prior.lib.sector.config import PriorSectorConfig
+from openmethane_prior.lib.utils import area_of_rectangle_m2
 
 @pytest.mark.skip(reason="Makes no assertions")
 def test_termite_emis(config, input_files, data_manager):

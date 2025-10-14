@@ -17,13 +17,11 @@
 #
 """Input file definitions and checks"""
 
-import os
-import pathlib
 import urllib.request
 
-from openmethane_prior.config import PriorConfig
-import openmethane_prior.logger as logger
-from openmethane_prior.utils import is_url
+from openmethane_prior.lib.config import PriorConfig
+import openmethane_prior.lib.logger as logger
+from openmethane_prior.lib.utils import is_url
 
 logger = logger.get_logger(__name__)
 

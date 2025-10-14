@@ -29,8 +29,8 @@ import pathlib
 import click
 import xarray as xr
 
-from openmethane_prior.utils import get_timestamped_command, get_version, list_cf_grid_mappings
-import openmethane_prior.logger as logger
+from openmethane_prior.lib.utils import get_timestamped_command, get_version, list_cf_grid_mappings
+import openmethane_prior.lib.logger as logger
 
 logger = logger.get_logger(__name__)
 

@@ -23,8 +23,8 @@ import os
 import pathlib
 import urllib.request
 
-from openmethane_prior.config import PriorConfig
-from openmethane_prior.data_manager.asset import DataAsset
+from openmethane_prior.lib.config import PriorConfig
+from openmethane_prior.lib.data_manager.asset import DataAsset
 
 
 def file_path_from_url(_self: DataSource, prior_config: PriorConfig) -> str:

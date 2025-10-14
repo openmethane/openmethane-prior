@@ -2,8 +2,8 @@ import pathlib
 import pytest
 from urllib.error import URLError
 
-from openmethane_prior.config import PriorConfig
-from openmethane_prior.data_manager.source import DataSource, configure_data_source
+from openmethane_prior.lib.config import PriorConfig
+from openmethane_prior.lib.data_manager.source import DataSource, configure_data_source
 
 
 def test_source_file_path(tmp_path, config):

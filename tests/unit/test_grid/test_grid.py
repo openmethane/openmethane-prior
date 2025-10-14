@@ -1,8 +1,7 @@
 import numpy as np
-import pytest
 import xarray as xr
 
-from openmethane_prior.grid.grid import Grid
+from openmethane_prior.lib.grid.grid import Grid
 
 
 def test_grid_attributes():

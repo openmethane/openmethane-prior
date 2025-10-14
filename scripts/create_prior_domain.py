@@ -40,12 +40,12 @@ import rasterio
 import rioxarray as rxr
 import xarray as xr
 
-from openmethane_prior.cell_name import encode_grid_cell_name
-from openmethane_prior.grid.create_grid import create_grid_from_mcip
-from openmethane_prior.grid.grid import Grid
-from openmethane_prior.raster import remap_raster
-from openmethane_prior.utils import bounds_from_cell_edges, get_timestamped_command, get_version
-import openmethane_prior.logger as logger
+from openmethane_prior.lib.cell_name import encode_grid_cell_name
+from openmethane_prior.lib.grid.create_grid import create_grid_from_mcip
+from openmethane_prior.lib.grid.grid import Grid
+from openmethane_prior.lib.raster import remap_raster
+from openmethane_prior.lib.utils import bounds_from_cell_edges, get_timestamped_command, get_version
+import openmethane_prior.lib.logger as logger
 
 logger = logger.get_logger(__name__)
 

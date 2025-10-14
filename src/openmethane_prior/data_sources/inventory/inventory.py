@@ -18,15 +18,12 @@
 
 import attrs
 import calendar
-import csv
 import datetime
 from typing import Iterable
 
-from openmethane_prior.config import PriorConfig
-from openmethane_prior.inventory.unfccc import Category, find_category_by_name, is_code_in_code_family, \
-    create_category_list
-from openmethane_prior.units import days_in_period
-from openmethane_prior.logger import get_logger, DuplicateFilter
+from openmethane_prior.data_sources.inventory.unfccc import Category, find_category_by_name, is_code_in_code_family
+from openmethane_prior.lib.units import days_in_period
+from openmethane_prior.lib.logger import get_logger, DuplicateFilter
 
 logger = get_logger(__name__)
 # prevent multiple "inventory does not cover YYYY" messages

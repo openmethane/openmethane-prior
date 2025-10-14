@@ -1,5 +1,5 @@
 
-from openmethane_prior.inventory.unfccc import Category, create_category_list, find_category_by_name, \
+from openmethane_prior.data_sources.inventory.unfccc import Category, create_category_list, find_category_by_name, \
     is_code_in_code_family
 
 

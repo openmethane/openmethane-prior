@@ -1,8 +1,8 @@
 import datetime
 import pytest
 
-from openmethane_prior.inventory.inventory import create_emissions_inventory, get_sector_emissions_by_code
-from openmethane_prior.inventory.unfccc import create_category_list
+from openmethane_prior.data_sources.inventory.inventory import create_emissions_inventory, get_sector_emissions_by_code
+from openmethane_prior.data_sources.inventory.unfccc import create_category_list
 
 @pytest.fixture()
 def category_list():

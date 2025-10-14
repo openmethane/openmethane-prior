@@ -2,7 +2,7 @@ import numpy as np
 import pyproj
 import xarray as xr
 
-from openmethane_prior.grid.grid import Grid
+from openmethane_prior.lib.grid.grid import Grid
 
 
 def remap_raster(

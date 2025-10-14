@@ -1,7 +1,7 @@
 import logging
 
-from openmethane_prior.data_manager.manager import DataManager
-from openmethane_prior.data_manager.source import DataSource, ConfiguredDataSource
+from openmethane_prior.lib.data_manager.manager import DataManager
+from openmethane_prior.lib.data_manager.source import DataSource, ConfiguredDataSource
 from pytest_mock import MockerFixture
 
 

@@ -2,9 +2,9 @@ import numpy as np
 import rioxarray as rxr
 import xarray as xr
 
-from openmethane_prior.grid.grid import Grid
-from openmethane_prior.layers.omIndustrialStationaryTransportEmis import night_lights_data_source
-from openmethane_prior.raster import remap_raster
+from openmethane_prior.lib.grid.grid import Grid
+from openmethane_prior.sectors.omIndustrialStationaryTransportEmis import night_lights_data_source
+from openmethane_prior.lib.raster import remap_raster
 
 def test_remap_raster(config, input_files, data_manager):
     test_coord = (2500, 3000) # let's read this in later

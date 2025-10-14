@@ -18,11 +18,11 @@
 import attrs
 import pathlib
 
-from openmethane_prior.config import PriorConfig
-from openmethane_prior.data_manager.asset import DataAsset
-from openmethane_prior.data_manager.source import configure_data_source, ConfiguredDataSource, DataSource
+from openmethane_prior.lib.config import PriorConfig
+from openmethane_prior.lib.data_manager.asset import DataAsset
+from openmethane_prior.lib.data_manager.source import configure_data_source, ConfiguredDataSource, DataSource
 
-import openmethane_prior.logger as logger
+import openmethane_prior.lib.logger as logger
 
 logger = logger.get_logger(__name__)
 

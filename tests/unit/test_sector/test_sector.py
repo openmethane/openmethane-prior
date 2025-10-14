@@ -1,7 +1,7 @@
 
 import pytest
 
-from openmethane_prior.sector.sector import SectorMeta
+from openmethane_prior.lib.sector.sector import SectorMeta
 
 
 def test_sector_emission_category():

@@ -20,7 +20,7 @@ import datetime
 import typing
 from numpy.typing import ArrayLike
 
-from openmethane_prior.config import PriorConfig
+from openmethane_prior.lib.config import PriorConfig
 
 T = typing.TypeVar("T", bound=ArrayLike | float)
 

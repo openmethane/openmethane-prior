@@ -22,9 +22,7 @@ This downloads files from [ADS](https://atmosphere.copernicus.eu/data).
 See the project readme for more information about configuring
 the required credentials.
 """
-import attrs
 import bisect
-import datetime
 import itertools
 import netCDF4 as nc
 import os
@@ -33,21 +31,21 @@ import pathlib
 import cdsapi
 import numpy as np
 import xarray as xr
-from openmethane_prior.data_manager.manager import DataManager
-from openmethane_prior.data_manager.source import DataSource, ConfiguredDataSource
-from openmethane_prior.sector.config import PriorSectorConfig
+from openmethane_prior.lib.data_manager.manager import DataManager
+from openmethane_prior.lib.data_manager.source import DataSource, ConfiguredDataSource
+from openmethane_prior.lib.sector.config import PriorSectorConfig
 from shapely import geometry
 
-from openmethane_prior.config import PriorConfig, load_config_from_env, parse_cli_to_env
-from openmethane_prior.outputs import add_ch4_total, add_sector, create_output_dataset, write_output_dataset
-from openmethane_prior.sector.sector import SectorMeta
-from openmethane_prior.utils import (
+from openmethane_prior.lib.config import PriorConfig, load_config_from_env, parse_cli_to_env
+from openmethane_prior.lib.outputs import add_ch4_total, add_sector, create_output_dataset, write_output_dataset
+from openmethane_prior.lib.sector.sector import SectorMeta
+from openmethane_prior.lib.utils import (
     area_of_rectangle_m2,
     load_zipped_pickle,
     redistribute_spatially,
     save_zipped_pickle,
 )
-import openmethane_prior.logger as logger
+import openmethane_prior.lib.logger as logger
 
 logger = logger.get_logger(__name__)
 
