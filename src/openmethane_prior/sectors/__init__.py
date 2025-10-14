@@ -15,10 +15,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-import pandas as pd
 
-from openmethane_prior.data_manager.source import ConfiguredDataSource
+from openmethane_prior.sectors import (
+    omAgLulucfWasteEmis,
+    omElectricityEmis,
+    omFugitiveEmis,
+    omGFASEmis,
+    omIndustrialStationaryTransportEmis,
+    omTermiteEmis,
+    omWetlandEmis,
+)
 
-
-def parse_csv(data_source: ConfiguredDataSource) -> pd.DataFrame:
-    return pd.read_csv(data_source.asset_path)
+all_sectors = [
+    omAgLulucfWasteEmis,
+    omIndustrialStationaryTransportEmis,
+    omElectricityEmis,
+    omFugitiveEmis,
+    omTermiteEmis,
+    omWetlandEmis,
+    omGFASEmis,
+]

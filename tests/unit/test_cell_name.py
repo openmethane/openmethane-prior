@@ -1,5 +1,5 @@
 
-from openmethane_prior.cell_name import decode_grid_cell_name, encode_grid_cell_name, encode_word_safe, decode_word_safe
+from openmethane_prior.lib.cell_name import decode_grid_cell_name, encode_grid_cell_name, encode_word_safe, decode_word_safe
 
 expected_names = {
     "A.0.0": ["A", 0, 0],

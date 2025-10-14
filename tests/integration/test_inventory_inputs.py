@@ -1,12 +1,12 @@
 import datetime
 import pytest
 
-from openmethane_prior.inventory.data import inventory_data_source
-from openmethane_prior.inventory.inventory import get_sector_emissions_by_code
-from openmethane_prior.layers.omIndustrialStationaryTransportEmis import sector_meta_map as ntlt_sector_meta
-from openmethane_prior.layers.omAgLulucfWasteEmis import sector_meta_map as landuse_sector_meta
-from openmethane_prior.layers.omElectricityEmis import sector_meta as electricity_sector_meta
-from openmethane_prior.layers.omFugitiveEmis import sector_meta as fugitive_sector_meta
+from openmethane_prior.data_sources.inventory.data import inventory_data_source
+from openmethane_prior.data_sources.inventory.inventory import get_sector_emissions_by_code
+from openmethane_prior.sectors.omIndustrialStationaryTransportEmis import sector_meta_map as ntlt_sector_meta
+from openmethane_prior.sectors.omAgLulucfWasteEmis import sector_meta_map as landuse_sector_meta
+from openmethane_prior.sectors.omElectricityEmis import sector_meta as electricity_sector_meta
+from openmethane_prior.sectors.omFugitiveEmis import sector_meta as fugitive_sector_meta
 
 
 @pytest.fixture()

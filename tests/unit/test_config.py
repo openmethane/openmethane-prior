@@ -2,7 +2,7 @@ import os
 import pathlib
 import pytest
 
-from openmethane_prior.config import PriorConfig
+from openmethane_prior.lib.config import PriorConfig
 
 
 # This fixture will allow each test to setup the required env variables and

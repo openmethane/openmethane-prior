@@ -1,7 +1,7 @@
 import numpy as np
 
-from openmethane_prior.grid.grid import Grid
-from openmethane_prior.grid.regrid import regrid_data
+from openmethane_prior.lib.grid.grid import Grid
+from openmethane_prior.lib.grid.regrid import regrid_data
 
 
 def test_regrid_data_same_grid():

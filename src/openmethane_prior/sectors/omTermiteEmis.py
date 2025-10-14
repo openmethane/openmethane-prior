@@ -24,16 +24,16 @@ import os
 
 import netCDF4 as nc
 import numpy as np
-from openmethane_prior.data_manager.manager import DataManager
-from openmethane_prior.data_manager.source import DataSource
+from openmethane_prior.lib.data_manager.manager import DataManager
+from openmethane_prior.lib.data_manager.source import DataSource
 from shapely import geometry
 import xarray as xr
 
-from openmethane_prior.config import PriorConfig, load_config_from_env, parse_cli_to_env
-from openmethane_prior.outputs import add_ch4_total, add_sector, create_output_dataset, write_output_dataset
-from openmethane_prior.sector.config import PriorSectorConfig
-from openmethane_prior.sector.sector import SectorMeta
-from openmethane_prior.utils import (
+from openmethane_prior.lib.config import load_config_from_env, parse_cli_to_env
+from openmethane_prior.lib.outputs import add_ch4_total, add_sector, create_output_dataset, write_output_dataset
+from openmethane_prior.lib.sector.config import PriorSectorConfig
+from openmethane_prior.lib.sector.sector import SectorMeta
+from openmethane_prior.lib.utils import (
     SECS_PER_YEAR,
     area_of_rectangle_m2,
     load_zipped_pickle,

@@ -22,22 +22,22 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
-from openmethane_prior.config import load_config_from_env, parse_cli_to_env
-from openmethane_prior.data_manager.manager import DataManager
-from openmethane_prior.data_manager.parsers import parse_csv
-from openmethane_prior.data_manager.source import DataSource
-from openmethane_prior.inventory.data import inventory_data_source
-from openmethane_prior.outputs import (
+from openmethane_prior.lib.config import load_config_from_env, parse_cli_to_env
+from openmethane_prior.lib.data_manager.manager import DataManager
+from openmethane_prior.lib.data_manager.parsers import parse_csv
+from openmethane_prior.lib.data_manager.source import DataSource
+from openmethane_prior.data_sources.inventory import inventory_data_source
+from openmethane_prior.lib.outputs import (
     add_ch4_total,
     add_sector,
     create_output_dataset,
     write_output_dataset,
 )
-import openmethane_prior.logger as logger
-from openmethane_prior.inventory.inventory import get_sector_emissions_by_code
-from openmethane_prior.sector.config import PriorSectorConfig
-from openmethane_prior.sector.sector import SectorMeta
-from openmethane_prior.units import kg_to_period_cell_flux
+import openmethane_prior.lib.logger as logger
+from openmethane_prior.data_sources.inventory.inventory import get_sector_emissions_by_code
+from openmethane_prior.lib.sector.config import PriorSectorConfig
+from openmethane_prior.lib.sector.sector import SectorMeta
+from openmethane_prior.lib.units import kg_to_period_cell_flux
 
 logger = logger.get_logger(__name__)
 

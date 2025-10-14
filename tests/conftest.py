@@ -9,12 +9,12 @@ import dotenv
 import pytest
 import xarray as xr
 
-from openmethane_prior.config import PriorConfig, load_config_from_env, PriorConfigOptions
-from openmethane_prior.data_manager.manager import DataManager
-from openmethane_prior.grid.create_grid import create_grid_from_mcip
-from openmethane_prior.grid.grid import Grid
-from openmethane_prior.inputs import check_input_files
-from openmethane_prior.sector.config import PriorSectorConfig
+from openmethane_prior.lib.config import PriorConfig, load_config_from_env, PriorConfigOptions
+from openmethane_prior.lib.data_manager.manager import DataManager
+from openmethane_prior.lib.grid.create_grid import create_grid_from_mcip
+from openmethane_prior.lib.grid.grid import Grid
+from openmethane_prior.lib.inputs import check_input_files
+from openmethane_prior.lib.sector.config import PriorSectorConfig
 
 from scripts.omPrior import run_prior
 

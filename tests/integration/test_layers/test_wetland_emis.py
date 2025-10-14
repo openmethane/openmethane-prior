@@ -2,8 +2,8 @@ import netCDF4 as nc
 import numpy as np
 import pytest
 
-from openmethane_prior.layers.omWetlandEmis import make_wetland_climatology, wetlands_data_source
-from openmethane_prior.utils import area_of_rectangle_m2
+from openmethane_prior.sectors.omWetlandEmis import make_wetland_climatology, wetlands_data_source
+from openmethane_prior.lib.utils import area_of_rectangle_m2
 
 @pytest.mark.skip(reason="Makes no assertions")
 def test_wetland_emis(config, input_files, data_manager):

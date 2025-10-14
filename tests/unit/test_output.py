@@ -2,8 +2,8 @@ import numpy as np
 import xarray as xr
 import pytest
 
-from openmethane_prior.outputs import create_output_dataset, expand_sector_dims, write_output_dataset, add_sector
-from openmethane_prior.sector.sector import SectorMeta
+from openmethane_prior.lib.outputs import create_output_dataset, expand_sector_dims, write_output_dataset, add_sector
+from openmethane_prior.lib.sector.sector import SectorMeta
 
 
 def test_write_output_dataset(config, input_files):
