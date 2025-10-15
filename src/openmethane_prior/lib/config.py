@@ -24,6 +24,7 @@ class PriorConfigOptions(typing.TypedDict, total=False):
     output_filename: str
     start_date: datetime.datetime
     end_date: datetime.datetime
+    sectors: tuple[str] | None
 
 @attrs.frozen
 class PriorConfig:
@@ -43,6 +44,9 @@ class PriorConfig:
     output_filename: str
     """Filename to write the prior output to as a NetCDFv4 file in
     `output_path`"""
+
+    sectors: tuple[str] | None = None
+    """List of PriorSector names to process"""
 
     start_date: datetime.datetime | None = None
     end_date: datetime.datetime | None = None
@@ -163,6 +167,9 @@ def load_config_from_env(**overrides: PriorConfigOptions) -> PriorConfig:
     if end_date:
         end_date = datetime.datetime.combine(end_date, datetime.time.min)
 
+    sectors = env.str("SECTORS", "").split(",")
+    sectors = tuple([s for s in sectors if s != ""]) # filter out empty strings
+
     options: PriorConfigOptions = dict(
         input_path=env.path("INPUTS", "data/inputs"),
         output_path=env.path("OUTPUTS", "data/outputs"),
@@ -172,6 +179,7 @@ def load_config_from_env(**overrides: PriorConfigOptions) -> PriorConfig:
         output_filename=env.str("OUTPUT_FILENAME", "prior-emissions.nc"),
         start_date=start_date,
         end_date =end_date,
+        sectors=sectors if len(sectors) > 0 else None,
     )
 
     return PriorConfig(**{**options, **overrides})
@@ -194,9 +202,9 @@ def parse_cli_args():
         help="end date in YYYY-MM-DD format",
     )
     parser.add_argument(
-        "--skip-reproject",
-        default=False,
-        action="store_true", # set as True if present
+        "--sectors",
+        default=None,
+        help="list of sectors to process, comma-separated",
     )
 
     return parser.parse_args()
@@ -215,3 +223,6 @@ def parse_cli_to_env():
         os.environ["END_DATE"] = args.end_date.strftime("%Y-%m-%d")
     elif args.start_date is not None:
         os.environ["END_DATE"] = args.start_date.strftime("%Y-%m-%d")
+
+    if args.sectors is not None:
+        os.environ["SECTORS"] = args.sectors

@@ -4,7 +4,7 @@ import pytest
 
 from openmethane_prior.lib.outputs import create_output_dataset
 from openmethane_prior.lib.sector.config import PriorSectorConfig
-from openmethane_prior.sectors.omGFASEmis import processEmissions
+from openmethane_prior.sectors.fire.sector import sector as fire_sector
 from openmethane_prior.lib.utils import area_of_rectangle_m2
 
 
@@ -14,7 +14,7 @@ def test_gfas_emis(config, input_files, data_manager):  # test totals for GFAS e
     prior_ds = create_output_dataset(config)
     sector_config = PriorSectorConfig(prior_config=config, data_manager=data_manager)
 
-    remapped = processEmissions(sector_config=sector_config, prior_ds=prior_ds, forceUpdate=True)
+    remapped = fire_sector.create_estimate(fire_sector, sector_config, prior_ds)
 
     GFASfile = config.input_path / f"gfas_{config.start_date.strftime('%Y-%m-%d')}_{config.end_date.strftime('%Y-%m-%d')}.nc"
     ncin = nc.Dataset(GFASfile, "r", format="NETCDF4")

@@ -2,7 +2,7 @@ import os
 import numpy as np
 import pytest
 
-from openmethane_prior.sectors.omGFASEmis import gfas_data_source
+from openmethane_prior.sectors.fire.sector import gfas_data_source
 from openmethane_prior.lib.sector.config import PriorSectorConfig
 
 

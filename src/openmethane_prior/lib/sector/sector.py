@@ -15,8 +15,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+from __future__ import annotations
 
 import attrs
+from collections.abc import Callable
+import numpy as np
+import xarray as xr
+
+from .config import PriorSectorConfig
 
 emission_categories = [
     "natural", # originating in natural processes
@@ -24,7 +30,7 @@ emission_categories = [
 ]
 
 @attrs.define
-class SectorMeta:
+class PriorSector:
     """
     SectorMeta describes a methane emission source or sources by name
     and by various classification schemes.
@@ -32,6 +38,14 @@ class SectorMeta:
     name: str
     """A machine-friendly sector name that will be used in the name of the
     output variable, like `ch4_sector_{name}`"""
+
+    create_estimate: Callable[[PriorSector, PriorSectorConfig, xr.Dataset], xr.DataArray | np.ndarray]
+    """A method to create the emissions estimate for the sector based on the
+    parameters specified in PriorSectorConfig.
+    
+    The sector output should be added as a layer to provided Dataset using the
+    add_sector method.
+    """
 
     emission_category: str = attrs.field()
     """The origin or cause of the emissions. Valid values are:
@@ -42,6 +56,7 @@ class SectorMeta:
     def check_emission_category(self, attribute, value):
         if value not in emission_categories:
             raise ValueError(f"emission_category must be one of {', '.join(emission_categories)}")
+
 
     unfccc_categories: list[str] = attrs.field(default=None)
     """List of UNFCCC CRT category codes for sectors which are represented in

@@ -23,26 +23,22 @@ import pandas as pd
 import xarray as xr
 from colorama import Fore
 
-from openmethane_prior.lib.config import PriorConfig, load_config_from_env
-from openmethane_prior.lib.data_manager.manager import DataManager
-from openmethane_prior.data_sources.inventory import inventory_data_source
-from openmethane_prior.lib.outputs import SECTOR_PREFIX
-from openmethane_prior.data_sources.inventory.inventory import get_sector_emissions_by_code
+from openmethane_prior.data_sources.inventory import get_sector_emissions_by_code, inventory_data_source
+from openmethane_prior.lib.sector.sector import PriorSector
 
-from openmethane_prior.sectors.omIndustrialStationaryTransportEmis import sector_meta_map as ntlt_sector_meta
-from openmethane_prior.sectors.omAgLulucfWasteEmis import sector_meta_map as landuse_sector_meta, livestock_data_source
-from openmethane_prior.sectors.omElectricityEmis import sector_meta as electricity_sector_meta
-from openmethane_prior.sectors.omFugitiveEmis import sector_meta as fugitive_sector_meta
+from .config import PriorConfig
+from .data_manager.manager import DataManager
+from .outputs import SECTOR_PREFIX
+from .units import days_in_period
 
 import openmethane_prior.lib.logger as logger
-from openmethane_prior.lib.units import days_in_period
 
 logger = logger.get_logger(__name__)
 
 MAX_ABS_DIFF = 0.1
 
 
-def verify_emis(config: PriorConfig, prior_ds: xr.Dataset, atol: float = MAX_ABS_DIFF):
+def verify_emis(sectors: list[PriorSector], config: PriorConfig, prior_ds: xr.Dataset, atol: float = MAX_ABS_DIFF):
     """Check output sector emissions to make sure they tally up to the input emissions"""
     if config.domain_grid() != config.inventory_grid():
         # TODO: is there a sense check we can do on smaller domains?
@@ -52,12 +48,7 @@ def verify_emis(config: PriorConfig, prior_ds: xr.Dataset, atol: float = MAX_ABS
     data_manager = DataManager(data_path=config.input_path, prior_config=config)
     emissions_inventory = data_manager.get_asset(inventory_data_source).data
 
-    inventory_sectors = [
-        fugitive_sector_meta,
-        electricity_sector_meta,
-        *ntlt_sector_meta.values(),
-        *landuse_sector_meta.values(),
-    ]
+    inventory_sectors = [s for s in sectors if s.unfccc_categories is not None]
 
     m2s_to_kg = config.domain_grid().cell_area * 24 * 60 * 60
     ds_start_date = pd.to_datetime(prior_ds['time'][0].item()).date()
@@ -66,13 +57,14 @@ def verify_emis(config: PriorConfig, prior_ds: xr.Dataset, atol: float = MAX_ABS
 
     total_expected_vs_actual = []
 
+    # TODO: re-enable when data_sources are configured in PriorSector
     # Load Livestock inventory and check prior values don't exceed data source
-    if f"{SECTOR_PREFIX}_livestock" in prior_ds:
-        livestock_asset = data_manager.get_asset(livestock_data_source)
-        ls = xr.open_dataset(livestock_asset.path)
-        livestock_inventory_total = round(np.sum(ls["CH4_total"].values)) * (period_days / 365)
-        livestock_prior_total = float(prior_ds[f"{SECTOR_PREFIX}_livestock"].sum()) * m2s_to_kg
-        total_expected_vs_actual.append(("livestock", livestock_inventory_total, livestock_prior_total))
+    # if f"{SECTOR_PREFIX}_livestock" in prior_ds:
+    #     livestock_asset = data_manager.get_asset(livestock_data_source)
+    #     ls = xr.open_dataset(livestock_asset.path)
+    #     livestock_inventory_total = round(np.sum(ls["CH4_total"].values)) * (period_days / 365)
+    #     livestock_prior_total = float(prior_ds[f"{SECTOR_PREFIX}_livestock"].sum()) * m2s_to_kg
+    #     total_expected_vs_actual.append(("livestock", livestock_inventory_total, livestock_prior_total))
 
 
     # Check each layer in the output sums up to the input
@@ -104,7 +96,3 @@ def verify_emis(config: PriorConfig, prior_ds: xr.Dataset, atol: float = MAX_ABS
         logger.debug(f"{Fore.GREEN}PASSED{Fore.RESET} - {passed_msg}")
     for failed_msg in failed:
         logger.warning(f"{Fore.RED}FAILED{Fore.RESET} - {failed_msg}")
-
-if __name__ == "__main__":
-    config = load_config_from_env()
-    verify_emis(config=config, prior_ds=xr.open_dataset(config.output_file))

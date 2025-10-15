@@ -3,7 +3,7 @@ import rioxarray as rxr
 import xarray as xr
 
 from openmethane_prior.lib.grid.grid import Grid
-from openmethane_prior.sectors.omIndustrialStationaryTransportEmis import night_lights_data_source
+from openmethane_prior.sectors.industrial.sector import night_lights_data_source
 from openmethane_prior.lib.raster import remap_raster
 
 def test_remap_raster(config, input_files, data_manager):

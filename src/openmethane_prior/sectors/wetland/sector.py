@@ -32,7 +32,7 @@ from shapely import geometry
 from openmethane_prior.lib.config import load_config_from_env, parse_cli_to_env
 from openmethane_prior.lib.outputs import add_ch4_total, add_sector, create_output_dataset, write_output_dataset
 from openmethane_prior.lib.sector.config import PriorSectorConfig
-from openmethane_prior.lib.sector.sector import SectorMeta
+from openmethane_prior.lib.sector.sector import PriorSector
 from openmethane_prior.lib.utils import (
     area_of_rectangle_m2,
     load_zipped_pickle,
@@ -41,18 +41,13 @@ from openmethane_prior.lib.utils import (
     datetime64_to_datetime,
 )
 
-sector_meta = SectorMeta(
-    name="wetlands",
-    emission_category="natural",
-    cf_standard_name="wetland_biological_processes",
-)
 
 wetlands_data_source = DataSource(
     name="wetlands",
     url="https://openmethane.s3.amazonaws.com/prior/inputs/DLEM_totflux_CRU_diagnostic.nc",
 )
 
-def make_wetland_climatology(sector_config: PriorSectorConfig, forceUpdate: bool = False):  # noqa: PLR0915
+def make_wetland_climatology(sector_config: PriorSectorConfig):  # noqa: PLR0915
     """
     Remap wetland emissions to the CMAQ domain
 
@@ -111,7 +106,6 @@ def make_wetland_climatology(sector_config: PriorSectorConfig, forceUpdate: bool
         os.path.exists(indxPath)
         and os.path.exists(indyPath)
         and os.path.exists(coefsPath)
-        and (not forceUpdate)
     ):
         ind_x = load_zipped_pickle(indxPath)
         ind_y = load_zipped_pickle(indyPath)
@@ -203,15 +197,15 @@ def make_wetland_climatology(sector_config: PriorSectorConfig, forceUpdate: bool
     return np.array(result)
 
 
-def processEmissions(
+def process_emissions(
+    sector: PriorSector,
     sector_config: PriorSectorConfig,
     prior_ds: xr.Dataset,
-    forceUpdate: bool = False,
 ):
     """
     Process wetland emissions for the given date range
     """
-    climatology = make_wetland_climatology(sector_config, forceUpdate=forceUpdate)
+    climatology = make_wetland_climatology(sector_config)
     result_nd = []  # will be ndarray once built
     for date in prior_ds["time"].values:
         month = datetime64_to_datetime(date).month
@@ -231,7 +225,7 @@ def processEmissions(
     add_sector(
         prior_ds=prior_ds,
         sector_data=result_xr,
-        sector_meta=sector_meta,
+        sector_meta=sector,
         # source dataset is a coarse grid, and has emissions over ocean which
         # definitely shouldn't be classified as wetlands
         apply_landmask=True,
@@ -239,13 +233,9 @@ def processEmissions(
     return result_nd
 
 
-if __name__ == "__main__":
-    parse_cli_to_env()
-    config = load_config_from_env()
-    data_manager = DataManager(data_path=config.input_path, prior_config=config)
-    sector_config = PriorSectorConfig(prior_config=config, data_manager=data_manager)
-
-    ds = create_output_dataset(config)
-    processEmissions(sector_config, ds)
-    add_ch4_total(ds)
-    write_output_dataset(config, ds)
+sector = PriorSector(
+    name="wetlands",
+    emission_category="natural",
+    cf_standard_name="wetland_biological_processes",
+    create_estimate=process_emissions,
+)

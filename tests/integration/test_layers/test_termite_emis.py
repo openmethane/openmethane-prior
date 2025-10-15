@@ -3,7 +3,7 @@ import numpy as np
 import pytest
 
 from openmethane_prior.lib.outputs import create_output_dataset
-from openmethane_prior.sectors.omTermiteEmis import processEmissions, termites_data_source
+from openmethane_prior.sectors.termite.sector import sector as termites_sector, termites_data_source
 from openmethane_prior.lib.sector.config import PriorSectorConfig
 from openmethane_prior.lib.utils import area_of_rectangle_m2
 
@@ -13,7 +13,7 @@ def test_termite_emis(config, input_files, data_manager):
     prior_ds = create_output_dataset(config)
     sector_config = PriorSectorConfig(prior_config=config, data_manager=data_manager)
 
-    remapped = processEmissions(sector_config=sector_config, prior_ds=prior_ds, forceUpdate=True)
+    remapped = termites_sector.create_estimate(termites_sector, sector_config, prior_ds)
 
     termites_asset = data_manager.get_asset(termites_data_source)
     ncin = nc.Dataset(termites_asset.path, "r")
