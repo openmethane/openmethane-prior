@@ -20,7 +20,7 @@ import numpy.typing as npt
 import xarray as xr
 
 from openmethane_prior.lib.config import PriorConfig
-from openmethane_prior.lib.sector.sector import SectorMeta
+from openmethane_prior.lib.sector.sector import PriorSector
 from openmethane_prior.lib.utils import SECS_PER_YEAR, get_version, get_timestamped_command, time_bounds, \
     list_cf_grid_mappings
 import openmethane_prior.lib.logger as logger
@@ -141,7 +141,7 @@ def write_output_dataset(
 def add_sector(
     prior_ds: xr.Dataset,
     sector_data: xr.DataArray | npt.ArrayLike,
-    sector_meta: SectorMeta,
+    sector_meta: PriorSector,
     apply_landmask: bool = False,
 ):
     """

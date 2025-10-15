@@ -3,10 +3,7 @@ import pytest
 
 from openmethane_prior.data_sources.inventory.data import inventory_data_source
 from openmethane_prior.data_sources.inventory.inventory import get_sector_emissions_by_code
-from openmethane_prior.sectors.omIndustrialStationaryTransportEmis import sector_meta_map as ntlt_sector_meta
-from openmethane_prior.sectors.omAgLulucfWasteEmis import sector_meta_map as landuse_sector_meta
-from openmethane_prior.sectors.omElectricityEmis import sector_meta as electricity_sector_meta
-from openmethane_prior.sectors.omFugitiveEmis import sector_meta as fugitive_sector_meta
+from openmethane_prior.sectors import all_sectors
 
 
 @pytest.fixture()
@@ -15,16 +12,12 @@ def emissions_inventory(input_files, data_manager):
 
 @pytest.fixture()
 def all_sector_meta():
-    all_inventory_sectors = [
-        fugitive_sector_meta,
-        electricity_sector_meta,
-        *ntlt_sector_meta.values(),
-        *landuse_sector_meta.values(),
-    ]
-    all_sectors = {}
-    for sector_meta in all_inventory_sectors:
-        all_sectors[sector_meta.name] = sector_meta
-    return all_sectors
+    inventory_sectors = [s for s in all_sectors if s.unfccc_categories is not None]
+
+    all_sectors_map = {}
+    for sector_meta in inventory_sectors:
+        all_sectors_map[sector_meta.name] = sector_meta
+    return all_sectors_map
 
 
 def test_inventory_get_sector_emissions_by_code(all_sector_meta, emissions_inventory):
