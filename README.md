@@ -125,34 +125,28 @@ make clean-all
 
 ## Run
 
-### All layers
+### All sectors
 
-To calculate emissions for all layers, run `omPrior.py` with a start and end date:
+To calculate emissions for all sectors, run `omPrior.py` with a start and end date:
 
-```
+```shell
 poetry run python scripts/omPrior.py --start-date 2022-07-01 --end-date 2022-07-01
 ```
 
-or use the make target
+This takes a while to process (~10 minutes) with the vast majority of that time
+spent on the sectors which re-project large input datasets.
 
-```console
-make run
+### Specific sectors
+
+To run a single sector or a subset of sectors, use the `--sectors` argument:
+
+```shell
+poetry run python scripts/omPrior.py --start-date 2022-07-01 --end-date 2022-07-01 \
+  --sectors livestock,termite,fire
 ```
 
-This takes a while to process (~10 minutes) with the vast majority of that time spent on the layers
-in `omAgLulucfWasteEmis.py`.
-
-To skip re-projecting raster layers (you only need to do this once for every time you change the raster input files),
-add the `--skip-reproject` option.
-
-### Single layers
-
-You can run and re-run individual layers one-by-one. Just run each file on it's own (GFAS and Wetlands require a start
-and end date as below):
-
-```console
-poetry run python src/openmethane_prior/layers/omWetlandEmis.py --start-date 2022-07-01 --end-date 2022-07-01
-```
+Sectors must be separated by commas, without spaces, using the value from the
+desired PriorSector `name` attribute.
 
 ### Console output
 
