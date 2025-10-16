@@ -15,6 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import os
 import pathlib
 import urllib.request
 import zipfile
@@ -36,10 +37,17 @@ def landuse_fetch(data_source: ConfiguredDataSource) -> pathlib.Path:
     Download land use of Australia official source zip file, and extract
     the GeoTIFF file we will actually use.
     """
-    zip_path, response = urllib.request.urlretrieve(url=data_source.url)
+    # download zip file to a temporary location, it should be cleaned up afterwards
+    zip_path, response = urllib.request.urlretrieve(
+        url=data_source.url,
+        filename=data_source.data_path / os.path.basename(data_source.url),
+    )
 
     with zipfile.ZipFile(zip_path, 'r') as zip_ref:
         zip_ref.extract(NLUM_GEOTIFF_FILENAME, data_source.data_path)
+
+    # clean up the zip once we've extracted the geotiff
+    os.remove(zip_path)
 
     return data_source.asset_path
 
