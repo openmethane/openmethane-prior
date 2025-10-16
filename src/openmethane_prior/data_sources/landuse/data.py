@@ -15,8 +15,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import pathlib
+import urllib.request
+import zipfile
 
-from openmethane_prior.lib import DataSource
+from openmethane_prior.lib import ConfiguredDataSource, DataSource
 from openmethane_prior.lib.data_manager.parsers import parse_csv
 
 alum_sector_mapping_data_source = DataSource(
@@ -24,8 +27,27 @@ alum_sector_mapping_data_source = DataSource(
     url="https://openmethane.s3.amazonaws.com/prior/inputs/landuse-sector-map.csv",
     parse=parse_csv,
 )
-# source: https://www.agriculture.gov.au/abares/aclump/land-use/land-use-of-australia-2010-11_2015-16
+
+# filename of the GeoTIFF file inside the official zip file source
+NLUM_GEOTIFF_FILENAME="NLUM_v7_250_ALUMV8_2020_21_alb.tif"
+
+def landuse_fetch(data_source: ConfiguredDataSource) -> pathlib.Path:
+    """
+    Download land use of Australia official source zip file, and extract
+    the GeoTIFF file we will actually use.
+    """
+    zip_path, response = urllib.request.urlretrieve(url=data_source.url)
+
+    with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+        zip_ref.extract(NLUM_GEOTIFF_FILENAME, data_source.data_path)
+
+    return data_source.asset_path
+
+# source: https://www.agriculture.gov.au/abares/aclump/land-use/land-use-of-australia-2010-11-to-2020-21
 landuse_map_data_source = DataSource(
     name="landuse-map",
-    url="https://openmethane.s3.amazonaws.com/prior/inputs/NLUM_ALUMV8_250m_2015_16_alb.tif",
+    url="https://www.agriculture.gov.au/sites/default/files/documents/NLUM_v7_250_ALUMV8_2020_21_alb_package_20241128.zip",
+    # if extracted GeoTIFF already exists, it doesn't need to be refetched
+    file_path=NLUM_GEOTIFF_FILENAME,
+    fetch=landuse_fetch,
 )
