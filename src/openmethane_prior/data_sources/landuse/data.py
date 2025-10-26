@@ -54,8 +54,14 @@ def landuse_fetch(data_source: ConfiguredDataSource) -> pathlib.Path:
 # source: https://www.agriculture.gov.au/abares/aclump/land-use/land-use-of-australia-2010-11-to-2020-21
 landuse_map_data_source = DataSource(
     name="landuse-map",
-    url="https://www.agriculture.gov.au/sites/default/files/documents/NLUM_v7_250_ALUMV8_2020_21_alb_package_20241128.zip",
+    url="https://openmethane.s3.amazonaws.com/prior/inputs/NLUM_v7_250_ALUMV8_2020_21_alb_package_20241128.zip",
     # if extracted GeoTIFF already exists, it doesn't need to be refetched
     file_path=NLUM_GEOTIFF_FILENAME,
     fetch=landuse_fetch,
 )
+
+# Note: this file should be obtainable directly from the agriculture.gov.au web
+# server, however their web host appears to block connections from GitHub. The
+# dataset has been mirrored in our public data store while we investigate this
+# behaviour with the department.
+# See: https://github.com/openmethane/openmethane-prior/pull/136#issuecomment-3449011688
