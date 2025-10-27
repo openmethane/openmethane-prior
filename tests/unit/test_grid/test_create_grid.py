@@ -1,7 +1,6 @@
 import numpy as np
-import xarray as xr
 
-from openmethane_prior.grid.create_grid import create_grid_from_mcip, create_grid_from_domain
+from openmethane_prior.lib.grid.create_grid import create_grid_from_mcip, create_grid_from_domain
 
 
 def test_create_grid_from_domain(config, input_files):

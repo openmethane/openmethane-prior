@@ -17,9 +17,9 @@
 #
 import csv
 
-from openmethane_prior.data_manager.source import DataSource, ConfiguredDataSource
-from openmethane_prior.inventory.inventory import SectorEmission, create_emissions_inventory
-from openmethane_prior.inventory.unfccc import create_category_list, Category
+from openmethane_prior.lib.data_manager.source import DataSource, ConfiguredDataSource
+from openmethane_prior.data_sources.inventory.inventory import SectorEmission, create_emissions_inventory
+from openmethane_prior.data_sources.inventory.unfccc import create_category_list, Category
 
 def parse_category_csv(data_source: ConfiguredDataSource) -> list[Category]:
     with open(data_source.asset_path, newline='') as codes_file:

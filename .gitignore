@@ -218,3 +218,4 @@ inputs
 intermediates
 processed
 
+!src/openmethane_prior/lib

@@ -21,7 +21,7 @@ import pyproj
 from shapely import geometry
 
 from .grid import Grid
-import openmethane_prior.logger as logger
+import openmethane_prior.lib.logger as logger
 
 logger = logger.get_logger(__name__)
 

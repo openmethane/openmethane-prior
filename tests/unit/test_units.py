@@ -1,5 +1,5 @@
 from datetime import date
-from openmethane_prior.units import kg_to_kg_m2_s, kg_to_period_cell_flux, seconds_in_period, days_in_period
+from openmethane_prior.lib.units import kg_to_kg_m2_s, kg_to_period_cell_flux, seconds_in_period, days_in_period
 
 
 def test_units_days_in_period():

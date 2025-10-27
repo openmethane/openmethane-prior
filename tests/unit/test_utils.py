@@ -1,11 +1,10 @@
 import datetime
 
 import numpy as np
-import pytest
 import sys
 import xarray as xr
 
-from openmethane_prior.utils import get_command, get_timestamped_command, time_bounds, bounds_from_cell_edges, is_url
+from openmethane_prior.lib.utils import get_command, get_timestamped_command, time_bounds, bounds_from_cell_edges, is_url
 
 
 def test_get_command():

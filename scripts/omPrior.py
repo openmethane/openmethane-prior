@@ -20,36 +20,25 @@
 import logging
 import prettyprinter
 
-from openmethane_prior.config import PriorConfig, load_config_from_env, parse_cli_to_env
-from openmethane_prior.data_manager.manager import DataManager
-from openmethane_prior.inputs import check_input_files
-from openmethane_prior.layers import (
-    omAgLulucfWasteEmis,
-    omElectricityEmis,
-    omFugitiveEmis,
-    omGFASEmis,
-    omIndustrialStationaryTransportEmis,
-    omTermiteEmis,
-    omWetlandEmis,
+from openmethane_prior.lib import (
+    add_ch4_total,
+    create_output_dataset,
+    check_input_files,
+    DataManager,
+    load_config_from_env,
+    logger,
+    parse_cli_to_env,
+    PriorConfig,
+    PriorSectorConfig,
+    verify_emis,
+    write_output_dataset,
 )
-from openmethane_prior.outputs import add_ch4_total, create_output_dataset, write_output_dataset
-from openmethane_prior.sector.config import PriorSectorConfig
-from openmethane_prior.verification import verify_emis
-import openmethane_prior.logger as logger
+from openmethane_prior.sectors import all_sectors
 
 logger = logger.get_logger(__name__)
 
 prettyprinter.install_extras(["attrs"])
 
-all_sectors = [
-    omAgLulucfWasteEmis,
-    omIndustrialStationaryTransportEmis,
-    omElectricityEmis,
-    omFugitiveEmis,
-    omTermiteEmis,
-    omWetlandEmis,
-    omGFASEmis,
-]
 
 
 def run_prior(config: PriorConfig):

@@ -23,19 +23,19 @@ import pandas as pd
 import xarray as xr
 from colorama import Fore
 
-from openmethane_prior.config import PriorConfig, load_config_from_env
-from openmethane_prior.data_manager.manager import DataManager
-from openmethane_prior.inventory.data import inventory_data_source
-from openmethane_prior.outputs import SECTOR_PREFIX
-from openmethane_prior.inventory.inventory import get_sector_emissions_by_code
+from openmethane_prior.lib.config import PriorConfig, load_config_from_env
+from openmethane_prior.lib.data_manager.manager import DataManager
+from openmethane_prior.data_sources.inventory import inventory_data_source
+from openmethane_prior.lib.outputs import SECTOR_PREFIX
+from openmethane_prior.data_sources.inventory.inventory import get_sector_emissions_by_code
 
-from openmethane_prior.layers.omIndustrialStationaryTransportEmis import sector_meta_map as ntlt_sector_meta
-from openmethane_prior.layers.omAgLulucfWasteEmis import sector_meta_map as landuse_sector_meta, livestock_data_source
-from openmethane_prior.layers.omElectricityEmis import sector_meta as electricity_sector_meta
-from openmethane_prior.layers.omFugitiveEmis import sector_meta as fugitive_sector_meta
+from openmethane_prior.sectors.omIndustrialStationaryTransportEmis import sector_meta_map as ntlt_sector_meta
+from openmethane_prior.sectors.omAgLulucfWasteEmis import sector_meta_map as landuse_sector_meta, livestock_data_source
+from openmethane_prior.sectors.omElectricityEmis import sector_meta as electricity_sector_meta
+from openmethane_prior.sectors.omFugitiveEmis import sector_meta as fugitive_sector_meta
 
-import openmethane_prior.logger as logger
-from openmethane_prior.units import days_in_period
+import openmethane_prior.lib.logger as logger
+from openmethane_prior.lib.units import days_in_period
 
 logger = logger.get_logger(__name__)
 
