@@ -25,7 +25,7 @@ from openmethane_prior.config import load_config_from_env, parse_cli_to_env
 from openmethane_prior.data_manager.manager import DataManager
 from openmethane_prior.data_manager.parsers import parse_csv
 from openmethane_prior.data_manager.source import DataSource
-from openmethane_prior.inventory.data import create_inventory
+from openmethane_prior.inventory.data import inventory_data_source
 from openmethane_prior.outputs import (
     add_ch4_total,
     add_sector,
@@ -62,7 +62,7 @@ def processEmissions(sector_config: PriorSectorConfig, prior_ds: xr.Dataset):
     config = sector_config.prior_config
 
     # read the total emissions over the sector (in kg)
-    emissions_inventory = create_inventory(data_manager=sector_config.data_manager)
+    emissions_inventory = sector_config.data_manager.get_asset(inventory_data_source).data
     sector_total_emissions = get_sector_emissions_by_code(
         emissions_inventory=emissions_inventory,
         start_date=config.start_date,

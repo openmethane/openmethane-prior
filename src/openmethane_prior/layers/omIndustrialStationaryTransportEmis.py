@@ -26,7 +26,7 @@ from openmethane_prior.config import load_config_from_env, parse_cli_to_env
 from openmethane_prior.data_manager.manager import DataManager
 from openmethane_prior.data_manager.source import ConfiguredDataSource, DataSource
 from openmethane_prior.grid.regrid import regrid_data
-from openmethane_prior.inventory.data import create_inventory
+from openmethane_prior.inventory.data import inventory_data_source
 from openmethane_prior.outputs import (
     add_ch4_total,
     add_sector,
@@ -117,7 +117,7 @@ def processEmissions(sector_config: PriorSectorConfig, prior_ds: xr.Dataset):
     that quotient is the proportion of total nightlights in that cell """
 
     # load the national inventory data, ready to calculate sectoral totals
-    emissions_inventory = create_inventory(data_manager=sector_config.data_manager)
+    emissions_inventory = sector_config.data_manager.get_asset(inventory_data_source).data
 
     for sector, sector_meta in sector_meta_map.items():
         sector_total_emissions = get_sector_emissions_by_code(
