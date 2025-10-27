@@ -16,18 +16,21 @@
 # limitations under the License.
 #
 
+import attrs
 import calendar
 import csv
 import datetime
-
-import attrs
 from typing import Iterable
 
 from openmethane_prior.config import PriorConfig
 from openmethane_prior.sector.unfccc import Category, find_category_by_name, is_code_in_code_family, \
     create_category_list
 from openmethane_prior.units import days_in_period
+from openmethane_prior.logger import get_logger, DuplicateFilter
 
+logger = get_logger(__name__)
+# prevent multiple "inventory does not cover YYYY" messages
+logger.addFilter(DuplicateFilter())
 
 @attrs.define
 class SectorEmission:
@@ -112,9 +115,18 @@ def get_sector_emissions_by_code(
     aggregated_emission = 0.0
     for emissions in emissions_inventory:
         if is_code_in_code_family(emissions.unfccc_category.code, category_codes):
+            inventory_year = start_date.year
+            if inventory_year not in emissions.ch4_emissions:
+                covered_years = sorted(emissions.ch4_emissions.keys())
+                if inventory_year < covered_years[0]:
+                    inventory_year = covered_years[0]
+                elif inventory_year > covered_years[-1]:
+                    inventory_year = covered_years[-1]
+                logger.warning(f"inventory does not cover {start_date.year}, using {inventory_year} inventory")
+
             # reported emissions are for an entire year, take the fraction for
             # the requested time period
-            aggregated_emission += emissions.ch4_emissions[start_date.year] * period_annual_fraction
+            aggregated_emission += emissions.ch4_emissions[inventory_year] * period_annual_fraction
 
     return aggregated_emission
 
