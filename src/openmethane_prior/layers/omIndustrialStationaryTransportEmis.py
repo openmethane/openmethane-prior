@@ -23,7 +23,10 @@ import rioxarray as rxr
 import xarray as xr
 
 from openmethane_prior.config import PriorConfig, load_config_from_env, parse_cli_to_env
+from openmethane_prior.data_manager.manager import DataManager
+from openmethane_prior.data_manager.source import DataSource
 from openmethane_prior.grid.regrid import regrid_data
+from openmethane_prior.inventory.data import create_inventory
 from openmethane_prior.outputs import (
     add_ch4_total,
     add_sector,
@@ -32,7 +35,8 @@ from openmethane_prior.outputs import (
 )
 from openmethane_prior.raster import remap_raster
 import openmethane_prior.logger as logger
-from openmethane_prior.sector.inventory import load_inventory, get_sector_emissions_by_code
+from openmethane_prior.inventory.inventory import get_sector_emissions_by_code
+from openmethane_prior.sector.config import PriorSectorConfig
 from openmethane_prior.sector.sector import SectorMeta
 from openmethane_prior.units import kg_to_period_cell_flux
 
@@ -66,17 +70,23 @@ sector_meta_map = {
     ),
 }
 
+night_lights_data_source = DataSource(
+    name="nighttime-lights",
+    url="https://openmethane.s3.amazonaws.com/prior/inputs/nasa-nighttime-lights.tiff",
+)
 
-def processEmissions(config: PriorConfig, prior_ds: xr.Dataset):
+def processEmissions(sector_config: PriorSectorConfig, prior_ds: xr.Dataset):
     """
     Process emissions for Industrial, Stationary and Transport sectors, adding
     them to the prior dataset.
     """
     logger.info("processEmissions for Industrial, Stationary and Transport")
 
-    ntlData = rxr.open_rasterio(
-        config.as_input_file(config.layer_inputs.ntl_path), masked=False
-    )
+    config = sector_config.prior_config
+
+    night_lights_asset = sector_config.data_manager.get_asset(night_lights_data_source)
+    ntlData = rxr.open_rasterio(night_lights_asset.path, masked=False)
+
     # sum over three bands
     ntlt = ntlData.sum(axis=0)
     np.nan_to_num(ntlt, copy=False)
@@ -100,7 +110,7 @@ def processEmissions(config: PriorConfig, prior_ds: xr.Dataset):
     that quotient is the proportion of total nightlights in that cell """
 
     # load the national inventory data, ready to calculate sectoral totals
-    emissions_inventory = load_inventory(config)
+    emissions_inventory = create_inventory(data_manager=sector_config.data_manager)
 
     for sector, sector_meta in sector_meta_map.items():
         sector_total_emissions = get_sector_emissions_by_code(
@@ -122,8 +132,10 @@ def processEmissions(config: PriorConfig, prior_ds: xr.Dataset):
 if __name__ == "__main__":
     parse_cli_to_env()
     config = load_config_from_env()
+    data_manager = DataManager(data_path=config.input_path, prior_config=config)
+    sector_config = PriorSectorConfig(prior_config=config, data_manager=data_manager)
 
     ds = create_output_dataset(config)
-    processEmissions(config, ds)
+    processEmissions(sector_config, ds)
     add_ch4_total(ds)
     write_output_dataset(config, ds)

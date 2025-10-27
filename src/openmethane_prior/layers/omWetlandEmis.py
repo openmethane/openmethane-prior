@@ -25,10 +25,13 @@ import os
 import netCDF4 as nc
 import numpy as np
 import xarray as xr
+from openmethane_prior.data_manager.manager import DataManager
+from openmethane_prior.data_manager.source import DataSource
 from shapely import geometry
 
 from openmethane_prior.config import PriorConfig, load_config_from_env, parse_cli_to_env
 from openmethane_prior.outputs import add_ch4_total, add_sector, create_output_dataset, write_output_dataset
+from openmethane_prior.sector.config import PriorSectorConfig
 from openmethane_prior.sector.sector import SectorMeta
 from openmethane_prior.utils import (
     area_of_rectangle_m2,
@@ -44,7 +47,12 @@ sector_meta = SectorMeta(
     cf_standard_name="wetland_biological_processes",
 )
 
-def make_wetland_climatology(config: PriorConfig, forceUpdate: bool = False):  # noqa: PLR0915
+wetlands_data_source = DataSource(
+    name="wetlands",
+    url="https://openmethane.s3.amazonaws.com/prior/inputs/DLEM_totflux_CRU_diagnostic.nc",
+)
+
+def make_wetland_climatology(sector_config: PriorSectorConfig, forceUpdate: bool = False):  # noqa: PLR0915
     """
     Remap wetland emissions to the CMAQ domain
 
@@ -57,7 +65,11 @@ def make_wetland_climatology(config: PriorConfig, forceUpdate: bool = False):  #
     -------
         Array containing the processed results
     """
-    ncin = nc.Dataset(config.as_input_file(config.layer_inputs.wetland_path), "r")
+    config = sector_config.prior_config
+
+    wetlands_asset = sector_config.data_manager.get_asset(wetlands_data_source)
+    ncin = nc.Dataset(wetlands_asset.path, "r")
+
     latWetland = np.around(np.float64(ncin.variables["lat"][:]), 3)
     lonWetland = np.around(np.float64(ncin.variables["lon"][:]), 3)
     dlatWetland = latWetland[0] - latWetland[1]
@@ -192,14 +204,14 @@ def make_wetland_climatology(config: PriorConfig, forceUpdate: bool = False):  #
 
 
 def processEmissions(
-    config: PriorConfig,
+    sector_config: PriorSectorConfig,
     prior_ds: xr.Dataset,
     forceUpdate: bool = False,
 ):
     """
     Process wetland emissions for the given date range
     """
-    climatology = make_wetland_climatology(config, forceUpdate=forceUpdate)
+    climatology = make_wetland_climatology(sector_config, forceUpdate=forceUpdate)
     result_nd = []  # will be ndarray once built
     for date in prior_ds["time"].values:
         month = datetime64_to_datetime(date).month
@@ -230,8 +242,10 @@ def processEmissions(
 if __name__ == "__main__":
     parse_cli_to_env()
     config = load_config_from_env()
+    data_manager = DataManager(data_path=config.input_path, prior_config=config)
+    sector_config = PriorSectorConfig(prior_config=config, data_manager=data_manager)
 
     ds = create_output_dataset(config)
-    processEmissions(config, ds)
+    processEmissions(sector_config, ds)
     add_ch4_total(ds)
     write_output_dataset(config, ds)

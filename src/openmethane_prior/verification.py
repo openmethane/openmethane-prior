@@ -24,11 +24,13 @@ import xarray as xr
 from colorama import Fore
 
 from openmethane_prior.config import PriorConfig, load_config_from_env
+from openmethane_prior.data_manager.manager import DataManager
+from openmethane_prior.inventory.data import create_inventory
 from openmethane_prior.outputs import SECTOR_PREFIX
-from openmethane_prior.sector.inventory import load_inventory, get_sector_emissions_by_code
+from openmethane_prior.inventory.inventory import get_sector_emissions_by_code
 
 from openmethane_prior.layers.omIndustrialStationaryTransportEmis import sector_meta_map as ntlt_sector_meta
-from openmethane_prior.layers.omAgLulucfWasteEmis import sector_meta_map as landuse_sector_meta
+from openmethane_prior.layers.omAgLulucfWasteEmis import sector_meta_map as landuse_sector_meta, livestock_data_source
 from openmethane_prior.layers.omElectricityEmis import sector_meta as electricity_sector_meta
 from openmethane_prior.layers.omFugitiveEmis import sector_meta as fugitive_sector_meta
 
@@ -47,7 +49,8 @@ def verify_emis(config: PriorConfig, prior_ds: xr.Dataset, atol: float = MAX_ABS
         logger.info("SKIPPING verify_emis: only supported when domain and inventory domain are identical")
         return
 
-    emissions_inventory = load_inventory(config)
+    data_manager = DataManager(data_path=config.input_path, prior_config=config)
+    emissions_inventory = create_inventory(data_manager=data_manager)
 
     inventory_sectors = [
         fugitive_sector_meta,
@@ -64,11 +67,12 @@ def verify_emis(config: PriorConfig, prior_ds: xr.Dataset, atol: float = MAX_ABS
     total_expected_vs_actual = []
 
     # Load Livestock inventory and check prior values don't exceed data source
-    with xr.open_dataset(config.as_input_file(config.layer_inputs.livestock_path)) as lss:
-        ls = lss.load()
-    livestock_inventory_total = round(np.sum(ls["CH4_total"].values)) * (period_days / 365)
-    livestock_prior_total = float(prior_ds[f"{SECTOR_PREFIX}_livestock"].sum()) * m2s_to_kg
-    total_expected_vs_actual.append(("livestock", livestock_inventory_total, livestock_prior_total))
+    if f"{SECTOR_PREFIX}_livestock" in prior_ds:
+        livestock_asset = data_manager.get_asset(livestock_data_source)
+        ls = xr.open_dataset(livestock_asset.path)
+        livestock_inventory_total = round(np.sum(ls["CH4_total"].values)) * (period_days / 365)
+        livestock_prior_total = float(prior_ds[f"{SECTOR_PREFIX}_livestock"].sum()) * m2s_to_kg
+        total_expected_vs_actual.append(("livestock", livestock_inventory_total, livestock_prior_total))
 
 
     # Check each layer in the output sums up to the input

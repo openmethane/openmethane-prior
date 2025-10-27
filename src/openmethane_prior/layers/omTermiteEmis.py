@@ -24,11 +24,14 @@ import os
 
 import netCDF4 as nc
 import numpy as np
+from openmethane_prior.data_manager.manager import DataManager
+from openmethane_prior.data_manager.source import DataSource
 from shapely import geometry
 import xarray as xr
 
 from openmethane_prior.config import PriorConfig, load_config_from_env, parse_cli_to_env
 from openmethane_prior.outputs import add_ch4_total, add_sector, create_output_dataset, write_output_dataset
+from openmethane_prior.sector.config import PriorSectorConfig
 from openmethane_prior.sector.sector import SectorMeta
 from openmethane_prior.utils import (
     SECS_PER_YEAR,
@@ -44,19 +47,21 @@ sector_meta = SectorMeta(
     cf_standard_name="termites",
 )
 
+termites_data_source = DataSource(
+    name="termites",
+    url="https://openmethane.s3.amazonaws.com/prior/inputs/termite_emissions_2010-2016.nc",
+)
+
 def processEmissions(  # noqa: PLR0915
-    config: PriorConfig,
+    sector_config: PriorSectorConfig,
     prior_ds: xr.Dataset,
     forceUpdate: bool = False,
 ):
-    """Remap termite emissions to the CMAQ domain
+    """Remap termite emissions to the CMAQ domain"""
+    config = sector_config.prior_config
 
-    Args:
-    ----
-        forceUpdate
-            If True, always recalculate grid mapping indices
-    """
-    ncin = nc.Dataset(config.as_input_file(config.layer_inputs.termite_path), "r")
+    termites_asset = sector_config.data_manager.get_asset(termites_data_source)
+    ncin = nc.Dataset(termites_asset.path, "r")
     latTerm = np.around(np.float64(ncin.variables["lat"][:]), 3)
     latTerm = latTerm[-1::-1]  # we need it south-north
     lonTerm = np.around(np.float64(ncin.variables["lon"][:]), 3)
@@ -194,8 +199,10 @@ def processEmissions(  # noqa: PLR0915
 if __name__ == "__main__":
     parse_cli_to_env()
     config = load_config_from_env()
+    data_manager = DataManager(data_path=config.input_path, prior_config=config)
+    sector_config = PriorSectorConfig(prior_config=config, data_manager=data_manager)
 
     ds = create_output_dataset(config)
-    processEmissions(config, ds)
+    processEmissions(sector_config, ds)
     add_ch4_total(ds)
     write_output_dataset(config, ds)

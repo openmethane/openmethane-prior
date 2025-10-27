@@ -3,9 +3,10 @@ import rioxarray as rxr
 import xarray as xr
 
 from openmethane_prior.grid.grid import Grid
+from openmethane_prior.layers.omIndustrialStationaryTransportEmis import night_lights_data_source
 from openmethane_prior.raster import remap_raster
 
-def test_remap_raster(config, input_files):
+def test_remap_raster(config, input_files, data_manager):
     test_coord = (2500, 3000) # let's read this in later
     distance_tolerance = 1e4 # allowed mismatch between initial and final coords in metres
     epsilon = 1e-5 # small number
@@ -17,9 +18,9 @@ def test_remap_raster(config, input_files):
     lat = domain_dataset['lat']
     lon = domain_dataset['lon']
 
-    ntl_raw = rxr.open_rasterio(
-        config.as_input_file(config.layer_inputs.ntl_path), masked=True
-    )
+    night_lights_asset = data_manager.get_asset(night_lights_data_source)
+    ntl_raw = rxr.open_rasterio(night_lights_asset.path, masked=True)
+
     # filter nans
     np.nan_to_num(ntl_raw, copy=False)
     ntl = ntl_raw.sum(axis=0)
