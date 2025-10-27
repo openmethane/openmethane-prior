@@ -18,9 +18,15 @@
 import csv
 
 from openmethane_prior.data_manager.manager import DataManager
-from openmethane_prior.data_manager.source import DataSource
+from openmethane_prior.data_manager.source import DataSource, ConfiguredDataSource
 from openmethane_prior.inventory.inventory import SectorEmission, create_emissions_inventory
-from openmethane_prior.inventory.unfccc import create_category_list
+from openmethane_prior.inventory.unfccc import create_category_list, Category
+
+def parse_category_csv(data_source: ConfiguredDataSource) -> list[Category]:
+    with open(data_source.asset_path, newline='') as codes_file:
+        reader = csv.reader(codes_file)
+        next(reader) # skip header row
+        return create_category_list(categories=reader)
 
 inventory_data_source = DataSource(
     name="au-inventory-emissions",
@@ -29,17 +35,14 @@ inventory_data_source = DataSource(
 unfccc_codes_data_source = DataSource(
     name="au-inventory-unfccc-codes",
     url="https://openmethane.s3.amazonaws.com/prior/inputs/UNFCCC-codes-AU.csv",
+    parse=parse_category_csv,
 )
 
 def create_inventory(data_manager: DataManager) -> list[SectorEmission]:
-    unfccc_codes_data = data_manager.get_asset(unfccc_codes_data_source)
-    with open(unfccc_codes_data.path, newline='') as codes_file:
-        reader = csv.reader(codes_file)
-        next(reader) # skip header row
-        categories = create_category_list(categories=reader)
+    unfccc_codes_asset = data_manager.get_asset(unfccc_codes_data_source)
 
     inventory_data = data_manager.get_asset(inventory_data_source)
     with open(inventory_data.path, newline='') as inventory_file:
         reader = csv.reader(inventory_file)
         next(reader) # skip header row
-        return create_emissions_inventory(categories=categories, inventory_list=reader)
+        return create_emissions_inventory(categories=unfccc_codes_asset.data, inventory_list=reader)
