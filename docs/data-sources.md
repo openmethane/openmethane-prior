@@ -10,7 +10,7 @@ categories:
 ## Estimates from existing sources
 
 Gridded methane emission estimates have already been produced for some sectors
-in published research or publically available datasets. Where possible, these
+in published research or publicly available datasets. Where possible, these
 estimates are simply regridded onto the Open Methane grid.
 
 ## Estimates from spatial proxies
@@ -150,7 +150,7 @@ Global dataset of CH4 flux estimates from termites
 Termite emissions used in [Saunois et al. 2020](https://essd.copernicus.org/articles/12/1561/2020/)
 supplied by Simona Castaldi and Sergio Noce.
 
-- Dataset: [termite_emissions_2010-2016.nc][11]
+- Dataset: [termite_emissions_2010-2016.nc][10]
 - Resolution: 0.5 degree
 - Period: mean of 2010 – 2016
 - Updates: never
@@ -219,13 +219,10 @@ and described in Zhang et al. (2023 under review) (could this be https://essd.co
 
 ### Sources
 
-Agricultural emissions apart from livestock taken from the Agricultural emissions of the NGGI
+Agricultural emissions reported in the Australian UNFCCC Inventory are
+spatialised according to the agriculture land-use mask.
 
-- Dataset: [Australia NGGI][6]
-
-Spatialised according to the agriculture land-use mask
-
-- Dataset: [Land Use Sector Mapping][8]
+- Dataset: [Land Use Sector Mapping][7]
 - Dataset: [Land use of Australia 2015–16][4]
   - Original source: https://www.agriculture.gov.au/abares/aclump/land-use/land-use-of-australia-2010-11_2015-16
 
@@ -234,11 +231,8 @@ Spatialised according to the agriculture land-use mask
 
 ### Sources
 
-Industrial emissions taken from the NGGI
-
-- Dataset: [Australia NGGI][6]
-
-Spatialised according to facility-level capacity
+Public electricity emissions reported in the Australian UNFCCC Inventory are
+spatialised according to facility-level capacity.
 
 - Dataset: [Electricity production facilities][5]
   - Original source: [Open Electricity](https://openelectricity.org.au/)
@@ -253,15 +247,12 @@ facility is mapped to the relevant domain grid cell.
 
 ### Sources
 
-Industrial emissions taken from the NGGI
+Fugitive emissions reported in the Australian UNFCCC Inventory are
+spatialised according to facility-level estimates.
 
-- Dataset: [Australia NGGI][6]
-
-Spatialised according to facility-level estimates
-
-- Dataset: [Coal mining sources][7]
+- Dataset: [Coal mining sources][6]
   - Original source: [ClimateTrace](https://climatetrace.org/)
-- Dataset: [Oil and gas production sources][10]
+- Dataset: [Oil and gas production sources][9]
   - Original source: [ClimateTrace](https://climatetrace.org/)
 
 The national inventory total for fugitive emissions is pro-rated to the
@@ -272,59 +263,44 @@ climate trace emission is mapped to the relevant domain grid cell.
 
 ## Sector: Industrial
 
-Industrial emissions taken from the NGGI
+Industrial emissions reported in the Australian UNFCCC Inventory are
+spatialised according to nighttime lights
 
-- Dataset: [Australia NGGI][6]
-
-Spatialised according to nighttime lights
-
-- Dataset: [NASA Nighttime Lights Australia][9]
+- Dataset: [NASA Nighttime Lights Australia][8]
 
 
 ## Sector: Land Use, Land Use Change, and Forestry (LULUCF)
 
-LULUCF sector emissions taken from the NGGI
+LULUCF sector emissions reported in the Australian UNFCCC Inventory are
+spatialised according to the lulucf land-use mask.
 
-- Dataset: [Australia NGGI][6]
-
-Spatialised according to the lulucf land-use mask
-
-- Dataset: [Land Use Sector Mapping][8]
+- Dataset: [Land Use Sector Mapping][7]
 - Dataset: [Land use of Australia 2015–16][4]
   - Original source: https://www.agriculture.gov.au/abares/aclump/land-use/land-use-of-australia-2010-11_2015-16
 
 
 ## Sector: Stationary
 
-Energy sector emissions taken from the NGGI
+Stationary emissions reported in the Australian UNFCCC Inventory are
+spatialised according to nighttime lights
 
-- Dataset: [Australia NGGI][6]
-
-Spatialised according to nighttime lights
-
-- Dataset: [NASA Nighttime Lights Australia][9]
+- Dataset: [NASA Nighttime Lights Australia][8]
 
 
 ## Sector: Transport
 
-Transport sector emissions taken from the NGGI
+Transport sector emissions reported in the Australian UNFCCC Inventory are
+spatialised according to nighttime lights
 
-- Dataset: [Australia NGGI][6]
-
-Spatialised according to nighttime lights
-
-- Dataset: [NASA Nighttime Lights Australia][9]
+- Dataset: [NASA Nighttime Lights Australia][8]
 
 
 ## Sector: Waste
 
-Waste sector emissions taken from the NGGI
+Waste sector emissions reported in the Australian UNFCCC Inventory are
+spatialised according to the waste land-use mask
 
-- Dataset: [Australia NGGI][6]
-
-Spatialised according to the waste land-use mask
-
-- Dataset: [Land Use Sector Mapping][8]
+- Dataset: [Land Use Sector Mapping][7]
 - Dataset: [Land use of Australia 2015–16][4]
   - Original source: https://www.agriculture.gov.au/abares/aclump/land-use/land-use-of-australia-2010-11_2015-16
 
@@ -336,9 +312,8 @@ Spatialised according to the waste land-use mask
 [3]: https://openmethane.s3.amazonaws.com/prior/inputs/EntericFermentation.nc
 [4]: https://openmethane.s3.amazonaws.com/prior/inputs/NLUM_ALUMV8_250m_2015_16_alb.tif
 [5]: https://openmethane.s3.amazonaws.com/prior/inputs/ch4-electricity.csv
-[6]: https://openmethane.s3.amazonaws.com/prior/inputs/ch4-sectoral-emissions.csv
-[7]: https://openmethane.s3.amazonaws.com/prior/inputs/coal-mining_emissions-sources.csv
-[8]: https://openmethane.s3.amazonaws.com/prior/inputs/landuse-sector-map.csv
-[9]: https://openmethane.s3.amazonaws.com/prior/inputs/nasa-nighttime-lights.tiff
-[10]: https://openmethane.s3.amazonaws.com/prior/inputs/oil-and-gas-production-and-transport_emissions-sources.csv
-[11]: https://openmethane.s3.amazonaws.com/prior/inputs/termite_emissions_2010-2016.nc
+[6]: https://openmethane.s3.amazonaws.com/prior/inputs/coal-mining_emissions-sources.csv
+[7]: https://openmethane.s3.amazonaws.com/prior/inputs/landuse-sector-map.csv
+[8]: https://openmethane.s3.amazonaws.com/prior/inputs/nasa-nighttime-lights.tiff
+[9]: https://openmethane.s3.amazonaws.com/prior/inputs/oil-and-gas-production-and-transport_emissions-sources.csv
+[10]: https://openmethane.s3.amazonaws.com/prior/inputs/termite_emissions_2010-2016.nc
