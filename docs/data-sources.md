@@ -29,6 +29,7 @@ cover the exact same domain, or the spatial proxy must be masked.
 
 The spatialised estimates are then regridded onto the Open Methane grid.
 
+
 # General data sources
 
 Some data sources are used by multiple sectors of the prior.
@@ -72,7 +73,7 @@ https://openmethane.s3.amazonaws.com/prior/inputs/AR5_ParisInventory_AUSTRALIA_C
 To allocate inventory emissions to prior sectors, we utilise the
 `unfccc_categories` in each sector, which contain UNFCCC CRT category codes,
 like "5" (Waste), "3.B" (Agriculture - Enteric Fermentation). However, the
-[Australian UNFCCC Inventory](#Australian_UNFCCC_Inventory) doesn't include
+[Australian UNFCCC Inventory](#Australian-UNFCCC-Inventory) doesn't include
 category codes, only full names of the UNFCCC categories (some of which are
 not exact from the original definitions).
 
@@ -108,11 +109,38 @@ The completed mapping is available in our public data store:
 https://openmethane.s3.amazonaws.com/prior/inputs/UNFCCC-codes-AU.csv
 
 
+## Land Use of Australia
+
+Some sectoral inventories are spatialised by identifying which Australian Land
+Use and Management (ALUM) Classification codes fall within those sectors, and
+then distributing inventory emissions to the areas where those ALUM codes are
+featured in the Land Use of Australia geographical dataset provided by the
+Australian Department of Agriculture.
+
+This is done using a combination of the official
+[Land Use of Australia](https://www.agriculture.gov.au/abares/aclump/land-use/land-use-of-australia-2010-11-to-2020-21)
+GeoTIFF raster, and a manual [mapping between ALUM codes and Open Methane sectors][6].
+
+Due to issues fetching the file directly from the agriculture.gov.au service
+in cloud-hosted services, the land use dataset is mirrored from the Open
+Methane Public Data Store: https://openmethane.s3.amazonaws.com/prior/inputs/NLUM_v7_250_ALUMV8_2020_21_alb_package_20241128.zip
+
+
+## NASA Nighttime Lights
+
+Sectors which have a strong correlation with human / industrial activity are
+spatialised using the [NASA Nighttime Lights](https://www.earthdata.nasa.gov/topics/human-dimensions/nighttime-lights)
+dataset.
+
+The nighttime lights GeoTIFF covering Australia is mirrored from the Open
+Methane Public Data Store: https://openmethane.s3.amazonaws.com/prior/inputs/nasa-nighttime-lights.tiff
+
+
 # Data Sources
 
 ## Sector: Livestock
 
-Australian national dataset of CH4 flux estimates from enteric fermentation in livestock
+Australian national dataset of CH4 flux estimates from enteric fermentation in livestock.
 
 ### Sources
 
@@ -143,14 +171,14 @@ Australia."
 
 ## Sector: Termites
 
-Global dataset of CH4 flux estimates from termites
+Global dataset of CH4 flux estimates from termites.
 
 ### Sources
 
 Termite emissions used in [Saunois et al. 2020](https://essd.copernicus.org/articles/12/1561/2020/)
 supplied by Simona Castaldi and Sergio Noce.
 
-- Dataset: [termite_emissions_2010-2016.nc][10]
+- Dataset: [termite_emissions_2010-2016.nc][8]
 - Resolution: 0.5 degree
 - Period: mean of 2010 – 2016
 - Updates: never
@@ -217,24 +245,19 @@ and described in Zhang et al. (2023 under review) (could this be https://essd.co
 
 ## Sector: Agriculture
 
-### Sources
-
-Agricultural emissions reported in the Australian UNFCCC Inventory are
-spatialised according to the agriculture land-use mask.
-
-- Dataset: [Land Use Sector Mapping][7]
-- Dataset: [Land use of Australia 2015–16][4]
-  - Original source: https://www.agriculture.gov.au/abares/aclump/land-use/land-use-of-australia-2010-11_2015-16
+Agricultural emissions (excluding livestock) reported in the
+[Australian UNFCCC Inventory](#Australian-UNFCCC-Inventory)
+are spatialised according to the [Land Use of Australia](#Land-Use-of-Australia) dataset.
 
 
 ## Sector: Electricity
 
+Public electricity emissions reported in the [Australian UNFCCC Inventory](#Australian-UNFCCC-Inventory)
+are spatialised according to facility-level capacity.
+
 ### Sources
 
-Public electricity emissions reported in the Australian UNFCCC Inventory are
-spatialised according to facility-level capacity.
-
-- Dataset: [Electricity production facilities][5]
+- Dataset: [Electricity production facilities][4]
   - Original source: [Open Electricity](https://openelectricity.org.au/)
 
 The national inventory total for electricity emissions is pro-rated to the
@@ -245,14 +268,14 @@ facility is mapped to the relevant domain grid cell.
 
 ## Sector: Fugitive
 
+Fugitive emissions reported in the [Australian UNFCCC Inventory](#Australian-UNFCCC-Inventory)
+are spatialised according to facility-level estimates.
+
 ### Sources
 
-Fugitive emissions reported in the Australian UNFCCC Inventory are
-spatialised according to facility-level estimates.
-
-- Dataset: [Coal mining sources][6]
+- Dataset: [Coal mining sources][5]
   - Original source: [ClimateTrace](https://climatetrace.org/)
-- Dataset: [Oil and gas production sources][9]
+- Dataset: [Oil and gas production sources][7]
   - Original source: [ClimateTrace](https://climatetrace.org/)
 
 The national inventory total for fugitive emissions is pro-rated to the
@@ -263,46 +286,32 @@ climate trace emission is mapped to the relevant domain grid cell.
 
 ## Sector: Industrial
 
-Industrial emissions reported in the Australian UNFCCC Inventory are
-spatialised according to nighttime lights
-
-- Dataset: [NASA Nighttime Lights Australia][8]
+Industrial emissions reported in the [Australian UNFCCC Inventory](#Australian-UNFCCC-Inventory) are
+spatialised according to [NASA Nighttime Lights](#NASA-Nighttime-Lights).
 
 
 ## Sector: Land Use, Land Use Change, and Forestry (LULUCF)
 
-LULUCF sector emissions reported in the Australian UNFCCC Inventory are
-spatialised according to the lulucf land-use mask.
-
-- Dataset: [Land Use Sector Mapping][7]
-- Dataset: [Land use of Australia 2015–16][4]
-  - Original source: https://www.agriculture.gov.au/abares/aclump/land-use/land-use-of-australia-2010-11_2015-16
+LULUCF sector emissions reported in the [Australian UNFCCC Inventory](#Australian-UNFCCC-Inventory) are
+spatialised according to the [Land Use of Australia](#Land-Use-of-Australia) dataset.
 
 
 ## Sector: Stationary
 
-Stationary emissions reported in the Australian UNFCCC Inventory are
-spatialised according to nighttime lights
-
-- Dataset: [NASA Nighttime Lights Australia][8]
+Stationary emissions reported in the [Australian UNFCCC Inventory](#Australian-UNFCCC-Inventory) are
+spatialised according to [NASA Nighttime Lights](#NASA-Nighttime-Lights).
 
 
 ## Sector: Transport
 
-Transport sector emissions reported in the Australian UNFCCC Inventory are
-spatialised according to nighttime lights
-
-- Dataset: [NASA Nighttime Lights Australia][8]
+Transport sector emissions reported in the [Australian UNFCCC Inventory](#Australian-UNFCCC-Inventory) are
+spatialised according to [NASA Nighttime Lights](#NASA-Nighttime-Lights).
 
 
 ## Sector: Waste
 
-Waste sector emissions reported in the Australian UNFCCC Inventory are
-spatialised according to the waste land-use mask
-
-- Dataset: [Land Use Sector Mapping][7]
-- Dataset: [Land use of Australia 2015–16][4]
-  - Original source: https://www.agriculture.gov.au/abares/aclump/land-use/land-use-of-australia-2010-11_2015-16
+Waste sector emissions reported in the [Australian UNFCCC Inventory](#Australian-UNFCCC-Inventory) are
+spatialised according to the [Land Use of Australia](#Land-Use-of-Australia) dataset.
 
 
 # Assets
@@ -310,10 +319,8 @@ spatialised according to the waste land-use mask
 [1]: https://openmethane.s3.amazonaws.com/prior/inputs/AUS_2021_AUST_SHP_GDA2020.zip
 [2]: https://openmethane.s3.amazonaws.com/prior/inputs/DLEM_totflux_CRU_diagnostic.nc
 [3]: https://openmethane.s3.amazonaws.com/prior/inputs/EntericFermentation.nc
-[4]: https://openmethane.s3.amazonaws.com/prior/inputs/NLUM_ALUMV8_250m_2015_16_alb.tif
-[5]: https://openmethane.s3.amazonaws.com/prior/inputs/ch4-electricity.csv
-[6]: https://openmethane.s3.amazonaws.com/prior/inputs/coal-mining_emissions-sources.csv
-[7]: https://openmethane.s3.amazonaws.com/prior/inputs/landuse-sector-map.csv
-[8]: https://openmethane.s3.amazonaws.com/prior/inputs/nasa-nighttime-lights.tiff
-[9]: https://openmethane.s3.amazonaws.com/prior/inputs/oil-and-gas-production-and-transport_emissions-sources.csv
-[10]: https://openmethane.s3.amazonaws.com/prior/inputs/termite_emissions_2010-2016.nc
+[4]: https://openmethane.s3.amazonaws.com/prior/inputs/ch4-electricity.csv
+[5]: https://openmethane.s3.amazonaws.com/prior/inputs/coal-mining_emissions-sources.csv
+[6]: https://openmethane.s3.amazonaws.com/prior/inputs/landuse-sector-map.csv
+[7]: https://openmethane.s3.amazonaws.com/prior/inputs/oil-and-gas-production-and-transport_emissions-sources.csv
+[8]: https://openmethane.s3.amazonaws.com/prior/inputs/termite_emissions_2010-2016.nc
