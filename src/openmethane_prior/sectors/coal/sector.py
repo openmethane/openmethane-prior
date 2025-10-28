@@ -25,10 +25,10 @@ from openmethane_prior.lib import (
     DataSource,
     logger,
     PriorSectorConfig,
-    PriorSector,
     kg_to_period_cell_flux,
 )
 from openmethane_prior.data_sources.inventory import get_sector_emissions_by_code, inventory_data_source
+from openmethane_prior.lib.sector.au_sector import AustraliaPriorSector
 
 logger = logger.get_logger(__name__)
 
@@ -39,7 +39,7 @@ coal_facilities_data_source = DataSource(
     parse=parse_csv,
 )
 
-def process_emissions(sector: PriorSector, sector_config: PriorSectorConfig, prior_ds: xr.Dataset):
+def process_emissions(sector: AustraliaPriorSector, sector_config: PriorSectorConfig, prior_ds: xr.Dataset):
     config = sector_config.prior_config
 
     # read the total emissions over the sector (in kg)
@@ -83,10 +83,11 @@ def process_emissions(sector: PriorSector, sector_config: PriorSectorConfig, pri
     return kg_to_period_cell_flux(methane, config)
 
 
-sector = PriorSector(
+sector = AustraliaPriorSector(
     name="coal",
     emission_category="anthropogenic",
     unfccc_categories=["1.B.1"], # Fugitive emissions from fuels, Solid Fuels
+    anzsic_codes=["06"], # Coal mining
     cf_standard_name="extraction_production_and_transport_of_fuel",
     create_estimate=process_emissions,
 )
