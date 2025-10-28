@@ -55,7 +55,7 @@ safeguard_mechanism_csv_columns = [
 ]
 
 
-def parse_csv_numeric(csv_value: str) -> float:
+def parse_csv_numeric(csv_value: str) -> float | None:
     """Convert messy input values like " 124,138 " to float. Values of "-" are
     interpreted as None."""
     raw = csv_value.strip()
