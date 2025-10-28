@@ -16,8 +16,6 @@
 # limitations under the License.
 #
 
-"""Process fugitive Methane emissions"""
-
 import numpy as np
 import pandas as pd
 import xarray as xr
@@ -40,19 +38,8 @@ coal_facilities_data_source = DataSource(
     url="https://openmethane.s3.amazonaws.com/prior/inputs/coal-mining_emissions-sources.csv",
     parse=parse_csv,
 )
-oil_gas_facilities_data_source = DataSource(
-    name="oil-gas-facilities",
-    url="https://openmethane.s3.amazonaws.com/prior/inputs/oil-and-gas-production-and-transport_emissions-sources.csv",
-    parse=parse_csv,
-)
 
 def process_emissions(sector: PriorSector, sector_config: PriorSectorConfig, prior_ds: xr.Dataset):
-    """
-    Process the fugitive methane emissions
-
-    Adds the ch4_fugitive layer to the output
-    """
-    logger.info("process_emissions for fugitives")
     config = sector_config.prior_config
 
     # read the total emissions over the sector (in kg)
@@ -64,32 +51,30 @@ def process_emissions(sector: PriorSector, sector_config: PriorSectorConfig, pri
         category_codes=sector.unfccc_categories,
     )
 
-    # now read climate_trace facilities emissions for coal, oil and gas
+    # now read climate_trace facilities emissions for coal
     coal_facilities_asset = sector_config.data_manager.get_asset(coal_facilities_data_source)
-    oil_gas_facilities_asset = sector_config.data_manager.get_asset(oil_gas_facilities_data_source)
-    fugitiveFacilities = pd.concat((coal_facilities_asset.data, oil_gas_facilities_asset.data))
 
     # select gas and year
-    fugitiveCH4 = fugitiveFacilities.loc[fugitiveFacilities["gas"] == "ch4"]
-    fugitiveCH4.loc[:, "start_time"] = pd.to_datetime(fugitiveCH4["start_time"])
-    targetDate = (
+    coal_ch4 = coal_facilities_asset.data.loc[coal_facilities_asset.data["gas"] == "ch4"]
+    coal_ch4.loc[:, "start_time"] = pd.to_datetime(coal_ch4["start_time"])
+    target_date = (
         config.start_date
-        if config.start_date <= fugitiveCH4["start_time"].max()
-        else fugitiveCH4["start_time"].max()
+        if config.start_date <= coal_ch4["start_time"].max()
+        else coal_ch4["start_time"].max()
     )  # start date or latest date in data
-    years = np.array([x.year for x in fugitiveCH4["start_time"]])
-    mask = years == targetDate.year
-    fugitiveYear = fugitiveCH4.loc[mask, :]
+    years = np.array([x.year for x in coal_ch4["start_time"]])
+    mask = years == target_date.year
+    coal_year = coal_ch4.loc[mask, :]
     # normalise emissions to match inventory total
-    fugitiveYear.loc[:, "emissions_quantity"] *= (
-        sector_total_emissions / fugitiveYear["emissions_quantity"].sum()
+    coal_year.loc[:, "emissions_quantity"] *= (
+        sector_total_emissions / coal_year["emissions_quantity"].sum()
     )
 
     domain_grid = config.domain_grid()
 
     methane = np.zeros(domain_grid.shape)
 
-    for _, facility in fugitiveYear.iterrows():
+    for _, facility in coal_year.iterrows():
         cell_x, cell_y, cell_valid = domain_grid.lonlat_to_cell_index(facility["lon"], facility["lat"])
 
         if cell_valid:
@@ -99,9 +84,9 @@ def process_emissions(sector: PriorSector, sector_config: PriorSectorConfig, pri
 
 
 sector = PriorSector(
-    name="fugitive",
+    name="coal",
     emission_category="anthropogenic",
-    unfccc_categories=["1.B"], # Fugitive emissions from fuels
+    unfccc_categories=["1.B.1"], # Fugitive emissions from fuels, Solid Fuels
     cf_standard_name="extraction_production_and_transport_of_fuel",
     create_estimate=process_emissions,
 )
