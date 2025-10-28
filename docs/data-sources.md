@@ -109,6 +109,27 @@ The completed mapping is available in our public data store:
 https://openmethane.s3.amazonaws.com/prior/inputs/UNFCCC-codes-AU.csv
 
 
+## Safeguard Mechanism Baselines and Emissions
+
+Starting in the 2023-24 financial year, Safeguard Mechanism reporting includes
+per-facility CO2-equivalent emissions estimates for multiple greenhouse gases,
+including methane. These estimates are provided by the operating entity to the
+Clean Energy Regulator, and made public in the
+[Safeguard Mechanism Baselines and Emissions Table](https://cer.gov.au/markets/reports-and-data/safeguard-data/2023-24-baselines-and-emissions-data#baselines-and-emissions-table).
+
+Each "emissions number" reported in the Baselines and Emissions Table uses a
+unit of "tonnes of carbon dioxide equivalent" (tCO2-e), including the
+"GHG Methane" number. Based on the CER legislation, this number must be
+calculated using [AR5 global warming potential](https://cer.gov.au/schemes/national-greenhouse-and-energy-reporting-scheme/about-emissions-and-energy-data/global-warming-potential#summary-of-updates-to-gwp-values)
+numbers for CO2 and CH4.
+
+Each facility in the dataset includes an ANZSIC sector classification, which
+allows us to determine which prior sector the facility should be included in.
+Lastly, correlating the Safeguard Mechanism facility with a location in a
+supporting dataset allows us to place those emissions in the correct grid cell
+or grid cells.
+
+
 ## Land Use of Australia
 
 Some sectoral inventories are spatialised by identifying which Australian Land
