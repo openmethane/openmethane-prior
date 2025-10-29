@@ -24,7 +24,6 @@ import xarray as xr
 
 from openmethane_prior.lib.data_manager.parsers import parse_csv
 from openmethane_prior.lib import (
-    add_sector,
     DataSource,
     logger,
     PriorSectorConfig,
@@ -96,11 +95,7 @@ def process_emissions(sector: PriorSector, sector_config: PriorSectorConfig, pri
         if cell_valid:
             methane[cell_y, cell_x] += facility["emissions_quantity"]
 
-    add_sector(
-        prior_ds=prior_ds,
-        sector_data=kg_to_period_cell_flux(methane, config),
-        sector_meta=sector,
-    )
+    return kg_to_period_cell_flux(methane, config)
 
 
 sector = PriorSector(

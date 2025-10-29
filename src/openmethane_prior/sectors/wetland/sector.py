@@ -25,17 +25,14 @@ import os
 import netCDF4 as nc
 import numpy as np
 import xarray as xr
-from openmethane_prior.lib.data_manager.manager import DataManager
-from openmethane_prior.lib.data_manager.source import DataSource
 from shapely import geometry
 
-from openmethane_prior.lib.config import load_config_from_env, parse_cli_to_env
-from openmethane_prior.lib.outputs import add_ch4_total, add_sector, create_output_dataset, write_output_dataset
-from openmethane_prior.lib.sector.config import PriorSectorConfig
-from openmethane_prior.lib.sector.sector import PriorSector
-from openmethane_prior.lib.utils import (
+from openmethane_prior.lib import (
     area_of_rectangle_m2,
+    DataSource,
     load_zipped_pickle,
+    PriorSector,
+    PriorSectorConfig,
     redistribute_spatially,
     save_zipped_pickle,
     datetime64_to_datetime,
@@ -50,15 +47,6 @@ wetlands_data_source = DataSource(
 def make_wetland_climatology(sector_config: PriorSectorConfig):  # noqa: PLR0915
     """
     Remap wetland emissions to the CMAQ domain
-
-    Parameters
-    ----------
-    forceUpdate
-        If True, always recalculate grid mapping indices
-
-    Returns
-    -------
-        Array containing the processed results
     """
     config = sector_config.prior_config
 
@@ -212,8 +200,15 @@ def process_emissions(
         result_nd.append(climatology[month - 1, ...])  # d.month is 1-based
 
     result_nd = np.array(result_nd)
+
+    # source dataset is a coarse grid, and has emissions over ocean which
+    # definitely shouldn't be classified as wetlands
+    land_mask = prior_ds['land_mask'].to_numpy()
+    result_nd *= land_mask
+
     result_nd = np.expand_dims(result_nd, 1)  # adding single vertical dimension
-    result_xr = xr.DataArray(
+
+    return xr.DataArray(
         result_nd,
         coords={
             "time": prior_ds["time"].values,
@@ -222,15 +217,6 @@ def process_emissions(
             "x": np.arange(result_nd.shape[-1]),
         },
     )
-    add_sector(
-        prior_ds=prior_ds,
-        sector_data=result_xr,
-        sector_meta=sector,
-        # source dataset is a coarse grid, and has emissions over ocean which
-        # definitely shouldn't be classified as wetlands
-        apply_landmask=True,
-    )
-    return result_nd
 
 
 sector = PriorSector(

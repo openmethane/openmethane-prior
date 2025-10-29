@@ -27,6 +27,7 @@ from .sector.sector import PriorSector
 from .units import kg_to_period_cell_flux
 from .utils import (
     area_of_rectangle_m2,
+    datetime64_to_datetime,
     get_timestamped_command,
     get_version,
     list_cf_grid_mappings,
@@ -36,4 +37,3 @@ from .utils import (
 )
 
 import openmethane_prior.lib.logger as logger
-

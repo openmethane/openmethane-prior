@@ -142,7 +142,6 @@ def add_sector(
     prior_ds: xr.Dataset,
     sector_data: xr.DataArray | npt.ArrayLike,
     sector_meta: PriorSector,
-    apply_landmask: bool = False,
 ):
     """
     Write a layer to the output file
@@ -155,9 +154,6 @@ def add_sector(
         Data to add to the output file
     sector_meta
         Name and meta details of the sector being added to the output
-    apply_landmask
-        whether or not to mask with domain landmask
-        note this is performed on a copy so data is unchanged
     """
     logger.info(f"Adding emissions data for {sector_meta.name}")
 
@@ -177,10 +173,6 @@ def add_sector(
             dims=COORD_NAMES[:],
             data=expand_sector_dims(sector_data, prior_ds.sizes["time"]),
         )
-
-    if apply_landmask:
-        land_mask = prior_ds['land_mask'].to_numpy()
-        sector_data *= land_mask # should broadcast ok
 
     # enable compression for layer data variables
     sector_data.encoding["zlib"] = True

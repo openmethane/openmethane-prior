@@ -28,7 +28,6 @@ from openmethane_prior.data_sources.landuse import (
     landuse_map_data_source,
 )
 from openmethane_prior.lib import (
-    add_sector,
     kg_to_period_cell_flux,
     logger,
     regrid_data,
@@ -97,11 +96,7 @@ def process_emissions(
     # distribute the emissions reported for the entire sector
     sector_gridded *= sector_total_emissions
 
-    add_sector(
-        prior_ds=prior_ds,
-        sector_data=kg_to_period_cell_flux(sector_gridded, config),
-        sector_meta=sector,
-    )
+    return kg_to_period_cell_flux(sector_gridded, config)
 
 
 sector = PriorSector(

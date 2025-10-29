@@ -19,7 +19,7 @@
 from .config import PriorConfig
 from .data_manager.manager import DataManager
 from .inputs import check_input_files
-from .outputs import create_output_dataset, add_ch4_total, write_output_dataset
+from .outputs import create_output_dataset, add_ch4_total, write_output_dataset, add_sector
 from .sector.config import PriorSectorConfig
 from .sector.sector import PriorSector
 from .verification import verify_emis
@@ -52,7 +52,15 @@ def run_prior(config: PriorConfig, sectors: list[PriorSector]):
         if not callable(sector.create_estimate):
             raise ValueError("PriorSector module must include a create_estimate function")
 
+        # calculate the emissions for the sector
         sector_data = sector.create_estimate(sector, sector_config, prior_ds)
+
+        # add the sector emissions to the output
+        add_sector(
+            prior_ds=prior_ds,
+            sector_data=sector_data,
+            sector_meta=sector,
+        )
 
     add_ch4_total(prior_ds)
     verify_emis(sectors, config, prior_ds)

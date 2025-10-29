@@ -21,7 +21,6 @@ import xarray as xr
 from openmethane_prior.data_sources.nightlights import night_lights_data_source
 from openmethane_prior.data_sources.inventory import get_sector_emissions_by_code, inventory_data_source
 from openmethane_prior.lib import (
-    add_sector,
     kg_to_period_cell_flux,
     logger,
     PriorSector,
@@ -52,11 +51,7 @@ def process_emissions(
 
     # allocate the proportion of the total to each grid cell
     sector_emissions = om_ntlt_proportion.data * sector_total_emissions
-    add_sector(
-        prior_ds=prior_ds,
-        sector_data=kg_to_period_cell_flux(sector_emissions, config),
-        sector_meta=sector,
-    )
+    return kg_to_period_cell_flux(sector_emissions, config)
 
 
 sector = PriorSector(

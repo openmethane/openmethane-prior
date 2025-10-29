@@ -20,7 +20,6 @@ import numpy as np
 import xarray as xr
 
 from openmethane_prior.lib import (
-    add_sector,
     DataSource,
     convert_to_timescale,
     logger,
@@ -67,11 +66,7 @@ def process_emissions(
             # the following needs to use .at method since iy,ix indices may be repeated and we need to acumulate
             np.add.at(livestockCH4, (iy[mask], ix[mask]), enteric_as_array[j, mask])
 
-    add_sector(
-        prior_ds=prior_ds,
-        sector_data=convert_to_timescale(livestockCH4, domain_grid.cell_area),
-        sector_meta=sector,
-    )
+    return convert_to_timescale(livestockCH4, domain_grid.cell_area)
 
 
 sector = PriorSector(

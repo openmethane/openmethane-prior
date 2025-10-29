@@ -31,7 +31,6 @@ import xarray as xr
 from shapely import geometry
 
 from openmethane_prior.lib import (
-    add_sector,
     PriorSector,
     PriorSectorConfig,
     area_of_rectangle_m2,
@@ -182,7 +181,7 @@ def process_emissions(sector: PriorSector, sector_config: PriorSectorConfig, pri
         )
     resultNd = np.array(resultNd)
     resultNd = np.expand_dims(resultNd, 1)  # adding single vertical dimension
-    resultXr = xr.DataArray(
+    return xr.DataArray(
         resultNd,
         coords={
             "time": dates,
@@ -191,12 +190,7 @@ def process_emissions(sector: PriorSector, sector_config: PriorSectorConfig, pri
             "x": np.arange(resultNd.shape[-1]),
         },
     )
-    add_sector(
-        prior_ds=prior_ds,
-        sector_data=resultXr,
-        sector_meta=sector,
-    )
-    return resultNd
+
 
 sector: PriorSector = PriorSector(
     name="fire",

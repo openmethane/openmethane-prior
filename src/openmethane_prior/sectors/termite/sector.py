@@ -27,7 +27,6 @@ from shapely import geometry
 import xarray as xr
 
 from openmethane_prior.lib import (
-    add_sector,
     DataSource,
     PriorSectorConfig,
     PriorSector,
@@ -175,14 +174,10 @@ def process_emissions(  # noqa: PLR0915
     resultNd /= SECS_PER_YEAR
     ncin.close()
 
-    add_sector(
-        prior_ds=prior_ds,
-        sector_data=resultNd,
-        sector_meta=sector,
-        # source dataset is a coarse grid, cells over water should be
-        # excluded from results because there won't be termites there!
-        apply_landmask=True,
-    )
+    # apply land mask to ensure we dont have termite emissions over water
+    land_mask = prior_ds['land_mask'].to_numpy()
+    resultNd *= land_mask
+
     return resultNd
 
 
