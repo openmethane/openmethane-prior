@@ -20,7 +20,7 @@ from .config import PriorConfig, load_config_from_env, parse_cli_to_env
 from .data_manager.manager import ConfiguredDataSource, DataManager, DataSource
 from .grid.regrid import regrid_data
 from .outputs import add_sector, convert_to_timescale
-from .prior import run_prior
+from .create_prior import create_prior
 from .raster import remap_raster
 from .sector.config import PriorSectorConfig
 from .sector.sector import PriorSector

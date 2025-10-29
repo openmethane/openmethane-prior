@@ -19,13 +19,12 @@
 from .config import PriorConfig
 from .data_manager.manager import DataManager
 from .inputs import check_input_files
-from .outputs import create_output_dataset, add_ch4_total, write_output_dataset, add_sector
+from .outputs import create_output_dataset, add_ch4_total, add_sector
 from .sector.config import PriorSectorConfig
 from .sector.sector import PriorSector
-from .verification import verify_emis
 
 
-def run_prior(config: PriorConfig, sectors: list[PriorSector]):
+def create_prior(config: PriorConfig, sectors: list[PriorSector]):
     """
     Calculate the prior methane emissions estimate for Open Methane
 
@@ -36,7 +35,7 @@ def run_prior(config: PriorConfig, sectors: list[PriorSector]):
     sectors
         List of PriorSector objects to process
     """
-    if (config.start_date is None):
+    if config.start_date is None:
         raise ValueError("Start date must be provided")
 
     data_manager = DataManager(data_path=config.input_path, prior_config=config)
@@ -63,6 +62,5 @@ def run_prior(config: PriorConfig, sectors: list[PriorSector]):
         )
 
     add_ch4_total(prior_ds)
-    verify_emis(sectors, config, prior_ds)
 
-    write_output_dataset(config, prior_ds)
+    return prior_ds

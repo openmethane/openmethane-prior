@@ -9,7 +9,7 @@ import dotenv
 import pytest
 import xarray as xr
 
-from openmethane_prior.lib import run_prior
+from openmethane_prior.lib import create_prior
 from openmethane_prior.lib.config import PriorConfig, load_config_from_env, PriorConfigOptions
 from openmethane_prior.lib.data_manager.manager import DataManager
 from openmethane_prior.lib.grid.create_grid import create_grid_from_mcip
@@ -223,11 +223,9 @@ def prior_emissions_ds(
     ]
     input_files = next(copy_input_files(cache_dir, config.input_path, input_fragments))
 
-    run_prior(config, all_sectors)
+    prior_ds = create_prior(config, all_sectors)
 
-    yield xr.load_dataset(config.output_file)
-
-    os.remove(config.output_file)
+    yield prior_ds
 
     # Manually clean up any leftover files
     for filepath in input_files:

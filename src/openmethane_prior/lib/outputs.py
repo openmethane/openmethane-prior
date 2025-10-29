@@ -125,19 +125,6 @@ def create_output_dataset(config: PriorConfig) -> xr.Dataset:
     return prior_ds
 
 
-def write_output_dataset(
-    config: PriorConfig,
-    prior_ds: xr.Dataset,
-):
-    """
-    Writes the accumulated prior emissions dataset to the output file
-    specified in the config.
-    """
-    config.output_file.parent.mkdir(parents=True, exist_ok=True)
-
-    prior_ds.to_netcdf(config.output_file)
-
-
 def add_sector(
     prior_ds: xr.Dataset,
     sector_data: xr.DataArray | npt.ArrayLike,

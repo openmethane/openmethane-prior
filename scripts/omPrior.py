@@ -24,8 +24,9 @@ from openmethane_prior.lib import (
     load_config_from_env,
     logger,
     parse_cli_to_env,
-    run_prior,
+    create_prior,
 )
+from openmethane_prior.lib.verification import verify_emis
 from openmethane_prior.sectors import all_sectors
 
 logger = logger.get_logger(__name__)
@@ -45,4 +46,11 @@ if __name__ == "__main__":
     if config.sectors is not None:
         sectors = [s for s in sectors if s.name in config.sectors]
 
-    run_prior(config, sectors)
+    prior_ds = create_prior(config, sectors)
+
+    # check if estimates are within expected thresholds
+    verify_emis(sectors, config, prior_ds)
+
+    # write the output to file
+    config.output_file.parent.mkdir(parents=True, exist_ok=True)
+    prior_ds.to_netcdf(config.output_file)

@@ -2,18 +2,9 @@ import numpy as np
 import xarray as xr
 import pytest
 
-from openmethane_prior.lib.outputs import create_output_dataset, expand_sector_dims, write_output_dataset, add_sector
+from openmethane_prior.lib.outputs import create_output_dataset, expand_sector_dims, add_sector
 from openmethane_prior.lib.sector.sector import PriorSector
 
-
-def test_write_output_dataset(config, input_files):
-    output_ds = create_output_dataset(config)
-
-    assert not config.output_file.exists()
-
-    write_output_dataset(config, output_ds)
-
-    assert config.output_file.exists()
 
 
 def test_create_output_dataset(config, input_files):
