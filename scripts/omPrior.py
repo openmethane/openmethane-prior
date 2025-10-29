@@ -41,6 +41,8 @@ if __name__ == "__main__":
         prettyprinter.cpprint(config)
 
     # if no sectors were specified, process all sectors
-    sectors = [s for s in all_sectors if config.sectors is None or s.name in config.sectors]
+    sectors = list(all_sectors)
+    if config.sectors is not None:
+        sectors = [s for s in sectors if s.name in config.sectors]
 
     run_prior(config, sectors)
