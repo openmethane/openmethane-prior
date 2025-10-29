@@ -21,58 +21,17 @@ import logging
 import prettyprinter
 
 from openmethane_prior.lib import (
-    add_ch4_total,
-    create_output_dataset,
-    check_input_files,
-    DataManager,
     load_config_from_env,
     logger,
     parse_cli_to_env,
-    PriorConfig,
-    PriorSectorConfig,
-    verify_emis,
-    write_output_dataset,
+    create_prior,
 )
+from openmethane_prior.lib.verification import verify_emis
 from openmethane_prior.sectors import all_sectors
 
 logger = logger.get_logger(__name__)
 
 prettyprinter.install_extras(["attrs"])
-
-
-
-def run_prior(config: PriorConfig):
-    """
-    Calculate the prior methane emissions estimate for Open Methane
-
-    Parameters
-    ----------
-    config
-        Configuration used for the calculation
-    """
-    if (config.start_date is None):
-        raise ValueError("Start date must be provided")
-
-    data_manager = DataManager(data_path=config.input_path, prior_config=config)
-    check_input_files(config)
-
-    # Initialise the output dataset based on the domain provided in config
-    prior_ds = create_output_dataset(config)
-
-    sector_config = PriorSectorConfig(prior_config=config, data_manager=data_manager)
-
-    for sector in all_sectors:
-        # all sector modules must implement a processEmissions method
-        # TODO: implement an abstract class interface
-        if not callable(sector.processEmissions):
-            raise ValueError("Prior sector module must export a processEmissions function")
-
-        sector.processEmissions(sector_config, prior_ds)
-
-    add_ch4_total(prior_ds)
-    verify_emis(config, prior_ds)
-
-    write_output_dataset(config, prior_ds)
 
 
 if __name__ == "__main__":
@@ -82,4 +41,16 @@ if __name__ == "__main__":
     if logger.level <= logging.DEBUG:
         prettyprinter.cpprint(config)
 
-    run_prior(config)
+    # if no sectors were specified, process all sectors
+    sectors = list(all_sectors)
+    if config.sectors is not None:
+        sectors = [s for s in sectors if s.name in config.sectors]
+
+    prior_ds = create_prior(config, sectors)
+
+    # check if estimates are within expected thresholds
+    verify_emis(sectors, config, prior_ds)
+
+    # write the output to file
+    config.output_file.parent.mkdir(parents=True, exist_ok=True)
+    prior_ds.to_netcdf(config.output_file)

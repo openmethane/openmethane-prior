@@ -20,7 +20,7 @@ import numpy.typing as npt
 import xarray as xr
 
 from openmethane_prior.lib.config import PriorConfig
-from openmethane_prior.lib.sector.sector import SectorMeta
+from openmethane_prior.lib.sector.sector import PriorSector
 from openmethane_prior.lib.utils import SECS_PER_YEAR, get_version, get_timestamped_command, time_bounds, \
     list_cf_grid_mappings
 import openmethane_prior.lib.logger as logger
@@ -125,24 +125,10 @@ def create_output_dataset(config: PriorConfig) -> xr.Dataset:
     return prior_ds
 
 
-def write_output_dataset(
-    config: PriorConfig,
-    prior_ds: xr.Dataset,
-):
-    """
-    Writes the accumulated prior emissions dataset to the output file
-    specified in the config.
-    """
-    config.output_file.parent.mkdir(parents=True, exist_ok=True)
-
-    prior_ds.to_netcdf(config.output_file)
-
-
 def add_sector(
     prior_ds: xr.Dataset,
     sector_data: xr.DataArray | npt.ArrayLike,
-    sector_meta: SectorMeta,
-    apply_landmask: bool = False,
+    sector_meta: PriorSector,
 ):
     """
     Write a layer to the output file
@@ -155,9 +141,6 @@ def add_sector(
         Data to add to the output file
     sector_meta
         Name and meta details of the sector being added to the output
-    apply_landmask
-        whether or not to mask with domain landmask
-        note this is performed on a copy so data is unchanged
     """
     logger.info(f"Adding emissions data for {sector_meta.name}")
 
@@ -177,10 +160,6 @@ def add_sector(
             dims=COORD_NAMES[:],
             data=expand_sector_dims(sector_data, prior_ds.sizes["time"]),
         )
-
-    if apply_landmask:
-        land_mask = prior_ds['land_mask'].to_numpy()
-        sector_data *= land_mask # should broadcast ok
 
     # enable compression for layer data variables
     sector_data.encoding["zlib"] = True

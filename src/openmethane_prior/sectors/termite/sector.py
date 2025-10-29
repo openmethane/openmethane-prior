@@ -21,41 +21,31 @@
 import bisect
 import itertools
 import os
-
 import netCDF4 as nc
 import numpy as np
-from openmethane_prior.lib.data_manager.manager import DataManager
-from openmethane_prior.lib.data_manager.source import DataSource
 from shapely import geometry
 import xarray as xr
 
-from openmethane_prior.lib.config import load_config_from_env, parse_cli_to_env
-from openmethane_prior.lib.outputs import add_ch4_total, add_sector, create_output_dataset, write_output_dataset
-from openmethane_prior.lib.sector.config import PriorSectorConfig
-from openmethane_prior.lib.sector.sector import SectorMeta
-from openmethane_prior.lib.utils import (
-    SECS_PER_YEAR,
+from openmethane_prior.lib import (
+    DataSource,
+    PriorSectorConfig,
+    PriorSector,
     area_of_rectangle_m2,
     load_zipped_pickle,
     redistribute_spatially,
     save_zipped_pickle,
 )
-
-sector_meta = SectorMeta(
-    name="termite",
-    emission_category="natural",
-    cf_standard_name="termites",
-)
+from openmethane_prior.lib.utils import SECS_PER_YEAR
 
 termites_data_source = DataSource(
     name="termites",
     url="https://openmethane.s3.amazonaws.com/prior/inputs/termite_emissions_2010-2016.nc",
 )
 
-def processEmissions(  # noqa: PLR0915
+def process_emissions(  # noqa: PLR0915
+    sector: PriorSector,
     sector_config: PriorSectorConfig,
     prior_ds: xr.Dataset,
-    forceUpdate: bool = False,
 ):
     """Remap termite emissions to the CMAQ domain"""
     config = sector_config.prior_config
@@ -101,7 +91,6 @@ def processEmissions(  # noqa: PLR0915
         os.path.exists(indxPath)
         and os.path.exists(indyPath)
         and os.path.exists(coefsPath)
-        and (not forceUpdate)
     ):
         ind_x = load_zipped_pickle(indxPath)
         ind_y = load_zipped_pickle(indyPath)
@@ -185,24 +174,16 @@ def processEmissions(  # noqa: PLR0915
     resultNd /= SECS_PER_YEAR
     ncin.close()
 
-    add_sector(
-        prior_ds=prior_ds,
-        sector_data=resultNd,
-        sector_meta=sector_meta,
-        # source dataset is a coarse grid, cells over water should be
-        # excluded from results because there won't be termites there!
-        apply_landmask=True,
-    )
+    # apply land mask to ensure we dont have termite emissions over water
+    land_mask = prior_ds['land_mask'].to_numpy()
+    resultNd *= land_mask
+
     return resultNd
 
 
-if __name__ == "__main__":
-    parse_cli_to_env()
-    config = load_config_from_env()
-    data_manager = DataManager(data_path=config.input_path, prior_config=config)
-    sector_config = PriorSectorConfig(prior_config=config, data_manager=data_manager)
-
-    ds = create_output_dataset(config)
-    processEmissions(sector_config, ds)
-    add_ch4_total(ds)
-    write_output_dataset(config, ds)
+sector = PriorSector(
+    name="termite",
+    emission_category="natural",
+    cf_standard_name="termites",
+    create_estimate=process_emissions,
+)

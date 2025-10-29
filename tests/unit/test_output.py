@@ -2,18 +2,9 @@ import numpy as np
 import xarray as xr
 import pytest
 
-from openmethane_prior.lib.outputs import create_output_dataset, expand_sector_dims, write_output_dataset, add_sector
-from openmethane_prior.lib.sector.sector import SectorMeta
+from openmethane_prior.lib.outputs import create_output_dataset, expand_sector_dims, add_sector
+from openmethane_prior.lib.sector.sector import PriorSector
 
-
-def test_write_output_dataset(config, input_files):
-    output_ds = create_output_dataset(config)
-
-    assert not config.output_file.exists()
-
-    write_output_dataset(config, output_ds)
-
-    assert config.output_file.exists()
 
 
 def test_create_output_dataset(config, input_files):
@@ -136,9 +127,10 @@ def test_expand_sector_dims_add_time_steps():
 def test_add_sector_defaults(config, input_files):
     test_ds = create_output_dataset(config)
 
-    sector_meta = SectorMeta(
+    sector_meta = PriorSector(
         name="test_sector",
         emission_category="natural",
+        create_estimate=lambda a, b, c: None
     )
     sector_shape = (test_ds.sizes["time"], 1, config.domain_grid().shape[0], config.domain_grid().shape[1])
     sector_data = np.zeros(sector_shape)
@@ -166,12 +158,13 @@ def test_add_sector_defaults(config, input_files):
 def test_add_sector_meta(config, input_files):
     test_ds = create_output_dataset(config)
 
-    sector_meta = SectorMeta(
+    sector_meta = PriorSector(
         name="test_sector",
         emission_category="anthropogenic",
         unfccc_categories=["1.A"],
         cf_standard_name="standard_name_suffix",
         cf_long_name="test long name",
+        create_estimate=lambda a, b, c: None
     )
     sector_shape = (test_ds.sizes["time"], 1, config.domain_grid().shape[0], config.domain_grid().shape[1])
     sector_data = np.zeros(sector_shape)

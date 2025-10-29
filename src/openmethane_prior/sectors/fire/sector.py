@@ -26,68 +26,26 @@ import bisect
 import itertools
 import netCDF4 as nc
 import os
-import pathlib
-
-import cdsapi
 import numpy as np
 import xarray as xr
-from openmethane_prior.lib.data_manager.manager import DataManager
-from openmethane_prior.lib.data_manager.source import DataSource, ConfiguredDataSource
-from openmethane_prior.lib.sector.config import PriorSectorConfig
 from shapely import geometry
 
-from openmethane_prior.lib.config import PriorConfig, load_config_from_env, parse_cli_to_env
-from openmethane_prior.lib.outputs import add_ch4_total, add_sector, create_output_dataset, write_output_dataset
-from openmethane_prior.lib.sector.sector import SectorMeta
-from openmethane_prior.lib.utils import (
+from openmethane_prior.lib import (
+    PriorSector,
+    PriorSectorConfig,
     area_of_rectangle_m2,
     load_zipped_pickle,
     redistribute_spatially,
     save_zipped_pickle,
+    logger,
 )
-import openmethane_prior.lib.logger as logger
+
+from .data_gfas import gfas_data_source
 
 logger = logger.get_logger(__name__)
 
-sector_meta = SectorMeta(
-    name="fire",
-    emission_category="natural",
-    cf_standard_name="fires",
-)
 
-def gfas_file_name(data_source: DataSource, prior_config: PriorConfig) -> str:
-    return f"gfas_{prior_config.start_date.strftime('%Y-%m-%d')}_{prior_config.end_date.strftime('%Y-%m-%d')}.nc"
-
-def gfas_fetch(data_source: ConfiguredDataSource) -> pathlib.Path:
-    """
-    Download GFAS methane between start and end date, returning the filename
-    of the retrieved data.
-    """
-    start_date_fmt = data_source.prior_config.start_date.strftime('%Y-%m-%d')
-    end_date_fmt = data_source.prior_config.end_date.strftime('%Y-%m-%d')
-
-    c = cdsapi.Client(progress=False)
-    c.retrieve(
-        "cams-global-fire-emissions-gfas",
-        {
-            "date": f"{start_date_fmt}/{end_date_fmt}",
-            "format": "netcdf",
-            "variable": [
-                "wildfire_flux_of_methane",
-            ],
-        },
-        data_source.asset_path,
-    )
-
-    return data_source.asset_path
-
-gfas_data_source = DataSource(
-    name="gfas",
-    file_path=gfas_file_name,
-    fetch=gfas_fetch,
-)
-
-def processEmissions(sector_config: PriorSectorConfig, prior_ds: xr.Dataset, forceUpdate: bool = False):  # noqa: PLR0915
+def process_emissions(sector: PriorSector, sector_config: PriorSectorConfig, prior_ds: xr.Dataset):
     """
     Remap GFAS fire emissions to the CMAQ domain
     """
@@ -140,7 +98,6 @@ def processEmissions(sector_config: PriorSectorConfig, prior_ds: xr.Dataset, for
         os.path.exists(indxPath)
         and os.path.exists(indyPath)
         and os.path.exists(coefsPath)
-        and (not forceUpdate)
     ):
         ind_x = load_zipped_pickle(indxPath)
         ind_y = load_zipped_pickle(indyPath)
@@ -224,7 +181,7 @@ def processEmissions(sector_config: PriorSectorConfig, prior_ds: xr.Dataset, for
         )
     resultNd = np.array(resultNd)
     resultNd = np.expand_dims(resultNd, 1)  # adding single vertical dimension
-    resultXr = xr.DataArray(
+    return xr.DataArray(
         resultNd,
         coords={
             "time": dates,
@@ -233,21 +190,11 @@ def processEmissions(sector_config: PriorSectorConfig, prior_ds: xr.Dataset, for
             "x": np.arange(resultNd.shape[-1]),
         },
     )
-    add_sector(
-        prior_ds=prior_ds,
-        sector_data=resultXr,
-        sector_meta=sector_meta,
-    )
-    return resultNd
 
 
-if __name__ == "__main__":
-    parse_cli_to_env()
-    config = load_config_from_env()
-    data_manager = DataManager(data_path=config.input_path, prior_config=config)
-    sector_config = PriorSectorConfig(prior_config=config, data_manager=data_manager)
-
-    ds = create_output_dataset(config)
-    processEmissions(sector_config, ds)
-    add_ch4_total(ds)
-    write_output_dataset(config, ds)
+sector: PriorSector = PriorSector(
+    name="fire",
+    emission_category="natural",
+    cf_standard_name="fires",
+    create_estimate=process_emissions,
+)

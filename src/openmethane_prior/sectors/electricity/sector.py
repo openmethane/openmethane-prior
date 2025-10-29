@@ -21,31 +21,18 @@
 import numpy as np
 import xarray as xr
 
-from openmethane_prior.lib.config import load_config_from_env, parse_cli_to_env
-from openmethane_prior.lib.data_manager.manager import DataManager
 from openmethane_prior.lib.data_manager.parsers import parse_csv
-from openmethane_prior.lib.data_manager.source import DataSource
-from openmethane_prior.data_sources.inventory import inventory_data_source
-from openmethane_prior.lib.outputs import (
-    add_ch4_total,
-    add_sector,
-    create_output_dataset,
-    write_output_dataset,
+from openmethane_prior.lib import (
+    DataSource,
+    kg_to_period_cell_flux,
+    logger,
+    PriorSectorConfig,
+    PriorSector,
 )
-import openmethane_prior.lib.logger as logger
-from openmethane_prior.data_sources.inventory.inventory import get_sector_emissions_by_code
-from openmethane_prior.lib.sector.config import PriorSectorConfig
-from openmethane_prior.lib.sector.sector import SectorMeta
-from openmethane_prior.lib.units import kg_to_period_cell_flux
+from openmethane_prior.data_sources.inventory import get_sector_emissions_by_code, inventory_data_source
 
 logger = logger.get_logger(__name__)
 
-sector_meta = SectorMeta(
-    name="electricity",
-    emission_category="anthropogenic",
-    unfccc_categories=["1.A.1.a"], # Public electricity and heat production
-    cf_standard_name="energy_production_and_distribution",
-)
 
 electricity_facilities_data_source = DataSource(
     name="electricity-facilities",
@@ -53,12 +40,12 @@ electricity_facilities_data_source = DataSource(
     parse=parse_csv,
 )
 
-def processEmissions(sector_config: PriorSectorConfig, prior_ds: xr.Dataset):
+def process_emissions(sector: PriorSector, sector_config: PriorSectorConfig, prior_ds: xr.Dataset):
     """
     Process emissions from the electricity sector, adding them to the prior
     dataset.
     """
-    logger.info("processEmissions for electricity")
+    logger.info("process_emissions for electricity")
     config = sector_config.prior_config
 
     # read the total emissions over the sector (in kg)
@@ -67,7 +54,7 @@ def processEmissions(sector_config: PriorSectorConfig, prior_ds: xr.Dataset):
         emissions_inventory=emissions_inventory,
         start_date=config.start_date,
         end_date=config.end_date,
-        category_codes=sector_meta.unfccc_categories,
+        category_codes=sector.unfccc_categories,
     )
 
     electricity_facilities_asset = sector_config.data_manager.get_asset(electricity_facilities_data_source)
@@ -85,20 +72,13 @@ def processEmissions(sector_config: PriorSectorConfig, prior_ds: xr.Dataset):
         if cell_valid:
             methane[cell_y, cell_x] += (facility["capacity"] / totalCapacity) * sector_total_emissions
 
-    add_sector(
-        prior_ds=prior_ds,
-        sector_data=kg_to_period_cell_flux(methane, config),
-        sector_meta=sector_meta,
-    )
+    return kg_to_period_cell_flux(methane, config)
 
 
-if __name__ == "__main__":
-    parse_cli_to_env()
-    config = load_config_from_env()
-    data_manager = DataManager(data_path=config.input_path, prior_config=config)
-    sector_config = PriorSectorConfig(prior_config=config, data_manager=data_manager)
-
-    ds = create_output_dataset(config)
-    processEmissions(sector_config, ds)
-    add_ch4_total(ds)
-    write_output_dataset(config, ds)
+sector = PriorSector(
+    name="electricity",
+    emission_category="anthropogenic",
+    unfccc_categories=["1.A.1.a"], # Public electricity and heat production
+    cf_standard_name="energy_production_and_distribution",
+    create_estimate=process_emissions,
+)
