@@ -54,6 +54,12 @@ safeguard_mechanism_csv_columns = [
     "notes", # Notes
 ]
 
+safeguard_locations_csv_columns = [
+    "safeguard_facility_name", # exact facility_name from Safeguard Mechanism
+    "data_source_name", # DataSource name with facility details
+    "data_source_id", # identifier in reference DataSource
+]
+
 
 def parse_csv_numeric(csv_value: str) -> float | None:
     """Convert messy input values like " 124,138 " to float. Values of "-" are
@@ -62,6 +68,14 @@ def parse_csv_numeric(csv_value: str) -> float | None:
     if raw == "-":
         return None
     return float(raw.replace(",", ""))
+
+
+def parse_location_csv(data_source: ConfiguredDataSource):
+    return pd.read_csv(
+        filepath_or_buffer=data_source.asset_path,
+        header=0,
+        names=safeguard_locations_csv_columns,
+    )
 
 
 def parse_safeguard_csv(data_source: ConfiguredDataSource):
@@ -81,6 +95,13 @@ def parse_safeguard_csv(data_source: ConfiguredDataSource):
         reporting_period=(2023, 2024),
         ch4_gwp=ar5_ch4_gwp, co2_gwp=ar5_co2_gwp,
     )
+
+
+safeguard_locations_data_source = DataSource(
+    name="safeguard-locations",
+    url="https://openmethane.s3.amazonaws.com/prior/inputs/facility-locations.csv",
+    parse=parse_location_csv,
+)
 
 
 safeguard_mechanism_data_source = DataSource(
