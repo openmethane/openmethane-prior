@@ -82,6 +82,6 @@ def test_locations_get_safeguard_facility_locations(location_rows_df):
     assert len(test_facilities) == 1
     assert set(test_facilities.facility_name) == {"Facility Name A"}
 
-    assert len(test_locations) == 4
-    assert set(test_locations.safeguard_facility_name) == {"Facility Name A", "Facility Name B"}
-    assert set(test_locations.data_source_id) == {"id-001a", "id-001b", "id-001c", "id-002"}
+    assert len(test_locations) == 3
+    assert set(test_locations.safeguard_facility_name) == {"Facility Name A"}
+    assert set(test_locations.data_source_id) == {"id-001a", "id-001b", "id-001c"}
