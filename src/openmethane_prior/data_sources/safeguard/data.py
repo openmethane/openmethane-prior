@@ -19,7 +19,7 @@
 import pandas as pd
 
 from openmethane_prior.lib import ConfiguredDataSource, DataSource
-from .facility import SafeguardFacility, create_facility_list
+from .facility import create_facilities_from_safeguard_rows
 
 # NGER emissions numbers are reported in CO2 equivalent, so to calculate raw
 # CH4 we must scale using Global Warming Potential (GWP) values. GWP for each
@@ -59,22 +59,28 @@ def parse_csv_numeric(csv_value: str) -> float | None:
     """Convert messy input values like " 124,138 " to float. Values of "-" are
     interpreted as None."""
     raw = csv_value.strip()
-    return None if raw == "-" else float(raw.replace(",", ""))
+    if raw == "-":
+        return None
+    return float(raw.replace(",", ""))
 
-def parse_safeguard_csv(data_source: ConfiguredDataSource) -> list[SafeguardFacility]:
+
+def parse_safeguard_csv(data_source: ConfiguredDataSource):
     """Read the Safeguard Mechanism Baselines and Emissions Table CSV,
     returning only the data columns useful for methane estimation."""
-    csv_records = pd.read_csv(
+    safeguard_rows_df = pd.read_csv(
         filepath_or_buffer=data_source.asset_path,
         encoding="cp1252", # CER distributes the CSV in windows-1252 encoding
         header=0,
         names=safeguard_mechanism_csv_columns,
-        # must be kept in sync with SafeguardFacilityRecord attributes
-        usecols=["facility_name", "business_name", "state", "anzsic", "co2e_ch4"],
+        usecols=["facility_name", "state", "anzsic", "co2e_ch4"],  # from safeguard_mechanism_csv_columns
         converters={"co2e_ch4": parse_csv_numeric},
     )
 
-    return create_facility_list(csv_records.to_records(), ar5_ch4_gwp / ar5_co2_gwp)
+    return create_facilities_from_safeguard_rows(
+        safeguard_rows_df=safeguard_rows_df,
+        reporting_period=(2023, 2024),
+        ch4_gwp=ar5_ch4_gwp, co2_gwp=ar5_co2_gwp,
+    )
 
 
 safeguard_mechanism_data_source = DataSource(
