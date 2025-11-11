@@ -33,14 +33,14 @@ from openmethane_prior.lib import (
     regrid_data,
     remap_raster,
     PriorSectorConfig,
-    PriorSector,
 )
+from openmethane_prior.lib.sector.au_sector import AustraliaPriorSector
 
 logger = logger.get_logger(__name__)
 
 
 def process_emissions(
-        sector: PriorSector,
+        sector: AustraliaPriorSector,
         sector_config: PriorSectorConfig,
         prior_ds: xr.Dataset,
 ):
@@ -99,10 +99,14 @@ def process_emissions(
     return kg_to_period_cell_flux(sector_gridded, config)
 
 
-sector = PriorSector(
+sector = AustraliaPriorSector(
     name="waste",
     emission_category="anthropogenic",
     unfccc_categories=["5"], # Waste
+    anzsic_codes=[
+        "28", # Water Supply, Sewerage and Drainage Services
+        "29", # Waste Collection, Treatment and Disposal Services
+    ],
     cf_standard_name="waste_treatment_and_disposal",
     create_estimate=process_emissions,
 )

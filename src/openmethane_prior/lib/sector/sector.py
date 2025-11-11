@@ -16,6 +16,7 @@
 # limitations under the License.
 #
 from __future__ import annotations
+from typing import Self
 
 import attrs
 from collections.abc import Callable
@@ -39,7 +40,7 @@ class PriorSector:
     """A machine-friendly sector name that will be used in the name of the
     output variable, like `ch4_sector_{name}`"""
 
-    create_estimate: Callable[[PriorSector, PriorSectorConfig, xr.Dataset], xr.DataArray | np.ndarray]
+    create_estimate: Callable[[Self, PriorSectorConfig, xr.Dataset], xr.DataArray | np.ndarray]
     """A method to create the emissions estimate for the sector based on the
     parameters specified in PriorSectorConfig.
     
