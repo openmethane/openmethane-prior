@@ -71,11 +71,14 @@ def parse_csv_numeric(csv_value: str) -> float | None:
 
 
 def parse_location_csv(data_source: ConfiguredDataSource):
-    return pd.read_csv(
+    locations_rows_df = pd.read_csv(
         filepath_or_buffer=data_source.asset_path,
         header=0,
         names=safeguard_locations_csv_columns,
     )
+
+    # filter out any rows with incomplete information
+    return locations_rows_df.dropna()
 
 
 def parse_safeguard_csv(data_source: ConfiguredDataSource):

@@ -1,7 +1,10 @@
 
 import datetime
 
-from openmethane_prior.data_sources.safeguard import safeguard_mechanism_data_source
+from openmethane_prior.data_sources.safeguard import (
+    safeguard_mechanism_data_source,
+    safeguard_locations_data_source,
+)
 
 
 def test_safeguard_data_source(data_manager):
@@ -20,3 +23,14 @@ def test_safeguard_data_source(data_manager):
     assert safeguard_row_appin.reporting_start == datetime.date(2023, 7, 1)
     assert safeguard_row_appin.reporting_end == datetime.date(2024, 6, 30)
 
+
+def test_safeguard_locations_data_source(data_manager):
+    locations_df = data_manager.get_asset(safeguard_locations_data_source).data
+
+    assert len(locations_df) == 57 # 72 rows, only 57 with complete data
+
+    locations_row_appin = locations_df.iloc[3]
+
+    assert locations_row_appin.safeguard_facility_name == "Blackwater Mine"
+    assert locations_row_appin.data_source_name == "coal-facilities"
+    assert locations_row_appin.data_source_id == "Blackwater Coal Mine"
