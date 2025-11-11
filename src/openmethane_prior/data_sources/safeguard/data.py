@@ -16,12 +16,10 @@
 # limitations under the License.
 #
 
-import attrs
 import pandas as pd
-import re
 
 from openmethane_prior.lib import ConfiguredDataSource, DataSource
-from .facility import SafeguardFacility
+from .facility import SafeguardFacility, create_facility_list
 
 # NGER emissions numbers are reported in CO2 equivalent, so to calculate raw
 # CH4 we must scale using Global Warming Potential (GWP) values. GWP for each
@@ -56,45 +54,6 @@ safeguard_mechanism_csv_columns = [
     "notes", # Notes
 ]
 
-@attrs.define()
-class SafeguardFacilityRecord:
-    """A single row read from the Safeguard Mechanism Emissions Table"""
-    facility_name: str
-    business_name: str
-    state: str
-    anzsic: str
-    co2e_ch4: float
-
-
-co2e_to_ch4 = ar5_co2_gwp / ar5_ch4_gwp
-def ch4_co2e_to_kg(ch4_co2e: float) -> float:
-    """Values in CO2 equivalent should be scaled based on each gas' GWP
-     to convert to kg.
-    """
-    return ch4_co2e * co2e_to_ch4
-
-anzsic_code_pattern = re.compile("\((?P<code>\d+)\)$")
-def parse_anzsic_code(anzsic_full: str) -> str:
-    """Given a full ANZSIC description like "Coal mining (060)", extract the
-    code, i.e. "060"."""
-    anzsic_code = anzsic_code_pattern.search(anzsic_full)
-    if anzsic_code is None:
-        return None
-    return anzsic_code.group('code')
-
-def create_facility_from_safeguard_record(record: SafeguardFacilityRecord) -> SafeguardFacility:
-    """Create a SafeguardFacility object from a single record of the DataFrame
-    returned by parse_safeguard_csv"""
-    return SafeguardFacility(
-        name=record.facility_name,
-        state=record.state,
-        anzsic=record.anzsic,
-        anzsic_code=parse_anzsic_code(record.anzsic),
-        ch4_emissions=dict({
-            "2023-2024": ch4_co2e_to_kg(record.co2e_ch4 * 1000), # t to kg
-        }),
-    )
-
 
 def parse_csv_numeric(csv_value: str) -> float:
     """Convert messy input values like " 124,138 " to float. Values of "-" are
@@ -102,10 +61,10 @@ def parse_csv_numeric(csv_value: str) -> float:
     raw = csv_value.strip()
     return None if raw == "-" else float(raw.replace(",", ""))
 
-def parse_safeguard_csv(data_source: ConfiguredDataSource) -> pd.DataFrame:
+def parse_safeguard_csv(data_source: ConfiguredDataSource) -> list[SafeguardFacility]:
     """Read the Safeguard Mechanism Baselines and Emissions Table CSV,
     returning only the data columns useful for methane estimation."""
-    return pd.read_csv(
+    csv_records = pd.read_csv(
         filepath_or_buffer=data_source.asset_path,
         encoding="cp1252", # CER distributes the CSV in windows-1252 encoding
         header=0,
@@ -114,6 +73,8 @@ def parse_safeguard_csv(data_source: ConfiguredDataSource) -> pd.DataFrame:
         usecols=["facility_name", "business_name", "state", "anzsic", "co2e_ch4"],
         converters={"co2e_ch4": parse_csv_numeric},
     )
+
+    return create_facility_list(csv_records.to_records(), ar5_ch4_gwp / ar5_co2_gwp)
 
 
 safeguard_mechanism_data_source = DataSource(
