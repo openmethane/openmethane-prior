@@ -3,8 +3,8 @@ from openmethane_prior.data_sources.safeguard import safeguard_mechanism_data_so
 from openmethane_prior.data_sources.safeguard.facility import (
     create_facility_from_safeguard_record,
     create_facility_list,
-    SafeguardFacilityRecord,
     parse_anzsic_code,
+    SafeguardFacilityRecord,
 )
 
 
@@ -34,7 +34,7 @@ def test_safeguard_create_facility_from_safeguard_row():
         business_name="ENDEAVOUR COAL PTY LIMITED",
         state="NSW",
         anzsic="Coal mining (060)",
-        co2e_ch4=1731355.0, # CO2e (aka GWP)
+        co2e_ch4=1731355.0, # CO2e
     ), 28)
 
     assert safeguard_facility_appin.name == "APN01 Appin Colliery - ICH Facility"
@@ -43,6 +43,7 @@ def test_safeguard_create_facility_from_safeguard_row():
     assert safeguard_facility_appin.anzsic_code == "060"
     assert safeguard_facility_appin.ch4_emissions["2023-2024"] == 1731355.0 * 1000 * (1 / 28) # tCO2e to kg
 
+
 def test_safeguard_create_facility_list():
     test_records = [
         SafeguardFacilityRecord(
@@ -50,21 +51,21 @@ def test_safeguard_create_facility_list():
             business_name="DIG N DIG",
             state="NSW",
             anzsic="Coal mining (060)",
-            co2e_ch4=123456.0, # CO2e (aka GWP)
+            co2e_ch4=123456.0, # CO2e
         ),
         SafeguardFacilityRecord(
             facility_name="Test Coal Mine",
             business_name="Down 2 Dig", # facility has changed ownership
             state="NSW",
             anzsic="Coal mining (060)",
-            co2e_ch4=111111.0, # CO2e (aka GWP)
+            co2e_ch4=111111.0, # CO2e
         ),
         SafeguardFacilityRecord(
             facility_name="Dumpster Pyre",
             business_name="Global Rise",
             state="NSW",
             anzsic="Waste Burning (666)",
-            co2e_ch4=222222.0, # CO2e (aka GWP)
+            co2e_ch4=222222.0, # CO2e
         ),
     ]
 

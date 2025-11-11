@@ -20,6 +20,9 @@ from typing import Iterable
 import attrs
 import re
 
+from openmethane_prior.data_sources.safeguard.anzsic import is_anzsic_code_in_code_family
+
+
 @attrs.define()
 class SafeguardFacility:
     name: str
@@ -109,3 +112,12 @@ def create_facility_list(
             for period in existing.ch4_emissions.keys():
                 existing.ch4_emissions[period] += new_facility.ch4_emissions[period]
     return facility_list
+
+
+def get_facilities_by_anzsic_code_family(
+    facility_list: list[SafeguardFacility],
+    anzsic_code_family: list[str],
+) -> list[SafeguardFacility]:
+    """Return all the SafeguardFacility objects for facilities within an
+    ANZSIC sector."""
+    return [f for f in facility_list if is_anzsic_code_in_code_family(f.anzsic_code, anzsic_code_family)]
