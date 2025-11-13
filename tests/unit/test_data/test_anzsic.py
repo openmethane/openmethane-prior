@@ -1,5 +1,5 @@
 
-from openmethane_prior.data_sources.safeguard.anzsic import simplify_anzsic_code, is_anzsic_code_in_code_family
+from openmethane_prior.data_sources.safeguard.anzsic import simplify_anzsic_code
 
 
 def test_simplify_anzsic_code():
@@ -24,31 +24,3 @@ def test_simplify_anzsic_code():
 
     # not handled
     # assert simplify_anzsic_code("0301a") == "030a1a" # Native Forestry and Logging, Native Forestry
-
-def test_is_anzsic_code_in_code_family():
-    test_family = [
-        "060", # Coal mining
-        "070", # Oil and gas extraction
-        "292", # Waste treatment, disposal and remediation services
-    ]
-
-    assert is_anzsic_code_in_code_family("06", test_family) == True
-    assert is_anzsic_code_in_code_family("060", test_family) == True
-    assert is_anzsic_code_in_code_family("0600", test_family) == True
-    assert is_anzsic_code_in_code_family("0610", test_family) == True
-    assert is_anzsic_code_in_code_family("0611", test_family) == True
-    assert is_anzsic_code_in_code_family("07", test_family) == True
-    assert is_anzsic_code_in_code_family("0711", test_family) == True
-    assert is_anzsic_code_in_code_family("292", test_family) == True
-    assert is_anzsic_code_in_code_family("2921", test_family) == True
-
-    assert is_anzsic_code_in_code_family("08", test_family) == False
-    assert is_anzsic_code_in_code_family("080", test_family) == False
-    assert is_anzsic_code_in_code_family("0800", test_family) == False
-    assert is_anzsic_code_in_code_family("0810", test_family) == False
-    assert is_anzsic_code_in_code_family("29", test_family) == False
-    assert is_anzsic_code_in_code_family("293", test_family) == False
-
-    # not handled
-    # assert is_anzsic_code_in_code_family("030a1a", ["0301a"]) == True # Native Forestry and Logging, Native Forestry
-

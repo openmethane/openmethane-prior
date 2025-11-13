@@ -28,15 +28,3 @@ def simplify_anzsic_code(anzsic_code: str) -> str:
 
     # strip non-significant characters (0s) from the end of the code
     return anzsic_code.rstrip("0")
-
-def is_anzsic_code_in_code_family(anzsic_code: str, code_family: list[str]) -> bool:
-    """Returns True if the provided code matches or is a sub-category of any
-    code in the code family."""
-    anzsic_simple = simplify_anzsic_code(anzsic_code)
-    for check_code in code_family:
-        check_simple = simplify_anzsic_code(check_code)
-        # a simplified code matching the start means it is in the family
-        # i.e. "06", "061" and "0611" are all in a family which includes "06"
-        if anzsic_simple.startswith(check_simple):
-            return True
-    return False
