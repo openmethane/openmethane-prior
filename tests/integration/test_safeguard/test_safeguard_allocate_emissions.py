@@ -54,3 +54,5 @@ def test_safeguard_allocate_emissions(config, input_files, data_manager):
 
     # 9 Safeguard facilities are represented in au-test
     assert len(gridded_emissions[gridded_emissions > 0]) == 9
+    # 11 Safeguard facilities are represented in au-test
+    assert len(gridded_emissions[gridded_emissions > 0]) == 11

@@ -27,9 +27,9 @@ def test_safeguard_data_source(data_manager):
 def test_safeguard_locations_data_source(data_manager):
     locations_df = data_manager.get_asset(safeguard_locations_data_source).data
 
-    assert len(locations_df) == 57 # 72 rows, only 57 with complete data
+    assert len(locations_df) == 65 # 72 rows, only 65 with complete data
 
-    locations_row_appin = locations_df.iloc[3]
+    locations_row_appin = locations_df.iloc[5]
 
     assert locations_row_appin.safeguard_facility_name == "Blackwater Mine"
     assert locations_row_appin.data_source_name == "coal-facilities"
