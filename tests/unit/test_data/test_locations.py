@@ -10,6 +10,22 @@ from openmethane_prior.data_sources.safeguard.facility import create_facilities_
 
 
 @pytest.fixture()
+def safeguard_facilities_df():
+    return create_facilities_from_safeguard_rows(pd.DataFrame(
+        data=[
+            ("Facility Name A", "NSW", "Basic ferrous metal manufacturing (211)", 123.0),
+            ("Facility Name B", "NSW", "Basic ferrous metal manufacturing (211)", 111.0),
+            ("Facility Name B", "NSW", "Basic ferrous metal manufacturing (211)", 222.0),
+            ("Facility Name C", "NSW", "Basic ferrous metal manufacturing (211)", 400.0),
+            ("Facility Name C", "NSW", "Basic ferrous metal manufacturing (211)", 500.0),
+            ("Facility Name D", "NSW", "Basic ferrous metal manufacturing (211)", 600.0),
+            ("Facility Name E", "NSW", "Basic ferrous metal manufacturing (211)", 700.0),
+            ("Facility Name F", "NSW", "Basic ferrous product manufacturing (212)", 456.0),
+        ],
+        columns=["facility_name", "state", "anzsic", "co2e_ch4"],
+    ), (2023, 2024), 28)
+
+@pytest.fixture()
 def location_rows_df():
     return pd.DataFrame(
         data=[
@@ -17,8 +33,8 @@ def location_rows_df():
             ("Facility Name A", "test-ds", "id-001b"),
             ("Facility Name A", "test-ds", "id-001c"),
             ("Facility Name B", "test-ds", "id-002"),
-            ("Facility Name C", "alternate-ds", "id-003"),
-            ("Facility Name D", "alternate-ds", "id-004"),
+            ("Facility Name C", "test-ds", "id-003"),
+            ("Facility Name E", "alternate-ds", "id-005"),
         ],
         columns=safeguard_locations_csv_columns,
     )
@@ -42,8 +58,8 @@ def test_locations_filter_locations(location_rows_df):
     # by data source
     test_locations_c = filter_locations(location_rows_df, data_source_name="test-ds")
 
-    assert len(test_locations_c) == 4
-    assert set(test_locations_c.data_source_id) == {"id-001a", "id-001b", "id-001c", "id-002"}
+    assert len(test_locations_c) == 5
+    assert set(test_locations_c.data_source_id) == {"id-001a", "id-001b", "id-001c", "id-002", "id-003"}
 
     test_locations_c_with_id = filter_locations(
         location_rows_df,
@@ -56,32 +72,26 @@ def test_locations_filter_locations(location_rows_df):
 
     test_locations_d = filter_locations(location_rows_df, data_source_name="alternate-ds")
 
-    assert len(test_locations_d) == 2
-    assert set(test_locations_d.data_source_id) == {"id-003", "id-004"}
+    assert len(test_locations_d) == 1
+    assert set(test_locations_d.data_source_id) == {"id-005"}
 
     test_locations_ds_not_found = filter_locations(location_rows_df, data_source_name="unknown-ds")
 
     assert len(test_locations_ds_not_found) == 0
 
 
-def test_locations_get_safeguard_facility_locations(location_rows_df):
-    safeguard_facilities_df = create_facilities_from_safeguard_rows(pd.DataFrame(
-        data=[
-            ("Facility Name A", "NSW", "Basic ferrous metal manufacturing (211)", 123.0),
-            ("Facility Name C", "NSW", "Basic ferrous product manufacturing (212)", 456.0),
-        ],
-        columns=["facility_name", "state", "anzsic", "co2e_ch4"],
-    ), (2023, 2024), 28)
-
+def test_locations_get_safeguard_facility_locations(safeguard_facilities_df, location_rows_df):
     test_facilities, test_locations = get_safeguard_facility_locations(
         safeguard_facilities_df=safeguard_facilities_df,
         locations_df=location_rows_df,
         data_source_name="test-ds",
     )
 
-    assert len(test_facilities) == 1
-    assert set(test_facilities.facility_name) == {"Facility Name A"}
+    # facilities not in the locations dataset have been filtered out
+    assert len(test_facilities) == 3
+    assert set(test_facilities.facility_name) == {"Facility Name A", "Facility Name B", "Facility Name C"}
 
-    assert len(test_locations) == 3
-    assert set(test_locations.safeguard_facility_name) == {"Facility Name A"}
-    assert set(test_locations.data_source_id) == {"id-001a", "id-001b", "id-001c"}
+    # locations not correlated with a facility have been filtered out
+    assert len(test_locations) == 5
+    assert set(test_locations.safeguard_facility_name) == {"Facility Name A", "Facility Name B", "Facility Name C"}
+    assert set(test_locations.data_source_id) == {"id-001a", "id-001b", "id-001c", "id-002", "id-003"}

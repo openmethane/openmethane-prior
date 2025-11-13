@@ -1,4 +1,3 @@
-
 import attrs
 import datetime
 
@@ -12,8 +11,8 @@ from openmethane_prior.sectors.coal.safeguard_coal import allocate_safeguard_fac
 
 
 def test_safeguard_allocate_emissions(config, input_files, data_manager):
-    # period must be within safeguard period or results will be 0
-    config = load_config_from_env(**{
+    # period within safeguard period will yield results
+    config_2023 = load_config_from_env(**{
         **attrs.asdict(config),
         "start_date": datetime.datetime(2023, 7, 1),
         "end_date": datetime.datetime(2023, 7, 2),
@@ -37,7 +36,7 @@ def test_safeguard_allocate_emissions(config, input_files, data_manager):
 
     # run the test
     facilities, locations, gridded_emissions = allocate_safeguard_facility_emissions(
-        config=config,
+        config=config_2023,
         anzsic_codes=["060"],
         safeguard_facilities_asset=safeguard_facilities_asset,
         facility_locations_asset=facility_locations_asset,
@@ -52,7 +51,34 @@ def test_safeguard_allocate_emissions(config, input_files, data_manager):
     # check the emissions are allocated to the right grid cell
     assert float(gridded_emissions[8, 4]) == expected_emissions
 
-    # 9 Safeguard facilities are represented in au-test
-    assert len(gridded_emissions[gridded_emissions > 0]) == 9
     # 11 Safeguard facilities are represented in au-test
     assert len(gridded_emissions[gridded_emissions > 0]) == 11
+
+    # 63 facilities with locations, including ones located outside the domain
+    assert len(facilities) == 63
+    # Some facilities have multiple locations
+    assert len(locations) == 65
+    assert len(locations[locations["safeguard_facility_name"] == "Hunter Valley Operations mine"]) == 2
+    assert len(locations[locations["safeguard_facility_name"] == "Wambo Coal Mine"]) == 2
+
+    # period outside safeguard period will allocate no emissions
+    config_2022 = load_config_from_env(**{
+        **attrs.asdict(config),
+        "start_date": datetime.datetime(2022, 7, 1),
+        "end_date": datetime.datetime(2022, 7, 2),
+    })
+
+    # run the test
+    facilities, locations, gridded_emissions = allocate_safeguard_facility_emissions(
+        config=config_2022,
+        anzsic_codes=["060"],
+        safeguard_facilities_asset=safeguard_facilities_asset,
+        facility_locations_asset=facility_locations_asset,
+        reference_data_asset=coal_facilities_asset,
+    )
+
+    # zero emissions have been allocated, as the time period in the config is
+    # outside the available Safeguard reporting period
+    assert float(gridded_emissions.sum()) == 0
+    assert len(gridded_emissions[gridded_emissions > 0]) == 0
+

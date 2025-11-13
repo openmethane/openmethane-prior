@@ -46,16 +46,19 @@ def test_safeguard_create_facilities_from_safeguard_rows():
 
     assert len(facilities_df) == 4 # 5 rows, 2 duplicates
 
-    facility_combined = facilities_df[facilities_df["facility_name"] == "Days of Ore"].loc[1]
+    facility_combined = facilities_df[facilities_df["facility_name"] == "Days of Ore"]
 
-    assert facility_combined.facility_name == "Days of Ore"
-    assert facility_combined.state == "NSW"
-    assert facility_combined.anzsic == "Metal ore mining (080)"
-    assert facility_combined.anzsic_code == "080"
-    assert facility_combined.co2e_ch4 == 1111.0 + 2000.0
-    assert facility_combined.ch4_kg == (1111.0 + 2000.0) * 1000 * (1 / 28)
-    assert facility_combined.reporting_start == datetime.date(2024, 7, 1)
-    assert facility_combined.reporting_end == datetime.date(2025, 6, 30)
+    # two rows listed for "Days of Ore" are combined into a single facility
+    assert len(facility_combined) == 1
+
+    assert facility_combined.iloc[0].facility_name == "Days of Ore"
+    assert facility_combined.iloc[0].state == "NSW"
+    assert facility_combined.iloc[0].anzsic == "Metal ore mining (080)"
+    assert facility_combined.iloc[0].anzsic_code == "080"
+    assert facility_combined.iloc[0].co2e_ch4 == 1111.0 + 2000.0
+    assert facility_combined.iloc[0].ch4_kg == (1111.0 + 2000.0) * 1000 * (1 / 28)
+    assert facility_combined.iloc[0].reporting_start == datetime.date(2024, 7, 1)
+    assert facility_combined.iloc[0].reporting_end == datetime.date(2025, 6, 30)
 
 
 def test_safeguard_filter_facilities(facility_rows_df):
