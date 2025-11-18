@@ -27,7 +27,7 @@ def test_safeguard_data_source(data_manager):
 def test_safeguard_locations_data_source(data_manager):
     locations_df = data_manager.get_asset(safeguard_locations_data_source).data
 
-    assert len(locations_df) == 65 # 72 rows, only 65 with complete data
+    assert len(locations_df) == 72 # 73 rows, but 72 have complete data
 
     locations_row_appin = locations_df.iloc[5]
 
