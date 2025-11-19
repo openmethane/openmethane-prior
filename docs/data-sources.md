@@ -140,7 +140,7 @@ Australian Department of Agriculture.
 
 This is done using a combination of the official
 [Land Use of Australia](https://www.agriculture.gov.au/abares/aclump/land-use/land-use-of-australia-2010-11-to-2020-21)
-GeoTIFF raster, and a manual [mapping between ALUM codes and Open Methane sectors][6].
+GeoTIFF raster, and a manual [mapping between ALUM codes and Open Methane sectors][4].
 
 Due to issues fetching the file directly from the agriculture.gov.au service
 in cloud-hosted services, the land use dataset is mirrored from the Open
@@ -157,6 +157,20 @@ The nighttime lights GeoTIFF covering Australia is mirrored from the Open
 Methane Public Data Store: https://openmethane.s3.amazonaws.com/prior/inputs/nasa-nighttime-lights.tiff
 
 
+## Climate TRACE
+
+Climate TRACE provides a global dataset of greenhouse gas emission sources
+across many sectors of human activity. Open Methane uses the Australia CH4
+"country pacakge" which includes emissions sources such as coal mines and oil
+and gas production.
+
+The package is available from the [Climate TRACE Data](https://climatetrace.org/data)
+page by selecting:
+- View downloads by: Country
+- Select Emission Type: CH4
+- Download the Australia CSV package
+
+
 # Data Sources
 
 ## Sector: Livestock
@@ -171,7 +185,7 @@ taken from: "Navarro, J. Marcos Martinez, R. (2021) Estimating long-term profits
 baselines in Australian agricultural regions. User Guide. CSIRO,
 Australia." 
 
-- Dataset: [EntericFermentation.nc][3]
+- Dataset: [EntericFermentation.nc][2]
 - Resolution: 0.01 degree
 - Period: 2020, single annual average
 - Updates: never
@@ -199,7 +213,7 @@ Global dataset of CH4 flux estimates from termites.
 Termite emissions used in [Saunois et al. 2020](https://essd.copernicus.org/articles/12/1561/2020/)
 supplied by Simona Castaldi and Sergio Noce.
 
-- Dataset: [termite_emissions_2010-2016.nc][8]
+- Dataset: [termite_emissions_2010-2016.nc][6]
 - Resolution: 0.5 degree
 - Period: mean of 2010 – 2016
 - Updates: never
@@ -245,7 +259,7 @@ Monthly wetland emissions from the diagnostic ensemble used in
 [Saunois et al. 2020](https://essd.copernicus.org/articles/12/1561/2020/)
 and described in Zhang et al. (2023 under review) (could this be https://essd.copernicus.org/articles/13/2001/2021/?)
 
-- Dataset: [DLEM_totflux_CRU_diagnostic.nc][2]
+- Dataset: [DLEM_totflux_CRU_diagnostic.nc][1]
 - Resolution: 0.5 degree
 - Period: 2000 - 2020, monthly averages
 - Updates: never
@@ -277,15 +291,14 @@ Solid fuel (coal) emissions reported in the
 [Australian UNFCCC Inventory](#Australian-UNFCCC-Inventory)
 are spatialised according to facility-level estimates.
 
-### Sources
+Facility estimates are taken from
+[Safeguard Mechanism estimates](#Safeguard-Mechanism-Baselines-and-Emissions)
+if available, using facility locations published by [Climate TRACE](#Climate-TRACE).
 
-- Dataset: [Coal mining sources][5]
-    - Original source: [ClimateTrace](https://climatetrace.org/)
-
-The national inventory total for solid fuel emissions is pro-rated to the
-location of every facility noted in the ClimateTrace data which is
-listed for the chosen period. The listed point location for each
-climate trace emission is mapped to the relevant domain grid cell.
+For facilities not covered by the Safeguard Mechanism, the National Inventory
+total for solid fuel emissions, minus emissions already allocated to Safeguard
+facilities, is pro-rated to the facility noted in the ClimateTrace data. The
+listed point location for each facility is mapped to the relevant grid cell.
 
 
 ## Sector: Electricity
@@ -295,7 +308,7 @@ are spatialised according to facility-level capacity.
 
 ### Sources
 
-- Dataset: [Electricity production facilities][4]
+- Dataset: [Electricity production facilities][3]
   - Original source: [Open Electricity](https://openelectricity.org.au/)
 
 The national inventory total for electricity emissions is pro-rated to the
@@ -324,7 +337,7 @@ are spatialised according to facility-level estimates.
 
 ### Sources
 
-- Dataset: [Oil and gas production sources][7]
+- Dataset: [Oil and gas production sources][5]
     - Original source: [ClimateTrace](https://climatetrace.org/)
 
 The national inventory total for oil and gas emissions is pro-rated to the
@@ -353,11 +366,9 @@ spatialised according to the [Land Use of Australia](#Land-Use-of-Australia) dat
 
 # Assets
 
-[1]: https://openmethane.s3.amazonaws.com/prior/inputs/AUS_2021_AUST_SHP_GDA2020.zip
-[2]: https://openmethane.s3.amazonaws.com/prior/inputs/DLEM_totflux_CRU_diagnostic.nc
-[3]: https://openmethane.s3.amazonaws.com/prior/inputs/EntericFermentation.nc
-[4]: https://openmethane.s3.amazonaws.com/prior/inputs/ch4-electricity.csv
-[5]: https://openmethane.s3.amazonaws.com/prior/inputs/coal-mining_emissions-sources.csv
-[6]: https://openmethane.s3.amazonaws.com/prior/inputs/landuse-sector-map.csv
-[7]: https://openmethane.s3.amazonaws.com/prior/inputs/oil-and-gas-production-and-transport_emissions-sources.csv
-[8]: https://openmethane.s3.amazonaws.com/prior/inputs/termite_emissions_2010-2016.nc
+[1]: https://openmethane.s3.amazonaws.com/prior/inputs/DLEM_totflux_CRU_diagnostic.nc
+[2]: https://openmethane.s3.amazonaws.com/prior/inputs/EntericFermentation.nc
+[3]: https://openmethane.s3.amazonaws.com/prior/inputs/ch4-electricity.csv
+[4]: https://openmethane.s3.amazonaws.com/prior/inputs/landuse-sector-map.csv
+[5]: https://openmethane.s3.amazonaws.com/prior/inputs/oil-and-gas-production-and-transport_emissions-sources.csv
+[6]: https://openmethane.s3.amazonaws.com/prior/inputs/termite_emissions_2010-2016.nc
