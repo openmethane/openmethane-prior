@@ -18,7 +18,7 @@
 import datetime
 import pandas as pd
 
-from openmethane_prior.data_sources.climate_trace import climate_trace_data_source
+from openmethane_prior.data_sources.climate_trace import climate_trace_data_source, parse_emissions_sources
 from openmethane_prior.lib import (
     ConfiguredDataSource,
     DataSource,
@@ -28,20 +28,9 @@ from openmethane_prior.lib import (
 logger = logger.get_logger(__name__)
 
 
-def parse_coal_facilities_csv(data_source: ConfiguredDataSource) -> pd.DataFrame:
-    coal_facilities_df = pd.read_csv(
-        data_source.asset_path,
-        converters={
-            "start_time": datetime.datetime.fromisoformat,
-            "end_time": datetime.datetime.fromisoformat,
-        },
-    )
-
-    return coal_facilities_df
-
 coal_facilities_data_source = DataSource(
     name="coal-facilities",
     data_sources=[climate_trace_data_source],
-    parse=parse_coal_facilities_csv,
+    parse=parse_emissions_sources,
     file_path='climate-trace-AUS/DATA/fossil_fuel_operations/coal-mining_emissions_sources_v4_8_0.csv',
 )

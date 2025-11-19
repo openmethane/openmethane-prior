@@ -19,6 +19,19 @@ import calendar
 import datetime
 import pandas as pd
 
+from openmethane_prior.lib import ConfiguredDataSource
+
+
+def parse_emissions_sources(data_source: ConfiguredDataSource) -> pd.DataFrame:
+    """Read and parse a Climate TRACE emissions sources CSV file."""
+    return pd.read_csv(
+        data_source.asset_path,
+        converters={
+            "start_time": datetime.datetime.fromisoformat,
+            "end_time": datetime.datetime.fromisoformat,
+        },
+    )
+
 
 def filter_emissions_sources(
     emissions_sources_df: pd.DataFrame,
