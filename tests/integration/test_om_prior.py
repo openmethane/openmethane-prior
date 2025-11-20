@@ -29,6 +29,7 @@ def test_009_prior_emissions_ds(prior_emissions_ds):
         "y_bounds": 364369.5,
 
         "ch4_sector_agriculture": 1.8375328756935794e-12,
+        "ch4_sector_coal": 4.250515218652202e-10,
         "ch4_sector_lulucf": 7.412380485305677e-12,
         "ch4_sector_waste": 5.9131867104723875e-12,
         "ch4_sector_livestock": 4.0547154335803873e-11,
@@ -36,14 +37,14 @@ def test_009_prior_emissions_ds(prior_emissions_ds):
         "ch4_sector_stationary": 8.9951585930315e-13,
         "ch4_sector_transport": 2.0972791286013642e-13,
         "ch4_sector_electricity": 2.283888848991229e-13,
-        "ch4_sector_fugitive": 4.662622971875453e-10,
+        "ch4_sector_oil_gas": 0.0,
         "ch4_sector_termite": 2.436579367090519e-12,
         "ch4_sector_fire": 3.6974516872713414e-13,
         "ch4_sector_wetlands": 1.2524275273123607e-10,
-        "ch4_total": 6.514157152744573e-10,
+        "ch4_total": 6.102049399521322e-10,
 
         # deprecated
-        "OCH4_TOTAL": 6.514157152744573e-10,
+        "OCH4_TOTAL": 6.102049399521322e-10,
         "LANDMASK": 1.0,
     }
 
@@ -59,6 +60,7 @@ def test_009_prior_emissions_ds(prior_emissions_ds):
         "y_bounds": 414369.5,
 
         "ch4_sector_agriculture": 2.3277985923203306e-12,
+        "ch4_sector_coal": 1.3467229766109225e-08,
         "ch4_sector_lulucf": 1.3240418166971984e-10,
         "ch4_sector_waste": 1.8478708470226208e-10,
         "ch4_sector_livestock": 7.545056510007907e-11,
@@ -66,14 +68,14 @@ def test_009_prior_emissions_ds(prior_emissions_ds):
         "ch4_sector_stationary": 8.706040097264147e-12,
         "ch4_sector_transport": 2.0298692902317285e-12,
         "ch4_sector_electricity": 1.284687477557566e-11,
-        "ch4_sector_fugitive": 1.4772942018755247e-08,
+        "ch4_sector_oil_gas": 0.0,
         "ch4_sector_termite": 3.3858020553889645e-12,
         "ch4_sector_fire": 5.498670963000052e-11,
         "ch4_sector_wetlands": 2.5512281176531815e-10,
-        "ch4_total": 1.4878361724769669e-08,
+        "ch4_total": 1.3572649472123647e-08,
 
         # deprecated
-        "OCH4_TOTAL": 1.4878361724769669e-08,
+        "OCH4_TOTAL": 1.3572649472123647e-08,
         "LANDMASK": 1.0,
     }
 
@@ -84,6 +86,7 @@ def test_009_prior_emissions_ds(prior_emissions_ds):
     result_y_band = {key: prior_emissions_ds[key][0, 0, 4].sum().item() for key in results_keys}
     expected_y_band = {
         "ch4_sector_agriculture": 2.0089220728243947e-11,
+        "ch4_sector_coal": 0.0,
         "ch4_sector_lulucf": 0.0,
         "ch4_sector_waste": 0.0,
         "ch4_sector_livestock": 4.0390212981728717e-10,
@@ -91,7 +94,7 @@ def test_009_prior_emissions_ds(prior_emissions_ds):
         "ch4_sector_stationary": 1.3459711244899672e-11,
         "ch4_sector_transport": 3.1382183181070133e-12,
         "ch4_sector_electricity": 0.0,
-        "ch4_sector_fugitive": 0.0,
+        "ch4_sector_oil_gas": 0.0,
         "ch4_sector_termite": 2.3266076565331417e-11,
         "ch4_sector_fire": 0.0,
         "ch4_sector_wetlands": 1.118552889201041e-09,
@@ -103,6 +106,7 @@ def test_009_prior_emissions_ds(prior_emissions_ds):
     result_x_band = {key: prior_emissions_ds[key][0, 0, :, 4].sum().item() for key in results_keys}
     expected_x_band = {
         "ch4_sector_agriculture": 1.9864620744946812e-11,
+        "ch4_sector_coal": 5.180719352568863e-09,
         "ch4_sector_lulucf": 6.118763459290032e-11,
         "ch4_sector_waste": 0.0,
         "ch4_sector_livestock": 4.7123459295837e-10,
@@ -110,11 +114,11 @@ def test_009_prior_emissions_ds(prior_emissions_ds):
         "ch4_sector_stationary": 1.0075833719532698e-11,
         "ch4_sector_transport": 2.3492454907470443e-12,
         "ch4_sector_electricity": 1.284687477557566e-11,
-        "ch4_sector_fugitive": 5.683014839736737e-09,
+        "ch4_sector_oil_gas": 0.0,
         "ch4_sector_termite": 2.363145790162946e-11,
         "ch4_sector_fire": 0.0,
         "ch4_sector_wetlands": 6.705475445734077e-10,
-        "ch4_total": 6.955385004992928e-09,
+        "ch4_total": 6.453089517825054e-09,
     }
 
     assert result_x_band == expected_x_band

@@ -19,12 +19,13 @@
 from openmethane_prior.lib import PriorSector
 
 from .agriculture import sector as agriculture_sector
+from .coal import sector as coal_sector
 from .electricity import sector as electricity_sector
 from .fire import sector as fire_sector
-from .fugitive import sector as fugitive_sector
 from .industrial import sector as industrial_sector
 from .livestock import sector as livestock_sector
 from .lulucf import sector as lulucf_sector
+from .oil_gas import sector as oil_gas_sector
 from .stationary import sector as stationary_sector
 from .termite import sector as termite_sector
 from .transport import sector as transport_sector
@@ -33,12 +34,13 @@ from .wetland import sector as wetland_sector
 
 all_sectors: list[PriorSector] = [
     agriculture_sector,
+    coal_sector,
     electricity_sector,
     fire_sector,
-    fugitive_sector,
     industrial_sector,
     livestock_sector,
     lulucf_sector,
+    oil_gas_sector,
     stationary_sector,
     termite_sector,
     transport_sector,

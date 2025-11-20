@@ -1,0 +1,91 @@
+#
+# Copyright 2023 The Superpower Institute Ltd.
+#
+# This file is part of OpenMethane.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+import numpy as np
+import pandas as pd
+import xarray as xr
+
+from openmethane_prior.lib.data_manager.parsers import parse_csv
+from openmethane_prior.lib import (
+    DataSource,
+    logger,
+    PriorSectorConfig,
+    PriorSector,
+    kg_to_period_cell_flux,
+)
+from openmethane_prior.data_sources.inventory import get_sector_emissions_by_code, inventory_data_source
+
+logger = logger.get_logger(__name__)
+
+oil_gas_facilities_data_source = DataSource(
+    name="oil-gas-facilities",
+    url="https://openmethane.s3.amazonaws.com/prior/inputs/oil-and-gas-production-and-transport_emissions-sources.csv",
+    parse=parse_csv,
+)
+
+def process_emissions(sector: PriorSector, sector_config: PriorSectorConfig, prior_ds: xr.Dataset):
+    config = sector_config.prior_config
+
+    # read the total emissions over the sector (in kg)
+    emissions_inventory = sector_config.data_manager.get_asset(inventory_data_source).data
+    sector_total_emissions = get_sector_emissions_by_code(
+        emissions_inventory=emissions_inventory,
+        start_date=config.start_date,
+        end_date=config.end_date,
+        category_codes=sector.unfccc_categories,
+    )
+
+    # now read climate_trace facilities emissions for oil and gas
+    oil_gas_facilities_asset = sector_config.data_manager.get_asset(oil_gas_facilities_data_source)
+
+    # select gas and year
+    oil_gas_ch4 = oil_gas_facilities_asset.data.loc[oil_gas_facilities_asset.data["gas"] == "ch4"]
+    oil_gas_ch4.loc[:, "start_time"] = pd.to_datetime(oil_gas_ch4["start_time"])
+    target_date = (
+        config.start_date
+        if config.start_date <= oil_gas_ch4["start_time"].max()
+        else oil_gas_ch4["start_time"].max()
+    )  # start date or latest date in data
+    years = np.array([x.year for x in oil_gas_ch4["start_time"]])
+    mask = years == target_date.year
+    oil_gas_year = oil_gas_ch4.loc[mask, :]
+    # normalise emissions to match inventory total
+    oil_gas_year.loc[:, "emissions_quantity"] *= (
+        sector_total_emissions / oil_gas_year["emissions_quantity"].sum()
+    )
+
+    domain_grid = config.domain_grid()
+
+    methane = np.zeros(domain_grid.shape)
+
+    for _, facility in oil_gas_year.iterrows():
+        cell_x, cell_y, cell_valid = domain_grid.lonlat_to_cell_index(facility["lon"], facility["lat"])
+
+        if cell_valid:
+            methane[cell_y, cell_x] += facility["emissions_quantity"]
+
+    return kg_to_period_cell_flux(methane, config)
+
+
+sector = PriorSector(
+    name="oil_gas",
+    emission_category="anthropogenic",
+    unfccc_categories=["1.B.2"], # Fugitive emissions from fuels, Oil and Natural Gas
+    cf_standard_name="extraction_production_and_transport_of_fuel",
+    create_estimate=process_emissions,
+)

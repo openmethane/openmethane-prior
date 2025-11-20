@@ -271,6 +271,23 @@ Agricultural emissions (excluding livestock) reported in the
 are spatialised according to the [Land Use of Australia](#Land-Use-of-Australia) dataset.
 
 
+## Sector: Coal
+
+Solid fuel (coal) emissions reported in the
+[Australian UNFCCC Inventory](#Australian-UNFCCC-Inventory)
+are spatialised according to facility-level estimates.
+
+### Sources
+
+- Dataset: [Coal mining sources][5]
+    - Original source: [ClimateTrace](https://climatetrace.org/)
+
+The national inventory total for solid fuel emissions is pro-rated to the
+location of every facility noted in the ClimateTrace data which is
+listed for the chosen period. The listed point location for each
+climate trace emission is mapped to the relevant domain grid cell.
+
+
 ## Sector: Electricity
 
 Public electricity emissions reported in the [Australian UNFCCC Inventory](#Australian-UNFCCC-Inventory)
@@ -287,24 +304,6 @@ listed for the chosen period. The listed point location for each
 facility is mapped to the relevant domain grid cell.
 
 
-## Sector: Fugitive
-
-Fugitive emissions reported in the [Australian UNFCCC Inventory](#Australian-UNFCCC-Inventory)
-are spatialised according to facility-level estimates.
-
-### Sources
-
-- Dataset: [Coal mining sources][5]
-  - Original source: [ClimateTrace](https://climatetrace.org/)
-- Dataset: [Oil and gas production sources][7]
-  - Original source: [ClimateTrace](https://climatetrace.org/)
-
-The national inventory total for fugitive emissions is pro-rated to the
-location of every facility noted in the ClimateTrace data which is
-listed for the chosen period. The listed point location for each
-climate trace emission is mapped to the relevant domain grid cell.
-
-
 ## Sector: Industrial
 
 Industrial emissions reported in the [Australian UNFCCC Inventory](#Australian-UNFCCC-Inventory) are
@@ -315,6 +314,23 @@ spatialised according to [NASA Nighttime Lights](#NASA-Nighttime-Lights).
 
 LULUCF sector emissions reported in the [Australian UNFCCC Inventory](#Australian-UNFCCC-Inventory) are
 spatialised according to the [Land Use of Australia](#Land-Use-of-Australia) dataset.
+
+
+## Sector: Oil and Gas
+
+Oil and gas emissions reported in the
+[Australian UNFCCC Inventory](#Australian-UNFCCC-Inventory)
+are spatialised according to facility-level estimates.
+
+### Sources
+
+- Dataset: [Oil and gas production sources][7]
+    - Original source: [ClimateTrace](https://climatetrace.org/)
+
+The national inventory total for oil and gas emissions is pro-rated to the
+location of every facility noted in the ClimateTrace data which is
+listed for the chosen period. The listed point location for each
+climate trace emission is mapped to the relevant domain grid cell.
 
 
 ## Sector: Stationary
