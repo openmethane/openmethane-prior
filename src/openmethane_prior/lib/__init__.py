@@ -23,6 +23,7 @@ from .data_manager.manager import (
     DataManager,
     DataSource,
 )
+from .grid.geometry import polygon_cell_intersection
 from .grid.regrid import regrid_data
 from .outputs import add_sector, convert_to_timescale
 from .create_prior import create_prior
