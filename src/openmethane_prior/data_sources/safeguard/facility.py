@@ -15,12 +15,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-from typing import Iterable
+import datetime
 
 import attrs
 import re
 
-from openmethane_prior.data_sources.safeguard.anzsic import is_anzsic_code_in_code_family
+import numpy as np
+import pandas as pd
+
+from openmethane_prior.data_sources.safeguard.anzsic import simplify_anzsic_code
 
 
 @attrs.define()
@@ -64,60 +67,59 @@ def parse_anzsic_code(anzsic_full: str) -> str:
     code, i.e. "060"."""
     anzsic_code = anzsic_code_pattern.search(anzsic_full)
     if anzsic_code is None:
-        return None
+        raise ValueError(f"invalid ANZSIC string has no code '{anzsic_full}'")
     return anzsic_code.group('code')
 
-def create_facility_from_safeguard_record(
-    record: SafeguardFacilityRecord,
-    ch4_co2e_factor: float,
-) -> SafeguardFacility:
+
+def create_facilities_from_safeguard_rows(
+    safeguard_rows_df: pd.DataFrame,
+    reporting_period: tuple[int, int],
+    ch4_gwp: float,
+    co2_gwp: float = 1,
+) -> pd.DataFrame:
     """Create a SafeguardFacility object from a single row of the Baselines and
-    Emissions Table. CH4 must be converted from tCO2-equivalent to kg CH4."""
-    return SafeguardFacility(
-        name=record.facility_name,
-        state=record.state,
-        anzsic=record.anzsic,
-        anzsic_code=parse_anzsic_code(record.anzsic),
-        ch4_emissions=dict({
-            "2023-2024": record.co2e_ch4 * 1000 / ch4_co2e_factor, # tCO2e to kg
-        }),
-    )
+    Emissions Table. CH4 must be converted from CO2-equivalent kg to CH4 kg."""
+    safeguard_df = safeguard_rows_df.copy()
 
-def find_existing_facility(
-    facility_list: list[SafeguardFacility],
-    search_facility: SafeguardFacility,
-) -> SafeguardFacility | None:
-    """Find a matching facility in the provided list, if present."""
-    for facility in facility_list:
-        if facility.name == search_facility.name:
-            return facility
-    return None
+    # rows with the same facility name but different business name are the same
+    # facility, and should have their CH4 aggregated. this sums co2e_ch4 while
+    # preserving other columns.
+    safeguard_df = safeguard_df.groupby(["facility_name", "state", "anzsic"], as_index=False).sum()
 
-def create_facility_list(
-    facility_records: Iterable[SafeguardFacilityRecord],
-    ch4_co2e_factor: float,
-) -> list[SafeguardFacility]:
-    """Construct a searchable list of facilities and their emissions from the
-    raw input records."""
-    facility_list: list[SafeguardFacility] = []
-    for record in facility_records:
-        new_facility = create_facility_from_safeguard_record(record, ch4_co2e_factor)
-        existing = find_existing_facility(facility_list, new_facility)
-        if existing is None:
-            facility_list.append(new_facility)
-        else:
-            # each facility should be represented only once in our list. if a
-            # facility appears multiple times in the dataset, aggregate all of
-            # its reported emissions.
-            for period in existing.ch4_emissions.keys():
-                existing.ch4_emissions[period] += new_facility.ch4_emissions[period]
-    return facility_list
+    # convert tCO2e CH4 to kg CH4 using global warming potentials
+    safeguard_df["ch4_kg"] = safeguard_df["co2e_ch4"] * 1000 * (co2_gwp / ch4_gwp)
+
+    # extract the ANZSIC code from the provided format
+    safeguard_df["anzsic_code"] = safeguard_df["anzsic"].map(parse_anzsic_code)
+
+    # SGM reporting follows Australian financial year, from
+    # July 1st to June 30 the following year
+    reporting_start_year, reporting_end_year = reporting_period
+    safeguard_df["reporting_start"] = datetime.date(reporting_start_year, 7, 1)
+    safeguard_df["reporting_end"] = datetime.date(reporting_end_year, 6, 30)
+
+    return safeguard_df
 
 
-def get_facilities_by_anzsic_code_family(
-    facility_list: list[SafeguardFacility],
-    anzsic_code_family: list[str],
-) -> list[SafeguardFacility]:
-    """Return all the SafeguardFacility objects for facilities within an
-    ANZSIC sector."""
-    return [f for f in facility_list if is_anzsic_code_in_code_family(f.anzsic_code, anzsic_code_family)]
+def filter_facilities(
+    facility_df: pd.DataFrame,
+    anzsic_codes: list[str] = None,
+    period: tuple[datetime.date, datetime.date] = None,
+) -> pd.DataFrame:
+    """Filter safeguard mechanism rows, returning facilities which match the
+    provided sector and period filters."""
+    if anzsic_codes is not None:
+        anzsic_prefixes = [simplify_anzsic_code(anzsic) for anzsic in anzsic_codes]
+        # filter to include every row where the ANZSIC code matches any prefix
+        facility_df = facility_df[np.logical_or.reduce([
+            facility_df["anzsic_code"].str.startswith(anzsic_prefix)
+            for anzsic_prefix in anzsic_prefixes
+        ])]
+
+    if period is not None:
+        facility_df = facility_df[
+            (facility_df["reporting_start"] <= period[0])
+            & (period[1] <= facility_df["reporting_end"])
+        ]
+
+    return facility_df

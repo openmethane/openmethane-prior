@@ -1,11 +1,26 @@
+import datetime
 
-from openmethane_prior.data_sources.safeguard import safeguard_mechanism_data_source
+import pandas as pd
+import pytest
+
 from openmethane_prior.data_sources.safeguard.facility import (
-    create_facility_from_safeguard_record,
-    create_facility_list,
+    create_facilities_from_safeguard_rows,
+    filter_facilities,
     parse_anzsic_code,
-    SafeguardFacilityRecord,
 )
+
+@pytest.fixture()
+def facility_rows_df():
+    test_data = [
+        ("Ironic",      "NSW", "Basic ferrous metal manufacturing (211)", 123.0),
+        ("Iron Giant",  "NSW", "Basic ferrous product manufacturing (212)", 456.0),
+        ("Al to Zn",    "NSW", "Basic non-ferrous metal manufacturing (213)", 789.0),
+        ("Days of Ore", "NSW", "Metal ore mining (080)", 1111.0),
+    ]
+    return pd.DataFrame(
+        data=test_data,
+        columns=["facility_name", "state", "anzsic", "co2e_ch4"],
+    )
 
 
 def test_parse_anzsic_code():
@@ -15,72 +30,99 @@ def test_parse_anzsic_code():
     assert parse_anzsic_code("Waste treatment, disposal and remediation services (292)") == "292"
 
 
-def test_safeguard_data_source(data_manager):
-    safeguard_asset = data_manager.get_asset(safeguard_mechanism_data_source)
+def test_safeguard_create_facilities_from_safeguard_rows():
+    facility_rows_df = pd.DataFrame(
+        data=[
+            ("Ironic",      "NSW", "Basic ferrous metal manufacturing (211)", 123.0),
+            ("Iron Giant",  "NSW", "Basic ferrous product manufacturing (212)", 456.0),
+            ("Al to Zn",    "NSW", "Basic non-ferrous metal manufacturing (213)", 789.0),
+            ("Days of Ore", "NSW", "Metal ore mining (080)", 1111.0),
+            ("Days of Ore", "NSW", "Metal ore mining (080)", 2000.0), # change of ownership
+        ],
+        columns=["facility_name", "state", "anzsic", "co2e_ch4"],
+    )
 
-    assert len(safeguard_asset.data) == 231 # 233 rows, 2 duplicates
+    facilities_df = create_facilities_from_safeguard_rows(facility_rows_df, (2024, 2025), 28)
 
-    safeguard_row_appin = safeguard_asset.data[4]
-    assert safeguard_row_appin.name == "APN01 Appin Colliery - ICH Facility"
-    assert safeguard_row_appin.state == "NSW"
-    assert safeguard_row_appin.anzsic == "Coal mining (060)"
-    assert safeguard_row_appin.anzsic_code == "060"
-    assert safeguard_row_appin.ch4_emissions["2023-2024"] == 1731355.0 * 1000 / 28
+    assert len(facilities_df) == 4 # 5 rows, 2 duplicates
 
+    facility_combined = facilities_df[facilities_df["facility_name"] == "Days of Ore"]
 
-def test_safeguard_create_facility_from_safeguard_row():
-    safeguard_facility_appin = create_facility_from_safeguard_record(SafeguardFacilityRecord(
-        facility_name="APN01 Appin Colliery - ICH Facility",
-        business_name="ENDEAVOUR COAL PTY LIMITED",
-        state="NSW",
-        anzsic="Coal mining (060)",
-        co2e_ch4=1731355.0, # CO2e
-    ), 28)
+    # two rows listed for "Days of Ore" are combined into a single facility
+    assert len(facility_combined) == 1
 
-    assert safeguard_facility_appin.name == "APN01 Appin Colliery - ICH Facility"
-    assert safeguard_facility_appin.state == "NSW"
-    assert safeguard_facility_appin.anzsic == "Coal mining (060)"
-    assert safeguard_facility_appin.anzsic_code == "060"
-    assert safeguard_facility_appin.ch4_emissions["2023-2024"] == 1731355.0 * 1000 * (1 / 28) # tCO2e to kg
+    assert facility_combined.iloc[0].facility_name == "Days of Ore"
+    assert facility_combined.iloc[0].state == "NSW"
+    assert facility_combined.iloc[0].anzsic == "Metal ore mining (080)"
+    assert facility_combined.iloc[0].anzsic_code == "080"
+    assert facility_combined.iloc[0].co2e_ch4 == 1111.0 + 2000.0
+    assert facility_combined.iloc[0].ch4_kg == (1111.0 + 2000.0) * 1000 * (1 / 28)
+    assert facility_combined.iloc[0].reporting_start == datetime.date(2024, 7, 1)
+    assert facility_combined.iloc[0].reporting_end == datetime.date(2025, 6, 30)
 
 
-def test_safeguard_create_facility_list():
-    test_records = [
-        SafeguardFacilityRecord(
-            facility_name="Test Coal Mine",
-            business_name="DIG N DIG",
-            state="NSW",
-            anzsic="Coal mining (060)",
-            co2e_ch4=123456.0, # CO2e
-        ),
-        SafeguardFacilityRecord(
-            facility_name="Test Coal Mine",
-            business_name="Down 2 Dig", # facility has changed ownership
-            state="NSW",
-            anzsic="Coal mining (060)",
-            co2e_ch4=111111.0, # CO2e
-        ),
-        SafeguardFacilityRecord(
-            facility_name="Dumpster Pyre",
-            business_name="Global Rise",
-            state="NSW",
-            anzsic="Waste Burning (666)",
-            co2e_ch4=222222.0, # CO2e
-        ),
+def test_safeguard_filter_facilities(facility_rows_df):
+    facilities_df = create_facilities_from_safeguard_rows(
+        safeguard_rows_df=facility_rows_df,
+        reporting_period=(2023, 2024), # 2023-07-01 to 2024-06-30
+        ch4_gwp=28,
+    )
+
+    # filter by anzsic
+    test_metal_manufacturers = filter_facilities(facilities_df, anzsic_codes=["21"])
+
+    assert len(test_metal_manufacturers) == 3
+    assert set(test_metal_manufacturers.facility_name) == {"Ironic", "Iron Giant", "Al to Zn"}
+    pd.testing.assert_frame_equal(filter_facilities(facilities_df, anzsic_codes=["210"]), test_metal_manufacturers)
+    pd.testing.assert_frame_equal(filter_facilities(facilities_df, anzsic_codes=["2100"]), test_metal_manufacturers)
+
+    test_iron_manufacturers = filter_facilities(facilities_df, anzsic_codes=["211", "212"])
+
+    assert len(test_iron_manufacturers) == 2
+    assert set(test_iron_manufacturers.facility_name) == {"Ironic", "Iron Giant"}
+    pd.testing.assert_frame_equal(filter_facilities(facilities_df, anzsic_codes=["2110", "2120"]), test_iron_manufacturers)
+
+    test_iron_mines = filter_facilities(facilities_df, anzsic_codes=["08"])
+
+    assert len(test_iron_mines) == 1
+    assert set(test_iron_mines.facility_name) == {"Days of Ore"}
+    pd.testing.assert_frame_equal(filter_facilities(facilities_df, anzsic_codes=["0800"]), test_iron_mines)
+
+    # filter by period
+    outside_reporting_dates = [
+        (datetime.date(2023, 1, 1), datetime.date(2023, 1, 31)),
+        (datetime.date(2023, 6, 30), datetime.date(2023, 6, 30)),
+        (datetime.date(2023, 1, 1), datetime.date(2023, 12, 12)),
+        (datetime.date(2024, 7, 1), datetime.date(2024, 7, 1)),
+        (datetime.date(2024, 1, 1), datetime.date(2024, 7, 1)),
     ]
+    for period in outside_reporting_dates:
+        # these periods have a date which falls outside the reporting period,
+        # so no results are returned
+        assert len(filter_facilities(facilities_df, period=period)) == 0
 
-    test_facility_list = create_facility_list(test_records, 28)
+    within_reporting_dates = [
+        (datetime.date(2023, 7, 1), datetime.date(2023, 7, 1)),
+        (datetime.date(2024, 6, 30), datetime.date(2024, 6, 30)),
+        (datetime.date(2023, 7, 1), datetime.date(2024, 6, 30)),
+        (datetime.date(2024, 1, 1), datetime.date(2024, 1, 31)),
+    ]
+    for period in within_reporting_dates:
+        # these periods fall completely within the reporting period, so the
+        # full results are returned
+        pd.testing.assert_frame_equal(filter_facilities(facilities_df, period=period), facilities_df)
 
-    assert len(test_facility_list) == 2 # de-duplicated matching record
+    # multiple filters
+    test_multiple_filters_in_period = filter_facilities(
+        facilities_df,
+        anzsic_codes=["21"],
+        period=(datetime.date(2023, 7, 1), datetime.date(2023, 7, 1)),
+    )
+    pd.testing.assert_frame_equal(test_multiple_filters_in_period, test_metal_manufacturers)
 
-    assert test_facility_list[0].name == "Test Coal Mine"
-    assert test_facility_list[0].state == "NSW"
-    assert test_facility_list[0].anzsic == "Coal mining (060)"
-    assert test_facility_list[0].anzsic_code == "060"
-    assert test_facility_list[0].ch4_emissions["2023-2024"] == (123456.0 + 111111.0) * 1000 / 28 # kg
-
-    assert test_facility_list[1].name == "Dumpster Pyre"
-    assert test_facility_list[1].state == "NSW"
-    assert test_facility_list[1].anzsic == "Waste Burning (666)"
-    assert test_facility_list[1].anzsic_code == "666"
-    assert test_facility_list[1].ch4_emissions["2023-2024"] == 222222.0 * 1000 / 28 # kg
+    test_multiple_filters_outside_period = filter_facilities(
+        facilities_df,
+        anzsic_codes=["21"],
+        period=(datetime.date(2023, 1, 1), datetime.date(2023, 1, 31)),
+    )
+    assert len(test_multiple_filters_outside_period) == 0
