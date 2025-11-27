@@ -23,10 +23,11 @@ def all_sector_meta():
 def test_inventory_get_sector_emissions_by_code(all_sector_meta, emissions_inventory):
     expected_annual_emissions = {
         "agriculture": 270672674.52687985,
+        "coal": 888419995.6318997,
         "electricity": 11162651.14214232,
-        "fugitive": 1164824228.295256,
         "industrial": 2937681.1201194106,
         "lulucf": 642498499.5484172,
+        "oil_gas": 276404232.6633563,
         "stationary": 48906820.467345454,
         "transport": 11525390.64124776,
         "waste": 478278828.9647396,
@@ -43,12 +44,12 @@ def test_inventory_get_sector_emissions_by_code(all_sector_meta, emissions_inven
 
     assert annual_emissions == expected_annual_emissions
 
-    monthly_fugitive_emissions = get_sector_emissions_by_code(
+    monthly_coal_emissions = get_sector_emissions_by_code(
         emissions_inventory=emissions_inventory,
         start_date=datetime.date(2023, 1, 1),
         end_date=datetime.date(2023, 1, 31),
-        category_codes=all_sector_meta["fugitive"].unfccc_categories,
+        category_codes=all_sector_meta["coal"].unfccc_categories,
     )
 
     # emissions for a shorter period should be scaled from the annual emissions
-    assert monthly_fugitive_emissions == expected_annual_emissions["fugitive"] * (31 / 365)
+    assert monthly_coal_emissions == expected_annual_emissions["coal"] * (31 / 365)
