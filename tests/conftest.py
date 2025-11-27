@@ -139,12 +139,8 @@ def prior_emissions_ds(
         input_cache=cache_dir,
     )
 
-    # run the prior and yield the result
-    yield create_prior(config, all_sectors)
-
-    # Manually clean up any leftover files
-    for filepath in config.input_path.iterdir():
-        os.remove(filepath)
+    # run the prior and return the result
+    return create_prior(config, all_sectors)
 
 
 @pytest.fixture()
