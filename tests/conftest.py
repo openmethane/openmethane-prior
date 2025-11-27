@@ -24,6 +24,11 @@ def root_dir() -> pathlib.Path:
     return Path(__file__).parent.parent
 
 
+@pytest.fixture(scope="session")
+def cache_dir(root_dir) -> pathlib.Path:
+    return root_dir / "data/.cache"
+
+
 # This fixture will be automatically used by all tests to setup the required env variables
 @pytest.fixture(autouse=True)
 def env(monkeypatch, root_dir):
@@ -50,10 +55,11 @@ def config_params(start_date, end_date) -> PriorConfigOptions:
 
 
 @pytest.fixture()
-def config(tmp_path_factory, config_params) -> PriorConfig:
+def config(tmp_path_factory, config_params, cache_dir) -> PriorConfig:
     """Default configuration
 
-    Uses a new temporary directory for each test
+    Uses a new temporary directory for each test, but a shared input_cache to
+    prevent refetching input files in each test.
     """
     data_dir = tmp_path_factory.mktemp("data")
     return load_config_from_env(
@@ -61,7 +67,27 @@ def config(tmp_path_factory, config_params) -> PriorConfig:
         input_path=data_dir / "inputs",
         intermediates_path=data_dir / "intermediates",
         output_path=data_dir / "outputs",
+        input_cache=cache_dir,
     )
+
+
+@pytest.fixture()
+def input_files(config):
+    """This fixture isn't required for tests that must use input files, but it
+    will cause input files to be loaded from a shared cache to prevent
+    refetching.
+
+    Tests that don't use this fixture will have a clean input folder for every
+    test, and will fetch any remote DataSources requested by the DataManager
+    which may be intended, ie for testing input fetching."""
+    config.load_cached_inputs()
+
+    # fetch configured domains
+    check_input_files(config)
+
+    yield
+
+    config.cache_inputs()
 
 
 @pytest.fixture()
@@ -94,88 +120,6 @@ def end_date() -> datetime.date:
     return datetime.strptime("2022-12-08", "%Y-%m-%d")
 
 
-@pytest.fixture(scope="session")
-def cache_dir(root_dir) -> pathlib.Path:
-    return root_dir / ".cache"
-
-
-@pytest.fixture(scope="session")
-def fetch_published_domain(cache_dir) -> list[pathlib.Path]:
-    """
-    Fetch and cache the domain files.
-
-    Don't use this fixture directly,
-    instead use `input_domain` to copy the files to the input directory.
-
-    Returns
-    -------
-        List of cached input files
-    """
-    config = load_config_from_env(
-        input_path=cache_dir,
-        domain_path="https://openmethane.s3.amazonaws.com/domains/au-test/v1/domain.au-test.nc",
-        inventory_domain_path="https://openmethane.s3.amazonaws.com/domains/aust10km/v1/domain.aust10km.nc",
-    )
-
-    check_input_files(config)
-
-    return list({ # use a set to remove duplicates
-        config.domain_file,
-        config.inventory_domain_file,
-    })
-
-
-def copy_input_files(
-    cache_path: pathlib.Path,
-    input_path: pathlib.Path,
-    cached_fragments: list[pathlib.Path],
-) -> Generator[list[pathlib.Path], None, None]:
-    """
-    Copy input files from the cache into the input directory
-
-    Parameters
-    ----------
-    cache_path
-        Path to the cache directory
-    input_path
-        Path to the input directory
-    cached_fragments
-        List of files that have been cached and should be copied into the input_path.
-
-        Paths should be relative to the cache directory
-    """
-    files = []
-    for fragment in cached_fragments:
-        input_file = pathlib.Path(input_path) / fragment
-        cached_file = cache_path / fragment
-        assert not input_file.exists()
-
-        input_file.parent.mkdir(exist_ok=True, parents=True)
-
-        shutil.copyfile(cached_file, input_file)
-
-        files.append(input_file)
-
-    yield files
-
-    for filepath in files:
-        os.remove(filepath)
-
-
-@pytest.fixture()
-def input_files(cache_dir, fetch_published_domain, config) -> Generator[list[pathlib.Path], None, None]:
-    """
-    Ensure that the required input files are in the input directory.
-
-    The input files are copied from a local cache `.cache`
-    """
-
-    files_to_copy = fetch_published_domain
-
-    fragments = [file.relative_to(cache_dir) for file in files_to_copy]
-    yield from copy_input_files(cache_dir, config.input_path, fragments)
-
-
 @pytest.fixture()
 def input_domain(config, input_files) -> Generator[xr.Dataset, None, None]:
     """
@@ -193,7 +137,6 @@ def input_domain(config, input_files) -> Generator[xr.Dataset, None, None]:
 @pytest.fixture(scope="session")
 def prior_emissions_ds(
     cache_dir,
-    fetch_published_domain,
     config_params,
     tmp_path_factory,
 ) -> Generator[xr.Dataset, None, None]:
@@ -204,32 +147,17 @@ def prior_emissions_ds(
     -------
         The calculated output domain
     """
-    # Manually copy the input files to the input directory
-    # Can't use the config/input_files fixtures because we want to only run this step once
-    input_dir = tmp_path_factory.mktemp("inputs")
-    intermediate_dir = tmp_path_factory.mktemp("intermediates")
-    output_dir = tmp_path_factory.mktemp("outputs")
-
+    data_dir = tmp_path_factory.mktemp("data")
     config = load_config_from_env(
         **config_params,
-        input_path=input_dir,
-        intermediates_path=intermediate_dir,
-        output_path=output_dir,
+        input_path=data_dir / "inputs",
+        intermediates_path=data_dir / "intermediates",
+        output_path=data_dir / "outputs",
+        input_cache=cache_dir,
     )
 
-    # Use the factory method as input_files has "function" scope
-    input_fragments = [
-        file.relative_to(cache_dir) for file in fetch_published_domain
-    ]
-    input_files = next(copy_input_files(cache_dir, config.input_path, input_fragments))
-
-    prior_ds = create_prior(config, all_sectors)
-
-    yield prior_ds
-
-    # Manually clean up any leftover files
-    for filepath in input_files:
-        os.remove(filepath)
+    # run the prior and return the result
+    return create_prior(config, all_sectors)
 
 
 @pytest.fixture()
