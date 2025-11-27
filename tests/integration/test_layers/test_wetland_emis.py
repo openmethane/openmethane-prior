@@ -6,7 +6,7 @@ from openmethane_prior.sectors.wetland.sector import make_wetland_climatology, w
 from openmethane_prior.lib.utils import area_of_rectangle_m2
 
 @pytest.mark.skip(reason="Makes no assertions")
-def test_wetland_emis(config, input_files, data_manager):
+def test_wetland_emis(config, data_manager):
     # TODO: convert into an actual test
     """Test totals for WETLAND emissions between original and remapped"""
     remapped = make_wetland_climatology(sector_config=config, forceUpdate=True)

@@ -7,7 +7,7 @@ from openmethane_prior.lib.sector.sector import PriorSector
 
 
 
-def test_create_output_dataset(config, input_files):
+def test_create_output_dataset(config):
     domain_ds = config.domain_dataset()
 
     assert not config.output_file.exists()
@@ -124,7 +124,7 @@ def test_expand_sector_dims_add_time_steps():
     assert list(expanded[2][0][0]) == [1, 2]
     assert list(expanded[2][0][1]) == [4, 5]
 
-def test_add_sector_defaults(config, input_files):
+def test_add_sector_defaults(config):
     test_ds = create_output_dataset(config)
 
     sector_meta = PriorSector(
@@ -155,7 +155,7 @@ def test_add_sector_defaults(config, input_files):
     assert test_ds[sector_var].attrs["grid_mapping"] == test_ds["land_mask"].attrs["grid_mapping"]
 
 
-def test_add_sector_meta(config, input_files):
+def test_add_sector_meta(config):
     test_ds = create_output_dataset(config)
 
     sector_meta = PriorSector(

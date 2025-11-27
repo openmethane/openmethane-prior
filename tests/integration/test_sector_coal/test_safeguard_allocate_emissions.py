@@ -10,7 +10,7 @@ from openmethane_prior.sectors.coal.data import coal_facilities_data_source
 from openmethane_prior.sectors.coal.safeguard_coal import allocate_safeguard_facility_emissions
 
 
-def test_safeguard_allocate_emissions(config, input_files, data_manager):
+def test_safeguard_allocate_emissions(config, data_manager):
     # period within safeguard period will yield results
     config_2023 = load_config_from_env(**{
         **attrs.asdict(config),

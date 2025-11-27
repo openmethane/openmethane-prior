@@ -7,8 +7,9 @@ from openmethane_prior.sectors import all_sectors
 
 
 @pytest.fixture()
-def emissions_inventory(input_files, data_manager):
+def emissions_inventory(data_manager):
     return data_manager.get_asset(inventory_data_source).data
+
 
 @pytest.fixture()
 def all_sector_meta():
