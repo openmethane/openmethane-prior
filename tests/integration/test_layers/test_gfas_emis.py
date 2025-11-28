@@ -9,7 +9,7 @@ from openmethane_prior.lib.utils import area_of_rectangle_m2
 
 
 @pytest.mark.skip(reason="Makes no assertions")
-def test_gfas_emis(config, input_files, data_manager):  # test totals for GFAS emissions between original and remapped
+def test_gfas_emis(config, data_manager):  # test totals for GFAS emissions between original and remapped
     # TODO: Check the output correctly
     prior_ds = create_output_dataset(config)
     sector_config = PriorSectorConfig(prior_config=config, data_manager=data_manager)

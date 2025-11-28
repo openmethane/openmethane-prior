@@ -63,4 +63,7 @@ def create_prior(config: PriorConfig, sectors: list[PriorSector]):
 
     add_ch4_total(prior_ds)
 
+    # if no cache is configured, this is a no-op
+    config.cache_inputs()
+
     return prior_ds

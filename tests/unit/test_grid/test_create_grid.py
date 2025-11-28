@@ -3,7 +3,7 @@ import numpy as np
 from openmethane_prior.lib.grid.create_grid import create_grid_from_mcip, create_grid_from_domain
 
 
-def test_create_grid_from_domain(config, input_files):
+def test_create_grid_from_domain(config):
     test_domain = config.inventory_dataset()
     test_grid = create_grid_from_domain(test_domain)
 
@@ -21,7 +21,7 @@ def test_create_grid_from_domain(config, input_files):
     assert test_grid.cell_area == test_domain.XCELL * test_domain.YCELL
 
 
-def test_create_grid_from_domain_coordinates(config, input_files):
+def test_create_grid_from_domain_coordinates(config):
     test_domain = config.inventory_dataset()
     test_grid = create_grid_from_domain(test_domain)
 
