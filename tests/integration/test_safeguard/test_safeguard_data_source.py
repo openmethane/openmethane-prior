@@ -27,10 +27,16 @@ def test_safeguard_data_source(data_manager):
 def test_safeguard_locations_data_source(data_manager):
     locations_df = data_manager.get_asset(safeguard_locations_data_source).data
 
-    assert len(locations_df) == 72 # 73 rows, but 72 have complete data
+    # only rows with complete data are read
+    assert len(locations_df) > 0
+    assert len(locations_df[locations_df["safeguard_facility_name"] == ""]) == 0
+    assert len(locations_df[locations_df["data_source_name"] == ""]) == 0
+    assert len(locations_df[locations_df["data_source_id"] == ""]) == 0
 
-    locations_row_appin = locations_df.iloc[5]
-
-    assert locations_row_appin.safeguard_facility_name == "Blackwater Mine"
-    assert locations_row_appin.data_source_name == "coal-facilities"
-    assert locations_row_appin.data_source_id == "Blackwater Coal Mine"
+    # find a row with known values, check the values match expected
+    locations_row_blackwater = locations_df[locations_df["safeguard_facility_name"] == "Blackwater Mine"].iloc[0]
+    assert dict(locations_row_blackwater) == {
+        "safeguard_facility_name": "Blackwater Mine",
+        "data_source_name": "coal-facilities",
+        "data_source_id": "Blackwater Coal Mine",
+    }
