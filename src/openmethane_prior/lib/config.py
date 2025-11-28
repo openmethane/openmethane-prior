@@ -57,20 +57,13 @@ class PriorConfig:
     """If provided, a local path where remote inputs can be cached."""
 
     def __attrs_post_init__(self):
+        """When created, ensure all configured paths exist, and populate inputs
+        from the input_cache, if configured."""
         self.input_path.mkdir(parents=True, exist_ok=True)
         self.intermediates_path.mkdir(parents=True, exist_ok=True)
         self.output_path.mkdir(parents=True, exist_ok=True)
 
-        if self.input_cache is not None:
-            self.input_cache.mkdir(parents=True, exist_ok=True)
-            # copy the contents of the input cache into the input folder
-            shutil.copytree(src=self.input_cache, dst=self.input_path, dirs_exist_ok=True)
-
-    def __del__(self):
-        if self.input_cache is not None:
-            # when the program is finished, copy all input files back to the
-            # input cache, so that any new inputs are captured
-            shutil.copytree(src=self.input_path, dst=self.input_cache, dirs_exist_ok=True)
+        self.load_cached_inputs()
 
 
     def as_input_file(self, name: str | pathlib.Path) -> pathlib.Path:
@@ -84,6 +77,18 @@ class PriorConfig:
     def as_output_file(self, name: str | pathlib.Path) -> pathlib.Path:
         """Return the full path to an output file"""
         return self.output_path / name
+
+    def load_cached_inputs(self):
+        """Copy the contents of the input cache into the input folder."""
+        if self.input_cache is not None and self.input_cache.exists():
+            shutil.copytree(src=self.input_cache, dst=self.input_path, dirs_exist_ok=True)
+
+    def cache_inputs(self):
+        """Copy everything in the inputs folder back into the cache, so that
+        any new inputs fetched during this run will be cached."""
+        if self.input_cache is not None:
+            self.input_cache.mkdir(parents=True, exist_ok=True)
+            shutil.copytree(src=self.input_path, dst=self.input_cache, dirs_exist_ok=True)
 
     @cache
     def domain_dataset(self):

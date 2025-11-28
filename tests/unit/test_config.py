@@ -73,7 +73,7 @@ def test_prior_config_input_cache(tmp_path: pathlib.Path):
     assert not (cache_path / "cache-update.txt").exists()
 
     # reassign the variable to trigger the PriorConfig deconstructor
-    test_config = None
+    test_config.cache_inputs()
 
     # updated inputs are copied back to the cache
     assert (cache_path / "cache-update.txt").exists()
