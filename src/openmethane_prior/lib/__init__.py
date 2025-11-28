@@ -30,7 +30,7 @@ from .create_prior import create_prior
 from .raster import remap_raster
 from .sector.config import PriorSectorConfig
 from .sector.sector import PriorSector
-from .units import kg_to_period_cell_flux
+from .units import kg_to_period_cell_flux, days_in_period
 from .utils import (
     area_of_rectangle_m2,
     datetime64_to_datetime,
