@@ -108,15 +108,16 @@ def regrid_any(
     to_grid_bounds_lon, to_grid_bounds_lat = to_grid.cell_bounds_lonlat()
 
     # find a subset of the from_grid that should be examined
-    to_grid_bounds = [
-        to_grid_bounds_lon.min(), to_grid_bounds_lat.min(),
-        to_grid_bounds_lon.max(), to_grid_bounds_lat.max(),
-    ]
-    # TODO: this may not by a perfect envelope due to curvature
-    from_grid_search_space = [
-        from_grid.lonlat_to_cell_index(to_grid_bounds[0], to_grid_bounds[1]),
-        from_grid.lonlat_to_cell_index(to_grid_bounds[2], to_grid_bounds[3]),
-    ]
+    to_grid_lon_min, to_grid_lon_max = to_grid_bounds_lon.min(), to_grid_bounds_lon.max()
+    to_grid_lat_min, to_grid_lat_max = to_grid_bounds_lat.min(), to_grid_bounds_lat.max()
+    # find the bounding box of to_grid, in from_grid cell coords
+    from_grid_ix_bounds, from_grid_iy_bounds, _ = from_grid.lonlat_to_cell_index(
+        np.array([to_grid_lon_min, to_grid_lon_max, to_grid_lon_max, to_grid_lon_min]),
+        np.array([to_grid_lat_min, to_grid_lat_min, to_grid_lat_max, to_grid_lat_max])
+    )
+    # clip any "out of bounds" coords to edges
+    from_grid_ix_bounds = np.clip(from_grid_ix_bounds, 0, from_grid.dimensions[0] - 1)
+    from_grid_iy_bounds = np.clip(from_grid_iy_bounds, 0, from_grid.dimensions[1] - 1)
 
     for to_grid_iy, to_grid_ix in itertools.product(range(to_grid.shape[0]), range(to_grid.shape[1])):
         to_grid_cell_polygon = geometry.Polygon(zip(to_grid_bounds_lon[to_grid_iy, to_grid_ix], to_grid_bounds_lat[to_grid_iy, to_grid_ix]))
@@ -125,9 +126,8 @@ def regrid_any(
         largest_intersection = 0
         total_intersection = 0
 
-        for from_grid_iy in range(from_grid_search_space[0][1], from_grid_search_space[1][1]):
-            for from_grid_ix in range(from_grid_search_space[0][0], from_grid_search_space[1][0]):
-
+        for from_grid_iy in range(from_grid_iy_bounds.min(), from_grid_iy_bounds.max() + 1):
+            for from_grid_ix in range(from_grid_ix_bounds.min(), from_grid_ix_bounds.max() + 1):
                 from_grid_cell_polygon = geometry.Polygon(zip(from_grid_bounds_lon[from_grid_iy, from_grid_ix], from_grid_bounds_lat[from_grid_iy, from_grid_ix]))
                 intersection = from_grid_cell_polygon.intersection(to_grid_cell_polygon)
 
