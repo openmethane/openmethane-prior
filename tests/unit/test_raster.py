@@ -77,18 +77,18 @@ def test_remap_raster_input_projection():
     test_point = (144.9631, -37.8136) # Melbourne, Australia
 
     target_grid = Grid(
-        dimensions=(80, 80),
-        origin_xy=(-40, -40),
-        cell_size=(10, 10), # cell size of 10 degrees
+        dimensions=(20, 20),
+        origin_xy=(130.5, -45.5),
+        cell_size=(1, 1), # cell size of 1 degrees (roughly 100km)
         proj_params="EPSG:7843", # GDA2020 in lon/lat
     )
     target_x, target_y, _ = target_grid.lonlat_to_cell_index(test_point[0], test_point[1])
 
     # use a Grid to help us define a source dataset in a different projection
     source_grid = Grid(
-        dimensions=(1000, 1000),
-        origin_xy=(-50000000, -50000000),
-        cell_size=(100000, 100000), # cell size of 100km
+        dimensions=(900, 600),
+        origin_xy=(-4564775.59, -7428980.66),
+        cell_size=(10000, 10000), # cell size of 10km
         proj_params="EPSG:7845", # GDA2020 in meters
     )
     test_input = xr.DataArray(
