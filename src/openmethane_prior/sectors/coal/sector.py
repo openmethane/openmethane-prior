@@ -89,14 +89,14 @@ def process_emissions(sector: AustraliaPriorSector, sector_config: PriorSectorCo
         sector_unallocated_emissions / coal_unallocated["emissions_quantity"].sum()
     )
 
-    facilities_gridded = np.zeros(domain_grid.shape)
+    unallocated_facilities_gridded = np.zeros(domain_grid.shape)
     for _, facility in coal_unallocated.iterrows():
         cell_x, cell_y, cell_valid = domain_grid.lonlat_to_cell_index(facility["lon"], facility["lat"])
 
         if cell_valid:
-            facilities_gridded[cell_y, cell_x] += facility["emissions_quantity"]
+            unallocated_facilities_gridded[cell_y, cell_x] += facility["emissions_quantity"]
 
-    methane += kg_to_period_cell_flux(facilities_gridded, config)
+    methane += kg_to_period_cell_flux(unallocated_facilities_gridded, config)
 
     return methane
 
