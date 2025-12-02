@@ -35,14 +35,14 @@ def parse_ntlt_data_source(data_source: ConfiguredDataSource):
     ntlt = ntlData.sum(axis=0)
     np.nan_to_num(ntlt, copy=False)
 
-    om_ntlt = remap_raster(ntlt, prior_config.domain_grid(), AREA_OR_POINT=ntlData.AREA_OR_POINT)
+    om_ntlt = remap_raster(ntlt, prior_config.domain_grid())
 
     # limit emissions to land points
     inventory_mask_regridded = regrid_data(prior_config.inventory_dataset()['inventory_mask'], from_grid=prior_config.inventory_grid(), to_grid=prior_config.domain_grid())
     om_ntlt *= inventory_mask_regridded
 
     # now collect total nightlights across inventory domain
-    inventory_ntlt = remap_raster(ntlt, prior_config.inventory_grid(), AREA_OR_POINT=ntlData.AREA_OR_POINT)
+    inventory_ntlt = remap_raster(ntlt, prior_config.inventory_grid())
 
     # now mask to region of inventory
     inventory_ntlt *= prior_config.inventory_dataset()['inventory_mask']

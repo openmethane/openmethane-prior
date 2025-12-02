@@ -29,7 +29,7 @@ def test_remap_raster(config, input_files, data_manager_fetch_only):
     ntl *= 0.
     ntl[test_coord] = 1.
     # now clip to remove offshore lights
-    om_ntl = remap_raster(ntl, domain_grid, AREA_OR_POINT = ntl_raw.AREA_OR_POINT)
+    om_ntl = remap_raster(ntl, domain_grid)
 
     # now a few tests on outputs
     # only one nonzero point in output
@@ -45,33 +45,6 @@ def test_remap_raster(config, input_files, data_manager_fetch_only):
     ])
 
     np.testing.assert_allclose(output_loc, input_loc, atol=distance_tolerance)
-
-def test_remap_raster_area():
-    # target is a regular 4x4 grid from -4,-4 to 4,4
-    target_grid = Grid(
-        dimensions=(4, 4),
-        origin_xy=(-4, -4),
-        cell_size=(2, 2),
-    )
-    # create a regular 16x16 grid from -8.25,-8.25 to 7.75,7.75
-    # the 0.25 offset is so that it doesn't align with the target grid
-    test_input = xr.DataArray(
-        coords={ "y": np.arange(-8.0, 8.0) - 0.25, "x": np.arange(-8.0, 8.0) - 0.25 },
-        data=np.zeros((16, 16)),
-    )
-    test_input[6, 6] = 1.0 # add a single value at -2.25, -2.25
-
-    # 'Point' means the coord represents the center point of the cell
-    # -2.25,-2.25 should fall into the cell at 0,0
-    result = remap_raster(test_input, target_grid, AREA_OR_POINT='Point')
-    assert result[0, 0] == 1.0
-    assert result[1, 1] == 0.0 # test the negative
-
-    # 'Area' means the coord represents the llc point of the cell
-    # -2.25,-2.25 should be shifted to -1.75, -1.75, falling into 1,1
-    result = remap_raster(test_input, target_grid, AREA_OR_POINT='Area')
-    assert result[0, 0] == 0.0
-    assert result[1, 1] == 1.0 # now falls in 1,1
 
 
 def test_remap_raster_input_projection():
