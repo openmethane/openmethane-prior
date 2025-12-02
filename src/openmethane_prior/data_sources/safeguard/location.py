@@ -25,16 +25,18 @@ def filter_locations(
     data_source_id: str = None,
 ):
     """Filter a locations DataFrame by different column values"""
+    filtered_df = locations_df.copy()
+
     if facility_id is not None:
-        locations_df = locations_df[locations_df.safeguard_facility_name == facility_id]
+        filtered_df = filtered_df[filtered_df.safeguard_facility_name == facility_id]
 
     if data_source_name is not None:
-        locations_df = locations_df[locations_df.data_source_name == data_source_name]
+        filtered_df = filtered_df[filtered_df.data_source_name == data_source_name]
 
     if data_source_id is not None:
-        locations_df = locations_df[locations_df.data_source_id == data_source_id]
+        filtered_df = filtered_df[filtered_df.data_source_id == data_source_id]
 
-    return locations_df
+    return filtered_df
 
 
 def get_safeguard_facility_locations(
