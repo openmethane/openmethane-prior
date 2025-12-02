@@ -17,7 +17,6 @@
 #
 
 import numpy as np
-import pandas as pd
 import xarray as xr
 
 from openmethane_prior.data_sources.safeguard import (
@@ -25,7 +24,6 @@ from openmethane_prior.data_sources.safeguard import (
     safeguard_mechanism_data_source,
 )
 from openmethane_prior.lib import (
-    DataSource,
     logger,
     PriorSectorConfig,
     kg_to_period_cell_flux,
