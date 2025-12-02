@@ -98,6 +98,10 @@ def input_files(config):
 def data_manager(config) -> DataManager:
     return DataManager(data_path=config.input_path, prior_config=config)
 
+@pytest.fixture()
+def data_manager_fetch_only(config) -> DataManager:
+    return DataManager(data_path=config.input_path, prior_config=config, fetch_only=True)
+
 
 @pytest.fixture()
 def sector_config(config) -> PriorSectorConfig:
