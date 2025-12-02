@@ -54,12 +54,12 @@ def test_safeguard_allocate_emissions(config, input_files, data_manager):
     # 11 Safeguard facilities are represented in au-test
     assert len(gridded_emissions[gridded_emissions > 0]) == 11
 
-    # 63 facilities with locations, including ones located outside the domain
-    assert len(facilities) == 63
+    # 69 facilities with locations, including ones located outside the domain
+    assert len(facilities) == 69
     # Some facilities have multiple locations
-    assert len(locations) == 65
+    assert len(locations) == 72
     assert len(locations[locations["safeguard_facility_name"] == "Hunter Valley Operations mine"]) == 2
-    assert len(locations[locations["safeguard_facility_name"] == "Wambo Coal Mine"]) == 2
+    assert len(locations[locations["safeguard_facility_name"] == "Mt Owen Glendell Complex"]) == 2
 
     # period outside safeguard period will allocate no emissions
     config_2022 = load_config_from_env(**{
