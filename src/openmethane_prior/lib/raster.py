@@ -9,7 +9,6 @@ def remap_raster(
     input_xr: xr.DataArray,
     target_grid: Grid,
     input_crs: pyproj.crs.CRS = 4326, # EPSG:4362
-    AREA_OR_POINT = 'Area',
 ) -> np.ndarray:
     """
     Maps a rasterio dataset onto the domain grid defined by config.
@@ -21,17 +20,6 @@ def remap_raster(
     the aggregate of raster values who's center point fell within the cell.
     """
     projection_transformer = pyproj.Transformer.from_crs(crs_from=input_crs, crs_to=target_grid.projection.crs, always_xy=True)
-
-    # correct for source points locating the corner, we want centre
-    input_corrected_xr = input_xr.copy()
-    if AREA_OR_POINT == 'Area':
-        # use .to_numpy() to subtract values, where xarray matches coords
-        input_x_np = input_xr.x.to_numpy().copy()
-        input_y_np = input_xr.y.to_numpy().copy()
-        delta_x = (input_x_np[1:] - input_x_np[0:-1]).mean()
-        delta_y = (input_y_np[1:] - input_y_np[0:-1]).mean()
-        input_corrected_xr.coords["x"] = input_corrected_xr.coords["x"] + (delta_x / 2)
-        input_corrected_xr.coords["y"] = input_corrected_xr.coords["y"] + (delta_y / 2)
 
     # construct a bounding box for the target grid, over the input grid
     # this will limit our search space for mapping input values to target cells
@@ -46,19 +34,19 @@ def remap_raster(
     )
 
     # rioxarray makes this easy with clip_box
-    if 'rio' in input_corrected_xr:
-        input_search_space = input_corrected_xr.rio.clip_box(
+    if 'rio' in input_xr:
+        input_search_space = input_xr.rio.clip_box(
             minx=target_bbox_input_x.min(),
             maxx=target_bbox_input_x.max(),
             miny=target_bbox_input_y.min(),
             maxy=target_bbox_input_y.max()
         )
     else: # support native xarray.DataArray as well
-        input_search_space = input_corrected_xr.where(
-            (target_bbox_input_x.min() <= input_corrected_xr.x) &
-            (input_corrected_xr.x <= target_bbox_input_x.max()) &
-            (target_bbox_input_y.min() <= input_corrected_xr.y) &
-            (input_corrected_xr.y <= target_bbox_input_y.max()),
+        input_search_space = input_xr.where(
+            (target_bbox_input_x.min() <= input_xr.x) &
+            (input_xr.x <= target_bbox_input_x.max()) &
+            (target_bbox_input_y.min() <= input_xr.y) &
+            (input_xr.y <= target_bbox_input_y.max()),
             drop=True
         )
     input_search_space_np = input_search_space.to_numpy()
