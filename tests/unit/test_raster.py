@@ -6,7 +6,7 @@ from openmethane_prior.lib.grid.grid import Grid
 from openmethane_prior.sectors.industrial.sector import night_lights_data_source
 from openmethane_prior.lib.raster import remap_raster
 
-def test_remap_raster(config, input_files, data_manager):
+def test_remap_raster(config, input_files, data_manager_fetch_only):
     test_coord = (2500, 3000) # let's read this in later
     distance_tolerance = 1e4 # allowed mismatch between initial and final coords in metres
     epsilon = 1e-5 # small number
@@ -18,7 +18,8 @@ def test_remap_raster(config, input_files, data_manager):
     lat = domain_dataset['lat']
     lon = domain_dataset['lon']
 
-    night_lights_asset = data_manager.get_asset(night_lights_data_source)
+    # avoid calling night_lights parse() since we won't use parsed data
+    night_lights_asset = data_manager_fetch_only.get_asset(night_lights_data_source)
     ntl_raw = rxr.open_rasterio(night_lights_asset.path, masked=True)
 
     # filter nans
