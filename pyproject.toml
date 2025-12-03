@@ -1,61 +1,64 @@
-[tool.poetry]
+[project]
 name = "openmethane_prior"
 version = "1.2.1a0"
 description = "Method to calculate a gridded, prior emissions estimate for methane across Australia."
 authors = [
-     "Peter Rayner <peter.rayner@superpowerinstitute.com.au>",
-     "Lindsay Gaines <lindsay.gaines@superpowerinstitute.com.au>",
-     "Gerard Mason <gerard.mason@superpowerinstitute.com.au>",
-     "Jared Lewis <jared.lewis@climate-resource.com>",
-     "Daniel Busch <daniel.busch@climate-resource.com>",
+    { name = "Peter Rayner", email = "peter.rayner@superpowerinstitute.com.au" },
+    { name = "Lindsay Gaines", email = "lindsay.gaines@superpowerinstitute.com.au" },
+    { name = "Gerard Mason", email = "gerard.mason@superpowerinstitute.com.au" },
+    { name = "Jared Lewis", email = "jared.lewis@climate-resource.com" },
+    { name = "Daniel Busch", email = "daniel.busch@climate-resource.com" },
 ]
+requires-python = ">=3.11,<3.12"
 readme = "README.md"
-packages = [
-    {include = "openmethane_prior", from = "src"},
+dependencies = [
+    "numpy>=1.26.4,<2",
+    "netcdf4>=1.6.5,<2",
+    "xarray==2025.06.1",
+    "rioxarray>=0.15.5,<0.16",
+    "pyproj>=3.6.1,<4",
+    "pandas>=2.2.2,<3",
+    "geopandas>=0.14.4,<0.15",
+    "python-dotenv>=1.0.1,<2",
+    "colorama>=0.4.6,<0.5",
+    "cdsapi>=0.7.3,<0.8",
+    "shapely>=2.0.4,<3",
+    "environs>=11.0.0,<12",
+    "prettyprinter>=0.18.0,<0.19",
+    "pytest-mock>=3.15.1,<4",
 ]
 
-[tool.poetry.dependencies]
-python = ">=3.11,<3.12"
-numpy = "^1.26.4"
-netcdf4 = "^1.6.5"
-xarray = "2025.06.1"
-rioxarray = "^0.15.5"
-pyproj = "^3.6.1"
-pandas = "^2.2.2"
-geopandas = "^0.14.4"
-python-dotenv = "^1.0.1"
-colorama = "^0.4.6"
-cdsapi = "^0.7.3"
-shapely = "^2.0.4"
-environs = "^11.0.0"
-prettyprinter = "^0.18.0"
-pytest-mock = "^3.15.1"
+[dependency-groups]
+tests = ["pytest>=8.2.1,<9"]
+dev = [
+    "licenseheaders>=0.8.8,<0.9",
+    "ruff>=0.5.1,<0.6",
+    "towncrier>=24.7.1,<25",
+]
+notebooks = [
+    "notebook>=7.2.1,<8",
+    "matplotlib>=3.9.1.post1,<4",
+    "jupytext>=1.17.2,<2",
+    "cartopy>=0.25.0,<0.26",
+]
 
-[tool.poetry.group.tests.dependencies]
-pytest = "^8.2.1"
-
-[tool.poetry.group.dev.dependencies]
-licenseheaders = "^0.8.8"
-ruff = "^0.5.1"
-towncrier = "^24.7.1"
-
-
-[tool.poetry.group.notebooks.dependencies]
-notebook = "^7.2.1"
-matplotlib = "^3.9.1.post1"
-jupytext = "^1.17.2"
-cartopy = "^0.25.0"
+[tool.uv]
+default-groups = [
+    "tests",
+    "dev",
+    "notebooks",
+]
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["uv_build>=0.9.15,<0.10.0"]
+build-backend = "uv_build"
+
 
 [tool.ruff]
 src = ["src"]
 target-version = "py311"
 # Provide some leeway for long docstring
 line-length = 100
-
 
 [tool.ruff.format]
 docstring-code-format = true
