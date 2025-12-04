@@ -37,15 +37,14 @@ jobs:
       # install the package (to keep things slim, we only install the main
       # dependencies, which also means that we get a test that we can import
       # the package with only the compulsory dependencies installed for free)
-      - name: Install Python
-        uses: actions/setup-python@v5
-      - name: Install poetry
-        uses: abatilo/actions-poetry@v2
-      - name: Install dependencies
-        run: poetry install --only main
-      - name: Install towncrier
-        run: poetry run pip install towncrier
-
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version-file: ".python-version"
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
       - name: Determine release version
         id: release-version
         run: |
@@ -60,7 +59,7 @@ jobs:
         id: release-notes
         run: |
           echo 'RELEASE_BODY<<EOF' >> $GITHUB_OUTPUT
-          poetry run towncrier build --draft --version "v$NEW_VERSION" >> $GITHUB_OUTPUT
+          uv tool run towncrier build --draft --version "v$NEW_VERSION" >> $GITHUB_OUTPUT
           echo 'EOF' >> $GITHUB_OUTPUT
 
       - name: Bump version and generate changelog
@@ -70,7 +69,7 @@ jobs:
 
           # Bump
           echo "Bumping version $BASE_VERSION > $NEW_VERSION"
-          poetry run towncrier build --yes --version v$NEW_VERSION
+          uv tool run towncrier build --yes --version v$NEW_VERSION
           git commit -a -m "bump: version $BASE_VERSION -> $NEW_VERSION"
           git tag v$NEW_VERSION
 
@@ -96,14 +95,17 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install Python
-        uses: actions/setup-python@v5
-      - name: Install poetry
-        uses: abatilo/actions-poetry@v2
-
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version-file: ".python-version"
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
       - name: Build package
         run: |
-          poetry build --no-interaction
+          uv build
 
       - name: Create release
         uses: softprops/action-gh-release@v1
