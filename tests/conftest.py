@@ -89,6 +89,10 @@ def input_files(config):
 
     config.cache_inputs()
 
+    # remove input files once test completes, as each copy of the input folder
+    # is ~1GB, and many copies will be made during a full test suite run.
+    shutil.rmtree(config.input_path)
+
 
 @pytest.fixture()
 def data_manager(config) -> DataManager:
