@@ -3,7 +3,7 @@ import datetime
 import os
 import pathlib
 import shutil
-import typing
+from typing import Self, TypedDict
 from functools import cache
 
 import attrs
@@ -16,7 +16,7 @@ from .grid.create_grid import create_grid_from_domain, create_grid_from_mcip
 from .utils import is_url
 
 
-class PriorConfigOptions(typing.TypedDict, total=False):
+class PriorConfigOptions(TypedDict, total=False):
     input_path: pathlib.Path | str
     output_path: pathlib.Path | str
     intermediates_path: pathlib.Path | str
@@ -43,7 +43,7 @@ class PriorConfig:
     """URL or file path to the inventory domain of interest. Relative paths
     will be interpreted relative to input_path"""
 
-    output_filename: str
+    output_filename: str = "prior-emissions.nc"
     """Filename to write the prior output to as a NetCDFv4 file in
     `output_path`"""
 
@@ -167,48 +167,36 @@ class PriorConfig:
         """Get the filename of the output domain"""
         return self.as_output_file(self.output_filename)
 
+    @classmethod
+    def from_env(cls) -> Self:
+        """Load config from environment variables, or an `.env` file."""
+        env = Env(expand_vars=True)
+        env.read_env(verbose=True)
 
-def load_config_from_env(**overrides: PriorConfigOptions) -> PriorConfig:
-    """
-    Load the configuration from the environment variables
+        start_date = env.date("START_DATE", None)
+        # if END_DATE not set, use START_DATE for a 1-day run
+        end_date = env.date("END_DATE", None) or env.date("START_DATE", None)
+        # now convert both to datetime.datetime
+        if start_date:
+            start_date = datetime.datetime.combine(start_date, datetime.time.min)
+        if end_date:
+            end_date = datetime.datetime.combine(end_date, datetime.time.min)
 
-    This also loads environment variables from a local `.env` file.
+        sectors = env.str("SECTORS", "").split(",")
+        sectors = tuple([s for s in sectors if s != ""]) # filter out empty strings
 
-    Returns
-    -------
-        Application configuration
-    """
-    env = Env(
-        expand_vars=True,
-    )
-    env.read_env(verbose=True)
-
-    start_date = env.date("START_DATE", None)
-    # if END_DATE not set, use START_DATE for a 1-day run
-    end_date = env.date("END_DATE", None) or env.date("START_DATE", None)
-    # now convert both to datetime.datetime
-    if start_date:
-        start_date = datetime.datetime.combine(start_date, datetime.time.min)
-    if end_date:
-        end_date = datetime.datetime.combine(end_date, datetime.time.min)
-
-    sectors = env.str("SECTORS", "").split(",")
-    sectors = tuple([s for s in sectors if s != ""]) # filter out empty strings
-
-    options: PriorConfigOptions = dict(
-        input_path=env.path("INPUTS", "data/inputs"),
-        output_path=env.path("OUTPUTS", "data/outputs"),
-        intermediates_path=env.path("INTERMEDIATES", "data/processed"),
-        input_cache=env.path("INPUT_CACHE", None),
-        domain_path=env.str("DOMAIN_FILE"),
-        inventory_domain_path=env.str("INVENTORY_DOMAIN_FILE"),
-        output_filename=env.str("OUTPUT_FILENAME", "prior-emissions.nc"),
-        start_date=start_date,
-        end_date =end_date,
-        sectors=sectors if len(sectors) > 0 else None,
-    )
-
-    return PriorConfig(**{**options, **overrides})
+        return cls(
+            input_path=env.path("INPUTS", "data/inputs"),
+            output_path=env.path("OUTPUTS", "data/outputs"),
+            intermediates_path=env.path("INTERMEDIATES", "data/processed"),
+            input_cache=env.path("INPUT_CACHE", None),
+            domain_path=env.str("DOMAIN_FILE"),
+            inventory_domain_path=env.str("INVENTORY_DOMAIN_FILE"),
+            output_filename=env.str("OUTPUT_FILENAME", "prior-emissions.nc"),
+            start_date=start_date,
+            end_date =end_date,
+            sectors=sectors if len(sectors) > 0 else None,
+        )
 
 def parse_cli_args():
     """
