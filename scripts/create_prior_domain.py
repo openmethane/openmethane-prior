@@ -229,7 +229,6 @@ def create_mask_from_geotiff(
     geo_xr = rxr.open_rasterio(geotiff_file, masked=True)
     geo_x = geo_xr.x
     geo_y = geo_xr.y
-    geo_area = geo_xr.AREA_OR_POINT
     geo_crs = geo_xr.rio.crs
     geo_xr.close()
 
@@ -242,11 +241,11 @@ def create_mask_from_geotiff(
     sector_xr = xr.DataArray(geo_rio, coords={ 'y': geo_y, 'x': geo_x  })
 
     # now aggregate to coarser resolution of the domain grid
-    mask_np = remap_raster(sector_xr, grid, input_crs=geo_crs, AREA_OR_POINT=geo_area)
+    mask_np = remap_raster(sector_xr, grid, input_crs=geo_crs)
 
     # now count pixels in each coarse gridcell by aggregating array of 1
     geo_rio[...] = 1
-    count_mask = remap_raster(sector_xr, grid, input_crs=geo_crs, AREA_OR_POINT=geo_area)
+    count_mask = remap_raster(sector_xr, grid, input_crs=geo_crs)
     has_vals = count_mask > 0
     mask_np[has_vals] /= count_mask[has_vals]
     # binary choice land or ocean

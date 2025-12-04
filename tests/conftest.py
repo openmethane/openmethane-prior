@@ -34,8 +34,9 @@ def cache_dir(root_dir) -> pathlib.Path:
 def env(monkeypatch, root_dir):
     initial_env = dict(os.environ)
 
-    # Use the example .env file to drive the tests
-    dotenv.load_dotenv(dotenv_path=root_dir / ".env.example", override=True)
+    # TODO instead of doing this, maybe tests should use load_config_from_env?
+    os.environ["DOMAIN_FILE"] = "https://openmethane.s3.amazonaws.com/domains/au-test/v1/domain.au-test.nc"
+    os.environ["INVENTORY_DOMAIN_FILE"] = "https://openmethane.s3.amazonaws.com/domains/aust10km/v1/domain.aust10km.nc"
 
     yield
 
