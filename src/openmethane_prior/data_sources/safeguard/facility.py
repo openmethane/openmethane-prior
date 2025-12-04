@@ -60,8 +60,8 @@ class SafeguardFacilityRecord:
     anzsic: str
     co2e_ch4: float
 
-
-anzsic_code_pattern = re.compile("\((?P<code>\d+)\)$")
+# regex to capture numeric code between (), ie "060" from "sector (060)"
+anzsic_code_pattern = re.compile(r"\((?P<code>\d+)\)$")
 def parse_anzsic_code(anzsic_full: str) -> str:
     """Given a full ANZSIC description like "Coal mining (060)", extract the
     code, i.e. "060"."""

@@ -50,7 +50,7 @@ class DataManager:
         existing_source = self.data_sources.get(source.name)
         if existing_source is not None:
             if existing_source.url and existing_source.url != source.url:
-                logger.warn(f"multiple DataSource instances with name '{source.name}' providing different URLs")
+                logger.warning(f"multiple DataSource instances with name '{source.name}' providing different URLs")
 
         # if data source depends on other data, prepare dependencies first
         dependency_assets: list[DataAsset] = []
@@ -82,7 +82,7 @@ class DataManager:
 
             # warn and move on
             if save_path != source.asset_path:
-                logger.warn(f"asset '{source.name}' actual path '{save_path}' does not match asset_path '{source.asset_path}'")
+                logger.warning(f"asset '{source.name}' actual path '{save_path}' does not match asset_path '{source.asset_path}'")
 
             data_asset = DataAsset(
                 name=source.name,

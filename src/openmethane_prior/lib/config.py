@@ -2,6 +2,7 @@ import argparse
 import datetime
 import os
 import pathlib
+import shutil
 import typing
 from functools import cache
 
@@ -19,6 +20,7 @@ class PriorConfigOptions(typing.TypedDict, total=False):
     input_path: pathlib.Path | str
     output_path: pathlib.Path | str
     intermediates_path: pathlib.Path | str
+    input_cache: pathlib.Path | str | None
     domain_path: pathlib.Path | str
     inventory_domain_path: pathlib.Path | str
     output_filename: str
@@ -51,6 +53,17 @@ class PriorConfig:
     start_date: datetime.datetime | None = None
     end_date: datetime.datetime | None = None
 
+    input_cache: pathlib.Path = None
+    """If provided, a local path where remote inputs can be cached."""
+
+    def __attrs_post_init__(self):
+        """When created, ensure all configured paths exist, and populate inputs
+        from the input_cache, if configured."""
+        self.input_path.mkdir(parents=True, exist_ok=True)
+        self.intermediates_path.mkdir(parents=True, exist_ok=True)
+        self.output_path.mkdir(parents=True, exist_ok=True)
+
+
     def as_input_file(self, name: str | pathlib.Path) -> pathlib.Path:
         """Return the full path to an input file"""
         return self.input_path / name
@@ -62,6 +75,18 @@ class PriorConfig:
     def as_output_file(self, name: str | pathlib.Path) -> pathlib.Path:
         """Return the full path to an output file"""
         return self.output_path / name
+
+    def load_cached_inputs(self):
+        """Copy the contents of the input cache into the input folder."""
+        if self.input_cache is not None and self.input_cache.exists():
+            shutil.copytree(src=self.input_cache, dst=self.input_path, dirs_exist_ok=True)
+
+    def cache_inputs(self):
+        """Copy everything in the inputs folder back into the cache, so that
+        any new inputs fetched during this run will be cached."""
+        if self.input_cache is not None:
+            self.input_cache.mkdir(parents=True, exist_ok=True)
+            shutil.copytree(src=self.input_path, dst=self.input_cache, dirs_exist_ok=True)
 
     @cache
     def domain_dataset(self):
@@ -174,6 +199,7 @@ def load_config_from_env(**overrides: PriorConfigOptions) -> PriorConfig:
         input_path=env.path("INPUTS", "data/inputs"),
         output_path=env.path("OUTPUTS", "data/outputs"),
         intermediates_path=env.path("INTERMEDIATES", "data/processed"),
+        input_cache=env.path("INPUT_CACHE", None),
         domain_path=env.str("DOMAIN_FILE"),
         inventory_domain_path=env.str("INVENTORY_DOMAIN_FILE"),
         output_filename=env.str("OUTPUT_FILENAME", "prior-emissions.nc"),

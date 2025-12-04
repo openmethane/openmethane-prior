@@ -38,6 +38,9 @@ def create_prior(config: PriorConfig, sectors: list[PriorSector]):
     if config.start_date is None:
         raise ValueError("Start date must be provided")
 
+    # if no cache is configured, this is a no-op
+    config.load_cached_inputs()
+
     data_manager = DataManager(data_path=config.input_path, prior_config=config)
     check_input_files(config)
 
@@ -62,5 +65,8 @@ def create_prior(config: PriorConfig, sectors: list[PriorSector]):
         )
 
     add_ch4_total(prior_ds)
+
+    # if no cache is configured, this is a no-op
+    config.cache_inputs()
 
     return prior_ds
