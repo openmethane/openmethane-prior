@@ -21,9 +21,9 @@ import logging
 import prettyprinter
 
 from openmethane_prior.lib import (
-    load_config_from_env,
     logger,
     parse_cli_to_env,
+    PriorConfig,
     create_prior,
 )
 from openmethane_prior.lib.verification import verify_emis
@@ -36,7 +36,7 @@ prettyprinter.install_extras(["attrs"])
 
 if __name__ == "__main__":
     parse_cli_to_env()
-    config = load_config_from_env()
+    config = PriorConfig.from_env()
 
     if logger.level <= logging.DEBUG:
         prettyprinter.cpprint(config)

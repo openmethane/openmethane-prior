@@ -16,7 +16,7 @@
 # limitations under the License.
 #
 
-from .config import PriorConfig, load_config_from_env, parse_cli_to_env
+from .config import PriorConfig, parse_cli_to_env
 from .data_manager.manager import (
     ConfiguredDataSource,
     DataAsset,
