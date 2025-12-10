@@ -41,11 +41,8 @@ def filter_emissions_sources(
 
     # select the month of the desired period, or the latest month in the data
     data_period_latest = emissions_sources_df["end_time"].max()
-    target_period = (
-        data_period_latest
-        if period_end >= data_period_latest
-        else period_end_month_end
-    )
+    target_period = data_period_latest if period_end >= data_period_latest else period_end_month_end
+
     emissions_sources_filtered_df = emissions_sources_df[emissions_sources_df["end_time"] == target_period]
 
     return emissions_sources_filtered_df
