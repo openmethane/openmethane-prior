@@ -5,18 +5,24 @@ from openmethane_prior.data_sources.safeguard import (
     safeguard_locations_data_source,
     safeguard_mechanism_data_source,
 )
-from openmethane_prior.lib import load_config_from_env
+from openmethane_prior.lib import PriorConfig
 from openmethane_prior.sectors.coal.data import coal_facilities_data_source
 from openmethane_prior.sectors.coal.safeguard_coal import allocate_safeguard_facility_emissions
 
 
 def test_safeguard_allocate_emissions(config, input_files, data_manager):
+    # we will need to test with configs in the SGM period and outside
+    config_params = attrs.asdict(config)
+    del config_params["start_date"]
+    del config_params["end_date"]
+
     # period within safeguard period will yield results
-    config_2023 = load_config_from_env(**{
-        **attrs.asdict(config),
-        "start_date": datetime.datetime(2023, 7, 1),
-        "end_date": datetime.datetime(2023, 7, 2),
-    })
+    config_2023 =  PriorConfig(
+        **config_params,
+        start_date=datetime.datetime(2023, 7, 1),
+        end_date=datetime.datetime(2023, 7, 2),
+    )
+
 
     safeguard_facilities_asset = data_manager.get_asset(safeguard_mechanism_data_source)
     facility_locations_asset = data_manager.get_asset(safeguard_locations_data_source)
@@ -62,11 +68,11 @@ def test_safeguard_allocate_emissions(config, input_files, data_manager):
     assert len(locations[locations["safeguard_facility_name"] == "Mt Owen Glendell Complex"]) == 2
 
     # period outside safeguard period will allocate no emissions
-    config_2022 = load_config_from_env(**{
-        **attrs.asdict(config),
-        "start_date": datetime.datetime(2022, 7, 1),
-        "end_date": datetime.datetime(2022, 7, 2),
-    })
+    config_2022 = PriorConfig(
+        **config_params,
+        start_date=datetime.datetime(2022, 7, 1),
+        end_date=datetime.datetime(2022, 7, 2),
+    )
 
     # run the test
     facilities, locations, gridded_emissions = allocate_safeguard_facility_emissions(
