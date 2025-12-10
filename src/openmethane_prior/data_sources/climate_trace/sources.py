@@ -46,7 +46,7 @@ def filter_emissions_sources(
     period_end_month_days = calendar.monthrange(period_end.year, period_end.month)[1]
     period_end_month_end = datetime.datetime(period_end.year, period_end.month, period_end_month_days, 0, 0, 0)
 
-    if (period_start.year != period_end.year) or (period_start.month != period_end.month):
+    if period_start.year != period_end.year or period_start.month != period_end.month:
         # if we want to run a prior across multiple months, we will have to
         # account for different emissions across each month, and allocate
         # accordingly across daily time steps
