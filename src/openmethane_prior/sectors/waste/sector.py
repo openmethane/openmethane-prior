@@ -68,7 +68,7 @@ def process_emissions(
         (config.start_date, config.end_date),
     )
 
-    # normalise remaining emissions to match remaining inventory
+    # scale site emissions so the aggregate matches the inventory total
     period_emissions_sources.loc[:, "emissions_quantity"] *= (
         sector_total_emissions / period_emissions_sources["emissions_quantity"].sum()
     )
