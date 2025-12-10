@@ -28,11 +28,12 @@ from openmethane_prior.lib import (
     PriorSectorConfig,
     kg_to_period_cell_flux,
 )
+from openmethane_prior.data_sources.climate_trace import filter_emissions_sources
 from openmethane_prior.data_sources.inventory import get_sector_emissions_by_code, inventory_data_source
 from openmethane_prior.lib.sector.au_sector import AustraliaPriorSector
 from openmethane_prior.lib.units import days_in_period
 
-from .data import coal_facilities_data_source, filter_coal_facilities
+from .data import coal_facilities_data_source
 from .safeguard_coal import allocate_safeguard_facility_emissions
 
 logger = logger.get_logger(__name__)
@@ -73,10 +74,11 @@ def process_emissions(sector: AustraliaPriorSector, sector_config: PriorSectorCo
     safeguard_allocated_emissions = safeguard_facilities["ch4_kg"].sum() * (days_in_period(config.start_date, config.end_date) / 365)
     sector_unallocated_emissions = sector_total_emissions - safeguard_allocated_emissions
 
-    # select gas and year
-    coal_ch4_period = filter_coal_facilities(
-        coal_facilities_asset.data,
-        (config.start_date, config.end_date),
+    # select the emissions source data from the requested period
+    coal_ch4_period = filter_emissions_sources(
+        emissions_sources_df=coal_facilities_asset.data,
+        period_start=config.start_date,
+        period_end=config.end_date,
     )
 
     # remove facilities that were allocated Safeguard emissions

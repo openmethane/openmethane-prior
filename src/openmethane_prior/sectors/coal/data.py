@@ -18,6 +18,7 @@
 import datetime
 import pandas as pd
 
+from openmethane_prior.data_sources.climate_trace import climate_trace_data_source
 from openmethane_prior.lib import (
     ConfiguredDataSource,
     DataSource,
@@ -26,25 +27,6 @@ from openmethane_prior.lib import (
 
 logger = logger.get_logger(__name__)
 
-
-def filter_coal_facilities(
-    coal_facilities_df: pd.DataFrame,
-    period: tuple[datetime.date, datetime.date],
-):
-    # select CH4 gas
-    coal_facilities_df_ch4 = coal_facilities_df[coal_facilities_df["gas"] == "ch4"]
-
-    # select the year of the desired period, or the latest year in the data
-    period_start, period_end = period
-    coal_max_year = coal_facilities_df_ch4["year"].max()
-    target_year = (
-        period_start.year
-        if period_start.year <= coal_max_year
-        else coal_max_year
-    )
-    coal_facilities_df_ch4_period = coal_facilities_df_ch4[coal_facilities_df_ch4["year"] == target_year]
-
-    return coal_facilities_df_ch4_period
 
 def parse_coal_facilities_csv(data_source: ConfiguredDataSource) -> pd.DataFrame:
     coal_facilities_df = pd.read_csv(
@@ -55,12 +37,11 @@ def parse_coal_facilities_csv(data_source: ConfiguredDataSource) -> pd.DataFrame
         },
     )
 
-    coal_facilities_df["year"] = coal_facilities_df["start_time"].apply(lambda start_time: start_time.year)
-
     return coal_facilities_df
 
 coal_facilities_data_source = DataSource(
     name="coal-facilities",
-    url="https://openmethane.s3.amazonaws.com/prior/inputs/coal-mining_emissions-sources.csv",
+    data_sources=[climate_trace_data_source],
     parse=parse_coal_facilities_csv,
+    file_path='climate-trace-AUS/DATA/fossil_fuel_operations/coal-mining_emissions_sources_v4_8_0.csv',
 )
