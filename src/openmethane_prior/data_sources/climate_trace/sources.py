@@ -19,6 +19,19 @@ import calendar
 import datetime
 import pandas as pd
 
+from openmethane_prior.lib import ConfiguredDataSource
+
+
+def parse_emissions_sources(data_source: ConfiguredDataSource) -> pd.DataFrame:
+    """Read and parse a Climate TRACE emissions sources CSV file."""
+    return pd.read_csv(
+        data_source.asset_path,
+        converters={
+            "start_time": datetime.datetime.fromisoformat,
+            "end_time": datetime.datetime.fromisoformat,
+        },
+    )
+
 
 def filter_emissions_sources(
     emissions_sources_df: pd.DataFrame,
@@ -33,7 +46,7 @@ def filter_emissions_sources(
     period_end_month_days = calendar.monthrange(period_end.year, period_end.month)[1]
     period_end_month_end = datetime.datetime(period_end.year, period_end.month, period_end_month_days, 0, 0, 0)
 
-    if (period_start.year != period_end.year) or (period_start.month != period_end.month):
+    if period_start.year != period_end.year or period_start.month != period_end.month:
         # if we want to run a prior across multiple months, we will have to
         # account for different emissions across each month, and allocate
         # accordingly across daily time steps
