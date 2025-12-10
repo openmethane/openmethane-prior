@@ -36,6 +36,9 @@ class DataManager:
     prior_config: PriorConfig
     """Configuration for the current run of the prior"""
 
+    fetch_only: bool = False
+    """If True, assets will only be fetched and not parsed"""
+
     data_sources: dict[str, ConfiguredDataSource] = attrs.Factory(dict)
     """All data sources managed by this data manager, by 'name'"""
 
@@ -88,6 +91,10 @@ class DataManager:
                 name=source.name,
                 path=save_path,
             )
+
+        # once asset is fetched, do not do any further parsing
+        if self.fetch_only:
+            return data_asset
 
         # if the DataSource has a "prepare" method to parse or process the
         # data, call it and add the result to the asset

@@ -15,9 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
 from typing import Any
-
+from functools import cache
 import numpy as np
 import pyproj
 
@@ -81,6 +80,10 @@ class Grid:
             and self.projection.is_exact_same(other.projection)
         )
 
+    # Grid must be hashable to use @cached methods
+    def __hash__(self):
+        return hash((self.dimensions, self.origin_xy, self.llc_center_xy, self.cell_size, self.projection.to_wkt()))
+
     def is_aligned(self, other):
         if self == other or self.projection.is_exact_same(other.projection):
             return True
@@ -104,6 +107,7 @@ class Grid:
     def xy_to_lonlat(self, x, y) -> tuple[float, float]:
         return self.projection.transform(xx=x, yy=y, direction=pyproj.enums.TransformDirection.INVERSE)
 
+    @cache
     def cell_coords_x(self) -> np.ndarray[int, np.float64]:
         """
         Cell center coordinates for every grid cell along the x axis, in grid
@@ -111,6 +115,7 @@ class Grid:
         """
         return self.llc_center_xy[0] + np.arange(self.dimensions[0]) * self.cell_size[0]
 
+    @cache
     def cell_coords_y(self) -> np.ndarray[int, np.float64]:
         """
         Cell center coordinates for every grid cell along the y axis, in grid
@@ -118,6 +123,7 @@ class Grid:
         """
         return self.llc_center_xy[1] + np.arange(self.dimensions[1]) * self.cell_size[1]
 
+    @cache
     def cell_bounds_x(self) -> np.ndarray[int, np.float64]:
         """
         Boundary coordinates for the edges of every grid cell along the x axis,
@@ -128,6 +134,7 @@ class Grid:
         """
         return self.origin_xy[0] + np.arange(self.dimensions[0] + 1) * self.cell_size[0]
 
+    @cache
     def cell_bounds_y(self) -> np.ndarray[int, np.float64]:
         """
         Boundary coordinates for the edges of every grid cell along the y axis,
@@ -138,6 +145,7 @@ class Grid:
         """
         return self.origin_xy[1] + np.arange(self.dimensions[1] + 1) * self.cell_size[1]
 
+    @cache
     def cell_bounds_lonlat(self) -> tuple[np.ndarray, np.ndarray]:
         bounds_x = self.cell_bounds_x()
         bounds_y = self.cell_bounds_y()
@@ -155,7 +163,6 @@ class Grid:
                 lat_bounds[iy, ix] = cell_bounds_lat
 
         return lon_bounds, lat_bounds
-
 
     def valid_cell_coords(self, coord_x: Any, coord_y: Any) -> Any:
         """

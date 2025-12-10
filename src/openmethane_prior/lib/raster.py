@@ -6,7 +6,7 @@ from openmethane_prior.lib.grid.grid import Grid
 
 
 def remap_raster(
-    input_field: xr.DataArray,
+    input_xr: xr.DataArray,
     target_grid: Grid,
     input_crs: pyproj.crs.CRS = 4326, # EPSG:4362
     AREA_OR_POINT = 'Area',
@@ -22,36 +22,65 @@ def remap_raster(
     """
     projection_transformer = pyproj.Transformer.from_crs(crs_from=input_crs, crs_to=target_grid.projection.crs, always_xy=True)
 
-    result = np.zeros(target_grid.shape)
-
-    # we accumulate values from each high-res grid in the raster onto our domain then divide by the number
-    # our criterion is that the central point in the high-res lies inside the cell defined on the grid
-    # get input coordinates and resolutions, these are not retained in this data structure despite presence in underlying tiff file
-    input_field_np = input_field.to_numpy().squeeze()
-
-    # the following needs .to_numpy() because
-    # subtracting xarray matches coordinates, not what we want
-    input_lons_np = input_field.x.to_numpy().copy()
-    input_lats_np = input_field.y.to_numpy().copy()
-    delta_lon = (input_lons_np[1:] - input_lons_np[0:-1]).mean()
-    delta_lat = (input_lats_np[1:] - input_lats_np[0:-1]).mean()
-
     # correct for source points locating the corner, we want centre
+    input_corrected_xr = input_xr.copy()
     if AREA_OR_POINT == 'Area':
-        input_lons_np += delta_lon / 2
-        input_lats_np += delta_lat / 2
+        # use .to_numpy() to subtract values, where xarray matches coords
+        input_x_np = input_xr.x.to_numpy().copy()
+        input_y_np = input_xr.y.to_numpy().copy()
+        delta_x = (input_x_np[1:] - input_x_np[0:-1]).mean()
+        delta_y = (input_y_np[1:] - input_y_np[0:-1]).mean()
+        input_corrected_xr.coords["x"] = input_corrected_xr.coords["x"] + (delta_x / 2)
+        input_corrected_xr.coords["y"] = input_corrected_xr.coords["y"] + (delta_y / 2)
+
+    # construct a bounding box for the target grid, over the input grid
+    # this will limit our search space for mapping input values to target cells
+    target_grid_bounds_x = target_grid.cell_bounds_x()
+    target_grid_bounds_y = target_grid.cell_bounds_y()
+    target_grid_x_min, target_grid_x_max = target_grid_bounds_x.min(), target_grid_bounds_x.max()
+    target_grid_y_min, target_grid_y_max = target_grid_bounds_y.min(), target_grid_bounds_y.max()
+    target_bbox_input_x, target_bbox_input_y = projection_transformer.transform(
+        xx=np.array([target_grid_x_min, target_grid_x_max, target_grid_x_max, target_grid_x_min]),
+        yy=np.array([target_grid_y_min, target_grid_y_min, target_grid_y_max, target_grid_y_max]),
+        direction=pyproj.enums.TransformDirection.INVERSE,
+    )
+
+    # rioxarray makes this easy with clip_box
+    if 'rio' in input_corrected_xr:
+        input_search_space = input_corrected_xr.rio.clip_box(
+            minx=target_bbox_input_x.min(),
+            maxx=target_bbox_input_x.max(),
+            miny=target_bbox_input_y.min(),
+            maxy=target_bbox_input_y.max()
+        )
+    else: # support native xarray.DataArray as well
+        input_search_space = input_corrected_xr.where(
+            (target_bbox_input_x.min() <= input_corrected_xr.x) &
+            (input_corrected_xr.x <= target_bbox_input_x.max()) &
+            (target_bbox_input_y.min() <= input_corrected_xr.y) &
+            (input_corrected_xr.y <= target_bbox_input_y.max()),
+            drop=True
+        )
+    input_search_space_np = input_search_space.to_numpy()
 
     # the raster is defined lat-lon so we need to reproject each row separately onto the LCC grid
-    for j in range(input_lats_np.size):
-        lat = input_lats_np.item(j)
-        lats = np.array([lat]).repeat(input_field.x.size) # proj needs lats,lons same size
+    result = np.zeros(target_grid.shape)
+    for iy in range(input_search_space.y.size):
+        y = input_search_space.y.item(iy)
+        # proj needs x,y coords in equal-sized lists, each point in the row
+        # will have the same y coord
+        y_row = np.array([y]).repeat(input_search_space.x.size)
 
-        input_x, input_y = projection_transformer.transform(xx=input_lons_np, yy=lats)
-        cell_x, cell_y, mask = target_grid.xy_to_cell_index(input_x, input_y)
+        # the central point in the high-res raster cell lies inside the cell
+        # defined on the domain grid
+        target_x, target_y = projection_transformer.transform(xx=input_search_space.x, yy=y_row)
+        target_ix, target_iy, mask = target_grid.xy_to_cell_index(target_x, target_y)
 
         # input domain is bigger so mask indices out of range
         if mask.any():
-            # the following needs to use .at method since cell_y,cell_x indices may be repeated and we need to acumulate
-            np.add.at(result, (cell_y[mask], cell_x[mask]), input_field_np[j, mask])
+            # we accumulate values from each high-res grid in the raster onto
+            # our domain.
+            # the following needs to use .at method since target_iy,target_ix indices may be repeated and we need to acumulate
+            np.add.at(result, (target_iy[mask], target_ix[mask]), input_search_space_np[iy, mask])
 
     return result
