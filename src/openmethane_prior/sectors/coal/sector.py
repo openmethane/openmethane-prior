@@ -76,8 +76,9 @@ def process_emissions(sector: AustraliaPriorSector, sector_config: PriorSectorCo
 
     # select the emissions source data from the requested period
     coal_ch4_period = filter_emissions_sources(
-        coal_facilities_asset.data,
-        (config.start_date, config.end_date),
+        emissions_sources_df=coal_facilities_asset.data,
+        period_start=config.start_date,
+        period_end=config.end_date,
     )
 
     # remove facilities that were allocated Safeguard emissions
