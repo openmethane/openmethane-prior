@@ -1,16 +1,13 @@
-import os
 import pathlib
 import shutil
 from datetime import datetime
 from pathlib import Path
-from typing import Generator
-
-import dotenv
 import pytest
+from typing import Generator
 import xarray as xr
 
 from openmethane_prior.lib import create_prior
-from openmethane_prior.lib.config import PriorConfig, load_config_from_env, PriorConfigOptions
+from openmethane_prior.lib.config import PriorConfig
 from openmethane_prior.lib.data_manager.manager import DataManager
 from openmethane_prior.lib.grid.create_grid import create_grid_from_mcip
 from openmethane_prior.lib.grid.grid import Grid
@@ -29,23 +26,9 @@ def cache_dir(root_dir) -> pathlib.Path:
     return root_dir / "data/.cache"
 
 
-# This fixture will be automatically used by all tests to setup the required env variables
-@pytest.fixture(autouse=True)
-def env(monkeypatch, root_dir):
-    initial_env = dict(os.environ)
-
-    # Use the example .env file to drive the tests
-    dotenv.load_dotenv(dotenv_path=root_dir / ".env.example", override=True)
-
-    yield
-
-    # Reset environment to initial state
-    os.environ.clear()
-    os.environ.update(initial_env)
-
-
 @pytest.fixture(scope="session")
-def config_params(start_date, end_date) -> PriorConfigOptions:
+def config_params(start_date, end_date):
+    """Default config parameters that most tests should use."""
     return dict(
         start_date=start_date,
         end_date=end_date,
@@ -62,7 +45,7 @@ def config(tmp_path_factory, config_params, cache_dir) -> PriorConfig:
     prevent refetching input files in each test.
     """
     data_dir = tmp_path_factory.mktemp("data")
-    return load_config_from_env(
+    return PriorConfig(
         **config_params,
         input_path=data_dir / "inputs",
         intermediates_path=data_dir / "intermediates",
@@ -143,20 +126,10 @@ def input_domain(config, input_files) -> Generator[xr.Dataset, None, None]:
 
 
 @pytest.fixture(scope="session")
-def prior_emissions_ds(
-    cache_dir,
-    config_params,
-    tmp_path_factory,
-) -> Generator[xr.Dataset, None, None]:
-    """
-    Run the output domain
-
-    Returns
-    -------
-        The calculated output domain
-    """
+def prior_emissions_ds(tmp_path_factory, cache_dir, config_params) -> Generator[xr.Dataset, None, None]:
+    """Run the full prior over the au-test domain."""
     data_dir = tmp_path_factory.mktemp("data")
-    config = load_config_from_env(
+    config = PriorConfig(
         **config_params,
         input_path=data_dir / "inputs",
         intermediates_path=data_dir / "intermediates",
