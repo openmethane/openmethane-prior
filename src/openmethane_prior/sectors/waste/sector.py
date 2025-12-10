@@ -65,10 +65,11 @@ def process_emissions(
     # select the emissions source data from the requested period
     period_emissions_sources = filter_emissions_sources(
         emissions_sources,
-        (config.start_date, config.end_date),
+        config.start_date,
+        config.end_date,
     )
 
-    # normalise remaining emissions to match remaining inventory
+    # scale site emissions so the aggregate matches the inventory total
     period_emissions_sources.loc[:, "emissions_quantity"] *= (
         sector_total_emissions / period_emissions_sources["emissions_quantity"].sum()
     )

@@ -46,7 +46,8 @@ def emissions_sources_df():
 def test_filter_emissions_sources(emissions_sources_df):
     test_filtered_2025_aug = filter_emissions_sources(
         emissions_sources_df,
-        (datetime.datetime(2025, 8, 1), datetime.datetime(2025, 8, 31)),
+        datetime.datetime(2025, 8, 1),
+        datetime.datetime(2025, 8, 31),
     )
 
     # filtered by period gives 3 rows, one for each source
@@ -57,7 +58,8 @@ def test_filter_emissions_sources(emissions_sources_df):
     # period outside the available data
     test_filtered_2025_dec = filter_emissions_sources(
         emissions_sources_df,
-        (datetime.datetime(2025, 12, 1), datetime.datetime(2025, 12, 31)),
+        datetime.datetime(2025, 12, 1),
+    datetime.datetime(2025, 12, 31),
     )
 
     # 2025-12 is outside the available data, so 2025-08 (the last period) is returned
@@ -65,7 +67,8 @@ def test_filter_emissions_sources(emissions_sources_df):
 
     test_filtered_2025_jan = filter_emissions_sources(
         emissions_sources_df,
-        (datetime.datetime(2025, 1, 1), datetime.datetime(2025, 1, 31)),
+        datetime.datetime(2025, 1, 1),
+        datetime.datetime(2025, 1, 31),
     )
 
     # 2023 has the same number of results, but is not the same
@@ -76,7 +79,8 @@ def test_filter_emissions_sources(emissions_sources_df):
     # filter period of only 2 days still returns the full month
     test_filtered_partial = filter_emissions_sources(
         emissions_sources_df,
-        (datetime.datetime(2025, 1, 1), datetime.datetime(2025, 1, 2)),
+        datetime.datetime(2025, 1, 1),
+        datetime.datetime(2025, 1, 2),
     )
 
     pd.testing.assert_frame_equal(test_filtered_2025_jan, test_filtered_partial)
@@ -85,7 +89,8 @@ def test_filter_emissions_sources(emissions_sources_df):
 
     test_filtered_2024 = filter_emissions_sources(
         emissions_sources_df,
-        (datetime.datetime(2024, 12, 1), datetime.datetime(2024, 12, 31)),
+        datetime.datetime(2024, 12, 1),
+        datetime.datetime(2024, 12, 31),
     )
 
     # when a period before the available data is selected, no rows are returned
@@ -95,5 +100,6 @@ def test_filter_emissions_sources(emissions_sources_df):
         # filtering across multiple months not supported
         filter_emissions_sources(
             emissions_sources_df,
-            (datetime.datetime(2022, 6, 1), datetime.datetime(2022, 7, 31)),
+            datetime.datetime(2022, 6, 1),
+            datetime.datetime(2022, 7, 31),
         )
