@@ -35,14 +35,13 @@ def parse_emissions_sources(data_source: ConfiguredDataSource) -> pd.DataFrame:
 
 def filter_emissions_sources(
     emissions_sources_df: pd.DataFrame,
-    period: tuple[datetime.date, datetime.date],
+    period_start: datetime.date,
+    period_end: datetime.date,
 ):
     """
     Return only the rows of the Climate TRACE emissions sources which
     occurred in the given period.
     """
-    period_start, period_end = period
-
     # periods in the dataset always end on the last day of the month
     period_end_month_days = calendar.monthrange(period_end.year, period_end.month)[1]
     period_end_month_end = datetime.datetime(period_end.year, period_end.month, period_end_month_days, 0, 0, 0)
@@ -55,11 +54,8 @@ def filter_emissions_sources(
 
     # select the month of the desired period, or the latest month in the data
     data_period_latest = emissions_sources_df["end_time"].max()
-    target_period = (
-        data_period_latest
-        if period_end >= data_period_latest
-        else period_end_month_end
-    )
+    target_period = data_period_latest if period_end >= data_period_latest else period_end_month_end
+
     emissions_sources_filtered_df = emissions_sources_df[emissions_sources_df["end_time"] == target_period]
 
     return emissions_sources_filtered_df
