@@ -5,15 +5,15 @@ on:
     inputs:
       bump_rule:
         type: choice
-        description: How to bump the project's version (see https://python-poetry.org/docs/cli/#version)
+        description: How to bump the project's version (see https://docs.astral.sh/uv/reference/cli/#uv-version)
         options:
           - patch
           - minor
           - major
-          - prepatch
-          - preminor
-          - premajor
-          - prerelease
+          - alpha
+          - beta
+          - rc
+          - dev
         required: true
 
 jobs:
@@ -48,8 +48,8 @@ jobs:
       - name: Determine release version
         id: release-version
         run: |
-          BASE_VERSION=`poetry version -s`
-          NEW_VERSION=`poetry version -s ${{ github.event.inputs.bump_rule }}`
+          BASE_VERSION=`uv version --short`
+          NEW_VERSION=`uv version --short --bump ${{ github.event.inputs.bump_rule }}`
           echo "BASE_VERSION=$BASE_VERSION" >> $GITHUB_ENV
           echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
           echo "RELEASE_VERSION=$NEW_VERSION" >> $GITHUB_OUTPUT
@@ -80,7 +80,7 @@ jobs:
 
           # Bump to pre-release so that future commits do not have the same
           # version as the tagged commit
-          NEXT_VERSION=`poetry version -s prerelease`
+          NEXT_VERSION=`uv version --short dev`
           echo "Bumping version $NEW_VERSION > $NEXT_VERSION"
           git commit -a -m "bump(pre-release): version $NEW_VERSION > $NEXT_VERSION"
           git push && git push --tags
