@@ -112,11 +112,7 @@ jobs:
       - name: Run a quick test suite
         run: |
           cd /opt/project
-          cp .env.example .env
           python -m pytest -r a -v tests/integration/test_domain.py
-        env:
-          CDSAPI_KEY: ${{ secrets.CDSAPI_ADS_KEY }}
-          CDSAPI_URL: https://ads.atmosphere.copernicus.eu/api
 
   # Determine additional tags to apply to the image
   image-tags:

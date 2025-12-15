@@ -6,10 +6,10 @@ prototype data exploration.
 
 ## Running Jupyter
 
-Jupyter can be opened locally with poetry:
+Jupyter can be opened locally with `uv`:
 
 ```shell
-poetry run jupyter notebook
+uv run jupyter notebook
 ```
 
 ## Jupytext
