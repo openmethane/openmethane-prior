@@ -58,6 +58,7 @@ safeguard_locations_csv_columns = [
     "safeguard_facility_name", # exact facility_name from Safeguard Mechanism
     "data_source_name", # DataSource name with facility details
     "data_source_id", # identifier in reference DataSource
+    "notes", # notes about how this location is related to the facility
 ]
 
 
@@ -75,6 +76,7 @@ def parse_location_csv(data_source: ConfiguredDataSource):
         filepath_or_buffer=data_source.asset_path,
         header=0,
         names=safeguard_locations_csv_columns,
+        usecols=["safeguard_facility_name", "data_source_name", "data_source_id"],
     )
 
     # filter out any rows with incomplete information
@@ -102,7 +104,7 @@ def parse_safeguard_csv(data_source: ConfiguredDataSource):
 
 safeguard_locations_data_source = DataSource(
     name="safeguard-locations",
-    url="https://openmethane.s3.amazonaws.com/prior/inputs/facility-locations-v1.csv",
+    url="https://openmethane.s3.amazonaws.com/prior/inputs/facility-locations-v1.1.csv",
     parse=parse_location_csv,
 )
 
