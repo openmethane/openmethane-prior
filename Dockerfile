@@ -33,10 +33,6 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 # Then, use a final image without uv for our runtime environment
 FROM debian:bookworm-slim
 
-# Setup a non-root user
-RUN groupadd --system --gid 1000 app \
- && useradd --system --gid 1000 --uid 1000 --create-home app
-
 # Install the bare minimum software requirements on top of bookworm-slim
 RUN <<EOT
 apt-get update -qy
@@ -63,9 +59,6 @@ COPY --from=builder --chown=app:app /app /opt/project
 ENV PATH="/opt/project/.venv/bin:$PATH"
 # Place the package root in the python import path so files in scripts/ can resolve
 ENV PYTHONPATH="/opt/project/src"
-
-# Use the non-root user to run our application
-USER app
 
 # Use `/opt/project` as the working directory
 WORKDIR /opt/project
