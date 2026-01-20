@@ -117,7 +117,7 @@ underlines = [
     "",
     "",
 ]
-issue_format = "[#{issue}](https://github.com/openmethane/openmethane-prior/pulls/{issue})"
+issue_format = "[#{issue}](https://github.com/openmethane/openmethane-prior/pull/{issue})"
 type = [
     { directory = "breaking", name = "⚠️ Breaking Changes", showcontent = true },
     { directory = "deprecation", name = "🗑️ Deprecations", showcontent = true },
