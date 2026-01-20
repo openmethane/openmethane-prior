@@ -26,30 +26,17 @@ and share the same credentials file.
 
 ### Requirements
 
-Before installation, you will need to make sure that [poetry](https://python-poetry.org/docs/) version 1 is installed.
-
-Step-by-step:
-- Install pipx 
-```bash
-python -m pip install --user pipx
-```
-
-- Install poetry and downgrading your poetry version to version v1.
-```bash
-pipx install poetry~=1.0 --force
-```
-
+Before installation, you will need to make sure that
+[uv](https://docs.astral.sh/uv/getting-started/installation/)
+is installed.
 
 ### Installation
 
 The Open Methane prior can be installed from source into a virtual environment with:
 
 ```bash
-make virtual-environment
+uv sync
 ```
-
-The `Makefile` contains the set of commands to create the virtual environment.
-You can read the instructions out and run the commands by hand if you wish.
 
 ### Input Data
 
@@ -130,7 +117,7 @@ make clean-all
 To calculate emissions for all sectors, run `omPrior.py` with a start and end date:
 
 ```shell
-poetry run python scripts/omPrior.py --start-date 2022-07-01 --end-date 2022-07-01
+uv run python scripts/omPrior.py --start-date 2022-07-01 --end-date 2022-07-01
 ```
 
 This takes a while to process (~10 minutes) with the vast majority of that time
@@ -141,7 +128,7 @@ spent on the sectors which re-project large input datasets.
 To run a single sector or a subset of sectors, use the `--sectors` argument:
 
 ```shell
-poetry run python scripts/omPrior.py --start-date 2022-07-01 --end-date 2022-07-01 \
+uv run python scripts/omPrior.py --start-date 2022-07-01 --end-date 2022-07-01 \
   --sectors livestock,termite,fire
 ```
 
@@ -156,17 +143,17 @@ by setting other log levels:
 
 ```shell
 # verbose debug output
-LOG_LEVEL=DEBUG poetry run python scripts/omPrior.py --start-date 2022-07-01 --end-date 2022-07-01
+LOG_LEVEL=DEBUG uv run python scripts/omPrior.py --start-date 2022-07-01 --end-date 2022-07-01
 
 # only warnings and errors
-LOG_LEVEL=WARNING poetry run python scripts/omPrior.py --start-date 2022-07-01 --end-date 2022-07-01
+LOG_LEVEL=WARNING uv run python scripts/omPrior.py --start-date 2022-07-01 --end-date 2022-07-01
 ```
 
 Log output can also be written to a file while still logging to the console
 with the `LOG_FILE` env variable.
 
 ```shell
-LOG_FILE=/var/log/prior.log poetry run python scripts/omPrior.py --start-date 2022-07-01 --end-date 2022-07-01
+LOG_FILE=/var/log/prior.log uv run python scripts/omPrior.py --start-date 2022-07-01 --end-date 2022-07-01
 ```
 
 

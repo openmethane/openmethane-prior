@@ -1,15 +1,13 @@
 .PHONY: update-licenseheaders
 update-licenseheaders:  ## add or update license headers in all python files
-	licenseheaders -y 2023 --owner "The Superpower Institute Ltd" --projname "OpenMethane" --tmpl .copyright.tmpl --ext .py -x "venv/*"
+	uv tool run licenseheaders \
+		--years "2023-2025" --owner "The Superpower Institute Ltd" --projname "Open Methane" \
+		--tmpl .copyright.tmpl --ext .py \
+		-x "venv/*" -x "tests/*"
 
-.PHONY: virtual-environment
-virtual-environment:  ## update virtual environment, create a new one if it doesn't already exist
-	poetry lock --no-update
-	# Put virtual environments in the project
-	poetry config virtualenvs.in-project true
-	poetry install --all-extras
-	# TODO: Add last line back in when pre-commit is set up
-	# poetry run pre-commit install
+.PHONY: install
+install:  ## install or update dependencies, creating a virtual env if one doesn't exist
+	uv sync
 
 .PHONY: clean
 clean:  ## remove generated temporary files
@@ -21,18 +19,15 @@ clean-all:  ## remove all temporary files including downloaded data
 
 .PHONY: run-example
 run-example:  ## Run the project for an example period
-	poetry run python scripts/omPrior.py --start-date 2022-07-01 --end-date 2022-07-01
+	uv run python scripts/omPrior.py --start-date 2022-07-01 --end-date 2022-07-01
 
-.PHONY: ruff-fixes
-ruff-fixes:  # Run ruff on the project
- 	# Run the formatting first to ensure that is applied even if the checks fail
-	poetry run ruff format .
-	poetry run ruff check --fix .
-	poetry run ruff format .
+.PHONY: format
+format:  # Run ruff on the project
+	uv format
 
 .PHONY: test
 test:  ## Run the tests
-	poetry run python -m pytest -r a -v tests
+	uv run python -m pytest -r a -v tests
 
 .PHONY: build
 build:  ## Build the docker container locally
@@ -41,15 +36,17 @@ build:  ## Build the docker container locally
 .PHONY: start
 start: build  ## Start the docker container locally
 	docker run --rm -it \
+		-v ~/.cdsapirc:/home/app/.cdsapirc \
 		-v $(PWD):/opt/project \
-		-v ~/.cdsapirc:/root/.cdsapirc \
+		-v /opt/project/.venv \
 		openmethane-prior
 
 .PHONY: run
 run: build clean  ## Run the prior in the docker container
 	# This requires a valid `~/.cdsapirc` file
 	docker run --rm -it \
+		-v ~/.cdsapirc:/home/app/.cdsapirc \
 		-v $(PWD):/opt/project \
-		-v ~/.cdsapirc:/root/.cdsapirc \
+		-v /opt/project/.venv \
 		openmethane-prior \
-		bash scripts/run.sh
+		python scripts/omPrior.py --start-date 2022-07-22 --end-date 2022-07-22
