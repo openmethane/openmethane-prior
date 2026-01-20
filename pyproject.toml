@@ -26,6 +26,7 @@ dependencies = [
     "environs>=11.0.0,<12",
     "prettyprinter>=0.18.0,<0.19",
     "pytest-mock>=3.15.1,<4",
+    "owslib>=0.35.0",
 ]
 
 [dependency-groups]
