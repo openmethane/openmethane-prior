@@ -38,6 +38,7 @@ def create_prior(config: PriorConfig, sectors: list[PriorSector]):
     if config.start_date is None:
         raise ValueError("Start date must be provided")
 
+    config.prepare_paths()
     # if no cache is configured, this is a no-op
     config.load_cached_inputs()
 

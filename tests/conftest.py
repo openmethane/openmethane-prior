@@ -45,13 +45,15 @@ def config(tmp_path_factory, config_params, cache_dir) -> PriorConfig:
     prevent refetching input files in each test.
     """
     data_dir = tmp_path_factory.mktemp("data")
-    return PriorConfig(
+    config = PriorConfig(
         **config_params,
         input_path=data_dir / "inputs",
         intermediates_path=data_dir / "intermediates",
         output_path=data_dir / "outputs",
         input_cache=cache_dir,
     )
+    config.prepare_paths()
+    return config
 
 
 @pytest.fixture()
