@@ -25,6 +25,7 @@ from openmethane_prior.data_sources.safeguard import (
 from openmethane_prior.lib import (
     convert_to_timescale,
     DataAsset,
+    Grid,
     logger,
     polygon_cell_intersection,
     PriorConfig,
@@ -38,8 +39,10 @@ def allocate_safeguard_facility_emissions(
     safeguard_facilities_asset: DataAsset,
     facility_locations_asset: DataAsset,
     reference_data_asset: DataAsset,
+    grid: Grid = None,
 ):
-    domain_grid = config.domain_grid()
+    if grid is None:
+        grid = config.domain_grid()
 
     sector_facilities = filter_facilities(
         facility_df=safeguard_facilities_asset.data,
@@ -61,7 +64,7 @@ def allocate_safeguard_facility_emissions(
     )
 
     # make an empty grid to allocate emissions to
-    gridded_annual_emissions = np.zeros(config.domain_grid().shape)
+    gridded_annual_emissions = np.zeros(grid.shape)
 
     for _, facility in oil_gas_facilities.iterrows():
         facility_locations = filter_locations(oil_gas_facilities_locations, facility_id=facility["facility_name"])
@@ -69,13 +72,13 @@ def allocate_safeguard_facility_emissions(
         # use the union of all facility location shapes, which will prevent
         # overlapping shapes from being double-counted
         facility_all_areas = facility_locations["geometry"].union_all()
-        facility_cells = polygon_cell_intersection(facility_all_areas, domain_grid)
+        facility_cells = polygon_cell_intersection(facility_all_areas, grid)
 
         for cell_indexes, area_proportion in facility_cells:
             # allocate a fraction of the facility emissions to each cell
             # based on the portion of the total area in each cell
             gridded_annual_emissions[cell_indexes[1], cell_indexes[0]] += facility["ch4_kg"] * area_proportion
 
-    gridded_emissions = convert_to_timescale(gridded_annual_emissions, config.domain_grid().cell_area)
+    gridded_emissions = convert_to_timescale(gridded_annual_emissions, grid.cell_area)
 
     return oil_gas_facilities, oil_gas_facilities_locations, gridded_emissions

@@ -93,11 +93,22 @@ def process_emissions(sector: AustraliaPriorSector, sector_config: PriorSectorCo
     mask = years == target_date.year
     oil_gas_year = oil_gas_ch4.loc[mask, :]
 
-    # remove facilities where emissions have already been allocated from
-    # another source, ie Safeguard Mechanism facilities
+    # allocate SGM facility emissions across the entire inventory domain, so
+    # we can locate facilities which already have emissions allocated and
+    # remove them from the secondary data source to prevent doubling up.
+    _, _, safeguard_inventory_ch4 = allocate_safeguard_facility_emissions(
+        config=config,
+        anzsic_codes=sector.anzsic_codes,
+        safeguard_facilities_asset=safeguard_mechanism_asset,
+        facility_locations_asset=facility_locations_asset,
+        reference_data_asset=oil_gas_asset,
+        grid=config.inventory_grid(),
+    )
     for _, facility in oil_gas_year.iterrows():
         cell_x, cell_y, cell_valid = domain_grid.lonlat_to_cell_index(facility["lon"], facility["lat"])
-        if methane[cell_y, cell_x] > 0:
+        if safeguard_inventory_ch4[cell_y, cell_x] > 0:
+            # if the cell for this facility has emissions in the SGM, zero
+            # it in the secondary data source to prevent double counting
             facility["emissions_quantity"] = 0
 
     # normalise emissions to match inventory total

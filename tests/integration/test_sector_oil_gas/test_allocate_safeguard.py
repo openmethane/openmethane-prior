@@ -11,11 +11,12 @@ from openmethane_prior.sectors.oil_gas.data import vic_oil_gas_data_source
 from openmethane_prior.sectors.oil_gas.safeguard_oil_gas import allocate_safeguard_facility_emissions
 
 
-def test_oil_gas_allocate_safeguard(config: PriorConfig, data_manager):
+def test_oil_gas_allocate_safeguard(config: PriorConfig, cache_dir, data_manager):
     # we will need to test with configs in the SGM period and outside
     config_params = attrs.asdict(config)
     del config_params["start_date"]
     del config_params["end_date"]
+    del config_params["domain_path"]
 
     # period within safeguard period, using the full domain since test fields
     # are in Victoria, so not in au-test
@@ -25,6 +26,8 @@ def test_oil_gas_allocate_safeguard(config: PriorConfig, data_manager):
         start_date=datetime.datetime(2023, 7, 1),
         end_date=datetime.datetime(2023, 7, 2),
     )
+    config_2023.prepare_paths()
+    config_2023.load_cached_inputs()
 
     safeguard_facilities_asset = data_manager.get_asset(safeguard_mechanism_data_source)
     facility_locations_asset = data_manager.get_asset(safeguard_locations_data_source)
@@ -55,10 +58,11 @@ def test_oil_gas_allocate_safeguard(config: PriorConfig, data_manager):
         safeguard_facilities_asset=safeguard_facilities_asset,
         facility_locations_asset=facility_locations_asset,
         reference_data_asset=oil_gas_asset,
+        grid=config_2023.domain_grid(),
     )
 
-    assert len(facilities) == 1
-    assert len(locations) == 2
+    assert len(facilities) == 2
+    assert len(locations) == 34
 
     for cell_indexes, area_proportion in oil_gas_otway_cells:
         ix, iy = cell_indexes
