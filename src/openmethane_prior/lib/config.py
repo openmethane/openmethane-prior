@@ -60,6 +60,9 @@ class PriorConfig:
     input_cache: pathlib.Path = None
     """If provided, a local path where remote inputs can be cached."""
 
+    # __attrs_post_init__ is called automatically after the __init__ generated
+    # by attrs has run.
+    # @see: https://www.attrs.org/en/stable/init.html
     def __attrs_post_init__(self):
         # if no end_date is provided, estimate a single day specified by start_date
         if self.end_date is None:
