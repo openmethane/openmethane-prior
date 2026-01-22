@@ -22,7 +22,7 @@ def test_safeguard_allocate_emissions(config, input_files, data_manager):
         start_date=datetime.datetime(2023, 7, 1),
         end_date=datetime.datetime(2023, 7, 2),
     )
-
+    config_2023.prepare_paths()
 
     safeguard_facilities_asset = data_manager.get_asset(safeguard_mechanism_data_source)
     facility_locations_asset = data_manager.get_asset(safeguard_locations_data_source)
@@ -73,6 +73,7 @@ def test_safeguard_allocate_emissions(config, input_files, data_manager):
         start_date=datetime.datetime(2022, 7, 1),
         end_date=datetime.datetime(2022, 7, 2),
     )
+    config_2022.prepare_paths()
 
     # run the test
     facilities, locations, gridded_emissions = allocate_safeguard_facility_emissions(

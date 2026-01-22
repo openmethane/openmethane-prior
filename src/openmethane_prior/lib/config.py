@@ -60,13 +60,10 @@ class PriorConfig:
     input_cache: pathlib.Path = None
     """If provided, a local path where remote inputs can be cached."""
 
+    # __attrs_post_init__ is called automatically after the __init__ generated
+    # by attrs has run.
+    # @see: https://www.attrs.org/en/stable/init.html
     def __attrs_post_init__(self):
-        """When created, ensure all configured paths exist, and populate inputs
-        from the input_cache, if configured."""
-        self.input_path.mkdir(parents=True, exist_ok=True)
-        self.intermediates_path.mkdir(parents=True, exist_ok=True)
-        self.output_path.mkdir(parents=True, exist_ok=True)
-
         # if no end_date is provided, estimate a single day specified by start_date
         if self.end_date is None:
             # can't set attributes on frozen class
@@ -84,6 +81,12 @@ class PriorConfig:
     def as_output_file(self, name: str | pathlib.Path) -> pathlib.Path:
         """Return the full path to an output file"""
         return self.output_path / name
+
+    def prepare_paths(self):
+        """Create any configured directory paths that don't already exist."""
+        self.input_path.mkdir(parents=True, exist_ok=True)
+        self.intermediates_path.mkdir(parents=True, exist_ok=True)
+        self.output_path.mkdir(parents=True, exist_ok=True)
 
     def load_cached_inputs(self):
         """Copy the contents of the input cache into the input folder."""
