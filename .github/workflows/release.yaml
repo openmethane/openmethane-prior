@@ -80,7 +80,7 @@ jobs:
 
           # Bump to pre-release so that future commits do not have the same
           # version as the tagged commit
-          NEXT_VERSION=`uv version --short dev`
+          NEXT_VERSION=`uv version --short --bump patch --bump dev`
           echo "Bumping version $NEW_VERSION > $NEXT_VERSION"
           git commit -a -m "bump(pre-release): version $NEW_VERSION > $NEXT_VERSION"
           git push && git push --tags
