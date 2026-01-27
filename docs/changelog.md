@@ -19,6 +19,53 @@ of rst and use slightly different categories.
 
 <!-- towncrier release notes start -->
 
+## openmethane-prior v1.3.0 (2026-01-27)
+
+### ⚠️ Breaking Changes
+
+- Replace data sources specified in .env with DataSources managed by DataManager
+
+  If input files in .env have been changed from the default values (.env.example),
+  these overrides will no longer be read. The URL in the corresponding DataSource
+  must be updated to reflect the override, or a new DataSource must be created
+  to reflect the custom resource. ([#125](https://github.com/openmethane/openmethane-prior/pull/125))
+- Individual layers can no longer be run as standalone scripts
+
+  See the updated README for details on using the omPrior.py --sectors argument
+  to run a subset of sectors. ([#135](https://github.com/openmethane/openmethane-prior/pull/135))
+- Replace `poetry` with `uv` for dependency and package management. Developers
+  will need to [install uv](https://docs.astral.sh/uv/getting-started/installation/)
+  and run `uv sync` in the repo after updating.
+
+  If you are just using Docker containers, no change is necessary. ([#155](https://github.com/openmethane/openmethane-prior/pull/155))
+
+### 🆕 Features
+
+- Add Safeguard Mechanism emissions data source ([#139](https://github.com/openmethane/openmethane-prior/pull/139))
+- Add Safeguard Mechanism emissions to coal sector ([#144](https://github.com/openmethane/openmethane-prior/pull/144))
+- Add INPUT_CACHE for persisting remote data sources locally ([#151](https://github.com/openmethane/openmethane-prior/pull/151))
+
+### 🎉 Improvements
+
+- - Replace `mask_array_by_sequence` with `numpy.isin` ([#124](https://github.com/openmethane/openmethane-prior/pull/124))
+- Reorganise internal source code structure into lib, sectors and data_sources folders ([#134](https://github.com/openmethane/openmethane-prior/pull/134))
+- Reorganise all sector implementations into separate modules ([#135](https://github.com/openmethane/openmethane-prior/pull/135))
+- Update land use data source with the updated 2020-2021 NLUM dataset ([#136](https://github.com/openmethane/openmethane-prior/pull/136))
+- Split "fugitive" sector into "coal" and "oil and gas" sectors ([#141](https://github.com/openmethane/openmethane-prior/pull/141))
+- Add AustraliaPriorSector which allows specifying ANZSIC codes covered by the sector ([#142](https://github.com/openmethane/openmethane-prior/pull/142))
+- Replace successive assertions with a single large assertion in test_009_prior_emissions_ds ([#146](https://github.com/openmethane/openmethane-prior/pull/146))
+- Update Climate TRACE dataset used by coal sector ([#147](https://github.com/openmethane/openmethane-prior/pull/147))
+- Replace Land Use data with Climate TRACE emissions sources in waste sector ([#148](https://github.com/openmethane/openmethane-prior/pull/148))
+- Improve performance and correctness of `regrid_any` and `remap_raster` ([#153](https://github.com/openmethane/openmethane-prior/pull/153))
+- Remove reliance on environment variables for configuration in tests ([#156](https://github.com/openmethane/openmethane-prior/pull/156))
+
+### 🐛 Bug Fixes
+
+- Fix prior failing on dates outside the available inventory data ([#131](https://github.com/openmethane/openmethane-prior/pull/131))
+- Remove pixel center offsetting in remap_raster which is already handled by rioxarray ([#154](https://github.com/openmethane/openmethane-prior/pull/154))
+- Fix empty folders being created in `tests/` when tests are run ([#158](https://github.com/openmethane/openmethane-prior/pull/158))
+
+
 ## openmethane-prior v1.2.0 (2025-09-18)
 
 ### 🆕 Features
