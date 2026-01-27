@@ -1,6 +1,6 @@
 [project]
 name = "openmethane_prior"
-version = "1.3.0"
+version = "1.3.1.dev1"
 description = "Method to calculate a gridded, prior emissions estimate for methane across Australia."
 authors = [
     { name = "Peter Rayner", email = "peter.rayner@superpowerinstitute.com.au" },
