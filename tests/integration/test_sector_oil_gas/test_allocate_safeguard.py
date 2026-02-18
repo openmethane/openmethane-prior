@@ -7,7 +7,7 @@ import numpy as np
 from openmethane_prior.data_sources.safeguard import safeguard_mechanism_data_source, safeguard_locations_data_source
 from openmethane_prior.lib import PriorConfig
 from openmethane_prior.lib.grid.geometry import polygon_cell_intersection
-from openmethane_prior.sectors.oil_gas.data import vic_oil_gas_data_source
+from openmethane_prior.sectors.oil_gas.data.vic_oil_gas_fields import vic_oil_gas_data_source
 from openmethane_prior.sectors.oil_gas.safeguard_oil_gas import allocate_safeguard_facility_emissions
 
 

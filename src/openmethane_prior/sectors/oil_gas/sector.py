@@ -32,7 +32,7 @@ from openmethane_prior.lib import (
 )
 from openmethane_prior.lib.sector.au_sector import AustraliaPriorSector
 
-from .data import vic_oil_gas_data_source
+from .data.vic_oil_gas_fields import vic_oil_gas_data_source
 from .safeguard_oil_gas import allocate_safeguard_facility_emissions
 
 logger = logger.get_logger(__name__)
