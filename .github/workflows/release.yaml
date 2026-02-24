@@ -48,8 +48,12 @@ jobs:
       - name: Determine release version
         id: release-version
         run: |
+          BUMP="${{ github.event.inputs.bump_rule }}"
+          # patch is already bumped for pre-release, "stable" will remove "dev"
+          [[ $BUMP == "patch" ]] && BUMP="stable"
+          
           BASE_VERSION=`uv version --short`
-          NEW_VERSION=`uv version --short --bump ${{ github.event.inputs.bump_rule }}`
+          NEW_VERSION=`uv version --short --bump $BUMP`
           echo "BASE_VERSION=$BASE_VERSION" >> $GITHUB_ENV
           echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
           echo "RELEASE_VERSION=$NEW_VERSION" >> $GITHUB_OUTPUT
