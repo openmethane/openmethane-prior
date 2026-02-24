@@ -18,7 +18,7 @@ dependencies = [
     "rioxarray>=0.15.5,<0.16",
     "pyproj>=3.6.1,<4",
     "pandas>=2.2.2,<3",
-    "geopandas>=0.14.4,<0.15",
+    "geopandas>=1.1.2",
     "python-dotenv>=1.0.1,<2",
     "colorama>=0.4.6,<0.5",
     "cdsapi>=0.7.3,<0.8",
@@ -26,6 +26,7 @@ dependencies = [
     "environs>=11.0.0,<12",
     "prettyprinter>=0.18.0,<0.19",
     "pytest-mock>=3.15.1,<4",
+    "owslib>=0.35.0",
 ]
 
 [dependency-groups]

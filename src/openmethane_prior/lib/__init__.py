@@ -23,13 +23,15 @@ from .data_manager.manager import (
     DataManager,
     DataSource,
 )
+from .grid.grid import Grid
+from .grid.geometry import polygon_cell_intersection
 from .grid.regrid import regrid_data
 from .outputs import add_sector, convert_to_timescale
 from .create_prior import create_prior
 from .raster import remap_raster
 from .sector.config import PriorSectorConfig
 from .sector.sector import PriorSector
-from .units import kg_to_period_cell_flux
+from .units import kg_to_period_cell_flux, days_in_period
 from .utils import (
     area_of_rectangle_m2,
     datetime64_to_datetime,

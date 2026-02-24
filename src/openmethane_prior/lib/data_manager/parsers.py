@@ -15,10 +15,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import geopandas as gpd
 import pandas as pd
 
 from openmethane_prior.lib.data_manager.source import ConfiguredDataSource
 
 
 def parse_csv(data_source: ConfiguredDataSource) -> pd.DataFrame:
+    """Read and parse a ConfiguredDataSource CSV asset as a pandas DataFrame."""
     return pd.read_csv(data_source.asset_path)
+
+
+def parse_geo(data_source: ConfiguredDataSource):
+    """Read and parse a file containing a collection of geometry vector data
+    into a geopandas GeoDataFrame. Asset file type can be anything supported by
+    pyogrio, which includes GeoJSON, GeoPackage, Shapefiles, etc."""
+    return gpd.read_file(data_source.asset_path)
