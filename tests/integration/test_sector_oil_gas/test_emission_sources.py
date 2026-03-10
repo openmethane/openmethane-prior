@@ -1,7 +1,10 @@
 import datetime
 
+from openmethane_prior.sectors.oil_gas.data.nopta_titles import nopta_titles_data_source
+from openmethane_prior.sectors.oil_gas.data.nopta_wells import nopta_wells_data_source
 from openmethane_prior.sectors.oil_gas.data.qld_boreholes import qld_boreholes_data_source
 from openmethane_prior.sectors.oil_gas.data.qld_leases import qld_leases_data_source
+from openmethane_prior.sectors.oil_gas.emission_sources.offshore_sources import offshore_emission_sources
 from openmethane_prior.sectors.oil_gas.emission_sources.qld_sources import qld_emission_sources
 
 
@@ -46,5 +49,29 @@ def test_qld_emission_sources(input_files, data_manager):
     }
     assert set(df["status"].unique()) - allowed_status == set()
 
-    # no duplicate entries for the same location
     assert len(df["geometry"].unique()) == len(df)
+
+
+def test_offshore_emission_sources(input_files, data_manager):
+    start_date = datetime.datetime(2023, 1, 1, 0, 0)
+    start_date_end = datetime.datetime(2023, 1, 2, 0, 0)
+    wells_da = data_manager.get_asset(nopta_wells_data_source)
+    df = offshore_emission_sources(
+        start_date=start_date.date(),
+        end_date=start_date.date(),
+        offshore_wells_da=wells_da,
+        offshore_titles_da=data_manager.get_asset(nopta_titles_data_source),
+    )
+
+    # original wells dataset has been filtered down
+    assert len(wells_da.data) == 3024
+    assert len(df) == 900
+
+    # no sources where activity period doesn't intersect date period
+    assert len(df[(df["activity_end"] < start_date) & (df["activity_start"] > start_date_end)]) == 0
+
+    # no sources which aren't related to production
+    assert set(df["Purpose"].unique()) == {"Development"}
+    assert set(df["TitleType"].unique()) == {"Production Licence"}
+
+    # no duplicate check, as we allow duplicate geometries from NOPTA dataset
