@@ -30,4 +30,7 @@ def parse_geo(data_source: ConfiguredDataSource):
     """Read and parse a file containing a collection of geometry vector data
     into a geopandas GeoDataFrame. Asset file type can be anything supported by
     pyogrio, which includes GeoJSON, GeoPackage, Shapefiles, etc."""
-    return gpd.read_file(data_source.asset_path)
+    geo_df = gpd.read_file(data_source.asset_path)
+    if geo_df.crs is not None and geo_df.crs != "EPSG:4326":
+        geo_df = geo_df.to_crs(epsg=4326)
+    return geo_df
