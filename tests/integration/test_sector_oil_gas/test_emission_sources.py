@@ -6,6 +6,7 @@ from openmethane_prior.sectors.oil_gas.data.nsw_drillholes import nsw_drillholes
 from openmethane_prior.sectors.oil_gas.data.nsw_titles import nsw_titles_data_source
 from openmethane_prior.sectors.oil_gas.data.qld_boreholes import qld_boreholes_data_source
 from openmethane_prior.sectors.oil_gas.data.qld_leases import qld_leases_data_source
+from openmethane_prior.sectors.oil_gas.emission_sources.all_sources import all_emission_sources
 from openmethane_prior.sectors.oil_gas.emission_sources.nsw_sources import nsw_emission_sources
 from openmethane_prior.sectors.oil_gas.data.wa_titles import wa_titles_data_source
 from openmethane_prior.sectors.oil_gas.data.wa_wells import wa_wells_data_source
@@ -131,3 +132,17 @@ def test_offshore_emission_sources(input_files, data_manager):
     assert set(df["TitleType"].unique()) == {"Production Licence"}
 
     # no duplicate check, as we allow duplicate geometries from NOPTA dataset
+
+
+def test_all_emission_sources(input_files, data_manager, config):
+    end_date_end = config.end_date + datetime.timedelta(days=1)
+    df = all_emission_sources(
+        data_manager=data_manager,
+        prior_config=config,
+    )
+
+    assert len(df) == 9882
+
+    # no sources where activity period doesn't intersect config period
+    assert len(df[(df["activity_end"] < config.start_date) & (df["activity_start"] > end_date_end)]) == 0
+
