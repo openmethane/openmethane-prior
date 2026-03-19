@@ -15,13 +15,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import geopandas as gpd
 import numpy as np
 import restapi # https://github.com/Bolton-and-Menk-GIS/restapi
-import json
 
 from openmethane_prior.lib import DataSource
 from openmethane_prior.lib.data_manager.parsers import parse_geo
 from openmethane_prior.lib.data_manager.source import ConfiguredDataSource
+from openmethane_prior.sectors.oil_gas.data.esri_types import map_esri_date_to_str
 
 
 # Queensland borehole series - REST Service (ArcGIS)
@@ -62,13 +63,18 @@ def fetch_qld_boreholes(data_source: ConfiguredDataSource):
         else:
             boreholes_features.features.extend(layer_features.features)
 
+    df = gpd.GeoDataFrame.from_features(boreholes_features.features)
+    df["rig_release_date"] = df["rig_release_date"].map(map_esri_date_to_str)
+
     with open(data_source.asset_path, "w") as asset_file:
-        json.dump(boreholes_features.json, asset_file)
+        asset_file.write(df.to_json())
         return data_source.asset_path
 
 
 def parse_qld_boreholes(data_source: ConfiguredDataSource):
     boreholes_df = parse_geo(data_source=data_source)
+
+    #
 
     # lease/tenement name, i.e. "PL 100", is more useful than "PL" and 100.0,
     # so combine tenure_no and tenure_type into a single string
