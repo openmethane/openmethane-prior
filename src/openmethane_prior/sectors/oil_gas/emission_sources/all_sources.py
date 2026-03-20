@@ -69,6 +69,12 @@ def all_emission_sources(
         wa_titles_da=wa_titles_da,
     )
 
+    states_df: gpd.GeoDataFrame = pd.concat([
+        nsw_df,
+        qld_df,
+        wa_df,
+    ])
+
     offshore_wells_da = data_manager.get_asset(nopta_wells_data_source)
     offshore_titles_da = data_manager.get_asset(nopta_titles_data_source)
     offshore_df = offshore_emission_sources(
@@ -77,13 +83,12 @@ def all_emission_sources(
         offshore_wells_da=offshore_wells_da,
         offshore_titles_da=offshore_titles_da,
     )
+    # NOPTA will have some wells that are already provided by state datasets,
+    # which we must avoid "double counting"
+    offshore_existing = states_df.sjoin_nearest(offshore_df, how="inner", max_distance=0.00005)
+    offshore_new = offshore_df[~offshore_df["data_source_id"].isin(offshore_existing["data_source_id_right"])]
 
-    all_df: gpd.GeoDataFrame = pd.concat([
-        nsw_df,
-        qld_df,
-        wa_df,
-        offshore_df,
-    ])
+    all_df: gpd.GeoDataFrame = pd.concat([states_df, offshore_new])
 
     return all_df
 
