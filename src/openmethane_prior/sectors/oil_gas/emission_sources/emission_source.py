@@ -17,7 +17,7 @@
 #
 import numpy as np
 import geopandas as gpd
-import pyproj
+from typing import Any
 
 """
 An "emission source" in the oil and gas sector is any location that forms part
@@ -63,10 +63,10 @@ emission_source_site_types = [
 
 def normalise_emission_source_df(
     df: gpd.GeoDataFrame,
-    crs: pyproj.CRS = pyproj.CRS.from_epsg(4326),
+    crs: Any, # anything supported by GeoDataFrame.to_crs
 ) -> gpd.GeoDataFrame:
     # select only columns which are present in emission_source_dtypes
-    normalised_df = df[list(emission_source_dtypes.keys())]
+    normalised_df = df[list(emission_source_dtypes.keys())].set_crs(df.crs)
 
     normalised_df = normalised_df.to_crs(crs)
 

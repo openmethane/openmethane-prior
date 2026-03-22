@@ -15,13 +15,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-import datetime
 import geopandas as gpd
 import pandas as pd
 
+from openmethane_prior.lib import PriorConfig
 from openmethane_prior.lib.data_manager.manager import DataManager
 from openmethane_prior.sectors.oil_gas.data.nsw_drillholes import nsw_drillholes_data_source
 from openmethane_prior.sectors.oil_gas.data.nsw_titles import nsw_titles_data_source
+from .emission_source import normalise_emission_source_df
 
 from .nsw_sources import nsw_emission_sources
 from .offshore_sources import offshore_emission_sources
@@ -37,11 +38,13 @@ from ..data.wa_wells import wa_wells_data_source
 
 def all_emission_sources(
     data_manager: DataManager,
-    start_date: datetime.date,
-    end_date: datetime.date,
+    prior_config: PriorConfig,
 ) -> gpd.GeoDataFrame:
     """Assemble a single DataFrame from multiple data sources, where each row
     represents a possible location of emissions in the oil and gas sector."""
+    start_date = prior_config.start_date.date()
+    end_date = prior_config.end_date.date()
+
     nsw_drillholes_da = data_manager.get_asset(nsw_drillholes_data_source)
     nsw_titles_da = data_manager.get_asset(nsw_titles_data_source)
     nsw_df = nsw_emission_sources(
@@ -50,6 +53,7 @@ def all_emission_sources(
         nsw_drillholes_da=nsw_drillholes_da,
         nsw_titles_da=nsw_titles_da,
     )
+    nsw_df = normalise_emission_source_df(nsw_df, prior_config.crs)
 
     qld_boreholes_da = data_manager.get_asset(qld_boreholes_data_source)
     qld_leases_da = data_manager.get_asset(qld_leases_data_source)
@@ -59,6 +63,7 @@ def all_emission_sources(
         qld_boreholes_da=qld_boreholes_da,
         qld_leases_da=qld_leases_da,
     )
+    qld_df = normalise_emission_source_df(qld_df, prior_config.crs)
 
     wa_wells_da = data_manager.get_asset(wa_wells_data_source)
     wa_titles_da = data_manager.get_asset(wa_titles_data_source)
@@ -68,6 +73,7 @@ def all_emission_sources(
         wa_wells_da=wa_wells_da,
         wa_titles_da=wa_titles_da,
     )
+    wa_df = normalise_emission_source_df(wa_df, prior_config.crs)
 
     states_df: gpd.GeoDataFrame = pd.concat([
         nsw_df,
@@ -83,12 +89,17 @@ def all_emission_sources(
         offshore_wells_da=offshore_wells_da,
         offshore_titles_da=offshore_titles_da,
     )
+    offshore_df = normalise_emission_source_df(offshore_df, prior_config.crs)
+
     # NOPTA will have some wells that are already provided by state datasets,
     # which we must avoid "double counting"
     offshore_existing = states_df.sjoin_nearest(offshore_df, how="inner", max_distance=0.00005)
     offshore_new = offshore_df[~offshore_df["data_source_id"].isin(offshore_existing["data_source_id_right"])]
 
-    all_df: gpd.GeoDataFrame = pd.concat([states_df, offshore_new])
+    all_df: gpd.GeoDataFrame = pd.concat([
+        states_df,
+        offshore_new,
+    ])
 
     return all_df
 

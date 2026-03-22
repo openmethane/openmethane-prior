@@ -20,7 +20,6 @@ import geopandas as gpd
 
 from openmethane_prior.lib.data_manager.asset import DataAsset
 from openmethane_prior.lib.utils import rows_in_period
-from openmethane_prior.sectors.oil_gas.emission_sources.emission_source import normalise_emission_source_df
 
 nsw_drillhole_purpose_map = {
     "Coal seam methane": "drillhole-csg",
@@ -92,4 +91,4 @@ def nsw_emission_sources(
     })
     sources_df["data_source"] = nsw_drillholes_da.name
 
-    return normalise_emission_source_df(sources_df)
+    return sources_df
