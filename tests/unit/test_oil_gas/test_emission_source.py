@@ -18,7 +18,7 @@ def test_normalise_emission_source():
         "extra_column": [0],
     }, crs="EPSG:7844")
 
-    result_df = normalise_emission_source_df(test_df)
+    result_df = normalise_emission_source_df(test_df, "EPSG:4326")
 
     assert list(result_df.columns) == [
         "geometry",
