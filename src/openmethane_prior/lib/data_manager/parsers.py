@@ -17,6 +17,7 @@
 #
 import geopandas as gpd
 import pandas as pd
+import pyproj
 
 from openmethane_prior.lib.data_manager.source import ConfiguredDataSource
 
@@ -26,11 +27,20 @@ def parse_csv(data_source: ConfiguredDataSource) -> pd.DataFrame:
     return pd.read_csv(data_source.asset_path)
 
 
-def parse_geo(data_source: ConfiguredDataSource):
+def parse_geo(data_source: ConfiguredDataSource, source_crs: pyproj.CRS = None):
     """Read and parse a file containing a collection of geometry vector data
     into a geopandas GeoDataFrame. Asset file type can be anything supported by
     pyogrio, which includes GeoJSON, GeoPackage, Shapefiles, etc."""
     geo_df = gpd.read_file(data_source.asset_path)
-    if geo_df.crs is not None and geo_df.crs != "EPSG:4326":
-        geo_df = geo_df.to_crs(epsg=4326)
+
+    if geo_df.crs is None:
+        if source_crs is not None:
+            geo_df = geo_df.set_crs(source_crs)
+        else:
+            raise ValueError("parse_geo could not determine CRS, must be called manually with source_crs parameter")
+
+    # convert the geometries into the prior projection to ensure downstream
+    # comparisons are done using the same coordinate system
+    geo_df = geo_df.to_crs(data_source.prior_config.crs)
+
     return geo_df

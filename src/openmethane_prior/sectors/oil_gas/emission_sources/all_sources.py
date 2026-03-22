@@ -93,7 +93,7 @@ def all_emission_sources(
 
     # NOPTA will have some wells that are already provided by state datasets,
     # which we must avoid "double counting"
-    offshore_existing = states_df.sjoin_nearest(offshore_df, how="inner", max_distance=0.00005)
+    offshore_existing = states_df.sjoin_nearest(offshore_df, how="inner", max_distance=50)
     offshore_new = offshore_df[~offshore_df["data_source_id"].isin(offshore_existing["data_source_id_right"])]
 
     all_df: gpd.GeoDataFrame = pd.concat([
