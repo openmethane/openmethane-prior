@@ -322,6 +322,10 @@ within petroleum titles/leases that were active during the period of interest.
   - [Data.NSW - Coal Seam Gas Boreholes](https://data.nsw.gov.au/data/dataset/coal-seam-gas-borehole)
   - [Data.NSW - NSW Drillholes Petroleum](https://data.nsw.gov.au/data/dataset/nsw-drillholes-petroleum)
   - [Data.NSW - NSW Exploration and Mining Titles](https://data.nsw.gov.au/data/dataset/nsw-mining-titles)
+- Northern Territory datasets:
+  - [STRIKE](http://strike.nt.gov.au/wss.html)
+    - Downloads -> Petroleum Titles and Pipeline Titles -> All Petroleum and Pipeline Titles Layers
+    - Downloads -> Drilling -> Petroleum Wells
 - Queensland datasets:
   - [Queensland borehole series](https://www.data.qld.gov.au/dataset/queensland-borehole-series)
   - [Queensland mining and exploration tenure series](https://www.data.qld.gov.au/dataset/queensland-mining-and-exploration-tenure-series)
@@ -332,7 +336,7 @@ within petroleum titles/leases that were active during the period of interest.
   - [National Offshore Petroleum Information Management System (NOPIMS)](https://www.nopta.gov.au/maps-and-public-data/nopims-info.html)
   - [National Electronic Approvals Tracking System](https://public.neats.nopta.gov.au/)
 
-Locations of every borehole/drillhole/well in the public datasets from NSW,
+Locations of every borehole/drillhole/well in the public datasets from NSW, NT,
 QLD, WA and NOPTA are correlated with petroleum production titles and filtered
 to only bores involved in petroleum production where the title period overlaps
 with the prior period of interest.
@@ -373,13 +377,12 @@ hope to add these facilities at a later date.
 
 4. Missing regions
 
-Several Australian states are not included in the data sources:
-- Northern Territory
-  - has onshore gas, will be added
+- South Australia
+  - not yet implemented
 - Victoria
-  - has offshore oil and gas, should be represented in NOPTA datasets
-- ACT, SA
-  - no significant oil and gas production
+  - oil and gas extraction currently entirely offshore, present in NOPTA dataset
+- ACT
+  - no oil or gas production to date
 
 
 ## Sector: Stationary
