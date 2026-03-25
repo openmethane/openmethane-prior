@@ -24,12 +24,18 @@ jobs:
       - name: Install the project
         run: |
           uv sync --locked --all-extras --dev
+      - name: Cache test data
+        uses: actions/cache@v4
+        with:
+          path: data/.cache
+          key: test-data-cache
       - name: Run tests
         run: |
           make test
         env:
           CDSAPI_KEY: ${{ secrets.CDSAPI_ADS_KEY }}
           CDSAPI_URL: https://ads.atmosphere.copernicus.eu/api
+          INPUT_CACHE: data/.cache
 
   check-build:
     runs-on: ubuntu-latest
