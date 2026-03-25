@@ -51,6 +51,7 @@ def sa_emission_sources(
     # "Month End" is read from a date on the last day of the month, construct
     # a start/end date reflecting the full period ending on midnight of "Month End",
     # then filter to only rows that intersect with the prior period.
+    sa_production_df["Month End"] = pd.to_datetime(sa_production_df["Month End"])
     sa_production_df["activity_start"] = sa_production_df["Month End"].map(start_of_month)
     sa_production_df["activity_end"] = sa_production_df["Month End"] + np.timedelta64(1, "D")
     production_df = rows_in_period(
