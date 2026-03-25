@@ -15,8 +15,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import os.path
+import pandas as pd
+import urllib
+
 from openmethane_prior.lib import DataSource
-from openmethane_prior.lib.data_manager.parsers import parse_geo_xlsx, parse_xlsx
+from openmethane_prior.lib.data_manager.parsers import parse_geo_xlsx, parse_csv
+from openmethane_prior.lib.data_manager.source import ConfiguredDataSource
 
 # Locations of all petroleum wells in the Australian state of South Australia
 # via the PEPS SA Portal.
@@ -29,11 +34,28 @@ sa_wells_data_source = DataSource(
 )
 
 
+def fetch_xlsx_as_csv(data_source: ConfiguredDataSource):
+    """Fetch a source file in xlsx format, but save it to disk as csv."""
+    if data_source.url is None:
+        raise ValueError("DataSource must have url set to use default fetch")
+
+    # urlretrieve will throw on non-successful fetches
+    save_path, response = urllib.request.urlretrieve(url=data_source.url)
+
+    df = pd.read_excel(save_path)
+    df.to_csv(data_source.asset_path)
+
+    # clean up the xlsx file
+    os.remove(save_path)
+
+    return data_source.asset_path
+
 # Production amounts by month for each well in the SA PEPS wells dataset.
 # Source: https://peps.sa.gov.au/more/excels/ -> Monthly Production by Completion
 sa_wells_production_data_source = DataSource(
     name="SA-wells-production",
-    file_path="MonthlyProductionByCompletion.xlsx",
+    file_path="SA-wells-production.csv",
     url="https://onepeps-api.azurewebsites.net/api/excel/file/MonthlyProductionByCompletion.xlsx",
-    parse=parse_xlsx,
+    fetch=fetch_xlsx_as_csv,
+    parse=parse_csv,
 )
