@@ -349,6 +349,10 @@ within petroleum titles/leases that were active during the period of interest.
 - Queensland datasets:
   - [Queensland borehole series](https://www.data.qld.gov.au/dataset/queensland-borehole-series)
   - [Queensland mining and exploration tenure series](https://www.data.qld.gov.au/dataset/queensland-mining-and-exploration-tenure-series)
+- South Australia datasets:
+  - [PEPS SA Downloads](https://peps.sa.gov.au/more/excels/)
+    - Well Details and Locations
+    - Monthly Production by Completion
 - Western Australia datasets:
   - [WA Petroleum Wells (DMIRS-025)](https://catalogue.data.wa.gov.au/dataset/wa-onshore-petroleum-wells-dmirs-025)
   - [WA Petroleum Titles (DMIRS-011)](https://catalogue.data.wa.gov.au/dataset/wa-petroleum-titles-dmirs-011)
@@ -357,9 +361,9 @@ within petroleum titles/leases that were active during the period of interest.
   - [National Electronic Approvals Tracking System](https://public.neats.nopta.gov.au/)
 
 Locations of every borehole/drillhole/well in the public datasets from NSW, NT,
-QLD, WA and NOPTA are correlated with petroleum production titles and filtered
-to only bores involved in petroleum production where the title period overlaps
-with the prior period of interest.
+QLD, SA, WA and NOPTA are correlated with petroleum production titles and
+filtered to only bores involved in petroleum production where the title period
+overlaps with the prior period of interest.
 
 The national inventory total for oil and gas emissions is divided evenly between
 these sites. The listed point location for each site is mapped to the relevant
@@ -397,8 +401,6 @@ hope to add these facilities at a later date.
 
 4. Missing regions
 
-- South Australia
-  - not yet implemented
 - Victoria
   - oil and gas extraction currently entirely offshore, present in NOPTA dataset
 - ACT

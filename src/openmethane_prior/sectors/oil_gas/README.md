@@ -69,6 +69,14 @@ for years after production has ceased. Assuming that capped wells don't
 continue to emit methane, this will misallocate potentially significant
 emissions. Unfortunately we currently don't have a better solution.
 
+#### South Australia
+
+Unlike other states, South Australia also provides monthly per-well production
+amounts for both oil and gas. For South Australia, only wells which produced
+either oil or gas within the period of interest will be considered an emission
+source.
+
+
 ### Processing facilities
 
 Not yet implemented.

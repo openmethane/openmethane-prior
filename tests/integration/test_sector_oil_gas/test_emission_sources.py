@@ -8,6 +8,7 @@ from openmethane_prior.sectors.oil_gas.data.nt_titles import nt_titles_data_sour
 from openmethane_prior.sectors.oil_gas.data.nt_wells import nt_wells_data_source
 from openmethane_prior.sectors.oil_gas.data.qld_boreholes import qld_boreholes_data_source
 from openmethane_prior.sectors.oil_gas.data.qld_leases import qld_leases_data_source
+from openmethane_prior.sectors.oil_gas.data.sa_wells import sa_wells_data_source, sa_wells_production_data_source
 from openmethane_prior.sectors.oil_gas.emission_sources.all_sources import all_emission_sources
 from openmethane_prior.sectors.oil_gas.emission_sources.nsw_sources import nsw_emission_sources
 from openmethane_prior.sectors.oil_gas.data.wa_titles import wa_titles_data_source
@@ -15,6 +16,7 @@ from openmethane_prior.sectors.oil_gas.data.wa_wells import wa_wells_data_source
 from openmethane_prior.sectors.oil_gas.emission_sources.nt_sources import nt_emission_sources
 from openmethane_prior.sectors.oil_gas.emission_sources.offshore_sources import offshore_emission_sources
 from openmethane_prior.sectors.oil_gas.emission_sources.qld_sources import qld_emission_sources
+from openmethane_prior.sectors.oil_gas.emission_sources.sa_sources import sa_emission_sources
 from openmethane_prior.sectors.oil_gas.emission_sources.wa_sources import wa_emission_sources
 
 
@@ -111,6 +113,29 @@ def test_qld_emission_sources(input_files, data_manager):
     assert set(df["status"].unique()) - allowed_status == set()
 
     assert len(df["geometry"].unique()) == len(df)
+
+
+def test_sa_emission_sources(input_files, data_manager):
+    start_date = datetime.datetime(2023, 1, 1, 0, 0)
+    start_date_end = datetime.datetime(2023, 1, 2, 0, 0)
+    wells_da = data_manager.get_asset(sa_wells_data_source)
+    production_da = data_manager.get_asset(sa_wells_production_data_source)
+    df = sa_emission_sources(
+        start_date=start_date.date(),
+        end_date=start_date.date(),
+        sa_wells_da=wells_da,
+        sa_production_da=production_da,
+    )
+
+    # original wells dataset has been filtered down
+    assert len(wells_da.data) > 0
+    assert len(df) <= len(wells_da.data)
+
+    # no sources where activity period doesn't intersect date period
+    assert len(df[(df["activity_end"] < start_date) & (df["activity_start"] > start_date_end)]) == 0
+
+    # # no sources which didn't have recorded production within the period
+    assert len(df[(df["Oil (m3)"] <= 0) & (df["Gas (m3E6)"] <= 0)]) == 0
 
 
 def test_wa_emission_sources(input_files, data_manager):
