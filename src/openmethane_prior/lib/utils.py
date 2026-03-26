@@ -29,6 +29,8 @@ import sys
 import typing
 
 import numpy as np
+import pandas as pd
+import geopandas as gpd
 from numpy.typing import ArrayLike
 from urllib.parse import urlparse
 import xarray as xr
@@ -196,3 +198,23 @@ def is_url(maybe_url: str) -> bool:
     """
     parsed = urlparse(maybe_url)
     return parsed.scheme != "" and parsed.netloc != ""
+
+
+DF = typing.TypeVar("DF", bound=pd.DataFrame | gpd.GeoDataFrame)
+def rows_in_period(
+    df: DF,
+    start_date: datetime.date,
+    end_date: datetime.date,
+    start_field: str = "start_date",
+    end_field: str = "end_date",
+) -> DF:
+    """Return the rows of the DataFrame df where the period between df[start_field]
+    and df[end_field] overlaps with the period between start_date and end_date."""
+    midnight = datetime.time(0, 0)
+    period_start = datetime.datetime.combine(date=start_date, time=midnight)
+    period_end = datetime.datetime.combine(date=end_date + datetime.timedelta(days=1), time=midnight)
+
+    return df[
+        (df[start_field] <= np.datetime64(period_end))
+        & ((np.isnat(df[end_field])) | (df[end_field] >= np.datetime64(period_start)))
+    ]

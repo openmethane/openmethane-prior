@@ -39,6 +39,7 @@ from .utils import (
     load_zipped_pickle,
     redistribute_spatially,
     save_zipped_pickle,
+    rows_in_period,
 )
 
 import openmethane_prior.lib.logger as logger
