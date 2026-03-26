@@ -81,11 +81,11 @@ def test_rows_in_period():
     dt = lambda st: np.datetime64(datetime.datetime.fromisoformat(st))
 
     test_df = pd.DataFrame.from_records([
-        (dt("2022-12-31T00:00:00Z"), dt("2022-12-31T23:59:59Z"), "a"),
-        (dt("2022-12-31T00:00:00Z"), dt("2023-01-01T00:00:00Z"), "b"),
-        (dt("2023-01-01T00:00:01Z"), dt("2023-01-01T23:59:59Z"), "c"),
-        (dt("2023-01-02T00:00:00Z"), dt("2023-02-02T23:59:59Z"), "d"),
-        (dt("2023-01-02T00:00:01Z"), dt("2023-02-02T23:59:59Z"), "e"),
+        (dt("2022-12-31T00:00:00"), dt("2022-12-31T23:59:59"), "a"),
+        (dt("2022-12-31T00:00:00"), dt("2023-01-01T00:00:00"), "b"),
+        (dt("2023-01-01T00:00:01"), dt("2023-01-01T23:59:59"), "c"),
+        (dt("2023-01-02T00:00:00"), dt("2023-02-02T23:59:59"), "d"),
+        (dt("2023-01-02T00:00:01"), dt("2023-02-02T23:59:59"), "e"),
     ], columns=["start_date", "end_date", "test"])
 
     result_df = rows_in_period(
@@ -98,9 +98,9 @@ def test_rows_in_period():
 
     # works with arbitrary start/end field names "start_test" and "end_test"
     test_df = pd.DataFrame.from_records([
-        (dt("2022-12-31T00:00:00Z"), dt("2022-12-31T23:59:59Z"), "f"),
-        (dt("2022-12-31T00:00:00Z"), dt("2023-01-01T00:00:00Z"), "g"),
-        (dt("2023-01-02T00:00:01Z"), dt("2023-02-02T23:59:59Z"), "h"),
+        (dt("2022-12-31T00:00:00"), dt("2022-12-31T23:59:59"), "f"),
+        (dt("2022-12-31T00:00:00"), dt("2023-01-01T00:00:00"), "g"),
+        (dt("2023-01-02T00:00:01"), dt("2023-02-02T23:59:59"), "h"),
     ], columns=["start_test", "end_test", "test"])
 
     result_df = rows_in_period(
