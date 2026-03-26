@@ -1,19 +1,20 @@
+import datetime
 import geopandas as gpd
-import os
 import pathlib
 from openmethane_prior.lib import PriorConfig
 from openmethane_prior.lib.data_manager.manager import DataManager
 from openmethane_prior.sectors.oil_gas.emission_sources.all_sources import all_emission_sources
-os.environ["DOMAIN_FILE"] = "https://openmethane.s3.amazonaws.com/domains/aust10km/v1/domain.aust10km.nc"
-os.environ["START_DATE"] = "2022-12-01"
-os.environ["END_DATE"] = "2022-12-01"
-os.environ["INPUTS"] = "../data/inputs"
-os.environ["INPUT_CACHE"] = "../data/.cache"
-prior_config = PriorConfig.from_env()
+prior_config = PriorConfig(
+    domain_path="https://openmethane.s3.amazonaws.com/domains/aust10km/v1/domain.aust10km.nc",
+    inventory_domain_path="https://openmethane.s3.amazonaws.com/domains/aust10km/v1/domain.aust10km.nc",
+    start_date=datetime.datetime.fromisoformat("2022-12-01"),
+    input_path=pathlib.Path("../data/inputs"),
+    input_cache=pathlib.Path("../data/.cache"),
+)
 prior_config.prepare_paths()
 prior_config.load_cached_inputs()
 data_manager = DataManager(
-    data_path=pathlib.Path("../data/inputs"),
+    data_path=prior_config.input_path,
     prior_config=prior_config,
 )
 
