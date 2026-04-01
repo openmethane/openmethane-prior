@@ -51,6 +51,10 @@ emission_source_dtypes = {
     # (Optional) a string identifying a group of locations this site is part
     # of. A group could be a title/license area, a field, etc.
     "group_id": str,
+
+    # (Optional) the state/region the emission source is in the jurisdiction
+    # of. Can be useful for attributing inventory emissions, for example.
+    "state": str,
 }
 
 emission_source_site_types = [

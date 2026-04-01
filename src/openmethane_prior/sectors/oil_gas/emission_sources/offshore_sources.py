@@ -40,6 +40,7 @@ def offshore_emission_sources(
 
     # emissions are expected where production is ongoing, unlike exploration or retention
     titles_df = offshore_titles_df[offshore_titles_df["TitleType"] == "Production Licence"]
+    titles_df = titles_df.rename(columns={"state": "title_state"})
 
     # NOPTA wells dataset appears to re-use lat/lon coords for multiple wells
     # within the same field. Since these contain unique values for WellName and

@@ -62,6 +62,7 @@ def all_emission_sources(
         nsw_drillholes_da=nsw_drillholes_da,
         nsw_titles_da=nsw_titles_da,
     )
+    nsw_df["state"] = "NSW"
     nsw_df = normalise_emission_source_df(nsw_df, prior_config.crs)
     logger.debug(f"found {len(nsw_df)} NSW sources in {len(nsw_df['group_id'].unique())} titles")
 
@@ -73,6 +74,7 @@ def all_emission_sources(
         nt_wells_da=nt_wells_da,
         nt_titles_da=nt_titles_da,
     )
+    nt_df["state"] = "NT"
     nt_df = normalise_emission_source_df(nt_df, prior_config.crs)
     logger.debug(f"found {len(nt_df)} NT sources in {len(nt_df['group_id'].unique())} titles")
 
@@ -84,6 +86,7 @@ def all_emission_sources(
         qld_boreholes_da=qld_boreholes_da,
         qld_leases_da=qld_leases_da,
     )
+    qld_df["state"] = "QLD"
     qld_df = normalise_emission_source_df(qld_df, prior_config.crs)
     logger.debug(f"found {len(qld_df)} QLD sources in {len(qld_df['group_id'].unique())} titles")
 
@@ -95,6 +98,7 @@ def all_emission_sources(
         sa_wells_da=sa_wells_da,
         sa_production_da=sa_production_da,
     )
+    sa_df["state"] = "SA"
     sa_df = normalise_emission_source_df(sa_df, prior_config.crs)
     logger.debug(f"found {len(sa_df)} SA sources in {len(sa_df['group_id'].unique())} titles")
 
@@ -106,6 +110,7 @@ def all_emission_sources(
         wa_wells_da=wa_wells_da,
         wa_titles_da=wa_titles_da,
     )
+    wa_df["state"] = "WA"
     wa_df = normalise_emission_source_df(wa_df, prior_config.crs)
     logger.debug(f"found {len(wa_df)} WA sources in {len(wa_df['group_id'].unique())} titles")
 

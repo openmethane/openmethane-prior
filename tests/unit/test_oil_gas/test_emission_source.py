@@ -15,6 +15,7 @@ def test_normalise_emission_source():
         "data_source": ["nsw-drillholes"],
         "data_source_id": ["012345"],
         "group_id": ["xyz"],
+        "state": ["VIC"],
         "extra_column": [0],
     }, crs="EPSG:7844")
 
@@ -28,6 +29,7 @@ def test_normalise_emission_source():
         "data_source",
         "data_source_id",
         "group_id",
+        "state",
     ]
 
     assert result_df.crs == "EPSG:4326"
