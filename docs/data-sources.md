@@ -213,7 +213,7 @@ Global dataset of CH4 flux estimates from termites.
 Termite emissions used in [Saunois et al. 2020](https://essd.copernicus.org/articles/12/1561/2020/)
 supplied by Simona Castaldi and Sergio Noce.
 
-- Dataset: [termite_emissions_2010-2016.nc][6]
+- Dataset: [termite_emissions_2010-2016.nc][5]
 - Resolution: 0.5 degree
 - Period: mean of 2010 – 2016
 - Updates: never
@@ -333,17 +333,78 @@ spatialised according to the [Land Use of Australia](#Land-Use-of-Australia) dat
 
 Oil and gas emissions reported in the
 [Australian UNFCCC Inventory](#Australian-UNFCCC-Inventory)
-are spatialised according to facility-level estimates.
+are spatialised according to locations of oil and gas boreholes/wells which lie
+within petroleum titles/leases that were active during the period of interest.
 
 ### Sources
 
-- Dataset: [Oil and gas production sources][5]
-    - Original source: [ClimateTrace](https://climatetrace.org/)
+- New South Wales datasets:
+  - [Data.NSW - Coal Seam Gas Boreholes](https://data.nsw.gov.au/data/dataset/coal-seam-gas-borehole)
+  - [Data.NSW - NSW Drillholes Petroleum](https://data.nsw.gov.au/data/dataset/nsw-drillholes-petroleum)
+  - [Data.NSW - NSW Exploration and Mining Titles](https://data.nsw.gov.au/data/dataset/nsw-mining-titles)
+- Northern Territory datasets:
+  - [STRIKE](http://strike.nt.gov.au/wss.html)
+    - Downloads -> Petroleum Titles and Pipeline Titles -> All Petroleum and Pipeline Titles Layers
+    - Downloads -> Drilling -> Petroleum Wells
+- Queensland datasets:
+  - [Queensland borehole series](https://www.data.qld.gov.au/dataset/queensland-borehole-series)
+  - [Queensland mining and exploration tenure series](https://www.data.qld.gov.au/dataset/queensland-mining-and-exploration-tenure-series)
+- South Australia datasets:
+  - [PEPS SA Downloads](https://peps.sa.gov.au/more/excels/)
+    - Well Details and Locations
+    - Monthly Production by Completion
+- Western Australia datasets:
+  - [WA Petroleum Wells (DMIRS-025)](https://catalogue.data.wa.gov.au/dataset/wa-onshore-petroleum-wells-dmirs-025)
+  - [WA Petroleum Titles (DMIRS-011)](https://catalogue.data.wa.gov.au/dataset/wa-petroleum-titles-dmirs-011)
+- Offshore datasets:
+  - [National Offshore Petroleum Information Management System (NOPIMS)](https://www.nopta.gov.au/maps-and-public-data/nopims-info.html)
+  - [National Electronic Approvals Tracking System](https://public.neats.nopta.gov.au/)
 
-The national inventory total for oil and gas emissions is pro-rated to the
-location of every facility noted in the ClimateTrace data which is
-listed for the chosen period. The listed point location for each
-climate trace emission is mapped to the relevant domain grid cell.
+Locations of every borehole/drillhole/well in the public datasets from NSW, NT,
+QLD, SA, WA and NOPTA are correlated with petroleum production titles and
+filtered to only bores involved in petroleum production where the title period
+overlaps with the prior period of interest.
+
+The national inventory total for oil and gas emissions is divided evenly between
+these sites. The listed point location for each site is mapped to the relevant
+domain grid cell, where emissions are allocated.
+
+### Considerations
+
+The approach used to spatialise the oil and gas sector has several known flaws.
+
+1. Capped wells
+
+First and foremost, although some datasets list many bores/wells as "capped" or
+"abandoned", they don't include the date when the capping occurred. For this
+reason we consider every production well to be an emission source until the
+date of expiry of the title. This could be incorrect in both ways: wells very
+likely stop emitting methane when they are capped, and in that case this leads
+to many false positives within the datasets. Alternatively, capped wells may
+continue to emit methane after production (and the title) has ended, leading to
+missing emissions on abandoned fields.
+
+2. Attribution of inventory emissions
+
+Attribution of equal emissions to every "active" bore/well is also
+very naive. Wells for different resources (i.e. oil vs coal seam gas) or in
+different regions (WA vs NSW) or in different infrastructure (onshore vs
+offshore) are likely to have very different emission profiles. Until we have
+solid evidence of what these profiles might be, we cannot model them.
+
+3. Refineries and pipelines
+
+Several types of major infrastructure are currently missing from this approach:
+refineries and pipelines. This is a major omission, as there is reasonable
+suspicion that the majority of emissions occur at processing facilities. We
+hope to add these facilities at a later date.
+
+4. Missing regions
+
+- Victoria
+  - oil and gas extraction currently entirely offshore, present in NOPTA dataset
+- ACT
+  - no oil or gas production to date
 
 
 ## Sector: Stationary
@@ -370,5 +431,4 @@ spatialised according to the [Land Use of Australia](#Land-Use-of-Australia) dat
 [2]: https://openmethane.s3.amazonaws.com/prior/inputs/EntericFermentation.nc
 [3]: https://openmethane.s3.amazonaws.com/prior/inputs/ch4-electricity.csv
 [4]: https://openmethane.s3.amazonaws.com/prior/inputs/landuse-sector-map.csv
-[5]: https://openmethane.s3.amazonaws.com/prior/inputs/oil-and-gas-production-and-transport_emissions-sources.csv
-[6]: https://openmethane.s3.amazonaws.com/prior/inputs/termite_emissions_2010-2016.nc
+[5]: https://openmethane.s3.amazonaws.com/prior/inputs/termite_emissions_2010-2016.nc
