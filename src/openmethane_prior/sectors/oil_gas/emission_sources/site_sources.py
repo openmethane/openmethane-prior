@@ -97,9 +97,6 @@ def oil_gas_site_emission_sources(
     # sectors.
     npi_df: gpd.GeoDataFrame = npi_da.data
 
-    # Remove facilities not in the "070" (oil and gas) ANZSIC sector
-    npi_df = npi_df[npi_df["primary_anzsic_class_code"].str.startswith("070")]
-
     # NPI is based on a reporting mechanism. Lacking more detailed information,
     # this assumes that each facility operates continuously from the start
     # of the first reporting period where a facility report was lodged, until
@@ -107,6 +104,9 @@ def oil_gas_site_emission_sources(
     npi_df["start_date"] = npi_df["first_report_year"].map(_npi_financial_year_start)
     npi_df["end_date"] = npi_df["latest_report_year"].map(_npi_financial_year_end)
     npi_df = rows_in_period(df=npi_df, start_date=start_date, end_date=end_date)
+
+    # remove facilities not in the "070" (oil and gas) ANZSIC sector
+    npi_df = npi_df[npi_df["primary_anzsic_class_code"].str.startswith("070")]
 
     # locate NPI facilities within 250m of sites already accounted for in the
     # oil and gas sites dataset, so they don't get counted twice
@@ -118,6 +118,7 @@ def oil_gas_site_emission_sources(
         distance_col="distance",
     )
 
+    # remove npi facilities within 250m of a site from our other dataset
     npi_df = npi_df[~npi_df.index.isin(npi_duplicate_df.index)]
 
     # normalise output to match emission sources format
