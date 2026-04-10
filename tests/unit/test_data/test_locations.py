@@ -36,7 +36,7 @@ def location_rows_df():
             ("Facility Name C", "test-ds", "id-003"),
             ("Facility Name E", "alternate-ds", "id-005"),
         ],
-        columns=safeguard_locations_csv_columns,
+        columns=safeguard_locations_csv_columns[:3], # ignore "notes"
     )
 
 def test_locations_filter_locations(location_rows_df):
