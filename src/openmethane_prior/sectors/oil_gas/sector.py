@@ -42,7 +42,7 @@ def process_emissions(sector: AustraliaPriorSector, sector_config: PriorSectorCo
         category_codes=sector.unfccc_categories,
     )
 
-    # now read climate_trace facilities emissions for oil and gas
+    # create a DataFrame with all potential methane emission sources in the sector
     emission_sources_df = all_emission_sources(
         data_manager=sector_config.data_manager,
         prior_config=config,
