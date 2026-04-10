@@ -91,6 +91,11 @@ def oil_gas_site_emission_sources(
         anzsic_codes=["070", "170"],
     )
 
+    # TODO find a way not to hard-code 250m distance threshold
+    crs_units = set([axis.unit_name for axis in npi_df.crs.coordinate_system.axis_list])
+    if crs_units != {"metre"}:
+        raise ValueError("CRS must use meter units")
+
     # locate NPI facilities within 250m of sites already accounted for in the
     # oil and gas sites dataset, so they don't get counted twice
     npi_duplicate_df = gpd.sjoin_nearest(
@@ -98,7 +103,6 @@ def oil_gas_site_emission_sources(
         sites_df,
         how="inner",
         max_distance=250, # 250m, assumes the domain CRS is in meters
-        distance_col="distance",
     )
 
     # remove npi facilities within 250m of a site from our other dataset
