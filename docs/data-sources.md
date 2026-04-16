@@ -338,6 +338,16 @@ within petroleum titles/leases that were active during the period of interest,
 and sites and facilities in ANZSIC sectors associated with the oil and gas
 industries.
 
+Facility estimates are taken from
+[Safeguard Mechanism estimates](#Safeguard-Mechanism-Baselines-and-Emissions)
+if available, using facility locations researched by The Superpower Institute.
+
+For wells and facilities not covered by the Safeguard Mechanism, the National
+Inventory total for "Fugitive emissions from fuels, Oil and Natural Gas", minus
+emissions already allocated to Safeguard facilities, are distributed equally
+across all potential emission sources not associated with any SGM facility.
+Listed point location for each source is mapped to the relevant grid cell.
+
 ### Sources
 
 - New South Wales datasets:
