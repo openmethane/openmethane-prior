@@ -115,6 +115,8 @@ def fetch_qld_leases(data_source: ConfiguredDataSource):
         "expirydate",
         "permitminerals",
         "permitpurpose",
+        "permitname",
+        "authorisedholdername",
     ]
 
     leases_layer = qld_current_leases.layer("PL granted")
