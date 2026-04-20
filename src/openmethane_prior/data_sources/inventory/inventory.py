@@ -33,6 +33,22 @@ def kt_to_kg(kilotonnes):
     return kilotonnes * 1e6
 
 
+def financial_year_start(year: int) -> datetime.datetime:
+    """ANGA inventories follow the Australian financial year, which goes from
+    July 1st to June 30th of the following year. In their API, ANGA specifies
+    a single year indicating the end year of the financial year for that data.
+    I.e. "2023" references the "2022/2023" financial year."""
+    return datetime.datetime(year - 1, 7, 1)
+
+
+def financial_year_end(year: int) -> datetime.datetime:
+    """ANGA inventories follow the Australian financial year, which goes from
+    July 1st to June 30th of the following year. In their API, ANGA specifies
+    a single year indicating the end year of the financial year for that data.
+    The period includes the final day, so we add 24h."""
+    return datetime.datetime(year, 6, 30) + datetime.timedelta(hours=24)
+
+
 def create_inventory_df(anga_inventory_records, unfccc_df: pd.DataFrame) -> pd.DataFrame:
     anga_df = pd.DataFrame.from_records(
         anga_inventory_records,
@@ -53,11 +69,6 @@ def create_inventory_df(anga_inventory_records, unfccc_df: pd.DataFrame) -> pd.D
     # Add UNFCCC code column using cascading fallback: try all 4 levels first,
     # then progressively drop the most specific level until a match is found.
     anga_df["UNFCCC_Code"] = anga_df.apply(_find_unfccc_code, axis=1, unfccc_df=unfccc_df)
-
-    missing = anga_df[anga_df["UNFCCC_Code"].isna()]
-    if not missing.empty:
-        missing_distinct = missing[_LEVEL_COLUMNS].drop_duplicates()
-        logger.warning(f"Categories without UNFCCC code after all fallback attempts: {missing_distinct}")
 
     return anga_df
 
@@ -80,7 +91,7 @@ def _find_unfccc_code(row: pd.Series, unfccc_df: pd.DataFrame) -> str | None:
             if n_levels < len(_LEVEL_COLUMNS):
                 logger.debug(f"Used {n_levels}-level match for {[row[c] for c in _LEVEL_COLUMNS]}")
             return matches.iloc[0]["UNFCCC_Code"]
-    return None
+    raise ValueError(f"No matching UNFCCC code for inventory row: {row}")
 
 
 def get_sector_emissions_by_code(

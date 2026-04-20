@@ -52,7 +52,8 @@ def test_find_unfccc_code_fallback_drops_level3_and_4(unfccc_df):
 
 def test_find_unfccc_code_no_match(unfccc_df):
     row = make_row("Unknown sector", "Unknown L2", "Unknown L3", "Unknown L4")
-    assert _find_unfccc_code(row, unfccc_df) is None
+    with pytest.raises(ValueError, match="No matching UNFCCC code for inventory row"):
+        _find_unfccc_code(row, unfccc_df)
 
 
 def make_anga_record(year, level_1, level_2, level_3, level_4, gas, gg):
@@ -94,10 +95,14 @@ def test_create_inventory_df_unfccc_fallback(unfccc_df):
 
 def test_create_inventory_df_no_unfccc_match(unfccc_df):
     records = [make_anga_record(2023, "Unknown Sector", "Unknown L2", "Unknown L3", "Unknown L4", "CH4", 0.5)]
-    result = create_inventory_df(records, unfccc_df)
 
-    assert len(result) == 1
-    assert pd.isna(result.iloc[0]["UNFCCC_Code"])
+    # it is very important that every entry in the ANGA inventory is able to
+    # be matched with a UNFCCC code, otherwise we may miss reported emissions
+    # that should be allocated.
+    # If this test fails, identify the UNFCCC Levels in the failing row and
+    # manually add the appropriate UNFCCC code to the CSV.
+    with pytest.raises(ValueError, match="No matching UNFCCC code for inventory row"):
+        create_inventory_df(records, unfccc_df)
 
 
 def make_inventory_df(entries):
