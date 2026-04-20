@@ -37,8 +37,8 @@ def test_inventory_get_sector_emissions_by_code(all_sector_meta, inventory_df):
     for name in expected_annual_emissions.keys():
         annual_emissions[name] = get_sector_emissions_by_code(
             emissions_inventory=inventory_df,
-            start_date=datetime.date(2023, 1, 1),
-            end_date=datetime.date(2023, 12, 31),
+            start_date=datetime.date(2022, 7, 1),
+            end_date=datetime.date(2023, 6, 30),
             category_codes=all_sector_meta[name].unfccc_categories,
         )
 

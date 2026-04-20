@@ -5,7 +5,10 @@ import pandas as pd
 from openmethane_prior.data_sources.inventory.inventory import (
     _find_unfccc_code,
     create_inventory_df,
+    financial_year_end,
+    financial_year_start,
     get_sector_emissions_by_code,
+    financial_year_from_date,
 )
 
 
@@ -108,19 +111,36 @@ def test_create_inventory_df_no_unfccc_match(unfccc_df):
 def make_inventory_df(entries):
     """Build a test emissions inventory DataFrame.
 
-    Each entry: (year, unfccc_code, ch4_kg).
+    Each entry: (year, unfccc_code, ch4_kg). Period start/end are derived from
+    the ANGA financial year convention.
     """
-    return pd.DataFrame(entries, columns=["InventoryYear_ID", "UNFCCC_Code", "ch4_kg"])
+    df = pd.DataFrame(entries, columns=["InventoryYear_ID", "UNFCCC_Code", "ch4_kg"])
+    df["period_start"] = df["InventoryYear_ID"].map(financial_year_start)
+    df["period_end"] = df["InventoryYear_ID"].map(financial_year_end)
+    return df
+
+
+def test_financial_year_from_date():
+    # July–December belong to the next FY (e.g. Jul 1992 → FY 1993)
+    assert financial_year_from_date(datetime.date(1992, 7, 1)) == 1993
+    assert financial_year_from_date(datetime.date(1992, 12, 31)) == 1993
+    # January–June belong to the current calendar year's FY (e.g. Jan 1993 → FY 1993)
+    assert financial_year_from_date(datetime.date(1993, 1, 1)) == 1993
+    assert financial_year_from_date(datetime.date(1993, 6, 30)) == 1993
 
 
 def test_inventory_get_sector_emissions_by_code():
+    # FY 1993 = 1992-07-01 to 1993-07-01 = 365 days
     inventory = make_inventory_df([
+        (1992, "1.A.1.a", 1.0 * 1e6),
         (1993, "1.A.1.a", 1.1 * 1e6),
         (1994, "1.A.1.a", 2.2 * 1e6),
         (1995, "1.A.1.a", 3.3 * 1e6),
+        (1992, "1.B",     0.1 * 1e6),
         (1993, "1.B",     0.2 * 1e6),
         (1994, "1.B",     0.5 * 1e6),
         (1995, "1.B",     0.8 * 1e6),
+        (1992, "2",       0.3 * 1e6),
         (1993, "2",       0.7 * 1e6),
         (1994, "2",       0.11 * 1e6),
         (1995, "2",       0.13 * 1e6),
@@ -136,7 +156,7 @@ def test_inventory_get_sector_emissions_by_code():
 
     multi_emissions = get_sector_emissions_by_code(
         emissions_inventory=inventory,
-        category_codes=["1.A", "2"], # multiple codes
+        category_codes=["1.A", "2"],
         start_date=datetime.date(1993, 1, 1),
         end_date=datetime.date(1993, 1, 31),
     )
@@ -144,18 +164,31 @@ def test_inventory_get_sector_emissions_by_code():
 
     future_emissions = get_sector_emissions_by_code(
         emissions_inventory=inventory,
-        category_codes=["1.A", "2"], # multiple codes
+        category_codes=["1.A", "2"],
         start_date=datetime.date(1997, 1, 1),
         end_date=datetime.date(1997, 1, 31),
     )
-    # No 1997 data — uses last available year (1995)
+    # No FY 1997 data — falls after last period, uses FY 1995 (365 days)
     assert future_emissions == pytest.approx((3.3 + 0.13) * (31 / 365) * 1e6)
 
     past_emissions = get_sector_emissions_by_code(
         emissions_inventory=inventory,
-        category_codes=["1.A", "2"], # multiple codes
+        category_codes=["1.A", "2"],
         start_date=datetime.date(1990, 1, 1),
         end_date=datetime.date(1990, 1, 31),
     )
-    # No 1990 data — uses first available year (1993)
-    assert past_emissions == pytest.approx((1.1 + 0.7) * (31 / 365) * 1e6)
+    # No FY 1990 data — falls before first period, uses FY 1992 (366 days)
+    assert past_emissions == pytest.approx((1.0 + 0.3) * (31 / 366) * 1e6)
+
+
+def test_inventory_get_sector_emissions_cross_financial_year():
+    inventory = make_inventory_df([(2023, "1.A.1.a", 1.0 * 1e6)])
+
+    # June 30 → FY 2023; July 1 → FY 2024: crosses a financial year boundary
+    with pytest.raises(ValueError, match="same financial year"):
+        get_sector_emissions_by_code(
+            emissions_inventory=inventory,
+            category_codes=["1"],
+            start_date=datetime.date(2023, 6, 30),
+            end_date=datetime.date(2023, 7, 1),
+        )

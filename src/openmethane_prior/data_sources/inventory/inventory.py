@@ -15,7 +15,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-import calendar
 import datetime
 import pandas as pd
 
@@ -33,20 +32,21 @@ def kt_to_kg(kilotonnes):
     return kilotonnes * 1e6
 
 
+"""ANGA inventories follow the Australian financial year, which goes from July
+1st - June 30th of the following year. In their API, ANGA specifies a single
+year indicating the end year of the financial year for that data. I.e. "2023"
+references the "2022/2023" financial year."""
 def financial_year_start(year: int) -> datetime.datetime:
-    """ANGA inventories follow the Australian financial year, which goes from
-    July 1st to June 30th of the following year. In their API, ANGA specifies
-    a single year indicating the end year of the financial year for that data.
-    I.e. "2023" references the "2022/2023" financial year."""
+    """Return the start date of an ANGA inventory financial year."""
     return datetime.datetime(year - 1, 7, 1)
 
-
 def financial_year_end(year: int) -> datetime.datetime:
-    """ANGA inventories follow the Australian financial year, which goes from
-    July 1st to June 30th of the following year. In their API, ANGA specifies
-    a single year indicating the end year of the financial year for that data.
-    The period includes the final day, so we add 24h."""
+    """Return the end date of an ANGA inventory financial year."""
     return datetime.datetime(year, 6, 30) + datetime.timedelta(hours=24)
+
+def financial_year_from_date(date: datetime.date) -> int:
+    """Return the ANGA inventory financial year a date falls in."""
+    return date.year + 1 if date.month >= 7 else date.year
 
 
 def create_inventory_df(anga_inventory_records, unfccc_df: pd.DataFrame) -> pd.DataFrame:
@@ -106,22 +106,24 @@ def get_sector_emissions_by_code(
     then the returned value will include all emissions for every sector within
     Energy.
     """
-    if start_date.year != end_date.year:
-        raise ValueError("periods spanning multiple years are not supported")
+    inventory_year = financial_year_from_date(start_date)
+    if financial_year_from_date(end_date) != inventory_year:
+        raise ValueError(
+            f"start_date ({start_date}) and end_date ({end_date}) must be within the same financial year"
+        )
 
-    # find inventory data for the referenced year, or if the period of interest
-    # is outside the covered period, use the closest available year
-    inventory_year = start_date.year
-    covered_years = emissions_inventory["InventoryYear_ID"].unique()
-    covered_years.sort()
-    if inventory_year not in covered_years:
-        logger.warning(f"inventory does not cover {start_date.year}, using {inventory_year} inventory")
-        if inventory_year < covered_years[0]:
-            inventory_year = covered_years[0]
-        elif inventory_year > covered_years[-1]:
-            inventory_year = covered_years[-1]
+    # Build a sorted table of unique inventory years with their period boundaries
+    year_periods: list[int] = list(
+        emissions_inventory["InventoryYear_ID"].drop_duplicates().astype(int).sort_values()
+    )
 
-    year_days = 365 if not calendar.isleap(inventory_year) else 366
+    if inventory_year not in year_periods:
+        inventory_year = year_periods[-1] if inventory_year > year_periods[-1] else year_periods[0]
+        logger.warning(
+            f"inventory does not cover {start_date}, using {inventory_year} inventory"
+        )
+
+    year_days = (financial_year_end(inventory_year) - financial_year_start(inventory_year)).days
     period_annual_fraction = days_in_period(start_date, end_date) / year_days
 
     year_df = emissions_inventory[emissions_inventory["InventoryYear_ID"] == inventory_year]
