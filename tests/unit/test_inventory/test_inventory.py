@@ -2,8 +2,11 @@ import datetime
 import pytest
 import pandas as pd
 
-from openmethane_prior.data_sources.inventory.data import _find_unfccc_code
-from openmethane_prior.data_sources.inventory.inventory import get_sector_emissions_by_code
+from openmethane_prior.data_sources.inventory.inventory import (
+    _find_unfccc_code,
+    create_inventory_df,
+    get_sector_emissions_by_code,
+)
 
 
 @pytest.fixture()
@@ -50,6 +53,51 @@ def test_find_unfccc_code_fallback_drops_level3_and_4(unfccc_df):
 def test_find_unfccc_code_no_match(unfccc_df):
     row = make_row("Unknown sector", "Unknown L2", "Unknown L3", "Unknown L4")
     assert _find_unfccc_code(row, unfccc_df) is None
+
+
+def make_anga_record(year, level_1, level_2, level_3, level_4, gas, gg):
+    return [year, level_1, level_2, level_3, level_4, gas, gg]
+
+
+def test_create_inventory_df_basic(unfccc_df):
+    records = [make_anga_record(2023, "Energy", "Fuel Combustion", "Other", "Mobile", "CH4", 1.5)]
+    result = create_inventory_df(records, unfccc_df)
+
+    assert len(result) == 1
+    row = result.iloc[0]
+    assert row["InventoryYear_ID"] == 2023
+    assert row["UNFCCC_Code"] == "1.A.1.a"
+    assert row["ch4_kg"] == pytest.approx(1.5e6)
+
+
+def test_create_inventory_df_filters_non_ch4(unfccc_df):
+    records = [
+        make_anga_record(2023, "Energy", "Fuel Combustion", "Other", "Mobile", "CH4", 1.5),
+        make_anga_record(2023, "Energy", "Fuel Combustion", "Other", "Mobile", "CO2", 100.0),
+        make_anga_record(2023, "Energy", "Fuel Combustion", "Other", "Mobile", "N2O", 50.0),
+    ]
+    result = create_inventory_df(records, unfccc_df)
+
+    assert len(result) == 1
+    assert result.iloc[0]["Gas_Level_0"] == "CH4"
+
+
+def test_create_inventory_df_unfccc_fallback(unfccc_df):
+    # "Smoke from AI fires" has no UNFCCC entry; should fall back to parent "1.B"
+    records = [
+        make_anga_record(2023, "Energy", "Fugitive Emissions From Fuels", "Smoke", "Smoke from AI fires", "CH4", 2.0)
+    ]
+    result = create_inventory_df(records, unfccc_df)
+
+    assert result.iloc[0]["UNFCCC_Code"] == "1.B"
+
+
+def test_create_inventory_df_no_unfccc_match(unfccc_df):
+    records = [make_anga_record(2023, "Unknown Sector", "Unknown L2", "Unknown L3", "Unknown L4", "CH4", 0.5)]
+    result = create_inventory_df(records, unfccc_df)
+
+    assert len(result) == 1
+    assert pd.isna(result.iloc[0]["UNFCCC_Code"])
 
 
 def make_inventory_df(entries):
