@@ -16,8 +16,10 @@
 # limitations under the License.
 #
 import csv
+import json
+import pandas as pd
 
-from openmethane_prior.lib.data_manager.source import DataSource, ConfiguredDataSource
+from openmethane_prior.lib import DataSource, ConfiguredDataSource
 from openmethane_prior.data_sources.inventory.inventory import SectorEmission, create_emissions_inventory
 from openmethane_prior.data_sources.inventory.unfccc import create_category_list, Category
 
@@ -28,7 +30,7 @@ def parse_category_csv(data_source: ConfiguredDataSource) -> list[Category]:
         return create_category_list(categories=reader)
 
 unfccc_codes_data_source = DataSource(
-    name="au-inventory-unfccc-codes",
+    name="ANGA-UNFCCC-codes",
     url="https://openmethane.s3.amazonaws.com/prior/inputs/UNFCCC-codes-AU.csv",
     parse=parse_category_csv,
 )
@@ -37,14 +39,30 @@ unfccc_codes_data_source = DataSource(
 def parse_inventory(data_source: ConfiguredDataSource) -> list[SectorEmission]:
     unfccc_codes_asset = data_source.data_assets[0]
 
-    with open(data_source.asset_path, newline='') as inventory_file:
-        reader = csv.reader(inventory_file)
-        next(reader) # skip header row
-        return create_emissions_inventory(categories=unfccc_codes_asset.data, inventory_list=reader)
+    with open(data_source.asset_path) as anga_file:
+        anga_json = json.load(anga_file)
+        anga_df = pd.DataFrame.from_records(anga_json["value"])
+
+    # Filter out non-CH4 emissions
+    anga_df = anga_df[anga_df["Gas_Level_0"] == "CH4"]
+
+    rows = []
+    for index, values in anga_df.iterrows():
+        rows.append([
+            values["InventoryYear_ID"],
+            values["UNFCCC_Level_1"],
+            values["UNFCCC_Level_2"],
+            values["UNFCCC_Level_3"],
+            values["UNFCCC_Level_4"],
+            values["UNFCCC_Level_5"],
+            values["Gg"],
+        ])
+
+    return create_emissions_inventory(categories=unfccc_codes_asset.data, inventory_list=rows)
 
 inventory_data_source = DataSource(
-    name="au-inventory-emissions",
-    url="https://openmethane.s3.amazonaws.com/prior/inputs/AR5_ParisInventory_AUSTRALIA_CH4.csv",
+    name="ANGA-UNFCCC-inventory",
+    url="https://greenhouseaccounts.climatechange.gov.au/OData/AR5_ParisInventory_AUSTRALIA",
     data_sources=[unfccc_codes_data_source],
     parse=parse_inventory,
 )
