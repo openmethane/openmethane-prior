@@ -1,5 +1,4 @@
 import os
-import numpy as np
 import pytest
 
 from openmethane_prior.sectors.fire.sector import gfas_data_source
@@ -26,7 +25,7 @@ def test_009_prior_emissions_ds(prior_emissions_ds):
             'ch4_sector_coal': 7.788263920948805e-09,
             'ch4_sector_electricity': 1.284687477557566e-11,
             'ch4_sector_fire': 5.498670963000052e-11,
-            'ch4_sector_industrial': 5.459999136015602e-13,
+            'ch4_sector_industrial': 5.4599991360156e-13,
             'ch4_sector_livestock': 7.545056510007907e-11,
             'ch4_sector_lulucf': 1.3538454708688622e-10,
             'ch4_sector_oil_gas': 0.0,
@@ -50,9 +49,9 @@ def test_009_prior_emissions_ds(prior_emissions_ds):
             'ch4_sector_coal': 3.839179006073739e-10,
             'ch4_sector_electricity': 2.283888848991229e-13,
             'ch4_sector_fire': 3.6974516872713414e-13,
-            'ch4_sector_industrial': 5.453208092314089e-14,
+            'ch4_sector_industrial': 5.4532080923140884e-14,
             'ch4_sector_livestock': 4.0547154335803873e-11,
-            'ch4_sector_lulucf': 7.433229572836841e-12,
+            'ch4_sector_lulucf': 7.43322957283684e-12,
             'ch4_sector_oil_gas': 0.0,
             'ch4_sector_stationary': 1.3986745977234323e-12,
             'ch4_sector_termite': 2.436579367090519e-12,
@@ -74,7 +73,7 @@ def test_009_prior_emissions_ds(prior_emissions_ds):
             'ch4_sector_coal': 2.755175522005859e-09,
             'ch4_sector_electricity': 0.0,
             'ch4_sector_fire': 0.0,
-            'ch4_sector_industrial': 1.0193356595969425e-12,
+            'ch4_sector_industrial': 1.019335659596942e-12,
             'ch4_sector_livestock': 8.812359129868445e-10,
             'ch4_sector_lulucf': 4.044683564421497e-11,
             'ch4_sector_oil_gas': 0.0,
@@ -95,7 +94,7 @@ def test_009_prior_emissions_ds(prior_emissions_ds):
             'ch4_sector_coal': 1.557652784189761e-08,
             'ch4_sector_electricity': 0.0,
             'ch4_sector_fire': 0.0,
-            'ch4_sector_industrial': 3.775820298040639e-13,
+            'ch4_sector_industrial': 3.775820298040638e-13,
             'ch4_sector_livestock': 1.0031707194660715e-09,
             'ch4_sector_lulucf': 0.0,
             'ch4_sector_oil_gas': 0.0,

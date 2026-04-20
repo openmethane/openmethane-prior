@@ -17,5 +17,4 @@
 #
 
 from .data import inventory_data_source, unfccc_codes_data_source
-from .inventory import SectorEmission, get_sector_emissions_by_code
-from .unfccc import Category
+from .inventory import get_sector_emissions_by_code
