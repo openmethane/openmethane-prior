@@ -41,36 +41,16 @@ UNFCCC obligations. The data is available via the
 [National Greenhouse Accounts](https://greenhouseaccounts.climatechange.gov.au/)
 web tool, and also via a "Bulk data API".
 
-For the prior we're only interested in CH4 emissions, so the full UNFCCC sector
-dataset was fetched and filtered with jq:
+Specifically, the `AR5_ParisInventory_AUSTRALIA` dataset contains per-gas
+emissions broken down by UNFCCC category. This dataset is fetched directly from
+ANGA, and non-CH4 emissions are discarded, resulting in per-year, per-sector
+CH4 emissions which can be used as the basis for the total emissions in
+anthropogenic sectors.
 
-```shell
-curl -s https://greenhouseaccounts.climatechange.gov.au/OData/AR5_ParisInventory_AUSTRALIA \
-  | jq --raw-output '
-    (["InventoryYear_ID", "UNFCCC_Level_1", "UNFCCC_Level_2", "UNFCCC_Level_3", "UNFCCC_Level_4", "UNFCCC_Level_5", "Gg"] | @csv),
-    (
-      .value[]
-      | select(.Gas_Level_0 == "CH4")
-      | [.InventoryYear_ID, .UNFCCC_Level_1, .UNFCCC_Level_2, .UNFCCC_Level_3, .UNFCCC_Level_4, .UNFCCC_Level_5, .Gg]
-      | @csv
-    )
-  ' \
-  > AR5_ParisInventory_AUSTRALIA_CH4.csv
-```
-
-This series of commands:
-- fetches the full dataset
-- constructs a CSV header row
-- filters the dataset to only items with `"Gas_Level_0": "CH4"`
-- selects the attributes of interest
-- outputs in CSV format
-
-This filtered dataset is available in our public data store:
-https://openmethane.s3.amazonaws.com/prior/inputs/AR5_ParisInventory_AUSTRALIA_CH4.csv
 
 ## UNFCCC CRT categories 
 
-To allocate inventory emissions to prior sectors, we utilise the
+To allocate ANGA inventory emissions to prior sectors, we utilise the
 `unfccc_categories` in each sector, which contain UNFCCC CRT category codes,
 like "5" (Waste), "3.B" (Agriculture - Enteric Fermentation). However, the
 [Australian UNFCCC Inventory](#Australian-UNFCCC-Inventory) doesn't include
