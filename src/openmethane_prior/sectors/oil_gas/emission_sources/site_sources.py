@@ -19,7 +19,7 @@ import datetime
 import geopandas as gpd
 import pandas as pd
 
-from openmethane_prior.lib.data_manager.asset import DataAsset
+from openmethane_prior.lib import DataAsset
 from openmethane_prior.lib.utils import rows_in_period
 
 
@@ -79,6 +79,9 @@ def oil_gas_site_emission_sources(
         start_date=start_date, end_date=end_date,
         start_field="Operation start", end_field="Operation end",
     )
+
+    # exclude sources that aren't in ANZSIC sector 070
+    sites_df = sites_df[sites_df["ANZSIC"] == "Oil and gas extraction (070)"]
 
     # normalise output to match emission sources format
     sites_df = sites_df.rename(columns={
