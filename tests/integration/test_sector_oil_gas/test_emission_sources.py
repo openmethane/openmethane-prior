@@ -1,5 +1,7 @@
 import datetime
+import numpy as np
 
+from openmethane_prior.sectors.oil_gas.data.au_npi import au_npi_data_source
 from openmethane_prior.sectors.oil_gas.data.nopta import (
     nopta_titles_data_source, nopta_wells_data_source,
 )
@@ -197,22 +199,25 @@ def test_sites_emission_sources(input_files, data_manager):
     start_date = datetime.datetime(2023, 1, 1, 0, 0)
     start_date_end = datetime.datetime(2023, 1, 2, 0, 0)
     sites_da = data_manager.get_asset(oil_gas_sites_data_source)
+    npi_da = data_manager.get_asset(au_npi_data_source)
 
     df = oil_gas_site_emission_sources(
         start_date=start_date.date(),
         end_date=start_date.date(),
         oil_gas_sites_da=sites_da,
+        npi_da=npi_da,
     )
 
-    # original wells dataset has been filtered down
+    # original datasets have been filtered down
     assert len(sites_da.data) > 0
-    assert len(df) <= len(sites_da.data)
+    assert len(npi_da.data) > 0
+    assert len(df) <= len(sites_da.data) + len(npi_da.data)
 
     # no sources where activity period doesn't intersect date period
     assert len(df[(df["activity_end"] < start_date) & (df["activity_start"] > start_date_end)]) == 0
 
     # no sources which aren't related to 070 ANZSIC code
-    assert set(df["ANZSIC"].unique()) == {"Oil and gas extraction (070)"}
+    assert set(df["ANZSIC"].unique()) == {"Oil and gas extraction (070)", np.nan}
 
 
 def test_all_emission_sources(input_files, data_manager, config):
