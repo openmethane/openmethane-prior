@@ -104,7 +104,7 @@ def parse_safeguard_csv(data_source: ConfiguredDataSource):
 
 safeguard_locations_data_source = DataSource(
     name="safeguard-locations",
-    url="https://openmethane.s3.amazonaws.com/prior/inputs/facility-locations-v2.csv",
+    url="https://openmethane.s3.amazonaws.com/prior/inputs/facility-locations-v2.0.csv",
     parse=parse_location_csv,
 )
 
