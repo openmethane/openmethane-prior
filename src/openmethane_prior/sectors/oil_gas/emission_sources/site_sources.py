@@ -19,6 +19,8 @@ import datetime
 import geopandas as gpd
 import pandas as pd
 
+from openmethane_prior.data_sources.npi import filter_npi_facilities
+from openmethane_prior.data_sources.safeguard.facility import parse_anzsic_code
 from openmethane_prior.lib import DataAsset
 from openmethane_prior.lib.utils import rows_in_period
 
@@ -40,20 +42,6 @@ def map_site_type_to_source_type(site_type: str) -> str | None:
     return site_type_map[site_type] if site_type in site_type_map else None
 
 
-def _npi_financial_year_start(financial_year: str) -> datetime.datetime:
-    """Australian financial year starts on July 1st. For example, the 2023/2024
-    financial year starts on 2023-07-01 00:00:00."""
-    start_year, end_year = financial_year.split("/")
-    return datetime.datetime(int(start_year), 7, 1, 0, 0)
-
-
-def _npi_financial_year_end(financial_year: str) -> datetime.datetime:
-    """Australian financial year ends on June 30th in the second year. For
-    example, the 2023/2024 financial year ends on 2024-06-30 23:59:59."""
-    start_year, end_year = financial_year.split("/")
-    return datetime.datetime(int(end_year), 7, 1, 0, 0)
-
-
 def oil_gas_site_emission_sources(
     start_date: datetime.date,
     end_date: datetime.date,
@@ -69,8 +57,8 @@ def oil_gas_site_emission_sources(
     sites_df["site_type"] = sites_df["Type"].map(map_site_type_to_source_type)
     del sites_df["Type"]
 
-    # Exclude any sites that aren't ANZSIC 070
-    sites_df = sites_df[sites_df["ANZSIC"] == "Oil and gas extraction (070)"]
+    # extract the ANZSIC code from the Safeguard Mechanism format
+    sites_df["anzsic_code"] = sites_df["ANZSIC"].map(parse_anzsic_code)
 
     # exclude any emission sources that would not have been in operation
     # the period between start_date and end_date
@@ -81,7 +69,7 @@ def oil_gas_site_emission_sources(
     )
 
     # exclude sources that aren't in ANZSIC sector 070
-    sites_df = sites_df[sites_df["ANZSIC"] == "Oil and gas extraction (070)"]
+    sites_df = sites_df[sites_df["anzsic_code"] == "070"]
 
     # normalise output to match emission sources format
     sites_df = sites_df.rename(columns={
@@ -95,18 +83,12 @@ def oil_gas_site_emission_sources(
     # the national pollutant inventory doesn't track methane emissions, but it
     # does include the locations of industrial facilities in different ANSIC
     # sectors.
-    npi_df: gpd.GeoDataFrame = npi_da.data
-
-    # NPI is based on a reporting mechanism. Lacking more detailed information,
-    # this assumes that each facility operates continuously from the start
-    # of the first reporting period where a facility report was lodged, until
-    # the end of the reporting period when the last report was filed.
-    npi_df["start_date"] = npi_df["first_report_year"].map(_npi_financial_year_start)
-    npi_df["end_date"] = npi_df["latest_report_year"].map(_npi_financial_year_end)
-    npi_df = rows_in_period(df=npi_df, start_date=start_date, end_date=end_date)
-
-    # remove facilities not in the "070" (oil and gas) ANZSIC sector
-    npi_df = npi_df[npi_df["primary_anzsic_class_code"].str.startswith("070")]
+    npi_df: gpd.GeoDataFrame = filter_npi_facilities(
+        facilities_df=npi_da.data,
+        period_start=start_date,
+        period_end=end_date,
+        anzsic_codes=["070"],
+    )
 
     # locate NPI facilities within 250m of sites already accounted for in the
     # oil and gas sites dataset, so they don't get counted twice
@@ -127,6 +109,7 @@ def oil_gas_site_emission_sources(
         "abn": "group_id",
         "start_date": "activity_start",
         "expiry_date": "activity_end",
+        "primary_anzsic_class_code": "anzsic_code",
     })
     npi_df["data_source"] = npi_da.name
 
