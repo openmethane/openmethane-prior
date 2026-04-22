@@ -29,6 +29,7 @@ from .nsw_sources import nsw_emission_sources
 from .nt_sources import nt_emission_sources
 from .offshore_sources import offshore_emission_sources
 from .qld_sources import qld_emission_sources
+from .sa_sources import sa_emission_sources
 from .wa_sources import wa_emission_sources
 from ..data.nopta_titles import nopta_titles_data_source
 from ..data.nopta_wells import nopta_wells_data_source
@@ -38,6 +39,7 @@ from ..data.nt_titles import nt_titles_data_source
 from ..data.nt_wells import nt_wells_data_source
 from ..data.qld_boreholes import qld_boreholes_data_source
 from ..data.qld_leases import qld_leases_data_source
+from ..data.sa_wells import sa_wells_data_source, sa_wells_production_data_source
 from ..data.wa_titles import wa_titles_data_source
 from ..data.wa_wells import wa_wells_data_source
 
@@ -85,6 +87,17 @@ def all_emission_sources(
     qld_df = normalise_emission_source_df(qld_df, prior_config.crs)
     logger.debug(f"found {len(qld_df)} QLD sources in {len(qld_df['group_id'].unique())} titles")
 
+    sa_wells_da = data_manager.get_asset(sa_wells_data_source)
+    sa_production_da = data_manager.get_asset(sa_wells_production_data_source)
+    sa_df = sa_emission_sources(
+        start_date=start_date,
+        end_date=end_date,
+        sa_wells_da=sa_wells_da,
+        sa_production_da=sa_production_da,
+    )
+    sa_df = normalise_emission_source_df(sa_df, prior_config.crs)
+    logger.debug(f"found {len(sa_df)} SA sources in {len(sa_df['group_id'].unique())} titles")
+
     wa_wells_da = data_manager.get_asset(wa_wells_data_source)
     wa_titles_da = data_manager.get_asset(wa_titles_data_source)
     wa_df = wa_emission_sources(
@@ -100,6 +113,7 @@ def all_emission_sources(
         nsw_df,
         nt_df,
         qld_df,
+        sa_df,
         wa_df,
     ])
 

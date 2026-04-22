@@ -44,3 +44,42 @@ def parse_geo(data_source: ConfiguredDataSource, source_crs: pyproj.CRS = None):
     geo_df = geo_df.to_crs(data_source.prior_config.crs)
 
     return geo_df
+
+
+def parse_xlsx(data_source: ConfiguredDataSource) -> pd.DataFrame:
+    """Read and parse a ConfiguredDataSource XLSX asset as a pandas DataFrame."""
+    return pd.read_excel(data_source.asset_path)
+
+
+def parse_geo_xlsx(
+    x_column: str,
+    y_column: str,
+    source_crs: pyproj.CRS | str,
+):
+    """Create a parser which will read an Excel-based ConfiguredDataSource,
+    extracting coordinates from columns in x_column and y_column, and project
+    coordinates from the source_crs to the PriorConfig domain CRS.
+
+    This can be used to configure a DataSource like:
+      DataSource(
+        file_path="example.xlsx",
+        parse=parse_geo_xlsx("x_col", "y_col", "EPSG:7844")
+      )
+    """
+    def _parser(data_source: ConfiguredDataSource):
+        df = parse_xlsx(data_source)
+
+        df["geometry"] = gpd.points_from_xy(
+            x=df[x_column],
+            y=df[y_column],
+            crs=source_crs,
+        )
+        geo_df = gpd.GeoDataFrame(df)
+
+        # convert the geometries into the prior projection to ensure downstream
+        # comparisons are done using the same coordinate system
+        geo_df = geo_df.to_crs(data_source.prior_config.crs)
+
+        return geo_df
+
+    return _parser
