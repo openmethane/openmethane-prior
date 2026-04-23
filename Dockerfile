@@ -14,7 +14,7 @@ ENV UV_PYTHON_INSTALL_DIR=/python
 ENV UV_PYTHON_PREFERENCE=only-managed
 
 # Install Python before the project for caching
-RUN uv python install 3.11
+RUN uv python install 3.12
 
 WORKDIR /app
 
