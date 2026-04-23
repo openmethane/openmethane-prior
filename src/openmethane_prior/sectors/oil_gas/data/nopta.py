@@ -46,8 +46,7 @@ def map_offshore_area_to_state(offshore_area: str) -> str | None:
 
 
 def fetch_nopta_titles(data_source: ConfiguredDataSource):
-    titles_url = NOPTA_ARCGIS_URL + "/Public/TitlesCompany_NOPTA/MapServer"
-    titles_layer = restapi.MapService(url=titles_url).layer("Titles and Permits Current")
+    titles_layer = restapi.MapService(url=data_source.url).layer("Titles and Permits Current")
 
     layer_features = titles_layer.query(
         # where="Type in ('Petroleum','Mineral or Coal') AND Purpose in ('Development','Appraisal', 'Exploration')",
@@ -104,6 +103,7 @@ def parse_nopta_titles(data_source: ConfiguredDataSource):
 nopta_titles_data_source = DataSource(
     name="NOPTA-titles",
     file_path="NOPTA-titles.geojson",
+    url=f"{NOPTA_ARCGIS_URL}/Public/TitlesCompany_NOPTA/MapServer",
     fetch=fetch_nopta_titles,
     parse=parse_nopta_titles,
 )

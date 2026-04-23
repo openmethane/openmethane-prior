@@ -30,9 +30,7 @@ WA_ARCGIS_URL="https://public-services.slip.wa.gov.au/public/rest/services"
 # WA Petroleum Titles (DMIRS-011) - REST Service (ArcGIS)
 # https://catalogue.data.wa.gov.au/dataset/wa-petroleum-titles-dmirs-011/resource/f5bb4e83-241e-4dcf-8efe-41707866af4e
 def fetch_wa_titles(data_source: ConfiguredDataSource):
-    wa_arcgis_mining = restapi.MapService(
-        url=f"{WA_ARCGIS_URL}/SLIP_Public_Services/Industry_and_Mining/MapServer"
-    )
+    wa_arcgis_mining = restapi.MapService(url=data_source.url)
 
     # DMIRS-011 contains current active petroleum titles, but has expired
     # titles periodically removed. Our interest is only in "Production License"
@@ -92,6 +90,7 @@ def fetch_wa_titles(data_source: ConfiguredDataSource):
 wa_titles_data_source = DataSource(
     name="WA-petroleum-titles",
     file_path="WA-petroleum-titles.geojson",
+    url=f"{WA_ARCGIS_URL}/SLIP_Public_Services/Industry_and_Mining/MapServer",
     fetch=fetch_wa_titles,
     parse=parse_geo,
 )
@@ -100,10 +99,7 @@ wa_titles_data_source = DataSource(
 # WA Petroleum Wells (DMIRS-025) - REST Service (ArcGIS)
 # https://catalogue.data.wa.gov.au/dataset/mineral-exploration-drillholes-open-file/resource/1c61171a-3b23-4f2b-baae-04615c5bb39e
 def fetch_wa_wells(data_source: ConfiguredDataSource):
-    wa_arcgis_mining = restapi.MapService(
-        url=f"{WA_ARCGIS_URL}/SLIP_Public_Services/Industry_and_Mining/MapServer"
-    )
-
+    wa_arcgis_mining = restapi.MapService(data_source.url)
     wells_layer = wa_arcgis_mining.layer("WA Onshore Petroleum Wells (DMIRS-025)")
     wells_features = wells_layer.query(
         fields=[
@@ -132,6 +128,7 @@ def fetch_wa_wells(data_source: ConfiguredDataSource):
 wa_wells_data_source = DataSource(
     name="WA-petroleum-wells",
     file_path="WA-petroleum-wells.geojson",
+    url=f"{WA_ARCGIS_URL}/SLIP_Public_Services/Industry_and_Mining/MapServer",
     fetch=fetch_wa_wells,
     parse=parse_geo,
 )
