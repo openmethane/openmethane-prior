@@ -88,8 +88,6 @@ def _find_unfccc_code(row: pd.Series, unfccc_df: pd.DataFrame) -> str | None:
             mask &= unfccc_df[col].isna() | (unfccc_df[col] == "")
         matches = unfccc_df[mask]
         if not matches.empty:
-            if n_levels < len(_LEVEL_COLUMNS):
-                logger.debug(f"Used {n_levels}-level match for {[row[c] for c in _LEVEL_COLUMNS]}")
             return matches.iloc[0]["UNFCCC_Code"]
     raise ValueError(f"No matching UNFCCC code for inventory row: {row}")
 
