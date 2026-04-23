@@ -1,18 +1,25 @@
 import datetime
 
-from openmethane_prior.sectors.oil_gas.data.nopta_titles import nopta_titles_data_source
-from openmethane_prior.sectors.oil_gas.data.nopta_wells import nopta_wells_data_source
-from openmethane_prior.sectors.oil_gas.data.nsw_drillholes import nsw_drillholes_data_source
-from openmethane_prior.sectors.oil_gas.data.nsw_titles import nsw_titles_data_source
-from openmethane_prior.sectors.oil_gas.data.nt_titles import nt_titles_data_source
-from openmethane_prior.sectors.oil_gas.data.nt_wells import nt_wells_data_source
-from openmethane_prior.sectors.oil_gas.data.qld_boreholes import qld_boreholes_data_source
-from openmethane_prior.sectors.oil_gas.data.qld_leases import qld_leases_data_source
-from openmethane_prior.sectors.oil_gas.data.sa_wells import sa_wells_data_source, sa_wells_production_data_source
+from openmethane_prior.sectors.oil_gas.data.nopta import (
+    nopta_titles_data_source, nopta_wells_data_source,
+)
+from openmethane_prior.sectors.oil_gas.data.nsw_geo import (
+    nsw_drillholes_data_source, nsw_titles_data_source,
+)
+from openmethane_prior.sectors.oil_gas.data.nt_geo import (
+    nt_titles_data_source, nt_wells_data_source,
+)
+from openmethane_prior.sectors.oil_gas.data.qld_gis import (
+    qld_boreholes_data_source, qld_leases_data_source,
+)
+from openmethane_prior.sectors.oil_gas.data.sa_wells import (
+    sa_wells_data_source, sa_wells_production_data_source,
+)
+from openmethane_prior.sectors.oil_gas.data.wa_gis import (
+    wa_titles_data_source, wa_wells_data_source,
+)
 from openmethane_prior.sectors.oil_gas.emission_sources.all_sources import all_emission_sources
 from openmethane_prior.sectors.oil_gas.emission_sources.nsw_sources import nsw_emission_sources
-from openmethane_prior.sectors.oil_gas.data.wa_titles import wa_titles_data_source
-from openmethane_prior.sectors.oil_gas.data.wa_wells import wa_wells_data_source
 from openmethane_prior.sectors.oil_gas.emission_sources.nt_sources import nt_emission_sources
 from openmethane_prior.sectors.oil_gas.emission_sources.offshore_sources import offshore_emission_sources
 from openmethane_prior.sectors.oil_gas.emission_sources.qld_sources import qld_emission_sources

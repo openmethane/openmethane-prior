@@ -25,12 +25,13 @@ from openmethane_prior.lib.data_manager.source import ConfiguredDataSource
 from .esri_types import map_esri_date_to_str
 
 
+WA_ARCGIS_URL="https://public-services.slip.wa.gov.au/public/rest/services"
+
 # WA Petroleum Titles (DMIRS-011) - REST Service (ArcGIS)
 # https://catalogue.data.wa.gov.au/dataset/wa-petroleum-titles-dmirs-011/resource/f5bb4e83-241e-4dcf-8efe-41707866af4e
 def fetch_wa_titles(data_source: ConfiguredDataSource):
-    # wa_arcgis = restapi.ArcServer(url="https://public-services.slip.wa.gov.au/public/rest/services")
     wa_arcgis_mining = restapi.MapService(
-        url="https://public-services.slip.wa.gov.au/public/rest/services/SLIP_Public_Services/Industry_and_Mining/MapServer"
+        url=f"{WA_ARCGIS_URL}/SLIP_Public_Services/Industry_and_Mining/MapServer"
     )
 
     # DMIRS-011 contains current active petroleum titles, but has expired
@@ -89,8 +90,48 @@ def fetch_wa_titles(data_source: ConfiguredDataSource):
 # Australia via the Data WA Portal.
 # Source: https://catalogue.data.wa.gov.au/dataset/wa-petroleum-titles-dmirs-011
 wa_titles_data_source = DataSource(
-    name="wa-petroleum-titles",
+    name="WA-petroleum-titles",
     file_path="WA-petroleum-titles.geojson",
     fetch=fetch_wa_titles,
+    parse=parse_geo,
+)
+
+
+# WA Petroleum Wells (DMIRS-025) - REST Service (ArcGIS)
+# https://catalogue.data.wa.gov.au/dataset/mineral-exploration-drillholes-open-file/resource/1c61171a-3b23-4f2b-baae-04615c5bb39e
+def fetch_wa_wells(data_source: ConfiguredDataSource):
+    wa_arcgis_mining = restapi.MapService(
+        url=f"{WA_ARCGIS_URL}/SLIP_Public_Services/Industry_and_Mining/MapServer"
+    )
+
+    wells_layer = wa_arcgis_mining.layer("WA Onshore Petroleum Wells (DMIRS-025)")
+    wells_features = wells_layer.query(
+        fields=[
+            "well_name",
+            "uwi",
+            "lease_no",
+            "operator",
+            "class",
+            "status",
+            "rig_release_date",
+        ],
+        exceed_limit=True,
+    )
+
+    df = gpd.GeoDataFrame.from_features(wells_features.features)
+    df["rig_release_date"] = df["rig_release_date"].map(map_esri_date_to_str)
+
+    with open(data_source.asset_path, "w") as asset_file:
+        asset_file.write(df.to_json())
+        return data_source.asset_path
+
+
+# Locations of all petroleum wells in the Australian state of Western Australia
+# via the Data WA Portal.
+# Source: https://catalogue.data.wa.gov.au/dataset/wa-onshore-petroleum-wells-dmirs-025
+wa_wells_data_source = DataSource(
+    name="WA-petroleum-wells",
+    file_path="WA-petroleum-wells.geojson",
+    fetch=fetch_wa_wells,
     parse=parse_geo,
 )

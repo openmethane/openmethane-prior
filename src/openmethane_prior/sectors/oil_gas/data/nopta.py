@@ -23,16 +23,97 @@ from openmethane_prior.lib.data_manager.parsers import parse_geo
 
 from .esri_types import map_esri_date_to_str
 
+NOPTA_ARCGIS_URL="https://arcgis.nopta.gov.au/arcgis/rest/services"
 
-def fetch_nopta_wells(data_source: ConfiguredDataSource):
-    # nopta_wells_arcgis = restapi.ArcServer(url="https://arcgis.nopta.gov.au/arcgis/rest/services")
-    nopta_wells = restapi.MapService(
-        url="https://arcgis.nopta.gov.au/arcgis/rest/services/Public/Petroleum_Wells/MapServer"
+offshore_area_state_mapping = {
+    "Western Australia": "WA",
+    "Victoria": "VIC",
+    "Northern Territory": "NT",
+    "Queensland": "QLD",
+    "South Australia": "SA",
+    "Tasmania": "TAS",
+    "New South Wales": "NSW",
+    "ACT": "ACT",
+    # https://www.infrastructure.gov.au/territories-regions/territories/ashmore-and-cartier-islands
+    "Territory of Ashmore and Cartier Islands": "NT",
+    "Outside of Australia": None,
+    "UNK": None,
+}
+def map_offshore_area_to_state(offshore_area: str) -> str | None:
+    if offshore_area in offshore_area_state_mapping:
+        return offshore_area_state_mapping[offshore_area]
+    return None
+
+
+def fetch_nopta_titles(data_source: ConfiguredDataSource):
+    titles_url = NOPTA_ARCGIS_URL + "/Public/TitlesCompany_NOPTA/MapServer"
+    titles_layer = restapi.MapService(url=titles_url).layer("Titles and Permits Current")
+
+    layer_features = titles_layer.query(
+        # where="Type in ('Petroleum','Mineral or Coal') AND Purpose in ('Development','Appraisal', 'Exploration')",
+        # descriptions of available fields
+        # https://www.nopta.gov.au/maps-and-public-data/documents/DataDescription_OffshorePetroleumWells.docx
+        fields=[
+            "OBJECTID",
+            "Title",
+            "RelTitle",
+            "TitleType",
+            "ExpiryDate",
+            "GrantDate",
+            "LastReDate",
+            "NoOfRenews",
+            "EndDate",
+            "Status",
+            "FieldName",
+            "BasinName",
+            "SubBasin",
+            "OffShoreAr",
+            "TitleOprat",
+            "TitleHold",
+            "NoOfBlocks",
+            "AreaKM2",
+            "NEATS_Links",
+            "TITLE_NUMBER_NEATS",
+        ],
+        exceed_limit=True,
     )
 
-    petroleum_wells_layer = nopta_wells.layer("Petroleum Wells")
+    for feature in layer_features["features"]:
+        # convert esriFieldTypeDate to RFC3339 date
+        for feature_key in feature["properties"]:
+            if feature_key.endswith("Date"):
+                feature["properties"][feature_key] = map_esri_date_to_str(feature["properties"][feature_key])
 
-    layer_features = petroleum_wells_layer.query(
+    with open(data_source.asset_path, "w") as asset_file:
+        json.dump(layer_features.json, asset_file)
+        return data_source.asset_path
+
+
+def parse_nopta_titles(data_source: ConfiguredDataSource):
+    df = parse_geo(data_source=data_source)
+
+    df["state"] = df["OffShoreAr"].map(map_offshore_area_to_state)
+
+    return df
+
+
+# Locations of all offshore petroleum and gas titles (licenses) administered
+# by the National Offshore Petroleum Titles Administrator (NOPTA), via the
+# National Electronic Approvals Tracking System (NEATS).
+# Source: https://www.nopta.gov.au/maps-and-public-data/neats-info.html
+nopta_titles_data_source = DataSource(
+    name="NOPTA-titles",
+    file_path="NOPTA-titles.geojson",
+    fetch=fetch_nopta_titles,
+    parse=parse_nopta_titles,
+)
+
+
+def fetch_nopta_wells(data_source: ConfiguredDataSource):
+    wells_url = NOPTA_ARCGIS_URL + "/Public/Petroleum_Wells/MapServer"
+    wells_layer = restapi.MapService(url=wells_url).layer("Petroleum Wells")
+
+    layer_features = wells_layer.query(
         where="Type in ('Petroleum','Mineral or Coal') AND Purpose in ('Development','Appraisal', 'Exploration')",
         # descriptions of available fields
         # https://www.nopta.gov.au/maps-and-public-data/documents/DataDescription_OffshorePetroleumWells.docx
@@ -58,26 +139,6 @@ def fetch_nopta_wells(data_source: ConfiguredDataSource):
     with open(data_source.asset_path, "w") as asset_file:
         json.dump(layer_features.json, asset_file)
         return data_source.asset_path
-
-
-offshore_area_state_mapping = {
-    "Western Australia": "WA",
-    "Victoria": "VIC",
-    "Northern Territory": "NT",
-    "Queensland": "QLD",
-    "South Australia": "SA",
-    "Tasmania": "TAS",
-    "New South Wales": "NSW",
-    "ACT": "ACT",
-    # https://www.infrastructure.gov.au/territories-regions/territories/ashmore-and-cartier-islands
-    "Territory of Ashmore and Cartier Islands": "NT",
-    "Outside of Australia": None,
-    "UNK": None,
-}
-def map_offshore_area_to_state(offshore_area: str) -> str | None:
-    if offshore_area in offshore_area_state_mapping:
-        return offshore_area_state_mapping[offshore_area]
-    return None
 
 
 def parse_nopta_wells(data_source: ConfiguredDataSource):

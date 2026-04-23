@@ -31,17 +31,12 @@ from .offshore_sources import offshore_emission_sources
 from .qld_sources import qld_emission_sources
 from .sa_sources import sa_emission_sources
 from .wa_sources import wa_emission_sources
-from ..data.nopta_titles import nopta_titles_data_source
-from ..data.nopta_wells import nopta_wells_data_source
-from ..data.nsw_drillholes import nsw_drillholes_data_source
-from ..data.nsw_titles import nsw_titles_data_source
-from ..data.nt_titles import nt_titles_data_source
-from ..data.nt_wells import nt_wells_data_source
-from ..data.qld_boreholes import qld_boreholes_data_source
-from ..data.qld_leases import qld_leases_data_source
+from ..data.nopta import nopta_titles_data_source, nopta_wells_data_source
+from ..data.nsw_geo import nsw_drillholes_data_source, nsw_titles_data_source
+from ..data.nt_geo import nt_titles_data_source, nt_wells_data_source
+from ..data.qld_gis import qld_boreholes_data_source, qld_leases_data_source
 from ..data.sa_wells import sa_wells_data_source, sa_wells_production_data_source
-from ..data.wa_titles import wa_titles_data_source
-from ..data.wa_wells import wa_wells_data_source
+from ..data.wa_gis import wa_titles_data_source, wa_wells_data_source
 
 logger = logger.get_logger(__name__)
 
