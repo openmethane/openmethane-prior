@@ -216,8 +216,8 @@ def test_sites_emission_sources(input_files, data_manager):
     # no sources where activity period doesn't intersect date period
     assert len(df[(df["activity_end"] < start_date) & (df["activity_start"] > start_date_end)]) == 0
 
-    # no sources which aren't related to 070 ANZSIC code
-    assert set(df["anzsic_code"].unique()) == {"070", "0700"}
+    # no sources which aren't related to 07 or 17 ANZSIC codes
+    assert set(df["anzsic_code"].unique()) == {'070', '0700', '170', '1701', '1709'}
 
 
 def test_all_emission_sources(input_files, data_manager, config):

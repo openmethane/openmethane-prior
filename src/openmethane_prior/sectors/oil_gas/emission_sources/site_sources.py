@@ -35,6 +35,7 @@ site_type_map = {
     "Oil separation": "oil-separation",
     "Oil waste disposal": "oil-waste",
     "Oil processing": "oil-processing",
+    "Oil production": "oil-production",
     "WHP": "whp",
     "LNG power plant": "lng-power-plant",
 }
@@ -68,8 +69,8 @@ def oil_gas_site_emission_sources(
         start_field="Operation start", end_field="Operation end",
     )
 
-    # exclude sources that aren't in ANZSIC sector 070
-    sites_df = sites_df[sites_df["anzsic_code"] == "070"]
+    # exclude sources that aren't in ANZSIC sector 070, 170
+    sites_df = sites_df[sites_df["anzsic_code"].isin(["070", "170"])]
 
     # normalise output to match emission sources format
     sites_df = sites_df.rename(columns={
@@ -87,7 +88,7 @@ def oil_gas_site_emission_sources(
         facilities_df=npi_da.data,
         period_start=start_date,
         period_end=end_date,
-        anzsic_codes=["070"],
+        anzsic_codes=["070", "170"],
     )
 
     # locate NPI facilities within 250m of sites already accounted for in the
