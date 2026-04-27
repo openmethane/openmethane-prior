@@ -1184,7 +1184,7 @@ wheels = [
 
 [[package]]
 name = "openmethane-prior"
-version = "1.4.1.dev1"
+version = "1.4.1"
 source = { editable = "." }
 dependencies = [
     { name = "cdsapi" },

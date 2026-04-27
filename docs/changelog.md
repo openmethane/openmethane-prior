@@ -19,6 +19,13 @@ of rst and use slightly different categories.
 
 <!-- towncrier release notes start -->
 
+## openmethane-prior v1.4.1 (2026-04-27)
+
+### 🐛 Bug Fixes
+
+- Fix GitHub Actions build version check to include TAG_VERSION env var ([#177](https://github.com/openmethane/openmethane-prior/pull/177))
+
+
 ## openmethane-prior v1.4.0 (2026-04-27)
 
 ### 🎉 Improvements
