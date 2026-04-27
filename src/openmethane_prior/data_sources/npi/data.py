@@ -88,6 +88,15 @@ def parse_npi_facilities_csv(data_source: ConfiguredDataSource) -> gpd.GeoDataFr
 # Source: https://www.dcceew.gov.au/environment/protection/npi/data
 npi_facilities_data_source = DataSource(
     name="NPI-facilities",
-    url="https://data.gov.au/data/dataset/043f58e0-a188-4458-b61c-04e5b540aea4/resource/f83cdee9-ebcb-4f24-941b-34bb2f0996cf/download/facilities.csv",
+    file_path="NPI-facilities.csv",
+    url="https://openmethane.s3.amazonaws.com/prior/inputs/NPI-facilities.csv",
     parse=parse_npi_facilities_csv,
 )
+
+# Note: this file should be obtainable directly from the data.gov.au web
+# server, however Cloudflare appears to block connections from python/curl. The
+# dataset has been mirrored in our public data store while we investigate this
+# behaviour with the administrators of Data.gov.au.
+# See: https://github.com/openmethane/openmethane-prior/pull/167#issuecomment-4323964000
+# Original url:
+# url="https://data.gov.au/data/dataset/043f58e0-a188-4458-b61c-04e5b540aea4/resource/f83cdee9-ebcb-4f24-941b-34bb2f0996cf/download/facilities.csv",
