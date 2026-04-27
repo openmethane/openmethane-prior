@@ -95,7 +95,7 @@ jobs:
         run: |
           TAG_REF="${{ github.event.ref }}"
           TAG_VERSION=${TAG_REF#"refs/tags/"}
-          docker run --rm -v ./tests:/opt/tests ${{ steps.remote-image-id.outputs.REMOTE_ID }} /bin/bash -c $'
+          docker run --rm -e TAG_VERSION=$TAG_VERSION ${{ steps.remote-image-id.outputs.REMOTE_ID }} /bin/bash -c $'
             if [ "$OPENMETHANE_PRIOR_VERSION" != "$TAG_VERSION" ]; then
               echo "OPENMETHANE_PRIOR_VERSION is $OPENMETHANE_PRIOR_VERSION; expected version is $TAG_VERSION"
               exit 1
