@@ -1,5 +1,7 @@
 import datetime
+import numpy as np
 
+from openmethane_prior.data_sources.npi import npi_facilities_data_source
 from openmethane_prior.sectors.oil_gas.data.nopta import (
     nopta_titles_data_source, nopta_wells_data_source,
 )
@@ -9,6 +11,7 @@ from openmethane_prior.sectors.oil_gas.data.nsw_geo import (
 from openmethane_prior.sectors.oil_gas.data.nt_geo import (
     nt_titles_data_source, nt_wells_data_source,
 )
+from openmethane_prior.sectors.oil_gas.data.oil_gas_sites import oil_gas_sites_data_source
 from openmethane_prior.sectors.oil_gas.data.qld_gis import (
     qld_boreholes_data_source, qld_leases_data_source,
 )
@@ -24,6 +27,7 @@ from openmethane_prior.sectors.oil_gas.emission_sources.nt_sources import nt_emi
 from openmethane_prior.sectors.oil_gas.emission_sources.offshore_sources import offshore_emission_sources
 from openmethane_prior.sectors.oil_gas.emission_sources.qld_sources import qld_emission_sources
 from openmethane_prior.sectors.oil_gas.emission_sources.sa_sources import sa_emission_sources
+from openmethane_prior.sectors.oil_gas.emission_sources.site_sources import oil_gas_site_emission_sources
 from openmethane_prior.sectors.oil_gas.emission_sources.wa_sources import wa_emission_sources
 
 
@@ -189,6 +193,31 @@ def test_offshore_emission_sources(input_files, data_manager):
     assert set(df["TitleType"].unique()) == {"Production Licence"}
 
     # no duplicate check, as we allow duplicate geometries from NOPTA dataset
+
+
+def test_sites_emission_sources(input_files, data_manager):
+    start_date = datetime.datetime(2023, 1, 1, 0, 0)
+    start_date_end = datetime.datetime(2023, 1, 2, 0, 0)
+    sites_da = data_manager.get_asset(oil_gas_sites_data_source)
+    npi_da = data_manager.get_asset(npi_facilities_data_source)
+
+    df = oil_gas_site_emission_sources(
+        start_date=start_date.date(),
+        end_date=start_date.date(),
+        oil_gas_sites_da=sites_da,
+        npi_da=npi_da,
+    )
+
+    # original datasets have been filtered down
+    assert len(sites_da.data) > 0
+    assert len(npi_da.data) > 0
+    assert len(df) <= len(sites_da.data) + len(npi_da.data)
+
+    # no sources where activity period doesn't intersect date period
+    assert len(df[(df["activity_end"] < start_date) & (df["activity_start"] > start_date_end)]) == 0
+
+    # no sources which aren't related to 07 or 17 ANZSIC codes
+    assert set(df["anzsic_code"].unique()) == {'070', '0700', '170', '1701', '1709'}
 
 
 def test_all_emission_sources(input_files, data_manager, config):
