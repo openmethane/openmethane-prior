@@ -15,14 +15,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
 import numpy as np
-import pandas as pd
 import xarray as xr
 
-from openmethane_prior.lib.data_manager.parsers import parse_csv
 from openmethane_prior.lib import (
-    DataSource,
     logger,
     PriorSectorConfig,
     kg_to_period_cell_flux,
@@ -30,13 +26,9 @@ from openmethane_prior.lib import (
 from openmethane_prior.data_sources.inventory import get_sector_emissions_by_code, inventory_data_source
 from openmethane_prior.lib.sector.au_sector import AustraliaPriorSector
 
-logger = logger.get_logger(__name__)
+from .emission_sources.all_sources import all_emission_sources
 
-oil_gas_facilities_data_source = DataSource(
-    name="oil-gas-facilities",
-    url="https://openmethane.s3.amazonaws.com/prior/inputs/oil-and-gas-production-and-transport_emissions-sources.csv",
-    parse=parse_csv,
-)
+logger = logger.get_logger(__name__)
 
 def process_emissions(sector: AustraliaPriorSector, sector_config: PriorSectorConfig, prior_ds: xr.Dataset):
     config = sector_config.prior_config
@@ -50,34 +42,31 @@ def process_emissions(sector: AustraliaPriorSector, sector_config: PriorSectorCo
         category_codes=sector.unfccc_categories,
     )
 
-    # now read climate_trace facilities emissions for oil and gas
-    oil_gas_facilities_asset = sector_config.data_manager.get_asset(oil_gas_facilities_data_source)
-
-    # select gas and year
-    oil_gas_ch4 = oil_gas_facilities_asset.data.loc[oil_gas_facilities_asset.data["gas"] == "ch4"]
-    oil_gas_ch4.loc[:, "start_time"] = pd.to_datetime(oil_gas_ch4["start_time"])
-    target_date = (
-        config.start_date
-        if config.start_date <= oil_gas_ch4["start_time"].max()
-        else oil_gas_ch4["start_time"].max()
-    )  # start date or latest date in data
-    years = np.array([x.year for x in oil_gas_ch4["start_time"]])
-    mask = years == target_date.year
-    oil_gas_year = oil_gas_ch4.loc[mask, :]
-    # normalise emissions to match inventory total
-    oil_gas_year.loc[:, "emissions_quantity"] *= (
-        sector_total_emissions / oil_gas_year["emissions_quantity"].sum()
+    # create a DataFrame with all potential methane emission sources in the sector
+    emission_sources_df = all_emission_sources(
+        data_manager=sector_config.data_manager,
+        prior_config=config,
     )
+
+    # emission sources don't include a methane quantity or proxy, so naively
+    # distribute sector emissions evenly to each active petroleum well
+    emission_sources_df["emissions_quantity"] = sector_total_emissions / len(emission_sources_df)
 
     domain_grid = config.domain_grid()
 
     methane = np.zeros(domain_grid.shape)
 
-    for _, facility in oil_gas_year.iterrows():
-        cell_x, cell_y, cell_valid = domain_grid.lonlat_to_cell_index(facility["lon"], facility["lat"])
-
-        if cell_valid:
-            methane[cell_y, cell_x] += facility["emissions_quantity"]
+    for index, site in emission_sources_df.iterrows():
+        # geometry type for each site will determine how to allocate emissions
+        # to the grid
+        geom_type = emission_sources_df.geom_type[index] if type(emission_sources_df.geom_type[index]) == str \
+                    else emission_sources_df.geom_type[index].iloc[0]
+        if geom_type == "Point":
+            cell_x, cell_y, cell_valid = domain_grid.xy_to_cell_index(site["geometry"].x, site["geometry"].y)
+            if cell_valid:
+                methane[cell_y, cell_x] += site["emissions_quantity"]
+        else:
+            raise NotImplementedError("Allocating emissions to non-point geometry is not implemented")
 
     return kg_to_period_cell_flux(methane, config)
 
