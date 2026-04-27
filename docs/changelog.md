@@ -19,6 +19,22 @@ of rst and use slightly different categories.
 
 <!-- towncrier release notes start -->
 
+## openmethane-prior v1.4.0 (2026-04-27)
+
+### 🎉 Improvements
+
+- Fetch ANGA inventory data directly via the JSON API ([#171](https://github.com/openmethane/openmethane-prior/pull/171))
+
+### 🐛 Bug Fixes
+
+- Fix "patch" version bump adding an extra increment during release ([#160](https://github.com/openmethane/openmethane-prior/pull/160))
+- Allocate ANGA inventory emissions based on Australian financial year ([#171](https://github.com/openmethane/openmethane-prior/pull/171))
+
+### 🔧 Trivial/Internal Changes
+
+- [#162](https://github.com/openmethane/openmethane-prior/pull/162), [#163](https://github.com/openmethane/openmethane-prior/pull/163)
+
+
 ## openmethane-prior v1.3.0 (2026-01-27)
 
 ### ⚠️ Breaking Changes
