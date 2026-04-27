@@ -15,85 +15,85 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
-import attrs
-import calendar
 import datetime
-from typing import Iterable
+import pandas as pd
 
-from openmethane_prior.data_sources.inventory.unfccc import Category, find_category_by_name, is_code_in_code_family
 from openmethane_prior.lib.units import days_in_period
-from openmethane_prior.lib.logger import get_logger, DuplicateFilter
+from openmethane_prior.lib.logger import get_logger
+
+from .unfccc import is_code_in_code_family
 
 logger = get_logger(__name__)
-# prevent multiple "inventory does not cover YYYY" messages
-logger.addFilter(DuplicateFilter())
 
-@attrs.define
-class SectorEmission:
-    """
-    SectorEmission stores a CH4 emission value allocated to a UNFCCC sector.
-    """
+_LEVEL_COLUMNS = ["UNFCCC_Level_1", "UNFCCC_Level_2", "UNFCCC_Level_3", "UNFCCC_Level_4"]
 
-    unfccc_category: Category
-    """UNFCCC sector the emissions are allocated to."""
-
-    ch4_emissions: dict[int, float]
-    """Emissions recorded for the sector in kg per annum."""
-
-
-def kt_to_kg(kilotonnes: float) -> float:
+def kt_to_kg(kilotonnes):
     """Convert measures in kilotonnes to kilograms."""
     return kilotonnes * 1e6
 
 
-def find_existing_emission(
-    emissions_list: list[SectorEmission],
-    category: Category,
-) -> SectorEmission | None:
+"""ANGA inventories follow the Australian financial year, which goes from July
+1st - June 30th of the following year. In their API, ANGA specifies a single
+year indicating the end year of the financial year for that data. I.e. "2023"
+references the "2022/2023" financial year."""
+def financial_year_start(year: int) -> datetime.datetime:
+    """Return the start date of an ANGA inventory financial year."""
+    return datetime.datetime(year - 1, 7, 1)
+
+def financial_year_end(year: int) -> datetime.datetime:
+    """Return the end date of an ANGA inventory financial year."""
+    return datetime.datetime(year, 6, 30) + datetime.timedelta(hours=24)
+
+def financial_year_from_date(date: datetime.date) -> int:
+    """Return the ANGA inventory financial year a date falls in."""
+    return date.year + 1 if date.month >= 7 else date.year
+
+
+def create_inventory_df(anga_inventory_records, unfccc_df: pd.DataFrame) -> pd.DataFrame:
+    anga_df = pd.DataFrame.from_records(
+        anga_inventory_records,
+        columns=[
+            "InventoryYear_ID",
+            "UNFCCC_Level_1", "UNFCCC_Level_2", "UNFCCC_Level_3", "UNFCCC_Level_4",
+            "Gas_Level_0",
+            "Gg",
+        ],
+    )
+
+    # Filter out non-CH4 emissions
+    anga_df = anga_df[anga_df["Gas_Level_0"] == "CH4"]
+
+    # Convert kt to kg
+    anga_df["ch4_kg"] = kt_to_kg(anga_df["Gg"])
+
+    # Add UNFCCC code column using cascading fallback: try all 4 levels first,
+    # then progressively drop the most specific level until a match is found.
+    anga_df["UNFCCC_Code"] = anga_df.apply(_find_unfccc_code, axis=1, unfccc_df=unfccc_df)
+
+    return anga_df
+
+
+def _find_unfccc_code(row: pd.Series, unfccc_df: pd.DataFrame) -> str | None:
+    """Find the closest UNFCCC code for a single ANGA row.
+
+    Tries to match on all 4 levels first, then progressively drops the most
+    specific level, only considering unfccc_df rows where the dropped levels
+    are empty (i.e. parent categories).
     """
-    Find an emissions record for a sector in a list of SectorEmissions.
-    """
-    for emission in emissions_list:
-        if emission.unfccc_category == category:
-            return emission
-    return None
-
-
-def create_emissions_inventory(
-    categories: list[Category],
-    inventory_list: Iterable[list[str]],
-) -> list[SectorEmission]:
-    """
-    Create a list of inventory entries, each with annual emissions allocated
-    to a UNFCCC sector category code.
-    """
-    emissions_list = []
-    for annual_sector_emission in inventory_list:
-        year, level_name_1, level_name_2, level_name_3, level_name_4, level_name_5, emission = annual_sector_emission
-
-        # UNFCCC sector codes / implementation only goes to 4 levels
-        level_names = [level_name_1, level_name_2, level_name_3, level_name_4]
-        category = find_category_by_name(categories, level_names)
-        if category is None:
-            raise ValueError(f"Unable to find matching category for: {level_names}")
-
-        sector_emission = find_existing_emission(emissions_list, category)
-        if sector_emission is None:
-            sector_emission = SectorEmission(unfccc_category=category, ch4_emissions=dict())
-            emissions_list.append(sector_emission)
-
-        if not int(year) in sector_emission.ch4_emissions:
-            sector_emission.ch4_emissions[int(year)] = 0
-
-        # inventory numbers are in kilotonnes, we want to work in kg
-        sector_emission.ch4_emissions[int(year)] += kt_to_kg(float(emission))
-
-    return emissions_list
+    for n_levels in range(len(_LEVEL_COLUMNS), 0, -1):
+        mask = pd.Series(True, index=unfccc_df.index)
+        for col in _LEVEL_COLUMNS[:n_levels]:
+            mask &= unfccc_df[col] == row[col]
+        for col in _LEVEL_COLUMNS[n_levels:]:
+            mask &= unfccc_df[col].isna() | (unfccc_df[col] == "")
+        matches = unfccc_df[mask]
+        if not matches.empty:
+            return matches.iloc[0]["UNFCCC_Code"]
+    raise ValueError(f"No matching UNFCCC code for inventory row: {row}")
 
 
 def get_sector_emissions_by_code(
-    emissions_inventory: list[SectorEmission],
+    emissions_inventory: pd.DataFrame,
     category_codes: list[str],
     start_date: datetime.date,
     end_date: datetime.date,
@@ -104,25 +104,31 @@ def get_sector_emissions_by_code(
     then the returned value will include all emissions for every sector within
     Energy.
     """
-    if start_date.year != end_date.year:
-        raise ValueError("periods spanning multiple years are not supported")
-    year_days = 365 if not calendar.isleap(start_date.year) else 366
+    inventory_year = financial_year_from_date(start_date)
+    if financial_year_from_date(end_date) != inventory_year:
+        raise ValueError(
+            f"start_date ({start_date}) and end_date ({end_date}) must be within the same financial year"
+        )
+
+    # Build a sorted table of unique inventory years with their period boundaries
+    year_periods: list[int] = list(
+        emissions_inventory["InventoryYear_ID"].drop_duplicates().astype(int).sort_values()
+    )
+
+    if inventory_year not in year_periods:
+        inventory_year = year_periods[-1] if inventory_year > year_periods[-1] else year_periods[0]
+        logger.warning(
+            f"inventory does not cover {start_date}, using {inventory_year} inventory"
+        )
+
+    year_days = (financial_year_end(inventory_year) - financial_year_start(inventory_year)).days
     period_annual_fraction = days_in_period(start_date, end_date) / year_days
 
-    aggregated_emission = 0.0
-    for emissions in emissions_inventory:
-        if is_code_in_code_family(emissions.unfccc_category.code, category_codes):
-            inventory_year = start_date.year
-            if inventory_year not in emissions.ch4_emissions:
-                covered_years = sorted(emissions.ch4_emissions.keys())
-                if inventory_year < covered_years[0]:
-                    inventory_year = covered_years[0]
-                elif inventory_year > covered_years[-1]:
-                    inventory_year = covered_years[-1]
-                logger.warning(f"inventory does not cover {start_date.year}, using {inventory_year} inventory")
+    year_df = emissions_inventory[emissions_inventory["InventoryYear_ID"] == inventory_year]
 
-            # reported emissions are for an entire year, take the fraction for
-            # the requested time period
-            aggregated_emission += emissions.ch4_emissions[inventory_year] * period_annual_fraction
+    code_match_check = lambda unfccc_code: is_code_in_code_family(unfccc_code, category_codes)
+    code_match_mask = year_df["UNFCCC_Code"].map(code_match_check)
 
-    return aggregated_emission
+    aggregated_emission = year_df[code_match_mask]["ch4_kg"].sum()
+
+    return aggregated_emission * period_annual_fraction

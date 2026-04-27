@@ -15,36 +15,39 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-import csv
+import json
+import pandas as pd
 
-from openmethane_prior.lib.data_manager.source import DataSource, ConfiguredDataSource
-from openmethane_prior.data_sources.inventory.inventory import SectorEmission, create_emissions_inventory
-from openmethane_prior.data_sources.inventory.unfccc import create_category_list, Category
+from openmethane_prior.lib import (
+    DataSource,
+    ConfiguredDataSource,
+    logger,
+)
+from openmethane_prior.lib.data_manager.parsers import parse_csv
 
-def parse_category_csv(data_source: ConfiguredDataSource) -> list[Category]:
-    with open(data_source.asset_path, newline='') as codes_file:
-        reader = csv.reader(codes_file)
-        next(reader) # skip header row
-        return create_category_list(categories=reader)
+from .inventory import create_inventory_df
+
+logger = logger.get_logger(__name__)
 
 unfccc_codes_data_source = DataSource(
-    name="au-inventory-unfccc-codes",
+    name="ANGA-UNFCCC-codes",
     url="https://openmethane.s3.amazonaws.com/prior/inputs/UNFCCC-codes-AU.csv",
-    parse=parse_category_csv,
+    parse=parse_csv,
 )
 
 
-def parse_inventory(data_source: ConfiguredDataSource) -> list[SectorEmission]:
+def parse_inventory(data_source: ConfiguredDataSource) -> pd.DataFrame:
     unfccc_codes_asset = data_source.data_assets[0]
+    unfccc_df: pd.DataFrame = unfccc_codes_asset.data
 
-    with open(data_source.asset_path, newline='') as inventory_file:
-        reader = csv.reader(inventory_file)
-        next(reader) # skip header row
-        return create_emissions_inventory(categories=unfccc_codes_asset.data, inventory_list=reader)
+    with open(data_source.asset_path) as anga_file:
+        anga_json = json.load(anga_file)
+        return create_inventory_df(anga_json["value"], unfccc_df)
+
 
 inventory_data_source = DataSource(
-    name="au-inventory-emissions",
-    url="https://openmethane.s3.amazonaws.com/prior/inputs/AR5_ParisInventory_AUSTRALIA_CH4.csv",
+    name="ANGA-UNFCCC-inventory",
+    url="https://greenhouseaccounts.climatechange.gov.au/OData/AR5_ParisInventory_AUSTRALIA",
     data_sources=[unfccc_codes_data_source],
     parse=parse_inventory,
 )

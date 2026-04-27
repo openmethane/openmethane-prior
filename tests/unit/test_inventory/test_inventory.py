@@ -1,63 +1,150 @@
 import datetime
 import pytest
+import pandas as pd
 
-from openmethane_prior.data_sources.inventory.inventory import create_emissions_inventory, get_sector_emissions_by_code
-from openmethane_prior.data_sources.inventory.unfccc import create_category_list
+from openmethane_prior.data_sources.inventory.inventory import (
+    _find_unfccc_code,
+    create_inventory_df,
+    financial_year_end,
+    financial_year_start,
+    get_sector_emissions_by_code,
+    financial_year_from_date,
+)
+
 
 @pytest.fixture()
-def category_list():
-    return create_category_list([
-        ["1", "Energy", "", "", ""],
-        ["1.A.1", "Energy", "Fuel Combustion", "Other", ""],
-        ["1.A.1.a", "Energy", "Fuel Combustion", "Other", "Mobile"],
-        ["1.A", "Energy", "Fuel Combustion", "", ""],
-        ["1.B", "Energy", "Fugitive Emissions From Fuels", "", ""],
-        ["2", "Industrial Processes", "", "", ""],
+def unfccc_df():
+    return pd.DataFrame(
+        [
+            ("1",       "Energy",                          None,                            None,    None),
+            ("1.A",     "Energy",                          "Fuel Combustion",               None,    None),
+            ("1.A.1",   "Energy",                          "Fuel Combustion",               "Other", None),
+            ("1.A.1.a", "Energy",                          "Fuel Combustion",               "Other", "Mobile"),
+            ("1.B",     "Energy",                          "Fugitive Emissions From Fuels", None,    None),
+            ("2",       "Industrial Processes",            None,                            None,    None),
+        ],
+        columns=["UNFCCC_Code", "UNFCCC_Level_1", "UNFCCC_Level_2", "UNFCCC_Level_3", "UNFCCC_Level_4"],
+    )
+
+
+def make_row(level_1, level_2, level_3, level_4):
+    return pd.Series({
+        "UNFCCC_Level_1": level_1,
+        "UNFCCC_Level_2": level_2,
+        "UNFCCC_Level_3": level_3,
+        "UNFCCC_Level_4": level_4,
+    })
+
+
+def test_find_unfccc_code_exact(unfccc_df):
+    row = make_row("Energy", "Fuel Combustion", "Other", "Mobile")
+    assert _find_unfccc_code(row, unfccc_df) == "1.A.1.a"
+
+
+def test_find_unfccc_code_fallback_drops_level4(unfccc_df):
+    # "Smoke from AI fires" has no exact Level_4 match; should fall back to "1.B"
+    row = make_row("Energy", "Fugitive Emissions From Fuels", "Smoke", "Smoke from AI fires")
+    assert _find_unfccc_code(row, unfccc_df) == "1.B"
+
+
+def test_find_unfccc_code_fallback_drops_level3_and_4(unfccc_df):
+    # No match on Level_3 or Level_4; should fall back to "1.B" via Level_1 + Level_2
+    row = make_row("Energy", "Fugitive Emissions From Fuels", "Unknown L3", "Unknown L4")
+    assert _find_unfccc_code(row, unfccc_df) == "1.B"
+
+
+def test_find_unfccc_code_no_match(unfccc_df):
+    row = make_row("Unknown sector", "Unknown L2", "Unknown L3", "Unknown L4")
+    with pytest.raises(ValueError, match="No matching UNFCCC code for inventory row"):
+        _find_unfccc_code(row, unfccc_df)
+
+
+def make_anga_record(year, level_1, level_2, level_3, level_4, gas, gg):
+    return [year, level_1, level_2, level_3, level_4, gas, gg]
+
+
+def test_create_inventory_df_basic(unfccc_df):
+    records = [make_anga_record(2023, "Energy", "Fuel Combustion", "Other", "Mobile", "CH4", 1.5)]
+    result = create_inventory_df(records, unfccc_df)
+
+    assert len(result) == 1
+    row = result.iloc[0]
+    assert row["InventoryYear_ID"] == 2023
+    assert row["UNFCCC_Code"] == "1.A.1.a"
+    assert row["ch4_kg"] == pytest.approx(1.5e6)
+
+
+def test_create_inventory_df_filters_non_ch4(unfccc_df):
+    records = [
+        make_anga_record(2023, "Energy", "Fuel Combustion", "Other", "Mobile", "CH4", 1.5),
+        make_anga_record(2023, "Energy", "Fuel Combustion", "Other", "Mobile", "CO2", 100.0),
+        make_anga_record(2023, "Energy", "Fuel Combustion", "Other", "Mobile", "N2O", 50.0),
+    ]
+    result = create_inventory_df(records, unfccc_df)
+
+    assert len(result) == 1
+    assert result.iloc[0]["Gas_Level_0"] == "CH4"
+
+
+def test_create_inventory_df_unfccc_fallback(unfccc_df):
+    # "Smoke from AI fires" has no UNFCCC entry; should fall back to parent "1.B"
+    records = [
+        make_anga_record(2023, "Energy", "Fugitive Emissions From Fuels", "Smoke", "Smoke from AI fires", "CH4", 2.0)
+    ]
+    result = create_inventory_df(records, unfccc_df)
+
+    assert result.iloc[0]["UNFCCC_Code"] == "1.B"
+
+
+def test_create_inventory_df_no_unfccc_match(unfccc_df):
+    records = [make_anga_record(2023, "Unknown Sector", "Unknown L2", "Unknown L3", "Unknown L4", "CH4", 0.5)]
+
+    # it is very important that every entry in the ANGA inventory is able to
+    # be matched with a UNFCCC code, otherwise we may miss reported emissions
+    # that should be allocated.
+    # If this test fails, identify the UNFCCC Levels in the failing row and
+    # manually add the appropriate UNFCCC code to the CSV.
+    with pytest.raises(ValueError, match="No matching UNFCCC code for inventory row"):
+        create_inventory_df(records, unfccc_df)
+
+
+def make_inventory_df(entries):
+    """Build a test emissions inventory DataFrame.
+
+    Each entry: (year, unfccc_code, ch4_kg). Period start/end are derived from
+    the ANGA financial year convention.
+    """
+    df = pd.DataFrame(entries, columns=["InventoryYear_ID", "UNFCCC_Code", "ch4_kg"])
+    df["period_start"] = df["InventoryYear_ID"].map(financial_year_start)
+    df["period_end"] = df["InventoryYear_ID"].map(financial_year_end)
+    return df
+
+
+def test_financial_year_from_date():
+    # July–December belong to the next FY (e.g. Jul 1992 → FY 1993)
+    assert financial_year_from_date(datetime.date(1992, 7, 1)) == 1993
+    assert financial_year_from_date(datetime.date(1992, 12, 31)) == 1993
+    # January–June belong to the current calendar year's FY (e.g. Jan 1993 → FY 1993)
+    assert financial_year_from_date(datetime.date(1993, 1, 1)) == 1993
+    assert financial_year_from_date(datetime.date(1993, 6, 30)) == 1993
+
+
+def test_inventory_get_sector_emissions_by_code():
+    # FY 1993 = 1992-07-01 to 1993-07-01 = 365 days
+    inventory = make_inventory_df([
+        (1992, "1.A.1.a", 1.0 * 1e6),
+        (1993, "1.A.1.a", 1.1 * 1e6),
+        (1994, "1.A.1.a", 2.2 * 1e6),
+        (1995, "1.A.1.a", 3.3 * 1e6),
+        (1992, "1.B",     0.1 * 1e6),
+        (1993, "1.B",     0.2 * 1e6),
+        (1994, "1.B",     0.5 * 1e6),
+        (1995, "1.B",     0.8 * 1e6),
+        (1992, "2",       0.3 * 1e6),
+        (1993, "2",       0.7 * 1e6),
+        (1994, "2",       0.11 * 1e6),
+        (1995, "2",       0.13 * 1e6),
     ])
-
-def test_inventory_create_emissions_inventory(category_list):
-    inventory = create_emissions_inventory(
-        categories=category_list,
-        inventory_list=[
-            ["1993", "Energy", "Fuel Combustion", "Other", "Mobile", "", "1.1"],
-            ["1994", "Energy", "Fuel Combustion", "Other", "Mobile", "", "2.2"],
-            ["1995", "Energy", "Fuel Combustion", "Other", "Mobile", "", "3.3"],
-            ["1993", "Energy", "Fugitive Emissions From Fuels", "Smoke", "Smoke from AI fires", "", "0.2"],
-            ["1994", "Energy", "Fugitive Emissions From Fuels", "Smoke", "Smoke from AI fires", "", "0.5"],
-            ["1995", "Energy", "Fugitive Emissions From Fuels", "Smoke", "Smoke from AI fires", "", "0.8"],
-        ],
-    )
-
-    assert len(inventory) == 2 # 2 unique categories
-    assert inventory[0].unfccc_category.code == "1.A.1.a" # exact match
-    assert inventory[0].ch4_emissions == {
-        1993: 1.1 * 1e6,
-        1994: 2.2 * 1e6,
-        1995: 3.3 * 1e6,
-    }
-    assert inventory[1].unfccc_category.code == "1.B" # nearest match
-    assert inventory[1].ch4_emissions == {
-        1993: 0.2 * 1e6,
-        1994: 0.5 * 1e6,
-        1995: 0.8 * 1e6,
-    }
-
-
-def test_inventory_get_sector_emissions_by_code(category_list):
-    inventory = create_emissions_inventory(
-        categories=category_list,
-        inventory_list=[
-            ["1993", "Energy", "Fuel Combustion", "Other", "Mobile", "", "1.1"],
-            ["1994", "Energy", "Fuel Combustion", "Other", "Mobile", "", "2.2"],
-            ["1995", "Energy", "Fuel Combustion", "Other", "Mobile", "", "3.3"],
-            ["1993", "Energy", "Fugitive Emissions From Fuels", "Smoke", "Smoke from AI fires", "", "0.2"],
-            ["1994", "Energy", "Fugitive Emissions From Fuels", "Smoke", "Smoke from AI fires", "", "0.5"],
-            ["1995", "Energy", "Fugitive Emissions From Fuels", "Smoke", "Smoke from AI fires", "", "0.8"],
-            ["1993", "Industrial Processes", "Building stuff", "", "", "", "0.7"],
-            ["1994", "Industrial Processes", "Building stuff", "", "", "", "0.11"],
-            ["1995", "Industrial Processes", "Building stuff", "", "", "", "0.13"],
-        ],
-    )
 
     energy_emissions = get_sector_emissions_by_code(
         emissions_inventory=inventory,
@@ -65,37 +152,43 @@ def test_inventory_get_sector_emissions_by_code(category_list):
         start_date=datetime.date(1993, 1, 1),
         end_date=datetime.date(1993, 1, 31),
     )
-
-    # search finds both categories, and takes the fraction of the year
-    assert energy_emissions == (1.1 + 0.2) * (31 / 365) * 1e6
+    assert energy_emissions == pytest.approx((1.1 + 0.2) * (31 / 365) * 1e6)
 
     multi_emissions = get_sector_emissions_by_code(
         emissions_inventory=inventory,
-        category_codes=["1.A", "2"], # multiple codes
+        category_codes=["1.A", "2"],
         start_date=datetime.date(1993, 1, 1),
         end_date=datetime.date(1993, 1, 31),
     )
-
-    # search finds both categories, and takes the fraction of the year
-    assert multi_emissions == (1.1 + 0.7) * (31 / 365) * 1e6
+    assert multi_emissions == pytest.approx((1.1 + 0.7) * (31 / 365) * 1e6)
 
     future_emissions = get_sector_emissions_by_code(
         emissions_inventory=inventory,
-        category_codes=["1.A", "2"], # multiple codes
+        category_codes=["1.A", "2"],
         start_date=datetime.date(1997, 1, 1),
         end_date=datetime.date(1997, 1, 31),
     )
-
-    # search finds no emissions for 1997, uses last available year 1995
-    assert future_emissions == (3.3 + 0.13) * (31 / 365) * 1e6
+    # No FY 1997 data — falls after last period, uses FY 1995 (365 days)
+    assert future_emissions == pytest.approx((3.3 + 0.13) * (31 / 365) * 1e6)
 
     past_emissions = get_sector_emissions_by_code(
         emissions_inventory=inventory,
-        category_codes=["1.A", "2"], # multiple codes
+        category_codes=["1.A", "2"],
         start_date=datetime.date(1990, 1, 1),
         end_date=datetime.date(1990, 1, 31),
     )
+    # No FY 1990 data — falls before first period, uses FY 1992 (366 days)
+    assert past_emissions == pytest.approx((1.0 + 0.3) * (31 / 366) * 1e6)
 
-    # search finds no emissions for 1990, uses first available year 1993
-    assert multi_emissions == (1.1 + 0.7) * (31 / 365) * 1e6
 
+def test_inventory_get_sector_emissions_cross_financial_year():
+    inventory = make_inventory_df([(2023, "1.A.1.a", 1.0 * 1e6)])
+
+    # June 30 → FY 2023; July 1 → FY 2024: crosses a financial year boundary
+    with pytest.raises(ValueError, match="same financial year"):
+        get_sector_emissions_by_code(
+            emissions_inventory=inventory,
+            category_codes=["1"],
+            start_date=datetime.date(2023, 6, 30),
+            end_date=datetime.date(2023, 7, 1),
+        )
