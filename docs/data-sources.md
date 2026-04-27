@@ -110,6 +110,41 @@ supporting dataset allows us to place those emissions in the correct grid cell
 or grid cells.
 
 
+## Safeguard Mechanism Facility Locations
+
+The Safeguard Mechanism Baselines and Emissions dataset includes facility-level
+methane emissions reported to the CER, but the locations of facilities are not
+made public. The
+[Safeguard Mechanism Facility Locations](https://docs.google.com/spreadsheets/d/1vET6DVXo3K9MeMYJj9sksSTmQjV3v9JmIPSlR6HS4NA)
+dataset was created by
+[The Superpower Institute](https://www.superpowerinstitute.com.au/) to detail
+the locations of sites and infrastructure related to each Safeguard facility so
+that their emissions can be allocated geographically.
+
+The dataset includes two parts:
+- external dataset references
+- direct locations
+
+Where possible, Safeguard facility locations have been identified in other
+public datasets, such as the National Pollutant Inventory or Climate TRACE.
+In these cases an external dataset reference is created by recording the
+Safeguard facility name alongside the `DataSource.name` of the external dataset
+and an identifier in the external dataset.
+
+For facility locations that can't be found in existing datasets, research by
+The Superpower Institute has used company reports, public datasets and
+satellite imagery to find and document sites and infrastructure related to
+each facility. These direct locations include a geographical coordinate, and
+operation dates for locations where the information is available. Each direct
+location record also includes references to public documents where the
+information was sourced.
+
+Both of these datasets have been made available via a public, read-only Google
+Sheet. The public sheet is backed by a private dataset maintained by The
+Superpower Institute, with data synced using
+[`IMPORTRANGE`](https://support.google.com/docs/answer/3093340).
+
+
 ## Land Use of Australia
 
 Some sectoral inventories are spatialised by identifying which Australian Land

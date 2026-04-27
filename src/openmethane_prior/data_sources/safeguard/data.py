@@ -15,10 +15,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
 import pandas as pd
+import pathlib
 
 from openmethane_prior.lib import ConfiguredDataSource, DataSource
+from openmethane_prior.lib.data_manager.fetchers import fetch_google_sheet_by_name_csv
+
 from .facility import create_facilities_from_safeguard_rows
 
 # NGER emissions numbers are reported in CO2 equivalent, so to calculate raw
@@ -71,18 +73,6 @@ def parse_csv_numeric(csv_value: str) -> float | None:
     return float(raw.replace(",", ""))
 
 
-def parse_location_csv(data_source: ConfiguredDataSource):
-    locations_rows_df = pd.read_csv(
-        filepath_or_buffer=data_source.asset_path,
-        header=0,
-        names=safeguard_locations_csv_columns,
-        usecols=["safeguard_facility_name", "data_source_name", "data_source_id"],
-    )
-
-    # filter out any rows with incomplete information
-    return locations_rows_df.dropna()
-
-
 def parse_safeguard_csv(data_source: ConfiguredDataSource):
     """Read the Safeguard Mechanism Baselines and Emissions Table CSV,
     returning only the data columns useful for methane estimation."""
@@ -101,17 +91,68 @@ def parse_safeguard_csv(data_source: ConfiguredDataSource):
         ch4_gwp=ar5_ch4_gwp, co2_gwp=ar5_co2_gwp,
     )
 
-
-safeguard_locations_data_source = DataSource(
-    name="safeguard-locations",
-    url="https://openmethane.s3.amazonaws.com/prior/inputs/facility-locations-v2.0.csv",
-    parse=parse_location_csv,
-)
-
-
+# Facility-level emissions reported under the Safeguard Mechanism.
+# Source: https://cer.gov.au/markets/reports-and-data/safeguard-data/2023-24-baselines-and-emissions-data
 safeguard_mechanism_data_source = DataSource(
     name="safeguard-mechanism",
     url="https://cer.gov.au/document/2023-24-baselines-and-emissions-table",
     file_path="2023-24-baselines-and-emissions-table.csv",
     parse=parse_safeguard_csv,
+)
+
+
+def fetch_location_csv(data_source: ConfiguredDataSource) -> pathlib.Path:
+    # Primary source of external locations
+    external_locations_df = fetch_google_sheet_by_name_csv(data_source.url, "External facility locations")
+
+    # Petroleum titles sheet has some extra details, but contains columns for
+    # Facility name, Data source, and Production license which can be converted
+    # into external location references.
+    petroleum_titles_df = fetch_google_sheet_by_name_csv(data_source.url, "Petroleum titles")
+    petroleum_locations_df = petroleum_titles_df \
+        .drop(columns=["Responsible emitter", "State"]) \
+        .rename(columns={
+            "Data source": "Supporting data source",
+            "Production license": "Supporting data id",
+        })
+
+    # Oil and gas sites, which are used as an independent DataSource in the
+    # oil_gas sector, already include the Facility name. Create a row for each
+    # facility in this with the facility name as both the name and the id.
+    oil_gas_sites = fetch_google_sheet_by_name_csv(data_source.url, "Oil and gas sites")
+    oil_gas_facilities = oil_gas_sites["Facility name"].unique()
+    oil_gas_locations_df = pd.DataFrame({
+        "Facility name": oil_gas_facilities,
+        "Supporting data id": oil_gas_facilities,
+        "Supporting data source": "oil-gas-sites",
+    })
+
+    # Combine the sources of facility locations and write them to a CSV file
+    df = pd.concat([external_locations_df, oil_gas_locations_df, petroleum_locations_df])
+    df.to_csv(data_source.asset_path, index=False)
+    return data_source.asset_path
+
+
+def parse_location_csv(data_source: ConfiguredDataSource):
+    locations_rows_df = pd.read_csv(
+        filepath_or_buffer=data_source.asset_path,
+        header=0,
+        names=safeguard_locations_csv_columns,
+        usecols=["safeguard_facility_name", "data_source_name", "data_source_id"],
+    )
+
+    # filter out any rows with incomplete information
+    return locations_rows_df.dropna()
+
+
+# Locations of Safeguard Mechanism facilities which are found in other data
+# sources are recorded in The Superpower Institute's Safeguard Mechanism
+# Facility Locations dataset.
+# Source: https://docs.google.com/spreadsheets/d/1vET6DVXo3K9MeMYJj9sksSTmQjV3v9JmIPSlR6HS4NA
+safeguard_locations_data_source = DataSource(
+    name="safeguard-locations",
+    file_path="safeguard-facility-locations.csv",
+    url="https://docs.google.com/spreadsheets/d/1vET6DVXo3K9MeMYJj9sksSTmQjV3v9JmIPSlR6HS4NA",
+    fetch=fetch_location_csv,
+    parse=parse_location_csv,
 )

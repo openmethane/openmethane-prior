@@ -20,6 +20,7 @@ import numpy as np
 import pandas as pd
 
 from openmethane_prior.lib import DataSource
+from openmethane_prior.lib.data_manager.fetchers import fetch_google_sheet_csv
 from openmethane_prior.lib.data_manager.source import ConfiguredDataSource
 
 
@@ -50,11 +51,14 @@ def parse_oil_gas_sites_csv(data_source: ConfiguredDataSource) -> gpd.GeoDataFra
     return gdf
 
 
-# Processing facilities in the oil and gas industry in Australia. This dataset
-# was manually created from research conducted by The Superpower Institute to
-# identify locations of processing sites linked to Safeguard Mechanism facilities.
+# Processing facilities in the oil and gas industry in Australia. This dataset,
+# created by The Superpower Institute, identifies locations of oil and gas
+# sites linked to Safeguard Mechanism facilities.
+# Source: https://docs.google.com/spreadsheets/d/1vET6DVXo3K9MeMYJj9sksSTmQjV3v9JmIPSlR6HS4NA
 oil_gas_sites_data_source = DataSource(
     name="oil-gas-sites",
-    url="https://openmethane.s3.amazonaws.com/prior/inputs/oil-gas-sites-v0.3.csv",
+    file_path="oil-gas-sites.csv",
+    url="https://docs.google.com/spreadsheets/d/1vET6DVXo3K9MeMYJj9sksSTmQjV3v9JmIPSlR6HS4NA",
+    fetch=fetch_google_sheet_csv("Oil and gas sites"),
     parse=parse_oil_gas_sites_csv,
 )
