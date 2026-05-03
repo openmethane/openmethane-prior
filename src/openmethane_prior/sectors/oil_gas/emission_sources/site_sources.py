@@ -78,6 +78,7 @@ def oil_gas_site_emission_sources(
         "Facility name": "group_id",
         "Operation start": "activity_start",
         "Operation end": "activity_end",
+        "State": "state",
     })
     sites_df["data_source"] = oil_gas_sites_da.name
 

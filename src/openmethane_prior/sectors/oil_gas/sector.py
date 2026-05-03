@@ -17,6 +17,7 @@
 #
 import datetime
 import numpy as np
+import pandas as pd
 import xarray as xr
 
 from openmethane_prior.lib import (
