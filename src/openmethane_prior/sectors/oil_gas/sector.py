@@ -25,7 +25,11 @@ from openmethane_prior.lib import (
     PriorSectorConfig,
     kg_to_period_cell_flux,
 )
-from openmethane_prior.data_sources.inventory import get_sector_emissions_by_code, inventory_data_source
+from openmethane_prior.data_sources.inventory import (
+    get_sector_emissions_by_code,
+    inventory_data_source,
+    qld_inventory_data_source,
+)
 from openmethane_prior.data_sources.safeguard import (
     filter_facilities,
     safeguard_mechanism_data_source,
@@ -49,6 +53,16 @@ def process_emissions(sector: AustraliaPriorSector, sector_config: PriorSectorCo
         end_date=config.end_date,
         category_codes=sector.unfccc_categories,
     )
+    logger.debug(f"Total sector emissions: {sector_total_emissions / 1e6:.2f} kt in the period")
+
+    qld_inventory = sector_config.data_manager.get_asset(qld_inventory_data_source).data
+    qld_total_emissions = get_sector_emissions_by_code(
+        emissions_inventory=qld_inventory,
+        start_date=config.start_date,
+        end_date=config.end_date,
+        category_codes=sector.unfccc_categories,
+    )
+    logger.debug(f"QLD sector emissions: {qld_total_emissions / 1e6:.2f} kt ({100 * qld_total_emissions / sector_total_emissions:.1f}% of sector total)")
 
     # create a DataFrame with all potential methane emission sources in the sector
     emission_sources_df = all_emission_sources(
@@ -68,7 +82,7 @@ def process_emissions(sector: AustraliaPriorSector, sector_config: PriorSectorCo
         anzsic_codes=sector.anzsic_codes,
         period=(config.start_date.date(), config.end_date.date()),
     )
-    logger.info(f"Found {len(sector_facilities_df)} Safeguard facilities, totalling {sector_facilities_df['ch4_kg'].sum() / 1e9:.2f}Mt annual CH4")
+    logger.info(f"Found {len(sector_facilities_df)} Safeguard facilities, totalling {sector_facilities_df['ch4_kg'].sum() / 1e6:.2f} kt annual CH4")
 
     # scale annual safeguard emissions to the total amount for the period (kg),
     # the same unit output from get_sector_emissions_by_code
@@ -76,7 +90,7 @@ def process_emissions(sector: AustraliaPriorSector, sector_config: PriorSectorCo
     year_days = (year_end - config.start_date.date()).days
     annual_fraction = days_in_period(config.start_date.date(), config.end_date.date()) / year_days
     sector_facilities_df["ch4_kg"] *= annual_fraction
-    logger.info(f"{sector_facilities_df['ch4_kg'].sum():.2f}kg total CH4 reported in sectors {sector.anzsic_codes} in the period")
+    logger.info(f"{sector_facilities_df['ch4_kg'].sum() / 1e6:.2f} kt total Safeguard emissions reported in the period in sectors {sector.anzsic_codes}")
 
     # Safeguard locations dataset tells us where we can find locations of
     # wells and sites that correspond to a Safeguard facility
@@ -87,7 +101,6 @@ def process_emissions(sector: AustraliaPriorSector, sector_config: PriorSectorCo
         right_on="safeguard_facility_name",
     )
 
-    unallocated_sector_emissions = sector_total_emissions
     for idx_fac, facility in sector_facilities_df.iterrows():
         locations = located_facilities_df[located_facilities_df["facility_name"] == facility.facility_name]
 
@@ -115,18 +128,32 @@ def process_emissions(sector: AustraliaPriorSector, sector_config: PriorSectorCo
         # allocate SGM emissions for this facility equally to its locations
         # TODO: apply weighting to emissions distribution based on site_type
         emission_sources_df.loc[facility_emission_sources_mask, "emissions_quantity"] = facility["ch4_kg"] / facility_emission_sources_mask.sum()
-        unallocated_sector_emissions -= facility["ch4_kg"]
 
-    logger.debug(f"{emission_sources_df['emissions_quantity'].sum():.2f}kg allocated to SGM facilities")
+    logger.debug(f"{emission_sources_df['emissions_quantity'].sum() / 1e6:.2f} kt allocated to SGM facilities")
+
+    # find all QLD emission sources so we can allocate the QLD inventory
+    qld_sources_mask = emission_sources_df["state"] == "QLD"
+    qld_sources = emission_sources_df[qld_sources_mask]
+
+    # calculate remaining QLD inventory that hasn't been allocated
+    qld_unallocated_emissions = qld_total_emissions - qld_sources["emissions_quantity"].sum()
+
+    # distribute the remaining emissions among the remaining sources in QLD
+    qld_unallocated_emission_sources_mask = np.isnan(emission_sources_df["emissions_quantity"]) & qld_sources_mask
+    emission_sources_df.loc[qld_unallocated_emission_sources_mask, "emissions_quantity"] = qld_unallocated_emissions / qld_unallocated_emission_sources_mask.sum()
+
+    logger.debug(f"{qld_unallocated_emission_sources_mask.sum()} / {qld_sources_mask.sum()} unallocated QLD sources ({100 * qld_unallocated_emission_sources_mask.sum() / len(emission_sources_df):.1f}%)")
+    logger.debug(f"{qld_unallocated_emissions / 1e6 :.2f} / {qld_total_emissions / 1e6:.2f} kt unallocated QLD emissions ({100 * qld_unallocated_emissions / qld_total_emissions:.1f}%)")
 
     # emission sources don't include a methane quantity or proxy, so naively
     # distribute sector emissions evenly to each active source that hasn't
     # already had emissions allocated to it
     unallocated_emission_sources_mask = np.isnan(emission_sources_df["emissions_quantity"])
-    emission_sources_df.loc[unallocated_emission_sources_mask, "emissions_quantity"] = unallocated_sector_emissions / unallocated_emission_sources_mask.sum()
+    unallocated_national_emissions = sector_total_emissions - emission_sources_df["emissions_quantity"].sum()
+    emission_sources_df.loc[unallocated_emission_sources_mask, "emissions_quantity"] = unallocated_national_emissions / unallocated_emission_sources_mask.sum()
 
     logger.debug(f"{unallocated_emission_sources_mask.sum()} / {len(emission_sources_df)} unallocated sources ({100 * unallocated_emission_sources_mask.sum() / len(emission_sources_df):.1f}%)")
-    logger.debug(f"{unallocated_sector_emissions:.2f} / {sector_total_emissions:.2f}kg unallocated emissions ({100 * unallocated_sector_emissions / sector_total_emissions:.1f}%)")
+    logger.debug(f"{unallocated_national_emissions / 1e6:.2f} / {sector_total_emissions / 1e6:.2f} kt unallocated emissions ({100 * unallocated_national_emissions / sector_total_emissions:.1f}%)")
 
     domain_grid = config.domain_grid()
 
