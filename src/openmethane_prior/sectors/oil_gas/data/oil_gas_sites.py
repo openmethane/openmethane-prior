@@ -35,7 +35,7 @@ def parse_oil_gas_sites_csv(data_source: ConfiguredDataSource) -> gpd.GeoDataFra
     )
 
     # remove entries without lat/lon, these aren't useful to us
-    df = df[(~np.isnan(df["Longitude"])) & (~np.isnan(df["Latitude"]))]
+    df = df[(~pd.isna(df["Longitude"])) & (~pd.isna(df["Latitude"]))]
 
     gdf = gpd.GeoDataFrame(
         data=df,
@@ -55,6 +55,6 @@ def parse_oil_gas_sites_csv(data_source: ConfiguredDataSource) -> gpd.GeoDataFra
 # identify locations of processing sites linked to Safeguard Mechanism facilities.
 oil_gas_sites_data_source = DataSource(
     name="oil-gas-sites",
-    url="https://openmethane.s3.amazonaws.com/prior/inputs/oil-gas-sites-v0.3.csv",
+    url="https://openmethane.s3.amazonaws.com/prior/inputs/oil-gas-sites-v0.4.csv",
     parse=parse_oil_gas_sites_csv,
 )
