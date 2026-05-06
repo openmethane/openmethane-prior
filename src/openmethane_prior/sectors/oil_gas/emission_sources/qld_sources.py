@@ -48,9 +48,9 @@ def qld_emission_sources(
     qld_boreholes_df = qld_boreholes_df[qld_boreholes_df["bore_subtype"].isin(emitting_bore_subtypes)]
 
     # filter bores without hydrocarbons
-    non_emitting_bore_result = ['NO HYDROCARBONS', 'UNKNOWN', 'COAL', 'WATER', 'NO COAL INTERSECTED']
+    non_emitting_bore_result = ["NO HYDROCARBONS", "WATER", "NO COAL INTERSECTED"]
     qld_boreholes_df = qld_boreholes_df[~qld_boreholes_df["result"].isin(non_emitting_bore_result)]
-    non_emitting_bore_status = ['WATER SUPPLY', 'PROPOSED', 'UNKNOWN', 'NEVER USED']
+    non_emitting_bore_status = ["WATER SUPPLY", "PROPOSED", "UNKNOWN", "NEVER USED", "PLUGGED AND ABANDONED"]
     qld_boreholes_df = qld_boreholes_df[~qld_boreholes_df["status"].isin(non_emitting_bore_status)]
 
     # bore datasets may have duplicate rows for a single location due to

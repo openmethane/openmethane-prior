@@ -1,5 +1,6 @@
 import datetime
 import numpy as np
+import pandas as pd
 
 from openmethane_prior.data_sources.npi import npi_facilities_data_source
 from openmethane_prior.sectors.oil_gas.data.nopta import (
@@ -101,22 +102,25 @@ def test_qld_emission_sources(input_files, data_manager):
     assert len(df[(df["activity_end"] < start_date) & (df["activity_start"] > start_date_end)]) == 0
 
     # no sources which aren't related to hydrocarbon production
-    allowed_bore_types = {"COAL SEAM GAS", "PETROLEUM"}
+    allowed_bore_types = {"COAL SEAM GAS", "PETROLEUM", "UNCONVENTIONAL PETROLEUM"}
     assert set(df["bore_type"].unique()) - allowed_bore_types == set()
 
-    allowed_bore_subtypes = {"DEVELOPMENT WELL", "COAL SEAM GAS INJECTION WELL"}
+    allowed_bore_subtypes = {
+        "DEVELOPMENT WELL", "COAL SEAM GAS INJECTION WELL", "PETROLEUM INJECTION WELL",
+    }
     assert set(df["bore_subtype"].unique()) - allowed_bore_subtypes == set()
 
     allowed_results = {
-        'COAL SEAM GAS',
-        'DRY PLUS GAS SHOW', 'DRY PLUS OIL AND GAS SHOW', 'DRY PLUS OIL SHOW',
-        'GAS', 'GAS AND CONDENSATE', 'GAS PLUS CONDENSATE SHOW', 'GAS PLUS OIL SHOW',
-        'OIL', 'OIL AND GAS', 'OIL PLUS GAS SHOW',
+        "COAL SEAM GAS", "COAL",
+        "DRY PLUS GAS SHOW", "DRY PLUS OIL AND GAS SHOW", "DRY PLUS OIL SHOW",
+        "GAS", "GAS AND CONDENSATE", "GAS PLUS CONDENSATE SHOW", "GAS PLUS OIL SHOW",
+        "OIL", "OIL AND GAS", "OIL PLUS GAS SHOW",
+        "UNKNOWN",
     }
     assert set(df["result"].unique()) - allowed_results == set()
 
     allowed_status = {
-        "PLUGGED AND ABANDONED", 'PRODUCING', 'COMPLETED', 'SUSPENDED',
+        "PLUGGED AND ABANDONED", "PRODUCING", "COMPLETED", "SUSPENDED",
     }
     assert set(df["status"].unique()) - allowed_status == set()
 
