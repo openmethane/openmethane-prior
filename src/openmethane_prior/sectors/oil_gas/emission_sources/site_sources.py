@@ -17,9 +17,11 @@
 #
 import datetime
 import geopandas as gpd
+import numpy as np
 import pandas as pd
 
 from openmethane_prior.data_sources.npi import filter_npi_facilities
+from openmethane_prior.data_sources.safeguard.anzsic import simplify_anzsic_code
 from openmethane_prior.data_sources.safeguard.facility import parse_anzsic_code
 from openmethane_prior.lib import DataAsset
 from openmethane_prior.lib.utils import rows_in_period
@@ -48,6 +50,7 @@ def oil_gas_site_emission_sources(
     end_date: datetime.date,
     oil_gas_sites_da: DataAsset,
     npi_da: DataAsset,
+    anzsic_codes: list[str],
 ) -> gpd.GeoDataFrame:
     """Create normalised emission source GeoDataFrame for known oil and gas
     sector sites and facilities, not including oil and gas wells."""
@@ -69,8 +72,14 @@ def oil_gas_site_emission_sources(
         start_field="Operation start", end_field="Operation end",
     )
 
-    # exclude sources that aren't in ANZSIC sector 070, 170
-    sites_df = sites_df[sites_df["anzsic_code"].isin(["070", "170"])]
+    # exclude sources that aren't in the oil and gas sector
+    if anzsic_codes is not None:
+        anzsic_prefixes = [simplify_anzsic_code(anzsic) for anzsic in anzsic_codes]
+        # filter to include every row where the ANZSIC code matches any prefix
+        sites_df = sites_df[np.logical_or.reduce([
+            sites_df["anzsic_code"].str.startswith(anzsic_prefix)
+            for anzsic_prefix in anzsic_prefixes
+        ])]
 
     # normalise output to match emission sources format
     sites_df = sites_df.rename(columns={
@@ -89,7 +98,7 @@ def oil_gas_site_emission_sources(
         facilities_df=npi_da.data,
         period_start=start_date,
         period_end=end_date,
-        anzsic_codes=["070", "170"],
+        anzsic_codes=anzsic_codes,
     )
 
     _DUPLICATE_THRESHOLD_METERS = 250

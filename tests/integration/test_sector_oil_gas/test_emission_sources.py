@@ -1,6 +1,4 @@
 import datetime
-import numpy as np
-import pandas as pd
 
 from openmethane_prior.data_sources.npi import npi_facilities_data_source
 from openmethane_prior.sectors.oil_gas.data.nopta import (
@@ -210,6 +208,7 @@ def test_sites_emission_sources(input_files, data_manager):
         end_date=start_date.date(),
         oil_gas_sites_da=sites_da,
         npi_da=npi_da,
+        anzsic_codes=["07", "17", "27"],
     )
 
     # original datasets have been filtered down
@@ -220,8 +219,8 @@ def test_sites_emission_sources(input_files, data_manager):
     # no sources where activity period doesn't intersect date period
     assert len(df[(df["activity_end"] < start_date) & (df["activity_start"] > start_date_end)]) == 0
 
-    # no sources which aren't related to 07 or 17 ANZSIC codes
-    assert set(df["anzsic_code"].unique()) == {'070', '0700', '170', '1701', '1709'}
+    # no sources which aren't related to 07 / 17 / 27 ANZSIC codes
+    assert set(df["anzsic_code"].unique()) == {'070', '0700', '170', '1701', '1709', '2700'}
 
 
 def test_all_emission_sources(input_files, data_manager, config):
@@ -229,6 +228,7 @@ def test_all_emission_sources(input_files, data_manager, config):
     df = all_emission_sources(
         data_manager=data_manager,
         prior_config=config,
+        anzsic_codes=["07", "17", "27"],
     )
 
     assert len(df) > 0

@@ -68,6 +68,7 @@ def process_emissions(sector: AustraliaPriorSector, sector_config: PriorSectorCo
     emission_sources_df = all_emission_sources(
         data_manager=sector_config.data_manager,
         prior_config=config,
+        anzsic_codes=sector.anzsic_codes,
     )
 
     # add a column for the emission from each source, using NaN to indicate
@@ -183,6 +184,7 @@ sector = AustraliaPriorSector(
         "17", # Petroleum and Coal Product Manufacturing
         # TODO: https://github.com/openmethane/openmethane-prior/issues/165
         "27", # Gas Supply
+        "502", # Pipeline and other transport
     ],
     cf_standard_name="extraction_production_and_transport_of_fuel",
     create_estimate=process_emissions,
