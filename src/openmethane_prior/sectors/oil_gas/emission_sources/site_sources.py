@@ -126,6 +126,7 @@ def oil_gas_site_emission_sources(
         "primary_anzsic_class_code": "anzsic_code",
     })
     npi_df["data_source"] = npi_da.name
+    npi_df["site_type"] = "facility-unknown"
 
     sources_df: gpd.GeoDataFrame = pd.concat([sites_df, npi_df])
 
