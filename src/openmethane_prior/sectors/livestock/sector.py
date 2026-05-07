@@ -63,14 +63,15 @@ def gridded_livestock_emissions_by_headcount(
     livestock_df = livestock_df[valid_cells]
 
     logger.debug(f"Calculating annual livestock emissions per headcount")
-    livestock_df["beef_ch4"] = livestock_df["heads_mapped_mix_beef"] * ENTERIC_ANNUAL_KG_CH4["beef_cattle"]
-    livestock_df["sheep_ch4"] = livestock_df["heads_mapped_mix_sheep"] * ENTERIC_ANNUAL_KG_CH4["sheep"]
-    livestock_df["dairy_ch4"] = livestock_df["heads_mapped_dairy"] * ENTERIC_ANNUAL_KG_CH4["dairy_cattle"]
-    livestock_df["total_ch4"] = livestock_df["beef_ch4"] + livestock_df["sheep_ch4"] + livestock_df["dairy_ch4"]
+    total_ch4 = (
+        livestock_df["heads_mapped_mix_beef"] * ENTERIC_ANNUAL_KG_CH4["beef_cattle"]
+        + livestock_df["heads_mapped_mix_sheep"] * ENTERIC_ANNUAL_KG_CH4["sheep"]
+        + livestock_df["heads_mapped_dairy"] * ENTERIC_ANNUAL_KG_CH4["dairy_cattle"]
+    )
 
     logger.debug(f"Adding livestock emissions to domain grid")
     ch4_gridded = np.zeros(domain_grid.shape)
-    np.add.at(ch4_gridded, (livestock_df["iy"], livestock_df["ix"]), livestock_df["total_ch4"])
+    np.add.at(ch4_gridded, (livestock_df["iy"], livestock_df["ix"]), total_ch4)
 
     return ch4_gridded
 
