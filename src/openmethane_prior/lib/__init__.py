@@ -23,6 +23,7 @@ from .data_manager.manager import (
     DataManager,
     DataSource,
 )
+from .grid.grid import Grid
 from .grid.domain import Domain
 from .grid.regrid import regrid_data
 from .regrid import regrid_data_array_conservative
