@@ -21,6 +21,7 @@ import xarray as xr
 
 from openmethane_prior.lib import (
     DataSource,
+    Grid,
     convert_to_timescale,
     logger,
     PriorSector,
@@ -36,12 +37,42 @@ livestock_headcount_data_source = DataSource(
     parse=parse_csv,
 )
 
+# Estimated kg CH4 emitted per animal, per year
+# TODO: these figures came from example code, a reference should be added
+# citing their origin
+ENTERIC_ANNUAL_KG_CH4 = {
+    "beef_cattle": 51.0,
+    "dairy_cattle": 93.0,
+    "sheep": 6.8,
+}
 
-def livestock_to_ch4_kg_year(beef: float, sheep: float, dairy: float) -> float:
-    """Calculate the annual emissions created by a number of beef cattle, dairy
-    cattle and/or sheep."""
-    # TODO: document where these emission factors come from
-    return beef * 51.0 + sheep * 6.8 + dairy * 93.0
+def gridded_livestock_emissions_by_headcount(
+    livestock_df: pd.DataFrame,
+    domain_grid: Grid,
+) -> np.ndarray:
+    """Given a list of coordinates for livestock areas with headcounts of beef
+    cattle, dairy cattle and sheep, calculate the annual methane emissions in
+    each area, and return as gridded emissions over the domain of interest."""
+    # find the domain grid cell (ix, iy) each livestock area centre point is in
+    livestock_df["ix"], livestock_df["iy"], valid_cells = domain_grid.lonlat_to_cell_index(
+        lon=livestock_df["lon"],
+        lat=livestock_df["lat"],
+    )
+
+    # discard data outside the domain
+    livestock_df = livestock_df[valid_cells]
+
+    logger.debug(f"Calculating annual livestock emissions per headcount")
+    livestock_df["beef_ch4"] = livestock_df["heads_mapped_mix_beef"] * ENTERIC_ANNUAL_KG_CH4["beef_cattle"]
+    livestock_df["sheep_ch4"] = livestock_df["heads_mapped_mix_sheep"] * ENTERIC_ANNUAL_KG_CH4["sheep"]
+    livestock_df["dairy_ch4"] = livestock_df["heads_mapped_dairy"] * ENTERIC_ANNUAL_KG_CH4["dairy_cattle"]
+    livestock_df["total_ch4"] = livestock_df["beef_ch4"] + livestock_df["sheep_ch4"] + livestock_df["dairy_ch4"]
+
+    logger.debug(f"Adding livestock emissions to domain grid")
+    ch4_gridded = np.zeros(domain_grid.shape)
+    np.add.at(ch4_gridded, (livestock_df["iy"], livestock_df["ix"]), livestock_df["total_ch4"])
+
+    return ch4_gridded
 
 
 def process_emissions(
@@ -56,25 +87,7 @@ def process_emissions(
     livestock_df: pd.DataFrame = livestock_headcount_da.data
     livestock_df = livestock_df.rename(columns={"X": "lon", "Y": "lat"})
 
-    # find the domain grid cell (ix, iy) each livestock area centre point is in
-    livestock_df["ix"], livestock_df["iy"], valid_cells = domain_grid.lonlat_to_cell_index(
-        lon=livestock_df["lon"],
-        lat=livestock_df["lat"],
-    )
-
-    # throw away any data outside the domain
-    livestock_df = livestock_df[valid_cells]
-
-    ch4_gridded = np.zeros(domain_grid.shape)
-    for _, livestock_area in livestock_df.iterrows():
-        # calculate the total annual CH4 emissions for this area
-        livestock_ch4 = livestock_to_ch4_kg_year(
-            beef=livestock_area["heads_mapped_mix_beef"],
-            sheep=livestock_area["heads_mapped_mix_sheep"],
-            dairy=livestock_area["heads_mapped_dairy"],
-        )
-        # add the CH4 to the grid
-        ch4_gridded[livestock_area["iy"], livestock_area["ix"]] += livestock_ch4
+    ch4_gridded = gridded_livestock_emissions_by_headcount(livestock_df, domain_grid)
 
     # convert annual CH4 kg to CH4 kg/s/m3
     return convert_to_timescale(ch4_gridded, domain_grid.cell_area)
