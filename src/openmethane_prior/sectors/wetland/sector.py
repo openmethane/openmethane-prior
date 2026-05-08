@@ -21,6 +21,7 @@
 import bisect
 import itertools
 import os
+import calendar
 
 import netCDF4 as nc
 import numpy as np
@@ -36,25 +37,36 @@ from openmethane_prior.lib import (
     redistribute_spatially,
     save_zipped_pickle,
     datetime64_to_datetime,
+    PriorConfig,
 )
-
+from openmethane_prior.lib.data_manager.asset import DataAsset
+from openmethane_prior.lib.units import SECONDS_PER_DAY
 
 wetlands_data_source = DataSource(
     name="wetlands",
     url="https://openmethane.s3.amazonaws.com/prior/inputs/DLEM_totflux_CRU_diagnostic.nc",
 )
 
-def make_wetland_climatology(sector_config: PriorSectorConfig):  # noqa: PLR0915
+satwet_giems_data_source = DataSource(
+    name="SatWet-GIEMS",
+    url="https://openmethane.s3.amazonaws.com/prior/inputs/SatWetCH4_GIEMS-MC_v2-90.nc",
+)
+
+def make_wetland_climatology(
+    config: PriorConfig,
+    wetlands_da: DataAsset,
+) -> xr.Dataset:
     """
     Remap wetland emissions to the CMAQ domain
     """
-    config = sector_config.prior_config
+    ncin = nc.Dataset(wetlands_da.path, "r")
 
-    wetlands_asset = sector_config.data_manager.get_asset(wetlands_data_source)
-    ncin = nc.Dataset(wetlands_asset.path, "r")
+    lat_var = "latitude" if "latitude" in ncin.variables else "lat"
+    lon_var = "longitude" if "longitude" in ncin.variables else "lon"
+    ch4_var = "fch4_mean" if "fch4_mean" in ncin.variables else "totflux"
 
-    latWetland = np.around(np.float64(ncin.variables["lat"][:]), 3)
-    lonWetland = np.around(np.float64(ncin.variables["lon"][:]), 3)
+    latWetland = np.around(np.float64(ncin.variables[lat_var][:]), 3)
+    lonWetland = np.around(np.float64(ncin.variables[lon_var][:]), 3)
     dlatWetland = latWetland[0] - latWetland[1]
     dlonWetland = lonWetland[1] - lonWetland[0]
     lonWetland_edge = np.zeros(len(lonWetland) + 1)
@@ -86,9 +98,9 @@ def make_wetland_climatology(sector_config: PriorSectorConfig):  # noqa: PLR0915
     # now collect some domain information
     domain_grid = config.domain_grid()
 
-    indxPath = config.as_intermediate_file("WETLAND_ind_x.p.gz")
-    indyPath = config.as_intermediate_file("WETLAND_ind_y.p.gz")
-    coefsPath = config.as_intermediate_file("WETLAND_ind_coefs.p.gz")
+    indxPath = config.as_intermediate_file(f"{wetlands_da.name}_ind_x.p.gz")
+    indyPath = config.as_intermediate_file(f"{wetlands_da.name}_ind_y.p.gz")
+    coefsPath = config.as_intermediate_file(f"{wetlands_da.name}_ind_coefs.p.gz")
 
     if (
         os.path.exists(indxPath)
@@ -167,7 +179,7 @@ def make_wetland_climatology(sector_config: PriorSectorConfig):  # noqa: PLR0915
         save_zipped_pickle(ind_y, indyPath)
         save_zipped_pickle(coefs, coefsPath)
     # now build monthly climatology
-    flux = ncin["totflux"][...]  # is masked array
+    flux = ncin[ch4_var][...]  # is masked array
     climatology = np.zeros(
         (12, flux.shape[1], flux.shape[2])
     )  # same spatial domain but monthly climatology
@@ -175,6 +187,12 @@ def make_wetland_climatology(sector_config: PriorSectorConfig):  # noqa: PLR0915
         climatology[month, ...] = flux[month::12, ...].mean(
             axis=0
         )  # average over time axis with stride 12
+
+        if ch4_var == "fch4_mean":
+            # SatWet result is in gCH₄/m²/month, convert to kg/m²/s
+            _, days_in_month = calendar.monthrange(2021, month + 1)
+            climatology[month] = climatology[month] / 1000 / days_in_month / SECONDS_PER_DAY
+
     cmaq_areas = np.ones(domain_grid.shape) * domain_grid.cell_area  # all grid cells equal area
     result = np.zeros((12, domain_grid.shape[0], domain_grid.shape[1]))
     for month in range(12):
@@ -193,7 +211,20 @@ def process_emissions(
     """
     Process wetland emissions for the given date range
     """
-    climatology = make_wetland_climatology(sector_config)
+    satwet_ch4_da = sector_config.data_manager.get_asset(satwet_giems_data_source)
+
+    # discard data outside the period of interest
+    # time in wetlands dataset is described using the 1st of the month
+    # wetlands_xr = satwet_ch4_xr.sel(time=slice(
+    #     first_of_month(sector_config.prior_config.start_date),
+    #     first_of_month(sector_config.prior_config.end_date)
+    # ))
+
+    climatology = make_wetland_climatology(
+        sector_config.prior_config,
+        satwet_ch4_da
+    )
+
     result_nd = []  # will be ndarray once built
     for date in prior_ds["time"].values:
         month = datetime64_to_datetime(date).month
