@@ -25,7 +25,7 @@ from openmethane_prior.lib import (
     PriorConfig,
 )
 
-from .emission_source import normalise_emission_source_df
+from ..emission_source import normalise_emission_source_df
 from .nsw_sources import nsw_emission_sources
 from .nt_sources import nt_emission_sources
 from .offshore_sources import offshore_emission_sources

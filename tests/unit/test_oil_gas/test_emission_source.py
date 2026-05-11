@@ -3,7 +3,7 @@ import geopandas as gpd
 import numpy as np
 import shapely
 
-from openmethane_prior.sectors.oil_gas.emission_sources.emission_source import normalise_emission_source_df
+from openmethane_prior.sectors.oil_gas.emission_source import normalise_emission_source_df
 
 
 def test_normalise_emission_source():
