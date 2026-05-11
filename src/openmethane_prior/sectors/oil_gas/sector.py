@@ -17,7 +17,6 @@
 #
 import datetime
 import numpy as np
-import pandas as pd
 import xarray as xr
 
 from openmethane_prior.lib import (
@@ -38,6 +37,7 @@ from openmethane_prior.data_sources.safeguard import (
 from openmethane_prior.lib.sector.au_sector import AustraliaPriorSector
 from openmethane_prior.lib.units import days_in_period
 
+from .emission_source import allocate_emissions_to_sources
 from .emission_sources.all_sources import all_emission_sources
 
 logger = logger.get_logger(__name__)
@@ -127,8 +127,11 @@ def process_emissions(sector: AustraliaPriorSector, sector_config: PriorSectorCo
             continue
 
         # allocate SGM emissions for this facility equally to its locations
-        # TODO: apply weighting to emissions distribution based on site_type
-        emission_sources_df.loc[facility_emission_sources_mask, "emissions_quantity"] = facility["ch4_kg"] / facility_emission_sources_mask.sum()
+        allocate_emissions_to_sources(
+            sources_df=emission_sources_df,
+            sources_mask=facility_emission_sources_mask,
+            emission_mass=facility["ch4_kg"],
+        )
 
     logger.debug(f"{emission_sources_df['emissions_quantity'].sum() / 1e6:.2f} kt allocated to SGM facilities")
 
@@ -141,7 +144,11 @@ def process_emissions(sector: AustraliaPriorSector, sector_config: PriorSectorCo
 
     # distribute the remaining emissions among the remaining sources in QLD
     qld_unallocated_emission_sources_mask = np.isnan(emission_sources_df["emissions_quantity"]) & qld_sources_mask
-    emission_sources_df.loc[qld_unallocated_emission_sources_mask, "emissions_quantity"] = qld_unallocated_emissions / qld_unallocated_emission_sources_mask.sum()
+    allocate_emissions_to_sources(
+        sources_df=emission_sources_df,
+        sources_mask=qld_unallocated_emission_sources_mask,
+        emission_mass=qld_unallocated_emissions,
+    )
 
     logger.debug(f"{qld_unallocated_emission_sources_mask.sum()} / {qld_sources_mask.sum()} unallocated QLD sources ({100 * qld_unallocated_emission_sources_mask.sum() / len(emission_sources_df):.1f}%)")
     logger.debug(f"{qld_unallocated_emissions / 1e6 :.2f} / {qld_total_emissions / 1e6:.2f} kt unallocated QLD emissions ({100 * qld_unallocated_emissions / qld_total_emissions:.1f}%)")
@@ -151,7 +158,11 @@ def process_emissions(sector: AustraliaPriorSector, sector_config: PriorSectorCo
     # already had emissions allocated to it
     unallocated_emission_sources_mask = np.isnan(emission_sources_df["emissions_quantity"])
     unallocated_national_emissions = sector_total_emissions - emission_sources_df["emissions_quantity"].sum()
-    emission_sources_df.loc[unallocated_emission_sources_mask, "emissions_quantity"] = unallocated_national_emissions / unallocated_emission_sources_mask.sum()
+    allocate_emissions_to_sources(
+        sources_df=emission_sources_df,
+        sources_mask=unallocated_emission_sources_mask,
+        emission_mass=unallocated_national_emissions,
+    )
 
     logger.debug(f"{unallocated_emission_sources_mask.sum()} / {len(emission_sources_df)} unallocated sources ({100 * unallocated_emission_sources_mask.sum() / len(emission_sources_df):.1f}%)")
     logger.debug(f"{unallocated_national_emissions / 1e6:.2f} / {sector_total_emissions / 1e6:.2f} kt unallocated emissions ({100 * unallocated_national_emissions / sector_total_emissions:.1f}%)")
