@@ -17,6 +17,7 @@
 #
 import numpy as np
 import geopandas as gpd
+import pandas as pd
 from typing import Any
 
 """
@@ -75,3 +76,20 @@ def normalise_emission_source_df(
     normalised_df = normalised_df.to_crs(crs)
 
     return normalised_df
+
+
+def allocate_emissions_to_sources(
+    sources_df: pd.DataFrame,
+    sources_mask: "pd.Series[bool] | np.typing.NDArray[np.bool_]",
+    emission_mass: float,
+):
+    """Distribute a single total emission across all emission sources in
+    sources_df which match sources_mask."""
+    # since we will use addition to allocate emission to each source, ensure
+    # nans are replaced with zeros prior to addition
+    is_nan = pd.isna(sources_df["emissions_quantity"])
+    sources_df.loc[sources_mask & is_nan, "emissions_quantity"] = 0
+
+    # naively allocate the emissions across each emission source equally
+    # TODO: apply weighting to emissions distribution based on site_type
+    sources_df.loc[sources_mask, "emissions_quantity"] += emission_mass / sources_mask.sum()
