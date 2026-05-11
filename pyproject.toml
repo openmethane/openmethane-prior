@@ -35,6 +35,7 @@ dependencies = [
 tests = ["pytest>=8.2.1,<9"]
 dev = [
     "licenseheaders>=0.8.8,<0.9",
+    "pandas-stubs~=2.2.3",
     "ruff>=0.5.1,<0.6",
     "towncrier>=24.7.1,<25",
 ]
