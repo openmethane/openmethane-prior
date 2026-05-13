@@ -235,27 +235,22 @@ Daily emissions from the Global Fire Assimilation System (Kaiser et al., 2012, d
 
 ### Sources
 
-Monthly wetland emissions from the diagnostic ensemble used in
-[Saunois et al. 2020](https://essd.copernicus.org/articles/12/1561/2020/)
-and described in Zhang et al. (2023 under review) (could this be https://essd.copernicus.org/articles/13/2001/2021/?)
+Monthly wetland emissions from
+[SatWetCH4](https://doi.org/10.5194/gmd-18-863-2025).
+Developed as part of the ongoing
+[Global Methane Budget](https://www.globalcarbonproject.org/methanebudget/.
 
-- Dataset: [DLEM_totflux_CRU_diagnostic.nc][1]
-- Resolution: 0.5 degree
-- Period: 2000 - 2020, monthly averages
-- Updates: never
+- Dataset: TBD (not yet published)
+- Resolution: 0.25 degree
+- Period: 1992 - 2022, monthly averages
+- Updates: not updated regularly
 
 ### Considerations
 
 - No Australian database
 - Rough spatial resolution
-- Database/paper doesn't appear to be available online
-- There is a new version of Global Methane Budget (2000 - 2024), can we get an updated dataset?
-
-### Alternative candidates
-
-- https://www.icos-cp.eu/GCP-CH4-2024
-  - Resolution: 1.0 degrees
-  - Period: 2000, monthly averages
+- Paper published with source code but without results file, the dataset
+  was provided to us directly by the leading researcher, Juliette Bernard.
 
 
 ## Sector: Agriculture
