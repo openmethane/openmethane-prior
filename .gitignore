@@ -217,5 +217,9 @@ outputs
 inputs
 intermediates
 processed
+data/outputs
+data/inputs
+data/intermediates
+data/.cache*
 
 !src/openmethane_prior/lib
