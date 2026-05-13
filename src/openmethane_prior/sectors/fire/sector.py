@@ -112,10 +112,6 @@ def process_emissions(sector: PriorSector, sector_config: PriorSectorConfig, pri
         count = []
         domShape = []
 
-        ind_x.append([])
-        ind_y.append([])
-        coefs.append([])
-
         cell_bounds_lon, cell_bounds_lat = domain_grid.cell_bounds_lonlat()
 
         domShape.append(domain_grid.shape)

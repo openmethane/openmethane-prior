@@ -23,13 +23,14 @@ import calendar
 import itertools
 import logging
 import os
-
+import pathlib
 import numpy as np
 import xarray as xr
 from shapely import geometry
 
 from openmethane_prior.lib import (
     DataSource,
+    Grid,
     PriorConfig,
     PriorSector,
     PriorSectorConfig,
@@ -51,17 +52,17 @@ satwet_giems_data_source = DataSource(
 
 
 def _build_regrid_indices(
-    config: PriorConfig,
-    wetlands_da: DataAsset,
-    lonWetland_edge: np.ndarray,
-    latWetland_edge: np.ndarray,
+    domain_grid: Grid,
+    cache_path: pathlib.Path | str,
+    cache_name: str,
+    edge_lats: np.ndarray[tuple[int]],
+    edge_lons: np.ndarray[tuple[int]],
 ) -> tuple[list, list, list]:
     """Load cached regridding indices or compute and cache them via Shapely polygon intersection."""
-    domain_grid = config.domain_grid()
-
-    indxPath = config.as_intermediate_file(f"{wetlands_da.name}_ind_x.p.gz")
-    indyPath = config.as_intermediate_file(f"{wetlands_da.name}_ind_y.p.gz")
-    coefsPath = config.as_intermediate_file(f"{wetlands_da.name}_ind_coefs.p.gz")
+    cache_path = pathlib.Path(cache_path)
+    indxPath = cache_path / f"{cache_name}_ind_x.p.gz"
+    indyPath = cache_path / f"{cache_name}_ind_y.p.gz"
+    coefsPath = cache_path / f"{cache_name}_ind_coefs.p.gz"
 
     if os.path.exists(indxPath) and os.path.exists(indyPath) and os.path.exists(coefsPath):
         return (
@@ -70,13 +71,12 @@ def _build_regrid_indices(
             load_zipped_pickle(coefsPath),
         )
 
-    nlonWetland = len(lonWetland_edge) - 1
-    nlatWetland = len(latWetland_edge) - 1
+    grid_shape = (len(edge_lons) - 1, len(edge_lats) - 1)
     cell_bounds_lon, cell_bounds_lat = domain_grid.cell_bounds_lonlat()
 
-    ind_x = [[]]
-    ind_y = [[]]
-    coefs = [[]]
+    ind_x = []
+    ind_y = []
+    coefs = []
 
     for i, j in itertools.product(range(domain_grid.shape[0]), range(domain_grid.shape[1])):
         IND_X = []
@@ -85,29 +85,30 @@ def _build_regrid_indices(
 
         xvals = cell_bounds_lon[i, j]
         yvals = cell_bounds_lat[i, j]
-        CMAQ_gridcell = geometry.Polygon(zip(xvals, yvals))
+        domain_grid_cell = geometry.Polygon(zip(xvals, yvals))
 
-        ixminl = bisect.bisect_right(lonWetland_edge, np.min(xvals))
-        ixmaxr = bisect.bisect_right(lonWetland_edge, np.max(xvals))
-        iyminl = bisect.bisect_right(latWetland_edge, np.min(yvals))
-        iymaxr = bisect.bisect_right(latWetland_edge, np.max(yvals))
+        ixminl = bisect.bisect_right(edge_lons, np.min(xvals))
+        ixmaxr = bisect.bisect_right(edge_lons, np.max(xvals))
+        iyminl = bisect.bisect_right(edge_lats, np.min(yvals))
+        iymaxr = bisect.bisect_right(edge_lats, np.max(yvals))
 
         for ix, iy in itertools.product(
-            range(max(0, ixminl - 1), min(nlonWetland, ixmaxr)),
-            range(max(0, iyminl - 1), min(nlatWetland, iymaxr)),
+            range(max(0, ixminl - 1), min(grid_shape[0], ixmaxr)),
+            range(max(0, iyminl - 1), min(grid_shape[1], iymaxr)),
         ):
-            Wetland_gridcell = geometry.box(
-                lonWetland_edge[ix],
-                latWetland_edge[iy],
-                lonWetland_edge[ix + 1],
-                latWetland_edge[iy + 1],
+            input_gridcell = geometry.box(
+                edge_lons[ix],
+                edge_lats[iy],
+                edge_lons[ix + 1],
+                edge_lats[iy + 1],
             )
-            if CMAQ_gridcell.intersects(Wetland_gridcell):
-                intersection = CMAQ_gridcell.intersection(Wetland_gridcell)
-                wetland_frac = intersection.area / Wetland_gridcell.area
+            if domain_grid_cell.intersects(input_gridcell):
+                intersection = domain_grid_cell.intersection(input_gridcell)
+                input_cell_fraction = intersection.area / input_gridcell.area
+
                 IND_X.append(ix)
                 IND_Y.append(iy)
-                COEFS.append(wetland_frac)
+                COEFS.append(input_cell_fraction)
 
         ind_x.append(IND_X)
         ind_y.append(IND_Y)
@@ -116,6 +117,7 @@ def _build_regrid_indices(
     save_zipped_pickle(ind_x, indxPath)
     save_zipped_pickle(ind_y, indyPath)
     save_zipped_pickle(coefs, coefsPath)
+
     return ind_x, ind_y, coefs
 
 
@@ -137,6 +139,7 @@ def regrid_satwet(
         The SatWet time coordinate (datetime64 array).
     """
     satwet_ds = xr.open_dataset(wetlands_da.path)
+    domain_grid = config.domain_grid()
 
     latWetland = np.around(np.float64(satwet_ds["latitude"].values), 3)
     lonWetland = np.around(np.float64(satwet_ds["longitude"].values), 3)
@@ -157,20 +160,23 @@ def regrid_satwet(
     wetlandAreas = np.zeros((nlatWetland, len(lonWetland)))
     for iy in range(nlatWetland):
         wetlandAreas[iy, :] = (
-            area_of_rectangle_m2(
-                latWetland_edge[iy],
-                latWetland_edge[iy + 1],
-                lonWetland_edge[0],
-                lonWetland_edge[-1],
-            )
-            / lonWetland.size
+                area_of_rectangle_m2(
+                    latWetland_edge[iy],
+                    latWetland_edge[iy + 1],
+                    lonWetland_edge[0],
+                    lonWetland_edge[-1],
+                )
+                / lonWetland.size
         )
 
     ind_x, ind_y, coefs = _build_regrid_indices(
-        config, wetlands_da, lonWetland_edge, latWetland_edge
+        domain_grid=domain_grid,
+        cache_name=wetlands_da.name,
+        cache_path=config.intermediates_path,
+        edge_lats=latWetland_edge,
+        edge_lons=lonWetland_edge,
     )
 
-    domain_grid = config.domain_grid()
     flux = satwet_ds["fch4_mean"].values
     satwet_times = satwet_ds["time"].values
     satwet_ds.close()

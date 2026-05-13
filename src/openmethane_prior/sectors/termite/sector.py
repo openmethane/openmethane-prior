@@ -105,10 +105,6 @@ def process_emissions(  # noqa: PLR0915
         count = []
         domShape = []
 
-        ind_x.append([])
-        ind_y.append([])
-        coefs.append([])
-
         cell_bounds_lon, cell_bounds_lat = domain_grid.cell_bounds_lonlat()
 
         domShape.append(domain_grid.shape)

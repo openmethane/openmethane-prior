@@ -86,15 +86,16 @@ def area_of_rectangle_m2(lat1: T, lat2: T, lon1: T, lon2: T) -> T:
     return area
 
 
-def redistribute_spatially(lat_shape, ind_x, ind_y, coefs, subset, from_areas, to_areas):  # noqa: PLR0913
-    """Redistribute GFAS emissions horizontally and vertically.
+def redistribute_spatially(grid_shape, ind_x, ind_y, coefs, subset, from_areas, to_areas):  # noqa: PLR0913
+    """Redistribute emissions from an input grid onto a new grid based on
+    pre-computed source indices and intersection coeficients.
 
     This little function does most of the work.
 
     Parameters
     ----------
-    lat_shape
-        Shape of the LAT variable
+    grid_shape
+        Shape of the grid to redistribute onto.
     ind_x
         x-indices in the GFAS domain corresponding to indices in the CMAQ domain
     ind_y
@@ -114,15 +115,13 @@ def redistribute_spatially(lat_shape, ind_x, ind_y, coefs, subset, from_areas, t
 
     """
     ##
-    gridded = np.zeros(lat_shape, dtype=np.float32)
-    ij = 0
-    for i in range(lat_shape[0]):
-        for j in range(lat_shape[1]):
-            ij += 1
-            for k in range(len(ind_x[ij])):
-                ix = ind_x[ij][k]
-                iy = ind_y[ij][k]
-                gridded[i, j] += subset[iy, ix] * coefs[ij][k] * from_areas[iy, ix]
+    gridded = np.zeros(grid_shape, dtype=np.float32)
+    for (i, j), _ in np.ndenumerate(gridded):
+        ij = i * gridded.shape[1] + j
+        for k in range(len(ind_x[ij])):
+            ix = ind_x[ij][k]
+            iy = ind_y[ij][k]
+            gridded[i, j] += subset[iy, ix] * coefs[ij][k] * from_areas[iy, ix]
     gridded /= to_areas
     return gridded
 
