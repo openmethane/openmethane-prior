@@ -39,7 +39,6 @@ from .utils import (
     get_version,
     list_cf_grid_mappings,
     load_zipped_pickle,
-    redistribute_spatially,
     save_zipped_pickle,
     rows_in_period,
 )
