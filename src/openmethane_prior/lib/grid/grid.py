@@ -108,7 +108,7 @@ class Grid:
         return self.projection.transform(xx=x, yy=y, direction=pyproj.enums.TransformDirection.INVERSE)
 
     @cache
-    def cell_coords_x(self) -> np.ndarray[int, np.float64]:
+    def cell_coords_x(self) -> np.ndarray[tuple[int]]:
         """
         Cell center coordinates for every grid cell along the x axis, in grid
         projection coordinates.
@@ -116,7 +116,7 @@ class Grid:
         return self.llc_center_xy[0] + np.arange(self.dimensions[0]) * self.cell_size[0]
 
     @cache
-    def cell_coords_y(self) -> np.ndarray[int, np.float64]:
+    def cell_coords_y(self) -> np.ndarray[tuple[int]]:
         """
         Cell center coordinates for every grid cell along the y axis, in grid
         projection coordinates.
@@ -124,7 +124,7 @@ class Grid:
         return self.llc_center_xy[1] + np.arange(self.dimensions[1]) * self.cell_size[1]
 
     @cache
-    def cell_bounds_x(self) -> np.ndarray[int, np.float64]:
+    def cell_bounds_x(self) -> np.ndarray[tuple[int]]:
         """
         Boundary coordinates for the edges of every grid cell along the x axis,
         in grid projection coordinates.
@@ -135,7 +135,7 @@ class Grid:
         return self.origin_xy[0] + np.arange(self.dimensions[0] + 1) * self.cell_size[0]
 
     @cache
-    def cell_bounds_y(self) -> np.ndarray[int, np.float64]:
+    def cell_bounds_y(self) -> np.ndarray[tuple[int]]:
         """
         Boundary coordinates for the edges of every grid cell along the y axis,
         in grid projection coordinates.
@@ -146,7 +146,7 @@ class Grid:
         return self.origin_xy[1] + np.arange(self.dimensions[1] + 1) * self.cell_size[1]
 
     @cache
-    def cell_bounds_lonlat(self) -> tuple[np.ndarray, np.ndarray]:
+    def cell_bounds_lonlat(self) -> tuple[np.ndarray[tuple[int, int, int], np.dtype[np.float64]], np.ndarray[tuple[int, int, int], np.dtype[np.float64]]]:
         bounds_x = self.cell_bounds_x()
         bounds_y = self.cell_bounds_y()
 
