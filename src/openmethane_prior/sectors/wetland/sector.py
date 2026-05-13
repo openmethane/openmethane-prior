@@ -21,6 +21,7 @@
 import bisect
 import calendar
 import itertools
+import logging
 import os
 
 import numpy as np
@@ -40,6 +41,8 @@ from openmethane_prior.lib import (
 )
 from openmethane_prior.lib.data_manager.asset import DataAsset
 from openmethane_prior.lib.units import SECONDS_PER_DAY
+
+logger = logging.getLogger(__name__)
 
 satwet_giems_data_source = DataSource(
     name="SatWet-GIEMS",
@@ -190,7 +193,7 @@ def process_emissions(
     """Process wetland emissions for the given date range."""
     satwet_ch4_da = sector_config.data_manager.get_asset(satwet_giems_data_source)
 
-    # Validate that the requested period is covered by the SatWet dataset
+    # Check if the requested period is covered by the SatWet dataset
     satwet_ds = xr.open_dataset(satwet_ch4_da.path)
     satwet_time = satwet_ds["time"].values
     satwet_ds.close()
@@ -207,12 +210,16 @@ def process_emissions(
     end_ym = (end_date.year, end_date.month)
 
     if start_ym < satwet_min_ym or end_ym > satwet_max_ym:
-        raise ValueError(
-            f"Requested period {start_date} - {end_date} is outside the SatWet "
-            f"data range {satwet_min_dt} - {satwet_max_dt}"
+        logger.info(
+            "Requested period %s - %s extends outside the SatWet data range %s - %s; "
+            "monthly climatology will be used for out-of-range months.",
+            start_date,
+            end_date,
+            satwet_min_dt,
+            satwet_max_dt,
         )
 
-    # Regrid all SatWet time steps to the domain grid (no climatology, no unit conversion)
+    # Regrid all SatWet time steps to the domain grid (no unit conversion yet)
     regridded, satwet_times = regrid_satwet(sector_config.prior_config, satwet_ch4_da)
 
     # Convert units: gCH4/m2/month → kg/m2/s using the actual year+month per time step
@@ -227,14 +234,26 @@ def process_emissions(
         for i, t in enumerate(satwet_times)
     }
 
-    # Select the matching SatWet time step for each prior_ds time coordinate
+    # Compute monthly climatology (mean across all years per calendar month) for fallback
+    monthly_climatology = {
+        month: np.mean(
+            regridded[[i for i, t in enumerate(satwet_times) if datetime64_to_datetime(t).month == month]],
+            axis=0,
+        )
+        for month in range(1, 13)
+    }
+
+    # Select the matching SatWet time step (or climatology) for each prior_ds time coordinate
     domain_shape = sector_config.prior_config.domain_grid().shape
     result_nd = np.zeros((len(prior_ds["time"]), domain_shape[0], domain_shape[1]))
 
     for out_idx, date in enumerate(prior_ds["time"].values):
         dt = datetime64_to_datetime(date)
-        t_idx = satwet_index[(dt.year, dt.month)]
-        result_nd[out_idx] = regridded[t_idx]
+        ym = (dt.year, dt.month)
+        if ym in satwet_index:
+            result_nd[out_idx] = regridded[satwet_index[ym]]
+        else:
+            result_nd[out_idx] = monthly_climatology[dt.month]
 
     # source dataset is a coarse grid, and has emissions over ocean which
     # definitely shouldn't be classified as wetlands
