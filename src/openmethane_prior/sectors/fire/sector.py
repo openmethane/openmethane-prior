@@ -28,7 +28,7 @@ import xarray as xr
 from openmethane_prior.lib import (
     PriorSector,
     PriorSectorConfig,
-    regrid_dataset,
+    regrid_data_array_conservative,
     logger,
 )
 
@@ -52,7 +52,7 @@ def process_emissions(sector: PriorSector, sector_config: PriorSectorConfig, pri
         valid_time=gfas_ds["valid_time"] - np.timedelta64(1, "D")
     )
 
-    regridded_da = regrid_dataset(
+    regridded_da = regrid_data_array_conservative(
         data_da=gfas_ds["ch4fire"],
         domain_grid=config.domain_grid(),
         cache_path=config.intermediates_path,

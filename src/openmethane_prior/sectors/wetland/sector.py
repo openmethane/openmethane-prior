@@ -28,7 +28,7 @@ from openmethane_prior.lib import (
     PriorSector,
     PriorSectorConfig,
     datetime64_to_datetime,
-    regrid_dataset,
+    regrid_data_array_conservative,
 )
 from openmethane_prior.lib.units import SECONDS_PER_DAY
 
@@ -74,7 +74,7 @@ def process_emissions(
         )
 
     # Regrid all SatWet time steps to the domain grid (no climatology, no unit conversion)
-    regridded_da = regrid_dataset(
+    regridded_da = regrid_data_array_conservative(
         data_da=satwet_ds["fch4_mean"],
         domain_grid=config.domain_grid(),
         cache_path=config.intermediates_path,

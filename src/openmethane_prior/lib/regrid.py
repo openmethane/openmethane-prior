@@ -102,7 +102,7 @@ def _build_weights(
     return csr_array((data, (rows, cols)), shape=(n_out, n_in))
 
 
-def regrid_dataset(
+def regrid_data_array_conservative(
     data_da: xr.DataArray,
     domain_grid: Grid,
     cache_path: pathlib.Path,
@@ -126,7 +126,8 @@ def regrid_dataset(
     cache_path
         Directory in which to save/load the sparse weight matrix.
     cache_name
-        Unique identifier used to name the cache file.
+        Unique identifier used to name the cache file. Using a combination of
+        data asset name and domain name is recommended.
     lat_dim
         Name of the latitude dimension in ``data_da``.
     lon_dim
