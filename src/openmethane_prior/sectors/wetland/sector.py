@@ -62,7 +62,7 @@ def process_emissions(
         lat_dim="lat",
         lon_dim="lon",
         cache_path=config.intermediates_path,
-        cache_name=wetlands_da.name,
+        cache_name=f"{wetlands_da.name}_{prior_ds.domain_name}",
     )
     wetlands_ds.close()
 

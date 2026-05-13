@@ -56,7 +56,7 @@ def process_emissions(sector: PriorSector, sector_config: PriorSectorConfig, pri
         data_da=gfas_ds["ch4fire"],
         domain_grid=config.domain().grid,
         cache_path=config.intermediates_path,
-        cache_name=gfas_asset.name,
+        cache_name=f"{gfas_asset.name}_{prior_ds.domain_name}",
     )
     gfas_ds.close()
 

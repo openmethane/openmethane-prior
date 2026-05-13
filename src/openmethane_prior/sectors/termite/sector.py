@@ -55,7 +55,7 @@ def process_emissions(
         data_da=flux,
         domain_grid=config.domain().grid,
         cache_path=config.intermediates_path,
-        cache_name=termites_asset.name,
+        cache_name=f"{termites_asset.name}_{prior_ds.domain_name}",
         lat_dim="lat",
         lon_dim="lon",
         extensive=True,
