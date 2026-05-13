@@ -109,6 +109,7 @@ def regrid_dataset(
     cache_name: str,
     lat_dim: str = "latitude",
     lon_dim: str = "longitude",
+    extensive: bool = False,
 ) -> xr.DataArray:
     """Regrid a DataArray onto the domain grid using area-weighted interpolation.
 
@@ -130,6 +131,12 @@ def regrid_dataset(
         Name of the latitude dimension in ``data_da``.
     lon_dim
         Name of the longitude dimension in ``data_da``.
+    extensive
+        If ``True``, the input is treated as an extensive quantity (total per
+        grid cell, e.g. Mt/cell). It is divided by source cell areas before
+        regridding so that the weight matrix, which expects a density, receives
+        the correct units. The output is then in the same per-m² units as a
+        density input would produce.
 
     Returns
     -------
@@ -153,6 +160,15 @@ def regrid_dataset(
         from_areas = _compute_from_areas(lat_edges, lon_edges)
         W = _build_weights(domain_grid, lat_edges, lon_edges, from_areas)
         save_zipped_pickle(W, cache_file)
+
+    if extensive:
+        from_areas = _compute_from_areas(lat_edges, lon_edges)
+        area_da = xr.DataArray(
+            from_areas,
+            dims=[lat_dim, lon_dim],
+            coords={lat_dim: data_da[lat_dim], lon_dim: data_da[lon_dim]},
+        )
+        data_da = data_da / area_da
 
     spatial_dims = {lat_dim, lon_dim}
     leading_dims = [d for d in data_da.dims if d not in spatial_dims]
