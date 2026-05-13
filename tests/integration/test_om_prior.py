@@ -1,19 +1,4 @@
-import os
-import pytest
-
-from openmethane_prior.sectors.fire.sector import gfas_data_source
-from openmethane_prior.lib.sector.config import PriorSectorConfig
 from testing import dataset_metrics
-
-
-@pytest.mark.skip(reason="Duplicated by other tests")
-def test_002_cdsapi_connection(tmp_path, sector_config: PriorSectorConfig):
-    data_path = tmp_path / "sub"
-    data_path.mkdir(parents=True)
-
-    gfas_asset = sector_config.data_manager.get_asset(gfas_data_source)
-
-    assert os.path.exists(gfas_asset.path)
 
 
 def test_009_prior_emissions_ds(prior_emissions_ds):
