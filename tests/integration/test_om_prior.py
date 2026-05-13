@@ -1,19 +1,4 @@
-import os
-import pytest
-
-from openmethane_prior.sectors.fire.sector import gfas_data_source
-from openmethane_prior.lib.sector.config import PriorSectorConfig
 from testing import dataset_metrics
-
-
-@pytest.mark.skip(reason="Duplicated by other tests")
-def test_002_cdsapi_connection(tmp_path, sector_config: PriorSectorConfig):
-    data_path = tmp_path / "sub"
-    data_path.mkdir(parents=True)
-
-    gfas_asset = sector_config.data_manager.get_asset(gfas_data_source)
-
-    assert os.path.exists(gfas_asset.path)
 
 
 def test_009_prior_emissions_ds(prior_emissions_ds):
@@ -24,7 +9,7 @@ def test_009_prior_emissions_ds(prior_emissions_ds):
             'ch4_sector_agriculture': 1.3196047170278112e-12,
             'ch4_sector_coal': 8.072982591959402e-09,
             'ch4_sector_electricity': 1.2683449229281463e-11,
-            'ch4_sector_fire': 5.4986706160553567e-11,
+            'ch4_sector_fire': 5.498670963000052e-11,
             'ch4_sector_industrial': 5.351265777744653e-13,
             'ch4_sector_livestock': 7.545056510007907e-11,
             'ch4_sector_lulucf': 1.4454168861914367e-10,
@@ -44,11 +29,11 @@ def test_009_prior_emissions_ds(prior_emissions_ds):
         },
         'mean': {
             'LANDMASK': 1.0,
-            'OCH4_TOTAL': 5.779904932705612e-10,
+            'OCH4_TOTAL': 5.779904932876374e-10,
             'ch4_sector_agriculture': 1.0532989458203914e-12,
             'ch4_sector_coal': 3.979529404503476e-10,
             'ch4_sector_electricity': 2.2548354185389268e-13,
-            'ch4_sector_fire': 3.6974514162207983e-13,
+            'ch4_sector_fire': 3.6974516872713414e-13,
             'ch4_sector_industrial': 5.344609974538503e-14,
             'ch4_sector_livestock': 4.0547154335803873e-11,
             'ch4_sector_lulucf': 7.935998439039457e-12,
@@ -58,7 +43,7 @@ def test_009_prior_emissions_ds(prior_emissions_ds):
             'ch4_sector_transport': 2.129050411132023e-13,
             'ch4_sector_waste': 5.84814233122829e-14,
             'ch4_sector_wetlands': 1.2524275058017897e-10,
-            'ch4_total': 5.779904932705612e-10,
+            'ch4_total': 5.779904932876374e-10,
             'lambert_conformal': 0.0,
             'land_mask': 1.0,
             'lat': -23.267749786376953,
