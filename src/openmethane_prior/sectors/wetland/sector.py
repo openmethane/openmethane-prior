@@ -28,7 +28,7 @@ from openmethane_prior.lib import (
     PriorSector,
     PriorSectorConfig,
     logger,
-    regrid_dataset,
+    regrid_data_array_conservative,
 )
 
 logger = logger.get_logger(__name__)
@@ -56,7 +56,7 @@ def process_emissions(
     wetlands_ds["time"] = xr.date_range(wetlands_start, wetlands_end, freq="M")
 
     # Regrid all SatWet time steps to the domain grid (no climatology, no unit conversion)
-    regridded_da = regrid_dataset(
+    regridded_da = regrid_data_array_conservative(
         data_da=wetlands_ds["totflux"],
         domain_grid=domain_grid,
         lat_dim="lat",

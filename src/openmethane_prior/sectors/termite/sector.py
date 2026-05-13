@@ -24,7 +24,7 @@ from openmethane_prior.lib import (
     DataSource,
     PriorSector,
     PriorSectorConfig,
-    regrid_dataset,
+    regrid_data_array_conservative,
 )
 from openmethane_prior.lib.utils import SECS_PER_YEAR
 
@@ -49,9 +49,9 @@ def process_emissions(
     flux = ds["ch4_emissions_2010_2016.asc"].fillna(0.0).clip(min=0.0)
     ds.close()
 
-    # extensive=True normalises by source cell area inside regrid_dataset,
+    # extensive=True normalises by source cell area inside regrid_data_array_conservative,
     # so the output is in mtCH4/m²
-    result_nd = regrid_dataset(
+    result_nd = regrid_data_array_conservative(
         data_da=flux,
         domain_grid=config.domain().grid,
         cache_path=config.intermediates_path,

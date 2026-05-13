@@ -3,7 +3,7 @@ import pytest
 import xarray as xr
 
 from openmethane_prior.lib.grid.grid import Grid
-from openmethane_prior.lib.regrid import _compute_cell_edges, _compute_from_areas, regrid_dataset
+from openmethane_prior.lib.regrid import _compute_cell_edges, _compute_from_areas, regrid_data_array_conservative
 
 
 # 2×2 domain: 2° cells covering lon 138–142, lat –38 to –34 (eastern Australia)
@@ -25,7 +25,7 @@ def source_da():
 
 
 def test_2d_output_shape_and_dims(domain_grid, source_da, tmp_path):
-    result = regrid_dataset(source_da, domain_grid, tmp_path, "t2d")
+    result = regrid_data_array_conservative(source_da, domain_grid, tmp_path, "t2d")
     assert result.shape == domain_grid.shape
     assert result.dims == ("y", "x")
 
@@ -41,7 +41,7 @@ def test_3d_time_coord_preserved(domain_grid, source_da, tmp_path):
             "longitude": source_da["longitude"],
         },
     )
-    result = regrid_dataset(da_3d, domain_grid, tmp_path, "t3d")
+    result = regrid_data_array_conservative(da_3d, domain_grid, tmp_path, "t3d")
 
     assert result.dims == ("time", "y", "x")
     assert result.shape == (2, *domain_grid.shape)
@@ -52,13 +52,13 @@ def test_3d_time_coord_preserved(domain_grid, source_da, tmp_path):
 
 def test_cache_file_created(domain_grid, source_da, tmp_path):
     assert not (tmp_path / "tcache_weights.p.gz").exists()
-    regrid_dataset(source_da, domain_grid, tmp_path, "tcache")
+    regrid_data_array_conservative(source_da, domain_grid, tmp_path, "tcache")
     assert (tmp_path / "tcache_weights.p.gz").exists()
 
 
 def test_cache_hit_gives_identical_result(domain_grid, source_da, tmp_path):
-    r1 = regrid_dataset(source_da, domain_grid, tmp_path, "thit")
-    r2 = regrid_dataset(source_da, domain_grid, tmp_path, "thit")
+    r1 = regrid_data_array_conservative(source_da, domain_grid, tmp_path, "thit")
+    r2 = regrid_data_array_conservative(source_da, domain_grid, tmp_path, "thit")
     np.testing.assert_array_equal(r1.values, r2.values)
 
 
@@ -72,14 +72,14 @@ def test_nonoverlapping_source_all_zero(domain_grid, tmp_path):
         coords={"latitude": lats, "longitude": lons},
     )
 
-    result = regrid_dataset(da, domain_grid, tmp_path, "tzero")
+    result = regrid_data_array_conservative(da, domain_grid, tmp_path, "tzero")
 
     assert (result.values == 0.0).all()
 
 
 def test_extensive_differs_from_density(domain_grid, source_da, tmp_path):
-    r_density = regrid_dataset(source_da, domain_grid, tmp_path, "text_d")
-    r_extensive = regrid_dataset(source_da, domain_grid, tmp_path, "text_e", extensive=True)
+    r_density = regrid_data_array_conservative(source_da, domain_grid, tmp_path, "text_d")
+    r_extensive = regrid_data_array_conservative(source_da, domain_grid, tmp_path, "text_e", extensive=True)
 
     # source cell areas are ~1e10 m², so extensive normalises values down by that factor
     assert not np.allclose(r_density.values, r_extensive.values)
@@ -92,15 +92,15 @@ def test_extensive_normalises_by_source_cell_area(domain_grid, source_da, tmp_pa
     lon_edges = _compute_cell_edges(source_da["longitude"].values)
     from_areas = _compute_from_areas(lat_edges, lon_edges)  # (4, 4) array in m²
 
-    r_density = regrid_dataset(source_da, domain_grid, tmp_path, "tnorm_d")
+    r_density = regrid_data_array_conservative(source_da, domain_grid, tmp_path, "tnorm_d")
     # divide each source cell by its area, then regrid
     density_da = source_da / xr.DataArray(
         from_areas,
         dims=["latitude", "longitude"],
         coords=source_da.coords,
     )
-    r_manual = regrid_dataset(density_da, domain_grid, tmp_path, "tnorm_m")
-    r_extensive = regrid_dataset(source_da, domain_grid, tmp_path, "tnorm_e", extensive=True)
+    r_manual = regrid_data_array_conservative(density_da, domain_grid, tmp_path, "tnorm_m")
+    r_extensive = regrid_data_array_conservative(source_da, domain_grid, tmp_path, "tnorm_e", extensive=True)
 
     np.testing.assert_allclose(r_extensive.values, r_manual.values, rtol=1e-5)
 
@@ -112,7 +112,7 @@ def test_mass_conservation(domain_grid, source_da, tmp_path):
     from_areas = _compute_from_areas(lat_edges, lon_edges)
     total_in = float((source_da.values * from_areas).sum())
 
-    result = regrid_dataset(source_da, domain_grid, tmp_path, "tmass")
+    result = regrid_data_array_conservative(source_da, domain_grid, tmp_path, "tmass")
 
     # W divides by domain_grid.cell_area (in deg² for EPSG:4326), so multiplying
     # result back by cell_area gives units of m² — consistent with total_in
