@@ -78,7 +78,7 @@ def process_emissions(
         data_da=satwet_ds["fch4_mean"],
         domain_grid=config.domain_grid(),
         cache_path=config.intermediates_path,
-        cache_name=satwet_ch4_da.name,
+        cache_name=f"{satwet_ch4_da.name}_{prior_ds.domain_name}",
     )
     satwet_ds.close()
 
