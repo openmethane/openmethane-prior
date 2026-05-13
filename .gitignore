@@ -213,13 +213,11 @@ pyrightconfig.json
 
 # Custom ignores
 
-outputs
-inputs
-intermediates
-processed
 data/outputs
 data/inputs
 data/intermediates
 data/.cache*
+
+.claude/
 
 !src/openmethane_prior/lib
