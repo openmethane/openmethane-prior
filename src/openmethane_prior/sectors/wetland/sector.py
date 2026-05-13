@@ -41,11 +41,6 @@ from openmethane_prior.lib import (
 from openmethane_prior.lib.data_manager.asset import DataAsset
 from openmethane_prior.lib.units import SECONDS_PER_DAY
 
-wetlands_data_source = DataSource(
-    name="wetlands",
-    url="https://openmethane.s3.amazonaws.com/prior/inputs/DLEM_totflux_CRU_diagnostic.nc",
-)
-
 satwet_giems_data_source = DataSource(
     name="SatWet-GIEMS",
     url="https://openmethane.s3.amazonaws.com/prior/inputs/SatWetCH4_GIEMS-MC_v2-90.nc",
