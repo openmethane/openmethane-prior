@@ -121,9 +121,13 @@ def _build_regrid_indices(
     return ind_x, ind_y, coefs
 
 
-def regrid_satwet(
+def regrid_dataset(
     config: PriorConfig,
-    wetlands_da: DataAsset,
+    input_ds: xr.Dataset,
+    asset_name: str,
+    data_variable: str,
+    lat_variable: str = "latitude",
+    lon_variable: str = "longitude",
 ) -> tuple[np.ndarray, np.ndarray]:
     """
     Regrid all SatWet time steps onto the domain grid.
@@ -138,11 +142,10 @@ def regrid_satwet(
     satwet_times : np.ndarray
         The SatWet time coordinate (datetime64 array).
     """
-    satwet_ds = xr.open_dataset(wetlands_da.path)
     domain_grid = config.domain_grid()
 
-    latWetland = np.around(np.float64(satwet_ds["latitude"].values), 3)
-    lonWetland = np.around(np.float64(satwet_ds["longitude"].values), 3)
+    latWetland = np.around(np.float64(input_ds[lat_variable].values), 3)
+    lonWetland = np.around(np.float64(input_ds[lon_variable].values), 3)
     dlatWetland = latWetland[0] - latWetland[1]
     dlonWetland = lonWetland[1] - lonWetland[0]
 
@@ -171,21 +174,19 @@ def regrid_satwet(
 
     ind_x, ind_y, coefs = _build_regrid_indices(
         domain_grid=domain_grid,
-        cache_name=wetlands_da.name,
+        cache_name=asset_name,
         cache_path=config.intermediates_path,
         edge_lats=latWetland_edge,
         edge_lons=lonWetland_edge,
     )
 
-    flux = satwet_ds["fch4_mean"].values
-    satwet_times = satwet_ds["time"].values
-    satwet_ds.close()
+    flux = input_ds[data_variable].values
+    satwet_times = input_ds["time"].values
 
-    cmaq_areas = np.ones(domain_grid.shape) * domain_grid.cell_area
     regridded = np.zeros((flux.shape[0], domain_grid.shape[0], domain_grid.shape[1]))
     for t_idx in range(flux.shape[0]):
         regridded[t_idx] = redistribute_spatially(
-            domain_grid.shape, ind_x, ind_y, coefs, flux[t_idx], wetlandAreas, cmaq_areas
+            domain_grid.shape, ind_x, ind_y, coefs, flux[t_idx], wetlandAreas, domain_grid.cell_area
         )
 
     return regridded, satwet_times
@@ -202,7 +203,6 @@ def process_emissions(
     # Check if the requested period is covered by the SatWet dataset
     satwet_ds = xr.open_dataset(satwet_ch4_da.path)
     satwet_time = satwet_ds["time"].values
-    satwet_ds.close()
 
     # SatWet time coordinates are first-of-month; compare at (year, month) granularity
     satwet_min_dt = datetime64_to_datetime(satwet_time.min())
@@ -225,8 +225,14 @@ def process_emissions(
             satwet_max_dt,
         )
 
-    # Regrid all SatWet time steps to the domain grid (no unit conversion yet)
-    regridded, satwet_times = regrid_satwet(sector_config.prior_config, satwet_ch4_da)
+    # Regrid all SatWet time steps to the domain grid (no climatology, no unit conversion)
+    regridded, satwet_times = regrid_dataset(
+        config=sector_config.prior_config,
+        input_ds=satwet_ds,
+        data_variable="fch4_mean",
+        asset_name=satwet_ch4_da.name,
+    )
+    satwet_ds.close()
 
     # Convert units: gCH4/m2/month → kg/m2/s using the actual year+month per time step
     for t_idx, t in enumerate(satwet_times):
