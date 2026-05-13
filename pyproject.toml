@@ -22,6 +22,7 @@ dependencies = [
     "python-dotenv>=1.0.1,<2",
     "colorama>=0.4.6,<0.5",
     "cdsapi>=0.7.3,<0.8",
+    "scipy>=1.14,<2",
     "shapely>=2.0.4,<3",
     "environs>=11.0.0,<12",
     "prettyprinter>=0.18.0,<0.19",
