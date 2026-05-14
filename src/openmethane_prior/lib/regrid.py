@@ -27,7 +27,10 @@ from scipy.sparse import csr_array
 from shapely import geometry
 
 from .grid.grid import Grid
+from .logger import get_logger
 from .utils import area_of_rectangle_m2, load_zipped_pickle, save_zipped_pickle
+
+logger = get_logger(__name__)
 
 
 def _compute_cell_edges(centres: np.ndarray) -> np.ndarray:
@@ -155,8 +158,10 @@ def regrid_data_array_conservative(
     lon_edges = _compute_cell_edges(lon_centres)
 
     if cache_file.exists():
+        logger.info(f"Loading existing Grid weights for {cache_name}")
         W = load_zipped_pickle(cache_file)
     else:
+        logger.info(f"No existing Grid weights for {cache_name}, calculating")
         from_areas = _compute_from_areas(lat_edges, lon_edges)
         W = _build_weights(domain_grid, lat_edges, lon_edges, from_areas)
         save_zipped_pickle(W, cache_file)
