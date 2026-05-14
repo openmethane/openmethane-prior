@@ -30,7 +30,7 @@ from openmethane_prior.data_sources.landuse import (
 from openmethane_prior.lib import (
     kg_to_period_cell_flux,
     logger,
-    regrid_data,
+    regrid_inventory_mask_to_domain,
     remap_raster,
     PriorSectorConfig,
     PriorSector,
@@ -68,7 +68,13 @@ def process_emissions(
     dataBand = rasterio.open(landuse_asset.path, engine='rasterio').read()
     dataBand = dataBand.squeeze()
 
-    inventory_mask_regridded = regrid_data(config.inventory_dataset()['inventory_mask'], from_grid=config.inventory_grid(), to_grid=config.domain_grid())
+    inventory_regridded_mask = regrid_inventory_mask_to_domain(
+        inventory_ds=config.inventory_dataset(),
+        inventory_grid=config.inventory_grid(),
+        domain_grid=config.domain_grid(),
+        cache_path=config.intermediates_path,
+        domain_name=prior_ds.domain_name,
+    )
 
     # create a mask of pixels which match the sector code
     sector_mask = np.isin(dataBand, sector_alum_codes)
@@ -78,7 +84,7 @@ def process_emissions(
     sector_gridded = remap_raster(sector_xr, config.domain_grid(), input_crs=lu_crs)
 
     # apply inventory mask before counting any land use
-    sector_gridded *= inventory_mask_regridded
+    sector_gridded *= inventory_regridded_mask
 
     inventory_gridded = remap_raster(sector_xr, config.inventory_grid(), input_crs=lu_crs)
     # now mask to region of inventory

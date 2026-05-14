@@ -25,7 +25,7 @@ from .data_manager.manager import (
 )
 from .grid.grid import Grid
 from .grid.regrid import regrid_data
-from .regrid import regrid_data_array_conservative
+from .regrid import regrid_data_array_conservative, regrid_inventory_mask_to_domain
 from .outputs import add_sector, convert_to_timescale
 from .create_prior import create_prior
 from .raster import remap_raster

@@ -22,7 +22,7 @@ import rioxarray as rxr
 from openmethane_prior.lib import (
     ConfiguredDataSource,
     DataSource,
-    regrid_data,
+    regrid_inventory_mask_to_domain,
     remap_raster,
 )
 
@@ -38,7 +38,13 @@ def parse_ntlt_data_source(data_source: ConfiguredDataSource):
     om_ntlt = remap_raster(ntlt, prior_config.domain_grid())
 
     # limit emissions to land points
-    inventory_mask_regridded = regrid_data(prior_config.inventory_dataset()['inventory_mask'], from_grid=prior_config.inventory_grid(), to_grid=prior_config.domain_grid())
+    inventory_mask_regridded = regrid_inventory_mask_to_domain(
+        inventory_ds=prior_config.inventory_dataset(),
+        inventory_grid=prior_config.inventory_grid(),
+        domain_grid=prior_config.domain_grid(),
+        cache_path=prior_config.intermediates_path,
+        domain_name=prior_config.domain_dataset().domain_name,
+    )
     om_ntlt *= inventory_mask_regridded
 
     # now collect total nightlights across inventory domain

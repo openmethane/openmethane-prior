@@ -20,9 +20,9 @@
 
 import bisect
 import itertools
-import pathlib
-
 import numpy as np
+import pathlib
+import pyproj
 import xarray as xr
 from scipy.sparse import csr_array
 from shapely import geometry
@@ -199,3 +199,106 @@ def regrid_data_array_conservative(
             "x": np.arange(domain_grid.shape[1]),
         },
     )
+
+
+def _build_weights_from_grids(domain_grid: Grid, source_grid: Grid) -> csr_array:
+    """Build a sparse (n_out_cells, n_in_cells) weight matrix for Grid-to-Grid regridding.
+
+    Computations are performed in the domain_grid's native CRS: domain cells are
+    rectangular (enabling fast bisect-based candidate search), and source cells are
+    projected into the domain CRS as polygons.
+
+    Weight W[out, inp] = intersection_area / domain_cell_area, so that
+    W @ data.ravel() yields area-weighted regridded values scaled to the domain grid.
+    """
+    transformer = pyproj.Transformer.from_crs(
+        source_grid.projection.crs,
+        domain_grid.projection.crs,
+        always_xy=True,
+    )
+
+    dom_x_bounds = domain_grid.cell_bounds_x()
+    dom_y_bounds = domain_grid.cell_bounds_y()
+    src_x_bounds = source_grid.cell_bounds_x()
+    src_y_bounds = source_grid.cell_bounds_y()
+
+    n_out = domain_grid.shape[0] * domain_grid.shape[1]
+    n_in = source_grid.shape[0] * source_grid.shape[1]
+
+    rows, cols, data = [], [], []
+
+    for src_iy, src_ix in itertools.product(range(source_grid.shape[0]), range(source_grid.shape[1])):
+        src_xs = [src_x_bounds[src_ix], src_x_bounds[src_ix + 1], src_x_bounds[src_ix + 1], src_x_bounds[src_ix]]
+        src_ys = [src_y_bounds[src_iy], src_y_bounds[src_iy], src_y_bounds[src_iy + 1], src_y_bounds[src_iy + 1]]
+        dom_xs, dom_ys = transformer.transform(src_xs, src_ys)
+        src_poly = geometry.Polygon(zip(dom_xs, dom_ys))
+
+        min_x, min_y, max_x, max_y = src_poly.bounds
+        ix_min = max(0, bisect.bisect_right(dom_x_bounds, min_x) - 1)
+        ix_max = min(domain_grid.dimensions[0], bisect.bisect_right(dom_x_bounds, max_x))
+        iy_min = max(0, bisect.bisect_right(dom_y_bounds, min_y) - 1)
+        iy_max = min(domain_grid.dimensions[1], bisect.bisect_right(dom_y_bounds, max_y))
+
+        for dom_iy, dom_ix in itertools.product(range(iy_min, iy_max), range(ix_min, ix_max)):
+            dom_cell = geometry.box(
+                dom_x_bounds[dom_ix], dom_y_bounds[dom_iy],
+                dom_x_bounds[dom_ix + 1], dom_y_bounds[dom_iy + 1],
+            )
+            if not src_poly.intersects(dom_cell):
+                continue
+            intersection = src_poly.intersection(dom_cell)
+            if intersection.area <= 0:
+                continue
+            rows.append(dom_iy * domain_grid.shape[1] + dom_ix)
+            cols.append(src_iy * source_grid.shape[1] + src_ix)
+            data.append(intersection.area / domain_grid.cell_area)
+
+    return csr_array((data, (rows, cols)), shape=(n_out, n_in))
+
+
+def regrid_inventory_mask_to_domain(
+    inventory_ds: xr.Dataset,
+    inventory_grid: Grid,
+    domain_grid: Grid,
+    cache_path: pathlib.Path,
+    domain_name: str,
+) -> np.ndarray:
+    """Regrid inventory_mask onto the domain grid and return a binary mask array.
+
+    If the two grids are identical no regridding is performed. Otherwise the
+    mask is area-weighted onto the domain grid and thresholded at 0.5 so that
+    each output cell is 1 where the majority of its area falls within the
+    inventory region and 0 elsewhere.
+
+    Parameters
+    ----------
+    inventory_ds
+        Inventory domain dataset containing an ``inventory_mask`` variable.
+    inventory_grid
+        Grid describing the inventory domain.
+    domain_grid
+        Target domain grid.
+    cache_path
+        Directory in which to save/load the sparse weight matrix.
+    domain_name
+        Name of the target domain, used to construct the cache filename.
+    """
+    if inventory_grid == domain_grid:
+        logger.info("Identical inventory and domain grids, skipping regrid")
+        return inventory_ds["inventory_mask"].values.astype(np.float32)
+
+    cache_path = pathlib.Path(cache_path)
+    cache_name = f"{inventory_ds.domain_name}_{domain_name}"
+    cache_file = cache_path / f"{cache_name}_weights.p.gz"
+
+    if cache_file.exists():
+        logger.info(f"Loading existing Grid weights for {cache_name}")
+        W = load_zipped_pickle(cache_file)
+    else:
+        logger.info(f"No existing Grid weights for {cache_name}, calculating")
+        W = _build_weights_from_grids(domain_grid, inventory_grid)
+        save_zipped_pickle(W, cache_file)
+
+    values = inventory_ds["inventory_mask"].values.astype(np.float64).ravel()
+    regridded = (W @ values).reshape(domain_grid.shape)
+    return (regridded >= 0.5).astype(np.float32)
