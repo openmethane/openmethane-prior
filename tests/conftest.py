@@ -6,12 +6,13 @@ import pytest
 from typing import Generator
 import xarray as xr
 
+import attrs
+
 from openmethane_prior.lib import create_prior
 from openmethane_prior.lib.config import PriorConfig
 from openmethane_prior.lib.data_manager.manager import DataManager
 from openmethane_prior.lib.grid.create_grid import create_grid_from_mcip
 from openmethane_prior.lib.grid.grid import Grid
-from openmethane_prior.lib.inputs import check_input_files
 from openmethane_prior.lib.sector.config import PriorSectorConfig
 from openmethane_prior.sectors import all_sectors
 
@@ -68,7 +69,9 @@ def input_files(config):
     config.load_cached_inputs()
 
     # fetch configured domains
-    check_input_files(config)
+    dm = DataManager(data_path=config.input_path, prior_config=config, fetch_only=True)
+    dm.get_asset(config.domain_source)
+    dm.get_asset(config.inventory_domain_source)
 
     yield
 
@@ -80,8 +83,23 @@ def input_files(config):
 
 
 @pytest.fixture()
-def data_manager(config) -> DataManager:
-    return DataManager(data_path=config.input_path, prior_config=config)
+def data_manager(config, input_files) -> DataManager:
+    """DataManager with the domain resolved and attached to prior_config.
+
+    Implicitly depends on input_files so the domain file is on disk before
+    parsing. Tests that fetch geo DataSources need this resolved config
+    because their parsers reach prior_config.domain.crs.
+    """
+    dm = DataManager(data_path=config.input_path, prior_config=config)
+    domain = dm.get_asset(config.domain_source).data
+    dm.prior_config = attrs.evolve(config, domain=domain)
+    return dm
+
+
+@pytest.fixture()
+def resolved_config(data_manager) -> PriorConfig:
+    """Config with the domain DataSource resolved and attached."""
+    return data_manager.prior_config
 
 @pytest.fixture()
 def data_manager_fetch_only(config) -> DataManager:
@@ -89,10 +107,11 @@ def data_manager_fetch_only(config) -> DataManager:
 
 
 @pytest.fixture()
-def sector_config(config) -> PriorSectorConfig:
-    data_manager = DataManager(data_path=config.input_path, prior_config=config)
-    sector_config = PriorSectorConfig(prior_config=config, data_manager=data_manager)
-    return sector_config
+def sector_config(data_manager) -> PriorSectorConfig:
+    return PriorSectorConfig(
+        prior_config=data_manager.prior_config,
+        data_manager=data_manager,
+    )
 
 
 @pytest.fixture(scope="session")
@@ -114,7 +133,7 @@ def end_date() -> datetime.date:
 
 
 @pytest.fixture()
-def input_domain(config, input_files) -> Generator[xr.Dataset, None, None]:
+def input_domain(data_manager) -> Generator[xr.Dataset, None, None]:
     """
     Get an input domain
 
@@ -122,9 +141,7 @@ def input_domain(config, input_files) -> Generator[xr.Dataset, None, None]:
     -------
         The input domain as an xarray dataset
     """
-    assert config.domain_file.exists()
-
-    yield config.domain_dataset()
+    yield data_manager.prior_config.domain.dataset
 
 
 @pytest.fixture(scope="session")

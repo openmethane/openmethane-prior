@@ -41,7 +41,7 @@ def allocate_safeguard_facility_emissions(
     facility_locations_asset: DataAsset,
     reference_data_asset: DataAsset,
 ):
-    domain_grid = config.domain_grid()
+    domain_grid = config.domain.grid
 
     sector_facilities = filter_facilities(
         facility_df=safeguard_facilities_asset.data,
@@ -65,7 +65,7 @@ def allocate_safeguard_facility_emissions(
         right_on="source_name",
     )
 
-    gridded_annual_emissions = np.zeros(config.domain_grid().shape)
+    gridded_annual_emissions = np.zeros(domain_grid.shape)
 
     for _, facility in coal_facilities.iterrows():
         facility_locations = filter_locations(coal_facilities_locations, facility_id=facility["facility_name"])
@@ -77,6 +77,6 @@ def allocate_safeguard_facility_emissions(
                 location_emissions = facility["ch4_kg"] / len(facility_locations)
                 gridded_annual_emissions[cell_y, cell_x] += location_emissions
 
-    gridded_emissions = convert_to_timescale(gridded_annual_emissions, config.domain_grid().cell_area)
+    gridded_emissions = convert_to_timescale(gridded_annual_emissions, domain_grid.cell_area)
 
     return coal_facilities, coal_facilities_locations, gridded_emissions

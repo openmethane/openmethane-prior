@@ -40,17 +40,20 @@ MAX_ABS_DIFF = 0.1
 
 def verify_emis(sectors: list[PriorSector], config: PriorConfig, prior_ds: xr.Dataset, atol: float = MAX_ABS_DIFF):
     """Check output sector emissions to make sure they tally up to the input emissions"""
-    if config.domain_grid() != config.inventory_grid():
+    data_manager = DataManager(data_path=config.input_path, prior_config=config)
+    domain = data_manager.get_asset(config.domain_source).data
+    inventory_domain = data_manager.get_asset(config.inventory_domain_source).data
+
+    if domain.grid != inventory_domain.grid:
         # TODO: is there a sense check we can do on smaller domains?
         logger.info("SKIPPING verify_emis: only supported when domain and inventory domain are identical")
         return
 
-    data_manager = DataManager(data_path=config.input_path, prior_config=config)
     emissions_inventory = data_manager.get_asset(inventory_data_source).data
 
     inventory_sectors = [s for s in sectors if s.unfccc_categories is not None]
 
-    m2s_to_kg = config.domain_grid().cell_area * 24 * 60 * 60
+    m2s_to_kg = domain.grid.cell_area * 24 * 60 * 60
     ds_start_date = pd.to_datetime(prior_ds['time'][0].item()).date()
     ds_end_date = pd.to_datetime(prior_ds['time'][-1].item()).date()
     period_days = days_in_period(ds_start_date, ds_end_date)

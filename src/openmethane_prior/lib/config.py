@@ -3,17 +3,13 @@ from attrs import field, frozen
 from attrs.converters import default_if_none
 import datetime
 from environs import Env
-from functools import cache
 import os
 import pathlib
-import pyproj
 import shutil
 from typing import Self
-import xarray as xr
 
-from .grid.grid import Grid
-from .grid.create_grid import create_grid_from_domain, create_grid_from_mcip
-from .utils import is_url
+from .data_manager.source import DataSource
+from .grid.domain import Domain, make_domain_source
 
 
 @frozen
@@ -60,6 +56,11 @@ class PriorConfig:
     input_cache: pathlib.Path = None
     """If provided, a local path where remote inputs can be cached."""
 
+    domain: Domain | None = None
+    """The parsed domain. Populated after the domain DataSource has been
+    fetched and parsed by the DataManager. Must be resolved before any
+    DataSource whose parser depends on the domain CRS is fetched."""
+
     # __attrs_post_init__ is called automatically after the __init__ generated
     # by attrs has run.
     # @see: https://www.attrs.org/en/stable/init.html
@@ -100,79 +101,15 @@ class PriorConfig:
             self.input_cache.mkdir(parents=True, exist_ok=True)
             shutil.copytree(src=self.input_path, dst=self.input_cache, dirs_exist_ok=True)
 
-    @cache
-    def domain_dataset(self):
-        """Load the input domain dataset"""
-        if not self.domain_file.exists():
-            raise ValueError(f"Missing domain file: {self.domain_file}")
-        return xr.open_dataset(self.domain_file)
-
-    @cache
-    def inventory_dataset(self):
-        """Load the inventory domain dataset"""
-        if not self.inventory_domain_file.exists():
-            raise ValueError(f"Missing inventory domain file: {self.inventory_domain_file}")
-        return xr.open_dataset(self.inventory_domain_file)
-
-
-    @cache
-    def domain_grid(self) -> Grid:
-        """Create a Grid from the domain dataset"""
-        domain_ds = self.domain_dataset()
-        if ("Conventions" in domain_ds.attrs):
-            return create_grid_from_domain(domain_ds)
-        return create_grid_from_mcip(
-            TRUELAT1=domain_ds.TRUELAT1,
-            TRUELAT2=domain_ds.TRUELAT2,
-            MOAD_CEN_LAT=domain_ds.MOAD_CEN_LAT,
-            STAND_LON=domain_ds.STAND_LON,
-            COLS=domain_ds.COL.size,
-            ROWS=domain_ds.ROW.size,
-            XCENT=domain_ds.XCENT,
-            YCENT=domain_ds.YCENT,
-            XORIG=domain_ds.XORIG,
-            YORIG=domain_ds.YORIG,
-            XCELL=domain_ds.XCELL,
-            YCELL=domain_ds.YCELL,
-        )
-
-    @cache
-    def domain_projection(self) -> pyproj.Proj:
-        """Query the projection used by the input domain"""
-        return self.domain_grid().projection
-
-    @cache
-    def inventory_grid(self) -> Grid:
-        """Create a Grid from the inventory dataset"""
-        return create_grid_from_domain(domain_ds=self.inventory_dataset())
-
-    @cache
-    def inventory_projection(self) -> pyproj.Proj:
-        """Query the projection used by the inventory domain"""
-        return self.inventory_grid().projection
+    @property
+    def domain_source(self) -> DataSource:
+        """DataSource definition for the domain file."""
+        return make_domain_source("domain", self.domain_path)
 
     @property
-    def crs(self):
-        """Return the CRS used by the domain dataset"""
-        return self.domain_projection().crs
-
-    @property
-    def domain_file(self):
-        """Filesystem path of the input domain"""
-        if is_url(self.domain_path):
-            return self.as_input_file(os.path.basename(self.domain_path))
-        elif not self.domain_path.startswith("/"):
-            return self.as_input_file(self.domain_path)
-        return pathlib.Path(self.domain_path)
-
-    @property
-    def inventory_domain_file(self):
-        """Filesystem path of the inventory domain"""
-        if is_url(self.inventory_domain_path):
-            return self.as_input_file(os.path.basename(self.inventory_domain_path))
-        elif not self.inventory_domain_path.startswith("/"):
-            return self.as_input_file(self.inventory_domain_path)
-        return pathlib.Path(self.inventory_domain_path)
+    def inventory_domain_source(self) -> DataSource:
+        """DataSource definition for the inventory domain file."""
+        return make_domain_source("inventory_domain", self.inventory_domain_path)
 
     @property
     def output_file(self):

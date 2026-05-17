@@ -44,7 +44,7 @@ def process_emissions(
         prior_ds: xr.Dataset,
 ):
     config = sector_config.prior_config
-    domain_grid = config.domain_grid()
+    domain_grid = config.domain.grid
 
     # load the national inventory data, ready to calculate sectoral totals
     emissions_inventory = sector_config.data_manager.get_asset(inventory_data_source).data

@@ -18,7 +18,7 @@
 
 import xarray as xr
 
-from openmethane_prior.data_sources.nightlights import night_lights_data_source
+from openmethane_prior.data_sources.nightlights import make_night_lights_source
 from openmethane_prior.data_sources.inventory import get_sector_emissions_by_code, inventory_data_source
 from openmethane_prior.lib import (
     kg_to_period_cell_flux,
@@ -38,6 +38,7 @@ def process_emissions(
     config = sector_config.prior_config
 
     # we want proportions of total for scaling emissions
+    night_lights_data_source = make_night_lights_source(config.inventory_domain_source)
     om_ntlt_proportion = sector_config.data_manager.get_asset(night_lights_data_source)
 
     # load the national inventory data, ready to calculate sectoral totals
