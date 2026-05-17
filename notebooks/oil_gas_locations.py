@@ -6,7 +6,6 @@ from openmethane_prior.lib.data_manager.manager import DataManager
 from openmethane_prior.sectors.oil_gas.emission_sources.all_sources import all_emission_sources
 prior_config = PriorConfig(
     domain_path="https://openmethane.s3.amazonaws.com/domains/aust10km/v1/domain.aust10km.nc",
-    inventory_domain_path="https://openmethane.s3.amazonaws.com/domains/aust10km/v1/domain.aust10km.nc",
     start_date=datetime.datetime.fromisoformat("2022-12-01"),
     input_path=pathlib.Path("../data/inputs"),
     input_cache=pathlib.Path("../data/.cache"),

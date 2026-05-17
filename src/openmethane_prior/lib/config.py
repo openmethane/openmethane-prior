@@ -9,7 +9,7 @@ import shutil
 from typing import Self
 
 from .data_manager.source import DataSource
-from .grid.domain import Domain, make_domain_source
+from .grid.domain import Domain, parse_domain
 
 
 @frozen
@@ -18,9 +18,6 @@ class PriorConfig:
 
     domain_path: pathlib.Path | str
     """URL or file path to the domain of interest. Relative paths
-    will be interpreted relative to input_path"""
-    inventory_domain_path: pathlib.Path | str
-    """URL or file path to the inventory domain of interest. Relative paths
     will be interpreted relative to input_path"""
 
     start_date: datetime.datetime
@@ -103,13 +100,13 @@ class PriorConfig:
 
     @property
     def domain_source(self) -> DataSource:
-        """DataSource definition for the domain file."""
-        return make_domain_source("domain", self.domain_path)
-
-    @property
-    def inventory_domain_source(self) -> DataSource:
-        """DataSource definition for the inventory domain file."""
-        return make_domain_source("inventory_domain", self.inventory_domain_path)
+        """DataSource based on the path or URL supplied in the domain_path."""
+        return DataSource(
+            name="domain",
+            # basic_fetch supports file path or url
+            url=str(self.domain_path),
+            parse=lambda data_source: parse_domain(data_source.asset_path),
+        )
 
     @property
     def output_file(self):
@@ -137,7 +134,6 @@ class PriorConfig:
         return cls(
             # required
             domain_path=env.str("DOMAIN_FILE"),
-            inventory_domain_path=env.str("INVENTORY_DOMAIN_FILE"),
             start_date=start_date,
             end_date =end_date,
             # use defaults

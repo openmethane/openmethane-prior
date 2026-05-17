@@ -57,7 +57,6 @@ Six categories of input data (inventory, safeguard, landuse, nightlights, climat
 
 Copy `.env.example` to `.env`. Key variables:
 - `DOMAIN_FILE`: Path or URL to the CF-convention domain NetCDF
-- `INVENTORY_DOMAIN_FILE`: Path or URL to inventory domain
 - `INPUTS`, `OUTPUTS`, `INTERMEDIATES`: Override default data directories
 - `LOG_LEVEL`, `LOG_FILE`: Logging control
 - Copernicus ADS credentials required for some data sources (see README)

@@ -34,7 +34,6 @@ def config_params(start_date, end_date):
         start_date=start_date,
         end_date=end_date,
         domain_path="https://openmethane.s3.amazonaws.com/domains/au-test/v1/domain.au-test.nc",
-        inventory_domain_path="https://openmethane.s3.amazonaws.com/domains/aust10km/v1/domain.aust10km.nc",
     )
 
 
@@ -71,7 +70,6 @@ def input_files(config):
     # fetch configured domains
     dm = DataManager(data_path=config.input_path, prior_config=config, fetch_only=True)
     dm.get_asset(config.domain_source)
-    dm.get_asset(config.inventory_domain_source)
 
     yield
 

@@ -1,11 +1,18 @@
 import numpy as np
+import pytest
 
-from openmethane_prior.lib.grid.create_grid import create_grid_from_mcip, create_grid_from_domain
+from openmethane_prior.data_sources.inventory import inventory_domain_data_source
+from openmethane_prior.lib.grid.create_grid import create_grid_from_mcip
 
 
-def test_create_grid_from_domain(config, input_files, data_manager):
-    test_domain = data_manager.get_asset(config.inventory_domain_source).data.dataset
-    test_grid = create_grid_from_domain(test_domain)
+@pytest.fixture()
+def inventory_domain(input_files, data_manager):
+    return data_manager.get_asset(inventory_domain_data_source).data
+
+
+def test_create_grid_from_domain(inventory_domain):
+    test_domain = inventory_domain.dataset
+    test_grid = inventory_domain.grid
 
     assert test_grid.dimensions == (test_domain.sizes["x"], test_domain.sizes["y"])
     assert test_grid.shape == (test_domain.sizes["y"], test_domain.sizes["x"])
@@ -21,9 +28,9 @@ def test_create_grid_from_domain(config, input_files, data_manager):
     assert test_grid.cell_area == test_domain.XCELL * test_domain.YCELL
 
 
-def test_create_grid_from_domain_coordinates(config, input_files, data_manager):
-    test_domain = data_manager.get_asset(config.inventory_domain_source).data.dataset
-    test_grid = create_grid_from_domain(test_domain)
+def test_create_grid_from_domain_coordinates(inventory_domain):
+    test_domain = inventory_domain.dataset
+    test_grid = inventory_domain.grid
 
     # projection center coords for all cells in the domain
     x_center_coords = test_grid.cell_coords_x()

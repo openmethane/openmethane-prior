@@ -23,17 +23,21 @@ import pandas as pd
 import xarray as xr
 from colorama import Fore
 
-from openmethane_prior.data_sources.inventory import get_sector_emissions_by_code, inventory_data_source
-from openmethane_prior.lib.sector.sector import PriorSector
+from openmethane_prior.data_sources.inventory import (
+    get_sector_emissions_by_code,
+    inventory_data_source,
+    inventory_domain_data_source,
+)
 
 from .config import PriorConfig
 from .data_manager.manager import DataManager
+from .logger import get_logger
+from .sector.sector import PriorSector
 from .outputs import SECTOR_PREFIX
 from .units import days_in_period
 
-import openmethane_prior.lib.logger as logger
 
-logger = logger.get_logger(__name__)
+logger = get_logger(__name__)
 
 MAX_ABS_DIFF = 0.1
 
@@ -42,7 +46,7 @@ def verify_emis(sectors: list[PriorSector], config: PriorConfig, prior_ds: xr.Da
     """Check output sector emissions to make sure they tally up to the input emissions"""
     data_manager = DataManager(data_path=config.input_path, prior_config=config)
     domain = data_manager.get_asset(config.domain_source).data
-    inventory_domain = data_manager.get_asset(config.inventory_domain_source).data
+    inventory_domain = data_manager.get_asset(inventory_domain_data_source).data
 
     if domain.grid != inventory_domain.grid:
         # TODO: is there a sense check we can do on smaller domains?

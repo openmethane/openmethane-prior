@@ -24,6 +24,7 @@ from openmethane_prior.lib import (
     logger,
 )
 from openmethane_prior.lib.data_manager.parsers import parse_csv
+from openmethane_prior.lib.grid.domain import parse_domain, Domain
 
 from .inventory import create_inventory_df
 
@@ -50,4 +51,15 @@ inventory_data_source = DataSource(
     url="https://greenhouseaccounts.climatechange.gov.au/OData/AR5_ParisInventory_AUSTRALIA",
     data_sources=[unfccc_codes_data_source],
     parse=parse_inventory,
+)
+
+
+def parse_domain_data_source(data_source: ConfiguredDataSource) -> Domain:
+    return parse_domain(data_source.asset_path)
+
+
+inventory_domain_data_source = DataSource(
+    name="AU-inventory-domain",
+    url="https://openmethane.s3.amazonaws.com/domains/aust10km/v1/domain.aust10km.nc",
+    parse=parse_domain_data_source,
 )

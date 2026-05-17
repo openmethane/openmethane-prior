@@ -19,6 +19,7 @@
 import numpy as np
 import rioxarray as rxr
 
+from openmethane_prior.data_sources.inventory import inventory_domain_data_source
 from openmethane_prior.lib import (
     ConfiguredDataSource,
     DataSource,
@@ -59,12 +60,9 @@ def parse_ntlt_data_source(data_source: ConfiguredDataSource):
     return om_ntlt / inventory_ntlt.sum().item()
 
 
-def make_night_lights_source(inventory_domain_source: DataSource) -> DataSource:
-    """Build a DataSource for nighttime lights, with the inventory domain as
-    a dependency so its parsed Domain is available to the parser."""
-    return DataSource(
-        name="nighttime-lights",
-        url="https://openmethane.s3.amazonaws.com/prior/inputs/nasa-nighttime-lights.tiff",
-        parse=parse_ntlt_data_source,
-        data_sources=[inventory_domain_source],
-    )
+night_lights_data_source = DataSource(
+    name="nighttime-lights",
+    url="https://openmethane.s3.amazonaws.com/prior/inputs/nasa-nighttime-lights.tiff",
+    parse=parse_ntlt_data_source,
+    data_sources=[inventory_domain_data_source],
+)
