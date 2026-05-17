@@ -88,7 +88,7 @@ def process_emissions(sector: PriorSector, sector_config: PriorSectorConfig, pri
             / lonGfas.size
         )
     # now collect some domain information
-    domain_grid = config.domain_grid()
+    domain_grid = config.domain.grid
 
     indxPath = config.as_intermediate_file("GFAS_ind_x.p.gz")
     indyPath = config.as_intermediate_file("GFAS_ind_y.p.gz")

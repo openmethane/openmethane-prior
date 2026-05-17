@@ -22,6 +22,7 @@ import rioxarray as rxr
 from openmethane_prior.lib import (
     ConfiguredDataSource,
     DataSource,
+    Domain,
     regrid_data,
     remap_raster,
 )
@@ -29,30 +30,41 @@ from openmethane_prior.lib import (
 
 def parse_ntlt_data_source(data_source: ConfiguredDataSource):
     prior_config = data_source.prior_config
+    domain = prior_config.domain
+    inventory_domain: Domain = data_source.data_assets[0].data
+
     ntlData = rxr.open_rasterio(data_source.asset_path, masked=False)
 
     # sum over three bands
     ntlt = ntlData.sum(axis=0)
     np.nan_to_num(ntlt, copy=False)
 
-    om_ntlt = remap_raster(ntlt, prior_config.domain_grid())
+    om_ntlt = remap_raster(ntlt, domain.grid)
 
     # limit emissions to land points
-    inventory_mask_regridded = regrid_data(prior_config.inventory_dataset()['inventory_mask'], from_grid=prior_config.inventory_grid(), to_grid=prior_config.domain_grid())
+    inventory_mask_regridded = regrid_data(
+        inventory_domain.dataset["inventory_mask"],
+        from_grid=inventory_domain.grid,
+        to_grid=domain.grid,
+    )
     om_ntlt *= inventory_mask_regridded
 
     # now collect total nightlights across inventory domain
-    inventory_ntlt = remap_raster(ntlt, prior_config.inventory_grid())
+    inventory_ntlt = remap_raster(ntlt, inventory_domain.grid)
 
     # now mask to region of inventory
-    inventory_ntlt *= prior_config.inventory_dataset()['inventory_mask']
+    inventory_ntlt *= inventory_domain.dataset["inventory_mask"]
 
     # we want proportions of total for scaling emissions
     return om_ntlt / inventory_ntlt.sum().item()
 
 
-night_lights_data_source = DataSource(
-    name="nighttime-lights",
-    url="https://openmethane.s3.amazonaws.com/prior/inputs/nasa-nighttime-lights.tiff",
-    parse=parse_ntlt_data_source,
-)
+def make_night_lights_source(inventory_domain_source: DataSource) -> DataSource:
+    """Build a DataSource for nighttime lights, with the inventory domain as
+    a dependency so its parsed Domain is available to the parser."""
+    return DataSource(
+        name="nighttime-lights",
+        url="https://openmethane.s3.amazonaws.com/prior/inputs/nasa-nighttime-lights.tiff",
+        parse=parse_ntlt_data_source,
+        data_sources=[inventory_domain_source],
+    )

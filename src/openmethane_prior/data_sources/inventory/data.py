@@ -51,4 +51,3 @@ inventory_data_source = DataSource(
     data_sources=[unfccc_codes_data_source],
     parse=parse_inventory,
 )
-

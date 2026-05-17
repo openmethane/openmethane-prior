@@ -16,15 +16,17 @@
 # limitations under the License.
 #
 from __future__ import annotations
-from typing import Any, Callable
+from typing import Any, Callable, TYPE_CHECKING
 
 import attrs
 import os
 import pathlib
 import urllib.request
 
-from openmethane_prior.lib.config import PriorConfig
 from openmethane_prior.lib.data_manager.asset import DataAsset
+
+if TYPE_CHECKING:
+    from openmethane_prior.lib.config import PriorConfig
 
 
 def file_path_from_url(_self: DataSource, prior_config: PriorConfig) -> str:

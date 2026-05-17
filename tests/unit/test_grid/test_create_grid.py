@@ -3,8 +3,8 @@ import numpy as np
 from openmethane_prior.lib.grid.create_grid import create_grid_from_mcip, create_grid_from_domain
 
 
-def test_create_grid_from_domain(config, input_files):
-    test_domain = config.inventory_dataset()
+def test_create_grid_from_domain(config, input_files, data_manager):
+    test_domain = data_manager.get_asset(config.inventory_domain_source).data.dataset
     test_grid = create_grid_from_domain(test_domain)
 
     assert test_grid.dimensions == (test_domain.sizes["x"], test_domain.sizes["y"])
@@ -21,8 +21,8 @@ def test_create_grid_from_domain(config, input_files):
     assert test_grid.cell_area == test_domain.XCELL * test_domain.YCELL
 
 
-def test_create_grid_from_domain_coordinates(config, input_files):
-    test_domain = config.inventory_dataset()
+def test_create_grid_from_domain_coordinates(config, input_files, data_manager):
+    test_domain = data_manager.get_asset(config.inventory_domain_source).data.dataset
     test_grid = create_grid_from_domain(test_domain)
 
     # projection center coords for all cells in the domain

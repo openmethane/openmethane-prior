@@ -81,7 +81,7 @@ def process_emissions(  # noqa: PLR0915
         )
 
     # now collect some domain information
-    domain_grid = config.domain_grid()
+    domain_grid = config.domain.grid
 
     indxPath = config.as_intermediate_file("TERM_ind_x.p.gz")
     indyPath = config.as_intermediate_file("TERM_ind_y.p.gz")

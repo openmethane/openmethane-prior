@@ -191,7 +191,8 @@ def test_offshore_emission_sources(input_files, data_manager):
     # no duplicate check, as we allow duplicate geometries from NOPTA dataset
 
 
-def test_all_emission_sources(input_files, data_manager, config):
+def test_all_emission_sources(data_manager, resolved_config):
+    config = resolved_config
     end_date_end = config.end_date + datetime.timedelta(days=1)
     df = all_emission_sources(
         data_manager=data_manager,

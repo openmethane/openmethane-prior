@@ -1,2 +1,2 @@
 
-from openmethane_prior.data_sources.nightlights.nightlights import night_lights_data_source
+from openmethane_prior.data_sources.nightlights.nightlights import make_night_lights_source
