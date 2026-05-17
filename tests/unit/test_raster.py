@@ -2,7 +2,8 @@ import numpy as np
 import rioxarray as rxr
 import xarray as xr
 
-from openmethane_prior.data_sources.nightlights import make_night_lights_source
+from openmethane_prior.data_sources.inventory import inventory_domain_data_source
+from openmethane_prior.data_sources.nightlights import night_lights_data_source
 from openmethane_prior.lib.grid.grid import Grid
 from openmethane_prior.lib.raster import remap_raster
 
@@ -12,10 +13,9 @@ def test_remap_raster(config, input_files, data_manager, data_manager_fetch_only
     epsilon = 1e-5 # small number
     def maxloc(a): return np.unravel_index(a.argmax(), a.shape)
 
-    inventory_domain = data_manager.get_asset(config.inventory_domain_source).data
+    inventory_domain = data_manager.get_asset(inventory_domain_data_source).data
     domain_dataset = inventory_domain.dataset
     domain_grid = inventory_domain.grid
-    night_lights_data_source = make_night_lights_source(config.inventory_domain_source)
 
     lat = domain_dataset['lat']
     lon = domain_dataset['lon']

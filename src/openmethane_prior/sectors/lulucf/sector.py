@@ -21,7 +21,11 @@ import rasterio
 import rioxarray as rxr
 import xarray as xr
 
-from openmethane_prior.data_sources.inventory import get_sector_emissions_by_code, inventory_data_source
+from openmethane_prior.data_sources.inventory import (
+    get_sector_emissions_by_code,
+    inventory_data_source,
+    inventory_domain_data_source,
+)
 from openmethane_prior.data_sources.landuse import (
     alum_codes_for_sector,
     alum_sector_mapping_data_source,
@@ -68,7 +72,7 @@ def process_emissions(
     dataBand = rasterio.open(landuse_asset.path, engine='rasterio').read()
     dataBand = dataBand.squeeze()
 
-    inventory_domain = sector_config.data_manager.get_asset(config.inventory_domain_source).data
+    inventory_domain = sector_config.data_manager.get_asset(inventory_domain_data_source).data
     inventory_mask_regridded = regrid_data(
         inventory_domain.dataset['inventory_mask'],
         from_grid=inventory_domain.grid,

@@ -18,6 +18,7 @@
 
 from .data import (
     inventory_data_source,
+    inventory_domain_data_source,
     qld_inventory_data_source,
     unfccc_codes_data_source,
 )

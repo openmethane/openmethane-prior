@@ -34,7 +34,6 @@ def config_params(start_date, end_date):
         start_date=start_date,
         end_date=end_date,
         domain_path="https://openmethane.s3.amazonaws.com/domains/au-test/v1/domain.au-test.nc",
-        inventory_domain_path="https://openmethane.s3.amazonaws.com/domains/aust10km/v1/domain.aust10km.nc",
     )
 
 
@@ -58,6 +57,25 @@ def config(tmp_path_factory, config_params, cache_dir) -> PriorConfig:
 
 
 @pytest.fixture()
+def aust10km_config(tmp_path_factory, start_date, end_date, cache_dir) -> PriorConfig:
+    """Full domain configuration, for tests or sectors where the small
+    au-test domain isn't sufficient to test data or behaviour."""
+    data_dir = tmp_path_factory.mktemp("data")
+    config = PriorConfig(
+        start_date=start_date,
+        end_date=end_date,
+        domain_path="https://openmethane.s3.amazonaws.com/domains/aust10km/v1/domain.aust10km.nc",
+        input_path=data_dir / "inputs",
+        intermediates_path=data_dir / "intermediates",
+        output_path=data_dir / "outputs",
+        input_cache=cache_dir,
+    )
+    config.prepare_paths()
+    config.load_cached_inputs()
+    return config
+
+
+@pytest.fixture()
 def input_files(config):
     """This fixture isn't required for tests that must use input files, but it
     will cause input files to be loaded from a shared cache to prevent
@@ -71,7 +89,6 @@ def input_files(config):
     # fetch configured domains
     dm = DataManager(data_path=config.input_path, prior_config=config, fetch_only=True)
     dm.get_asset(config.domain_source)
-    dm.get_asset(config.inventory_domain_source)
 
     yield
 
