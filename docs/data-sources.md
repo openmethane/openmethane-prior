@@ -47,6 +47,11 @@ ANGA, and non-CH4 emissions are discarded, resulting in per-year, per-sector
 CH4 emissions which can be used as the basis for the total emissions in
 anthropogenic sectors.
 
+Alongside the inventory data is an inventory domain, which describes the
+geographic extent where inventory emissions occur. This uses the Open Methane
+[`aust10km` domain](https://openmethane.s3.amazonaws.com/domains/aust10km/v1/domain.aust10km.nc)
+`inventory_mask` which was developed for this purpose.
+
 
 ## UNFCCC CRT categories 
 
