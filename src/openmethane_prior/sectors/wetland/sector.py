@@ -84,7 +84,7 @@ def make_wetland_climatology(sector_config: PriorSectorConfig):  # noqa: PLR0915
         )
 
     # now collect some domain information
-    domain_grid = config.domain.grid
+    domain_grid = config.domain().grid
 
     indxPath = config.as_intermediate_file("WETLAND_ind_x.p.gz")
     indyPath = config.as_intermediate_file("WETLAND_ind_y.p.gz")

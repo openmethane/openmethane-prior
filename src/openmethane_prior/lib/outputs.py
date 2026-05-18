@@ -45,7 +45,7 @@ def convert_to_timescale(emission, cell_area):
 
 
 def create_output_dataset(config: PriorConfig) -> xr.Dataset:
-    domain_ds = config.domain.dataset
+    domain_ds = config.domain().dataset
     period_start = config.start_date
     period_end = config.end_date
 

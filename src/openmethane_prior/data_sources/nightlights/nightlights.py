@@ -31,7 +31,7 @@ from openmethane_prior.lib import (
 
 def parse_ntlt_data_source(data_source: ConfiguredDataSource):
     prior_config = data_source.prior_config
-    domain = prior_config.domain
+    domain = prior_config.domain()
     inventory_domain: Domain = data_source.data_assets[0].data
 
     ntlData = rxr.open_rasterio(data_source.asset_path, masked=False)

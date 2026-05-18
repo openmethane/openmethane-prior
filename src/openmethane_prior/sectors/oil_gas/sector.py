@@ -52,7 +52,7 @@ def process_emissions(sector: AustraliaPriorSector, sector_config: PriorSectorCo
     # distribute sector emissions evenly to each active petroleum well
     emission_sources_df["emissions_quantity"] = sector_total_emissions / len(emission_sources_df)
 
-    domain_grid = config.domain.grid
+    domain_grid = config.domain().grid
 
     methane = np.zeros(domain_grid.shape)
 

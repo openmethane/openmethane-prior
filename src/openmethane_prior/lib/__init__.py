@@ -23,7 +23,7 @@ from .data_manager.manager import (
     DataManager,
     DataSource,
 )
-from .grid.domain import Domain, parse_domain
+from .grid.domain import Domain
 from .grid.regrid import regrid_data
 from .outputs import add_sector, convert_to_timescale
 from .create_prior import create_prior

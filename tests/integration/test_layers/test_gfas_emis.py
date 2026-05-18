@@ -44,7 +44,7 @@ def test_gfas_emis(config, input_files, data_manager):  # test totals for GFAS e
             )
             / lonGfas.size
         )
-    domain_ds = config.domain_dataset()
+    domain_ds = config.domain().dataset
     LATD = domain_ds.variables["LATD"].values.squeeze()
     LOND = domain_ds.variables["LOND"].values.squeeze()
     indLat = (latGfas > LATD.min()) & (latGfas < LATD.max())

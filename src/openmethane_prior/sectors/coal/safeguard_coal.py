@@ -41,7 +41,7 @@ def allocate_safeguard_facility_emissions(
     facility_locations_asset: DataAsset,
     reference_data_asset: DataAsset,
 ):
-    domain_grid = config.domain.grid
+    domain_grid = config.domain().grid
 
     sector_facilities = filter_facilities(
         facility_df=safeguard_facilities_asset.data,

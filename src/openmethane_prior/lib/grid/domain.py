@@ -18,6 +18,7 @@
 import attrs
 import pathlib
 import pyproj
+from typing import Self
 import xarray as xr
 
 from .create_grid import create_grid_from_dataset
@@ -39,12 +40,9 @@ class Domain:
     def crs(self) -> pyproj.CRS:
         return self.grid.projection.crs
 
-
-def parse_domain(domain_path: str | pathlib.Path) -> Domain:
-    """Open a domain NetCDF and build a Domain.
-
-    Handles both CF-convention domain files and the legacy MCIP format.
-    """
-    domain_ds = xr.open_dataset(domain_path)
-    grid = create_grid_from_dataset(domain_ds)
-    return Domain(dataset=domain_ds, grid=grid)
+    @classmethod
+    def from_file(cls, file_path: str | pathlib.Path) -> Self:
+        """Open a domain NetCDF and build a Domain."""
+        domain_ds = xr.open_dataset(file_path)
+        grid = create_grid_from_dataset(domain_ds)
+        return cls(dataset=domain_ds, grid=grid)

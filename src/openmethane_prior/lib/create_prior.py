@@ -15,9 +15,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
-import attrs
-
 from .config import PriorConfig
 from .data_manager.manager import DataManager
 from .outputs import create_output_dataset, add_ch4_total, add_sector
@@ -45,18 +42,10 @@ def create_prior(config: PriorConfig, sectors: list[PriorSector]):
 
     data_manager = DataManager(data_path=config.input_path, prior_config=config)
 
-    # Resolve the domain before any DataSource that depends on the domain CRS
-    # is fetched. parse_domain has no such dependency, so this is safe.
-    config = attrs.evolve(config, domain=data_manager.get_asset(config.domain_source).data)
-    data_manager.prior_config = config
-
     # Initialise the output dataset based on the domain provided in config
     prior_ds = create_output_dataset(config)
 
-    sector_config = PriorSectorConfig(
-        prior_config=config,
-        data_manager=data_manager,
-    )
+    sector_config = PriorSectorConfig(prior_config=config, data_manager=data_manager)
 
     for sector in sectors:
         # all sector modules must implement a create_estimate method

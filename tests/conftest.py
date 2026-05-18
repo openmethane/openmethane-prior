@@ -6,8 +6,6 @@ import pytest
 from typing import Generator
 import xarray as xr
 
-import attrs
-
 from openmethane_prior.lib import create_prior
 from openmethane_prior.lib.config import PriorConfig
 from openmethane_prior.lib.data_manager.manager import DataManager
@@ -68,8 +66,7 @@ def input_files(config):
     config.load_cached_inputs()
 
     # fetch configured domains
-    dm = DataManager(data_path=config.input_path, prior_config=config, fetch_only=True)
-    dm.get_asset(config.domain_source)
+    config.domain()
 
     yield
 
@@ -81,23 +78,9 @@ def input_files(config):
 
 
 @pytest.fixture()
-def data_manager(config, input_files) -> DataManager:
-    """DataManager with the domain resolved and attached to prior_config.
+def data_manager(config) -> DataManager:
+    return DataManager(data_path=config.input_path, prior_config=config)
 
-    Implicitly depends on input_files so the domain file is on disk before
-    parsing. Tests that fetch geo DataSources need this resolved config
-    because their parsers reach prior_config.domain.crs.
-    """
-    dm = DataManager(data_path=config.input_path, prior_config=config)
-    domain = dm.get_asset(config.domain_source).data
-    dm.prior_config = attrs.evolve(config, domain=domain)
-    return dm
-
-
-@pytest.fixture()
-def resolved_config(data_manager) -> PriorConfig:
-    """Config with the domain DataSource resolved and attached."""
-    return data_manager.prior_config
 
 @pytest.fixture()
 def data_manager_fetch_only(config) -> DataManager:
@@ -131,7 +114,7 @@ def end_date() -> datetime.date:
 
 
 @pytest.fixture()
-def input_domain(data_manager) -> Generator[xr.Dataset, None, None]:
+def input_domain(config, input_files) -> Generator[xr.Dataset, None, None]:
     """
     Get an input domain
 
@@ -139,7 +122,7 @@ def input_domain(data_manager) -> Generator[xr.Dataset, None, None]:
     -------
         The input domain as an xarray dataset
     """
-    yield data_manager.prior_config.domain.dataset
+    yield config.domain().dataset
 
 
 @pytest.fixture(scope="session")
