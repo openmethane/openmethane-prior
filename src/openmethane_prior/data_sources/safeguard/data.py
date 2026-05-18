@@ -42,6 +42,7 @@ safeguard_mechanism_csv_columns = [
     "accus_deemed_surrendered", # ACCUs deemed surrendered
     "accus_surrendered", # ACCUs surrendered
     "smcs_surrendered", # SMCs surrendered
+    "units_relinquished", # Units relinquished
     "net_emissions", # Net emissions number
     "net_position", # Net position number
     "smcs_issued", # SMCs Issued
@@ -86,7 +87,6 @@ def parse_safeguard_csv(data_source: ConfiguredDataSource):
     returning only the data columns useful for methane estimation."""
     safeguard_rows_df = pd.read_csv(
         filepath_or_buffer=data_source.asset_path,
-        encoding="cp1252", # CER distributes the CSV in windows-1252 encoding
         header=0,
         names=safeguard_mechanism_csv_columns,
         usecols=["facility_name", "state", "anzsic", "co2e_ch4"],  # from safeguard_mechanism_csv_columns
