@@ -3,13 +3,14 @@ from attrs import field, frozen
 from attrs.converters import default_if_none
 import datetime
 from environs import Env
+from functools import cache
 import os
 import pathlib
 import shutil
 from typing import Self
+import urllib.request
 
-from .data_manager.source import DataSource
-from .grid.domain import Domain, parse_domain
+from .grid.domain import Domain
 
 
 @frozen
@@ -53,11 +54,6 @@ class PriorConfig:
     input_cache: pathlib.Path = None
     """If provided, a local path where remote inputs can be cached."""
 
-    domain: Domain | None = None
-    """The parsed domain. Populated after the domain DataSource has been
-    fetched and parsed by the DataManager. Must be resolved before any
-    DataSource whose parser depends on the domain CRS is fetched."""
-
     # __attrs_post_init__ is called automatically after the __init__ generated
     # by attrs has run.
     # @see: https://www.attrs.org/en/stable/init.html
@@ -98,15 +94,17 @@ class PriorConfig:
             self.input_cache.mkdir(parents=True, exist_ok=True)
             shutil.copytree(src=self.input_path, dst=self.input_cache, dirs_exist_ok=True)
 
+    @cache
+    def domain(self) -> Domain:
+        """Fetch and parse the domain file to return a readable Dataset and
+        Grid definition."""
+        domain_path = fetch_domain(self.domain_path, self.input_path)
+        return Domain.from_file(domain_path)
+
     @property
-    def domain_source(self) -> DataSource:
-        """DataSource based on the path or URL supplied in the domain_path."""
-        return DataSource(
-            name="domain",
-            # basic_fetch supports file path or url
-            url=str(self.domain_path),
-            parse=lambda data_source: parse_domain(data_source.asset_path),
-        )
+    def crs(self):
+        """Return the CRS used by the domain dataset"""
+        return self.domain().crs
 
     @property
     def output_file(self):
@@ -144,6 +142,20 @@ class PriorConfig:
             output_filename=env.str("OUTPUT_FILENAME", None),
             sectors=sectors if len(sectors) > 0 else None,
         )
+
+
+def fetch_domain(
+    path_or_url: pathlib.Path | str,
+    input_path: pathlib.Path,
+) -> pathlib.Path:
+    domain_path = input_path / os.path.basename(str(path_or_url))
+    if not os.path.exists(domain_path):
+        save_path, response = urllib.request.urlretrieve(
+            url=str(path_or_url),
+            filename=domain_path,
+        )
+    return domain_path
+
 
 def parse_cli_args():
     """

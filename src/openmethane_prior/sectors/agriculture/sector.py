@@ -76,7 +76,7 @@ def process_emissions(
     inventory_mask_regridded = regrid_data(
         inventory_domain.dataset['inventory_mask'],
         from_grid=inventory_domain.grid,
-        to_grid=config.domain.grid,
+        to_grid=config.domain().grid,
     )
 
     # create a mask of pixels which match the sector code
@@ -84,7 +84,7 @@ def process_emissions(
     sector_xr = xr.DataArray(sector_mask, coords={ 'y': lu_y, 'x': lu_x  })
 
     # now aggregate to coarser resolution of the domain grid
-    sector_gridded = remap_raster(sector_xr, config.domain.grid, input_crs=lu_crs)
+    sector_gridded = remap_raster(sector_xr, config.domain().grid, input_crs=lu_crs)
 
     # apply inventory mask before counting any land use
     sector_gridded *= inventory_mask_regridded

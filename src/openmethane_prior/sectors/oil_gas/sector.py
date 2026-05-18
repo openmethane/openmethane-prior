@@ -179,7 +179,7 @@ def process_emissions(sector: AustraliaPriorSector, sector_config: PriorSectorCo
     logger.debug(f"{unallocated_emission_sources_mask.sum()} / {len(emission_sources_df)} unallocated sources ({100 * unallocated_emission_sources_mask.sum() / len(emission_sources_df):.1f}%)")
     logger.debug(f"{unallocated_national_emissions / 1e6:.2f} / {sector_total_emissions / 1e6:.2f} kt unallocated emissions ({100 * unallocated_national_emissions / sector_total_emissions:.1f}%)")
 
-    domain_grid = config.domain.grid
+    domain_grid = config.domain().grid
 
     # allocate all the collected emissions to the grid
     methane_nd = np.zeros(domain_grid.shape)

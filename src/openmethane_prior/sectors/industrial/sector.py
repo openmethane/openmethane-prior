@@ -18,8 +18,8 @@
 
 import xarray as xr
 
-from openmethane_prior.data_sources.inventory import get_sector_emissions_by_code, inventory_data_source
 from openmethane_prior.data_sources.nightlights import night_lights_data_source
+from openmethane_prior.data_sources.inventory import get_sector_emissions_by_code, inventory_data_source
 from openmethane_prior.lib import (
     kg_to_period_cell_flux,
     logger,

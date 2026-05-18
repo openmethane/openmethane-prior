@@ -10,10 +10,9 @@ from openmethane_prior.sectors.coal.data import coal_facilities_data_source
 from openmethane_prior.sectors.coal.safeguard_coal import allocate_safeguard_facility_emissions
 
 
-def test_safeguard_allocate_emissions(resolved_config, data_manager):
-    config = resolved_config
+def test_safeguard_allocate_emissions(config, input_files, data_manager):
     # we will need to test with configs in the SGM period and outside
-    config_params = attrs.asdict(config, recurse=False)
+    config_params = attrs.asdict(config)
     del config_params["start_date"]
     del config_params["end_date"]
 
@@ -39,7 +38,7 @@ def test_safeguard_allocate_emissions(resolved_config, data_manager):
     assert len(mines_capcoal_lonlat) == 1
     capcoal_lonlat = mines_capcoal_lonlat.iloc[0]
     assert (capcoal_lonlat["lon"], capcoal_lonlat["lat"]) == (148.580506, -22.990997)
-    assert config.domain.grid.lonlat_to_cell_index(capcoal_lonlat["lon"], capcoal_lonlat["lat"]) == (4, 8, True)
+    assert config.domain().grid.lonlat_to_cell_index(capcoal_lonlat["lon"], capcoal_lonlat["lat"]) == (4, 8, True)
 
     # run the test
     facilities, locations, gridded_emissions = allocate_safeguard_facility_emissions(
@@ -52,7 +51,7 @@ def test_safeguard_allocate_emissions(resolved_config, data_manager):
 
     # convert facility annual emissions to kg/m2/s
     expected_emissions = (sgm_capcoal_facility.iloc[0]["ch4_kg"]
-                          / config.domain.grid.cell_area
+                          / config.domain().grid.cell_area
                           / (365 * 24 * 60 * 60))
 
     # check the emissions are allocated to the right grid cell

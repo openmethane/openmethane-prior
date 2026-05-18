@@ -38,7 +38,6 @@ def test_prior_config_defaults(start_date, end_date):
     assert test_config.intermediates_path == pathlib.Path("data/intermediates")
     assert test_config.output_filename == "prior-emissions.nc"
     assert test_config.input_cache is None
-    assert test_config.domain is None
 
     test_config_none = PriorConfig(
         domain_path="domain.nc",
@@ -73,9 +72,6 @@ def test_prior_config_full(tmp_path: pathlib.Path, start_date, end_date):
     assert test_config.as_intermediate_file("test.nc") == tmp_path / "inter" / "test.nc"
 
     assert test_config.output_file == tmp_path / "out" / "out.nc"
-
-    assert test_config.domain_source.name == "domain"
-    assert test_config.domain_source.url == "domain.nc"
 
 
 def test_prior_config_from_env(reset_env, start_date, end_date):

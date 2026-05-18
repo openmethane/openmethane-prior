@@ -45,7 +45,7 @@ def process_emissions(
     with xr.open_dataset(livestock_asset.path) as lss:
         ls = lss.load()
 
-    domain_grid = config.domain.grid
+    domain_grid = config.domain().grid
 
     # Re-project into domain coordinates
     # - create meshgrids of the lats and lons

@@ -60,7 +60,7 @@ def process_emissions(sector: PriorSector, sector_config: PriorSectorConfig, pri
     electricity_facilities_asset = sector_config.data_manager.get_asset(electricity_facilities_data_source)
     electricity_facilities_records = electricity_facilities_asset.data.to_dict(orient="records")
 
-    domain_grid = config.domain.grid
+    domain_grid = config.domain().grid
 
     totalCapacity = sum(item["capacity"] for item in electricity_facilities_records)
 

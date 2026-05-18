@@ -7,9 +7,8 @@ from openmethane_prior.lib.sector.sector import PriorSector
 
 
 
-def test_create_output_dataset(resolved_config):
-    config = resolved_config
-    domain_ds = config.domain.dataset
+def test_create_output_dataset(config, input_files):
+    domain_ds = config.domain().dataset
 
     assert not config.output_file.exists()
 
@@ -125,8 +124,7 @@ def test_expand_sector_dims_add_time_steps():
     assert list(expanded[2][0][0]) == [1, 2]
     assert list(expanded[2][0][1]) == [4, 5]
 
-def test_add_sector_defaults(resolved_config):
-    config = resolved_config
+def test_add_sector_defaults(config, input_files):
     test_ds = create_output_dataset(config)
 
     sector_meta = PriorSector(
@@ -134,7 +132,7 @@ def test_add_sector_defaults(resolved_config):
         emission_category="natural",
         create_estimate=lambda a, b, c: None
     )
-    sector_shape = (test_ds.sizes["time"], 1, config.domain.grid.shape[0], config.domain.grid.shape[1])
+    sector_shape = (test_ds.sizes["time"], 1, config.domain().grid.shape[0], config.domain().grid.shape[1])
     sector_data = np.zeros(sector_shape)
 
     assert sector_meta.name not in test_ds
@@ -157,8 +155,7 @@ def test_add_sector_defaults(resolved_config):
     assert test_ds[sector_var].attrs["grid_mapping"] == test_ds["land_mask"].attrs["grid_mapping"]
 
 
-def test_add_sector_meta(resolved_config):
-    config = resolved_config
+def test_add_sector_meta(config, input_files):
     test_ds = create_output_dataset(config)
 
     sector_meta = PriorSector(
@@ -169,7 +166,7 @@ def test_add_sector_meta(resolved_config):
         cf_long_name="test long name",
         create_estimate=lambda a, b, c: None
     )
-    sector_shape = (test_ds.sizes["time"], 1, config.domain.grid.shape[0], config.domain.grid.shape[1])
+    sector_shape = (test_ds.sizes["time"], 1, config.domain().grid.shape[0], config.domain().grid.shape[1])
     sector_data = np.zeros(sector_shape)
 
     assert sector_meta.name not in test_ds

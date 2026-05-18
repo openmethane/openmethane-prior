@@ -64,7 +64,7 @@ def all_emission_sources(
         nsw_titles_da=nsw_titles_da,
     )
     nsw_df["state"] = "NSW"
-    nsw_df = normalise_emission_source_df(nsw_df, prior_config.domain.crs)
+    nsw_df = normalise_emission_source_df(nsw_df, prior_config.crs)
     logger.debug(f"found {len(nsw_df)} NSW sources in {len(nsw_df['group_id'].unique())} titles")
 
     nt_wells_da = data_manager.get_asset(nt_wells_data_source)
@@ -76,7 +76,7 @@ def all_emission_sources(
         nt_titles_da=nt_titles_da,
     )
     nt_df["state"] = "NT"
-    nt_df = normalise_emission_source_df(nt_df, prior_config.domain.crs)
+    nt_df = normalise_emission_source_df(nt_df, prior_config.crs)
     logger.debug(f"found {len(nt_df)} NT sources in {len(nt_df['group_id'].unique())} titles")
 
     qld_boreholes_da = data_manager.get_asset(qld_boreholes_data_source)
@@ -88,7 +88,7 @@ def all_emission_sources(
         qld_leases_da=qld_leases_da,
     )
     qld_df["state"] = "QLD"
-    qld_df = normalise_emission_source_df(qld_df, prior_config.domain.crs)
+    qld_df = normalise_emission_source_df(qld_df, prior_config.crs)
     logger.debug(f"found {len(qld_df)} QLD sources in {len(qld_df['group_id'].unique())} titles")
 
     sa_wells_da = data_manager.get_asset(sa_wells_data_source)
@@ -100,7 +100,7 @@ def all_emission_sources(
         sa_production_da=sa_production_da,
     )
     sa_df["state"] = "SA"
-    sa_df = normalise_emission_source_df(sa_df, prior_config.domain.crs)
+    sa_df = normalise_emission_source_df(sa_df, prior_config.crs)
     logger.debug(f"found {len(sa_df)} SA sources in {len(sa_df['group_id'].unique())} titles")
 
     wa_wells_da = data_manager.get_asset(wa_wells_data_source)
@@ -112,7 +112,7 @@ def all_emission_sources(
         wa_titles_da=wa_titles_da,
     )
     wa_df["state"] = "WA"
-    wa_df = normalise_emission_source_df(wa_df, prior_config.domain.crs)
+    wa_df = normalise_emission_source_df(wa_df, prior_config.crs)
     logger.debug(f"found {len(wa_df)} WA sources in {len(wa_df['group_id'].unique())} titles")
 
     states_df: gpd.GeoDataFrame = pd.concat([
@@ -131,7 +131,7 @@ def all_emission_sources(
         offshore_wells_da=offshore_wells_da,
         offshore_titles_da=offshore_titles_da,
     )
-    offshore_df = normalise_emission_source_df(offshore_df, prior_config.domain.crs)
+    offshore_df = normalise_emission_source_df(offshore_df, prior_config.crs)
 
     # NOPTA will have some wells that are already provided by state datasets,
     # which we must avoid "double counting"

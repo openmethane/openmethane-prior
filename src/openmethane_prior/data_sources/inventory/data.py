@@ -20,11 +20,11 @@ import pandas as pd
 
 from openmethane_prior.lib import (
     DataSource,
+    Domain,
     ConfiguredDataSource,
     logger,
 )
 from openmethane_prior.lib.data_manager.parsers import parse_csv
-from openmethane_prior.lib.grid.domain import parse_domain, Domain
 
 from .inventory import create_inventory_df
 
@@ -62,12 +62,12 @@ qld_inventory_data_source = DataSource(
 )
 
 
-def parse_domain_data_source(data_source: ConfiguredDataSource) -> Domain:
-    return parse_domain(data_source.asset_path)
+def parse_domain(data_source: ConfiguredDataSource) -> Domain:
+    return Domain.from_file(data_source.asset_path)
 
 
 inventory_domain_data_source = DataSource(
     name="AU-inventory-domain",
     url="https://openmethane.s3.amazonaws.com/domains/aust10km/v1/domain.aust10km.nc",
-    parse=parse_domain_data_source,
+    parse=parse_domain,
 )

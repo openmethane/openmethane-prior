@@ -41,7 +41,7 @@ def parse_geo(data_source: ConfiguredDataSource, source_crs: pyproj.CRS = None):
 
     # convert the geometries into the prior projection to ensure downstream
     # comparisons are done using the same coordinate system
-    geo_df = geo_df.to_crs(data_source.prior_config.domain.crs)
+    geo_df = geo_df.to_crs(data_source.prior_config.crs)
 
     return geo_df
 
@@ -78,7 +78,7 @@ def parse_geo_xlsx(
 
         # convert the geometries into the prior projection to ensure downstream
         # comparisons are done using the same coordinate system
-        geo_df = geo_df.to_crs(data_source.prior_config.domain.crs)
+        geo_df = geo_df.to_crs(data_source.prior_config.crs)
 
         return geo_df
 
