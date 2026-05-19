@@ -1,13 +1,13 @@
 import datetime
-from math import nan
-
 import geopandas as gpd
 import numpy as np
 import pandas as pd
 import shapely
 
-from openmethane_prior.sectors.oil_gas.emission_source import normalise_emission_source_df, \
-    allocate_emissions_to_sources
+from openmethane_prior.sectors.oil_gas.emission_source import (
+    normalise_emission_source_df,
+    allocate_emissions_to_sources,
+)
 
 
 def test_normalise_emission_source():
@@ -76,3 +76,32 @@ def test_allocate_emissions_to_sources_additive():
     assert df["emissions_quantity"].sum() == 3 + 2.1
     # allocated sources get an equal share of emissions
     assert list(df[mask]["emissions_quantity"]) == [3.1, 1, 1]
+
+
+def test_allocate_emissions_to_sources_facilities():
+    df = pd.DataFrame(
+        data=[
+            (0, "drillhole-csg", True),
+            (0, "drillhole-csg", True),
+            (0, "drillhole-csg", True),
+            (0, "facility-unknown", True),
+            (0, None, True),
+            (0, "drillhole-csg", False),
+            (0, "facility-unknown", False),
+        ],
+        columns=["emissions_quantity", "site_type", "masked"],
+    )
+
+    allocate_emissions_to_sources(df, df["masked"], 12)
+
+    np.testing.assert_approx_equal(df["emissions_quantity"].sum(), 12)
+
+    assert list(df[df["masked"]]["emissions_quantity"]) == [2, 2, 2, 3, 3]
+
+    # equal emissions allocated to the set of drillholes and the set of
+    # facilities
+    drillholes_mask = df["site_type"] == "drillhole-csg"
+    np.testing.assert_approx_equal(
+        df[drillholes_mask]["emissions_quantity"].sum(),
+        df[~drillholes_mask]["emissions_quantity"].sum()
+    )
