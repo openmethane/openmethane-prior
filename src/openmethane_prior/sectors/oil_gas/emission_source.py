@@ -90,6 +90,24 @@ def allocate_emissions_to_sources(
     is_nan = pd.isna(sources_df["emissions_quantity"])
     sources_df.loc[sources_mask & is_nan, "emissions_quantity"] = 0
 
+    # divide the selected sources into drillholes and other facilities
+    drillholes_mask = sources_mask \
+                      & ~pd.isna(sources_df["site_type"]) \
+                      & sources_df["site_type"].str.startswith("drillhole")
+    facilities_mask = sources_mask & ~drillholes_mask
+
+    # give each source an equal weighting when distributing the emissions
+    sources_weight = sources_mask * 1.0
+
+    # when there's a mix of drillholes and facilities, give the set of
+    # facilities an equal weight to the set of drillholes. this naive
+    # distribution assumes that every unit of extracted resource generates
+    # emissions at the point of extraction and at least one facility.
+    if drillholes_mask.sum() > 0 and facilities_mask.sum() > 0:
+        sources_weight[facilities_mask] = drillholes_mask.sum() / facilities_mask.sum()
+
+    # turn weight into a proportion of the total
+    sources_weight /= sources_weight.sum()
+
     # naively allocate the emissions across each emission source equally
-    # TODO: apply weighting to emissions distribution based on site_type
-    sources_df.loc[sources_mask, "emissions_quantity"] += emission_mass / sources_mask.sum()
+    sources_df["emissions_quantity"] += sources_weight * emission_mass
