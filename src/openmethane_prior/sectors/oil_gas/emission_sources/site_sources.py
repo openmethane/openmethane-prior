@@ -91,18 +91,26 @@ def oil_gas_site_emission_sources(
         anzsic_codes=["070", "170"],
     )
 
-    # TODO find a way not to hard-code 250m distance threshold
-    crs_units = set([axis.unit_name for axis in npi_df.crs.coordinate_system.axis_list])
+    _DUPLICATE_THRESHOLD_METERS = 250
+
+    # Reproject to a meter-based CRS if needed so the threshold stays in meters
+    # regardless of the domain CRS. Only indices are used from the join result.
+    crs_units = {axis.unit_name for axis in npi_df.crs.coordinate_system.axis_list}
     if crs_units != {"metre"}:
-        raise ValueError("CRS must use meter units")
+        meter_crs = "EPSG:3577"  # GDA94 / Australian Albers
+        npi_for_join = npi_df.to_crs(meter_crs)
+        sites_for_join = sites_df.to_crs(meter_crs)
+    else:
+        npi_for_join = npi_df
+        sites_for_join = sites_df
 
     # locate NPI facilities within 250m of sites already accounted for in the
     # oil and gas sites dataset, so they don't get counted twice
     npi_duplicate_df = gpd.sjoin_nearest(
-        npi_df,
-        sites_df,
+        npi_for_join,
+        sites_for_join,
         how="inner",
-        max_distance=250, # 250m, assumes the domain CRS is in meters
+        max_distance=_DUPLICATE_THRESHOLD_METERS,
     )
 
     # remove npi facilities within 250m of a site from our other dataset
