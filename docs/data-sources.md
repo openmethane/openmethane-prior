@@ -151,6 +151,26 @@ page by selecting:
 - Download the Australia CSV package
 
 
+## Australian National Pollutant Inventory
+
+The Australian [National Pollutant Inventory](https://www.dcceew.gov.au/environment/protection/npi)
+provides a public dataset containing the locations of industrial facilities
+that emit toxic or harmful pollutants into the environment. They track a
+variety of harmful substances, and organisations are required to quantify and
+report any emissions of these tracked substances.
+
+Although the NPI doesn't include greenhouse gases such as methane, the location
+of industrial facilities in each ANZSIC sector is still a valuable resource
+for spatialising emissions within a particular industry.
+
+In addition to the facility dataset,
+[NPI data](https://www.dcceew.gov.au/environment/protection/npi/data) also
+includes emission data, which includes volumes of each emitted substance at
+each facility within each reporting period. This currently isn't used in the
+prior, but may prove useful in the future, if we can identify any tracked
+substances which can act as a proxy for methane emission.
+
+
 # Data Sources
 
 ## Sector: Livestock
@@ -314,7 +334,9 @@ spatialised according to the [Land Use of Australia](#Land-Use-of-Australia) dat
 Oil and gas emissions reported in the
 [Australian UNFCCC Inventory](#Australian-UNFCCC-Inventory)
 are spatialised according to locations of oil and gas boreholes/wells which lie
-within petroleum titles/leases that were active during the period of interest.
+within petroleum titles/leases that were active during the period of interest,
+and sites and facilities in ANZSIC sectors associated with the oil and gas
+industries.
 
 ### Sources
 
@@ -339,6 +361,10 @@ within petroleum titles/leases that were active during the period of interest.
 - Offshore datasets:
   - [National Offshore Petroleum Information Management System (NOPIMS)](https://www.nopta.gov.au/maps-and-public-data/nopims-info.html)
   - [National Electronic Approvals Tracking System](https://public.neats.nopta.gov.au/)
+- TSI Oil and Gas facilities
+  - dataset created for Open Methane by researchers at The Superpower Institute
+    for the purpose of locating sites that comprise Safeguard Mechanism facilities
+- [National Pollutant Inventory](#australian-national-pollutant-inventory)
 
 Locations of every borehole/drillhole/well in the public datasets from NSW, NT,
 QLD, SA, WA and NOPTA are correlated with petroleum production titles and
@@ -372,14 +398,7 @@ different regions (WA vs NSW) or in different infrastructure (onshore vs
 offshore) are likely to have very different emission profiles. Until we have
 solid evidence of what these profiles might be, we cannot model them.
 
-3. Refineries and pipelines
-
-Several types of major infrastructure are currently missing from this approach:
-refineries and pipelines. This is a major omission, as there is reasonable
-suspicion that the majority of emissions occur at processing facilities. We
-hope to add these facilities at a later date.
-
-4. Missing regions
+3. Missing regions
 
 - Victoria
   - oil and gas extraction currently entirely offshore, present in NOPTA dataset

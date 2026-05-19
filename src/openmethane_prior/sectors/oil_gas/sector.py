@@ -75,7 +75,10 @@ sector = AustraliaPriorSector(
     name="oil_gas",
     emission_category="anthropogenic",
     unfccc_categories=["1.B.2"], # Fugitive emissions from fuels, Oil and Natural Gas
-    anzsic_codes=["07"], # Oil and Gas Extraction
+    anzsic_codes=[
+        "07", # Oil and Gas Extraction
+        "17", # Petroleum and Coal Product Manufacturing
+    ],
     cf_standard_name="extraction_production_and_transport_of_fuel",
     create_estimate=process_emissions,
 )

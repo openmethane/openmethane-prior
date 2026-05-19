@@ -215,6 +215,6 @@ def rows_in_period(
     period_end = datetime.datetime.combine(date=end_date + datetime.timedelta(days=1), time=midnight)
 
     return df[
-        (df[start_field] <= np.datetime64(period_end))
+        ((np.isnat(df[start_field])) | (df[start_field] <= np.datetime64(period_end)))
         & ((np.isnat(df[end_field])) | (df[end_field] >= np.datetime64(period_start)))
     ]

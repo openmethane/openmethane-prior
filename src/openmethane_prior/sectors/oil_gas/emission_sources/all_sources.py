@@ -18,6 +18,7 @@
 import geopandas as gpd
 import pandas as pd
 
+from openmethane_prior.data_sources.npi import npi_facilities_data_source
 from openmethane_prior.lib import (
     logger,
     DataManager,
@@ -30,10 +31,12 @@ from .nt_sources import nt_emission_sources
 from .offshore_sources import offshore_emission_sources
 from .qld_sources import qld_emission_sources
 from .sa_sources import sa_emission_sources
+from .site_sources import oil_gas_site_emission_sources
 from .wa_sources import wa_emission_sources
 from ..data.nopta import nopta_titles_data_source, nopta_wells_data_source
 from ..data.nsw_geo import nsw_drillholes_data_source, nsw_titles_data_source
 from ..data.nt_geo import nt_titles_data_source, nt_wells_data_source
+from ..data.oil_gas_sites import oil_gas_sites_data_source
 from ..data.qld_gis import qld_boreholes_data_source, qld_leases_data_source
 from ..data.sa_wells import sa_wells_data_source, sa_wells_production_data_source
 from ..data.wa_gis import wa_titles_data_source, wa_wells_data_source
@@ -133,9 +136,23 @@ def all_emission_sources(
     offshore_new = offshore_df[~offshore_df["data_source_id"].isin(offshore_existing["data_source_id_right"])]
     logger.debug(f"found {len(offshore_new)} offshore sources in {len(offshore_new['group_id'].unique())} titles")
 
+    # oil and gas sites such as refineries, processing plants, shipping
+    # terminals, compressor units, all may be possible sources of emissions
+    oil_gas_sites_da = data_manager.get_asset(oil_gas_sites_data_source)
+    npi_da = data_manager.get_asset(npi_facilities_data_source)
+    sites_df = oil_gas_site_emission_sources(
+        start_date=start_date,
+        end_date=end_date,
+        oil_gas_sites_da=oil_gas_sites_da,
+        npi_da=npi_da,
+    )
+    logger.debug(f"found {len(sites_df[sites_df['data_source'] == oil_gas_sites_da.name])} oil and gas facilities")
+    logger.debug(f"found {len(sites_df[sites_df['data_source'] == npi_da.name])} NPI facilities")
+
     all_df: gpd.GeoDataFrame = pd.concat([
         states_df,
         offshore_new,
+        sites_df,
     ])
 
     return all_df
