@@ -26,14 +26,25 @@ from openmethane_prior.lib.data_manager.source import ConfiguredDataSource
 
 def financial_year_start(financial_year: str) -> datetime.datetime:
     """Australian financial year starts on July 1st. For example, the 2023/2024
-    financial year starts on 2023-07-01 00:00:00."""
+    financial year starts on 2023-07-01 00:00:00.
+
+    :param financial_year: String representing an Australian financial year,
+        like "2023/2024".
+    :return: datetime at midnight on the first day of the financial year.
+    """
     start_year, end_year = financial_year.split("/")
     return datetime.datetime(int(start_year), 7, 1, 0, 0)
 
 
 def financial_year_end(financial_year: str | None) -> datetime.datetime | None:
     """Australian financial year ends on June 30th in the second year. For
-    example, the 2023/2024 financial year ends on 2024-06-30 23:59:59."""
+    example, the 2023/2024 financial year ends on 2024-06-30 23:59:59.
+
+    :param financial_year: string containing an Australian financial year,
+        like "2023/2024".
+    :return: datetime at the end of the last day of the financial year, or None
+       if financial_year is None.
+    """
     if financial_year is None:
         return None
 
