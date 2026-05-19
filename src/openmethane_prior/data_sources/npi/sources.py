@@ -28,15 +28,18 @@ def filter_npi_facilities(
     period_start: datetime.date,
     period_end: datetime.date,
     anzsic_codes: list[str] = None,
-):
-    """
-    Return only the rows of the NPI facilities which reported to the NPI
+) -> pd.DataFrame:
+    """Return only the rows of the NPI facilities which reported to the NPI
     during the given period. Since the NPI dataset doesn't include dates when
     a facility was active, we assume that facilities are active from the year
     they filed their first report, to the year they filed their last report.
 
     Expects reporting_start_date and reporting_end_date columns to already be
     present on facilities_df (added by parse_npi_facilities_csv).
+
+    :return: Filtered DataFrame with only facilities that were active between
+      start_date and end_date, and in one of the specified ANZSIC sectors if
+      provided.
     """
 
     # filter out facilities which didn't report during the period of interest
@@ -51,9 +54,10 @@ def filter_npi_facilities(
     if anzsic_codes is not None:
         anzsic_prefixes = [simplify_anzsic_code(anzsic) for anzsic in anzsic_codes]
         # filter to include every row where the ANZSIC code matches any prefix
-        facilities_df = facilities_df[np.logical_or.reduce([
+        anzsic_sectors_mask = np.logical_or.reduce([
             facilities_df["primary_anzsic_class_code"].str.startswith(anzsic_prefix)
             for anzsic_prefix in anzsic_prefixes
-        ])]
+        ])
+        facilities_df: pd.DataFrame = facilities_df[anzsic_sectors_mask]
 
     return facilities_df
