@@ -191,15 +191,15 @@ def test_offshore_emission_sources(input_files, data_manager):
     # no duplicate check, as we allow duplicate geometries from NOPTA dataset
 
 
-def test_all_emission_sources(input_files, data_manager, config):
-    end_date_end = config.end_date + datetime.timedelta(days=1)
+def test_all_emission_sources(input_files, data_manager, params):
+    end_date_end = params.end_date + datetime.timedelta(days=1)
     df = all_emission_sources(
         data_manager=data_manager,
-        prior_config=config,
+        params=params,
     )
 
     assert len(df) > 0
 
-    # no sources where activity period doesn't intersect config period
-    assert len(df[(df["activity_end"] < config.start_date) & (df["activity_start"] > end_date_end)]) == 0
+    # no sources where activity period doesn't intersect params period
+    assert len(df[(df["activity_end"] < params.start_date) & (df["activity_start"] > end_date_end)]) == 0
 

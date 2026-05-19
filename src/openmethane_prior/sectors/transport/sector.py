@@ -24,7 +24,8 @@ from openmethane_prior.lib import (
     kg_to_period_cell_flux,
     logger,
     PriorSector,
-    PriorSectorConfig,
+    PriorParameters,
+    DataManager,
 )
 
 logger = logger.get_logger(__name__)
@@ -32,27 +33,25 @@ logger = logger.get_logger(__name__)
 
 def process_emissions(
     sector: PriorSector,
-    sector_config: PriorSectorConfig,
+    params: PriorParameters, data_manager: DataManager,
     prior_ds: xr.Dataset,
 ):
-    config = sector_config.prior_config
-
     # we want proportions of total for scaling emissions
-    om_ntlt_proportion = sector_config.data_manager.get_asset(night_lights_data_source)
+    om_ntlt_proportion = data_manager.get_asset(night_lights_data_source)
 
     # load the national inventory data, ready to calculate sectoral totals
-    emissions_inventory = sector_config.data_manager.get_asset(inventory_data_source).data
+    emissions_inventory = data_manager.get_asset(inventory_data_source).data
     sector_total_emissions = get_sector_emissions_by_code(
         emissions_inventory=emissions_inventory,
-        start_date=config.start_date,
-        end_date=config.end_date,
+        start_date=params.start_date,
+        end_date=params.end_date,
         category_codes=sector.unfccc_categories,
     )
 
     # allocate the proportion of the total to each grid cell
     sector_emissions = om_ntlt_proportion.data * sector_total_emissions
 
-    return kg_to_period_cell_flux(sector_emissions, config)
+    return kg_to_period_cell_flux(sector_emissions, params)
 
 
 sector = PriorSector(

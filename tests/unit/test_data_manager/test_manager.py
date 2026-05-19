@@ -5,9 +5,16 @@ from openmethane_prior.lib.data_manager.source import DataSource, ConfiguredData
 from pytest_mock import MockerFixture
 
 
-def test_manager_add_source(tmp_path, config):
-    data_path = tmp_path / "data"
-    test_manager = DataManager(data_path=data_path, prior_config=config)
+def make_manager(tmp_path, params):
+    return DataManager(
+        data_path=tmp_path / "data",
+        intermediates_path=tmp_path / "inter",
+        prior_params=params,
+    )
+
+
+def test_manager_add_source(tmp_path, params):
+    test_manager = make_manager(tmp_path, params)
 
     test_manager.add_source(DataSource(
         name="test-unfccc-codes",
@@ -29,9 +36,8 @@ def test_manager_add_source(tmp_path, config):
     assert list(test_manager.data_assets.keys()) == []
 
 
-def test_manager_add_source_duplicate(tmp_path, caplog, config):
-    data_path = tmp_path / "data"
-    test_manager = DataManager(data_path=data_path, prior_config=config)
+def test_manager_add_source_duplicate(tmp_path, caplog, params):
+    test_manager = make_manager(tmp_path, params)
 
     test_manager.add_source(DataSource(
         name="test-unfccc-codes",
@@ -62,12 +68,16 @@ def test_manager_add_source_duplicate(tmp_path, caplog, config):
     assert len(test_manager.data_sources.keys()) == 1
 
 
-def test_manager_get_asset(tmp_path, config, mocker: MockerFixture):
+def test_manager_get_asset(tmp_path, params, mocker: MockerFixture):
     data_path = tmp_path / "data"
     mock_fetch = mocker.stub(name="mock_fetch")
     mock_fetch.return_value = data_path / "filename.csv"
 
-    test_manager = DataManager(data_path=data_path, prior_config=config)
+    test_manager = DataManager(
+        data_path=data_path,
+        intermediates_path=tmp_path / "inter",
+        prior_params=params,
+    )
     test_data_source = DataSource(
         name="test-unfccc-codes",
         url="https://openmethane.s3.amazonaws.com/prior/inputs/UNFCCC-codes-AU.csv",
@@ -89,14 +99,18 @@ def test_manager_get_asset(tmp_path, config, mocker: MockerFixture):
     assert test_second_asset is test_asset
 
 
-def test_manager_get_asset_parsed(tmp_path, mocker: MockerFixture, config):
+def test_manager_get_asset_parsed(tmp_path, mocker: MockerFixture, params):
     data_path = tmp_path / "data"
     mock_fetch = mocker.stub(name="mock_fetch")
     mock_fetch.return_value = data_path / "filename.csv"
     mock_parse = mocker.stub(name="mock_parse")
     mock_parse.return_value = "data"
 
-    test_manager = DataManager(data_path=data_path, prior_config=config)
+    test_manager = DataManager(
+        data_path=data_path,
+        intermediates_path=tmp_path / "inter",
+        prior_params=params,
+    )
     test_data_source = DataSource(
         name="test-unfccc-codes",
         url="https://openmethane.s3.amazonaws.com/prior/inputs/UNFCCC-codes-AU.csv",
@@ -123,7 +137,7 @@ def test_manager_get_asset_parsed(tmp_path, mocker: MockerFixture, config):
     assert test_second_asset is test_asset
 
 
-def test_manager_get_asset_dependencies(tmp_path, mocker, config):
+def test_manager_get_asset_dependencies(tmp_path, mocker, params):
     data_path = tmp_path / "data"
     child_fetch = mocker.stub(name="child_fetch")
     child_fetch.return_value = data_path / "child.csv"
@@ -135,7 +149,11 @@ def test_manager_get_asset_dependencies(tmp_path, mocker, config):
     def parent_parse(source: ConfiguredDataSource):
         return f"parent of {source.data_assets[0].data}"
 
-    test_manager = DataManager(data_path=data_path, prior_config=config)
+    test_manager = DataManager(
+        data_path=data_path,
+        intermediates_path=tmp_path / "inter",
+        prior_params=params,
+    )
     child_data_source = DataSource(
         name="test-child",
         url="https://openmethane.s3.amazonaws.com/prior/inputs/child.csv",

@@ -1,19 +1,23 @@
+import os
 import pathlib
 import shutil
 from datetime import datetime
 from pathlib import Path
 import pytest
-from typing import Generator
 import xarray as xr
 
-from openmethane_prior.lib import create_prior
-from openmethane_prior.lib.config import PriorConfig
-from openmethane_prior.lib.data_manager.manager import DataManager
+from openmethane_prior.lib import (
+    PriorConfig,
+    PriorParameters,
+    DataManager,
+    Domain,
+)
+from openmethane_prior.lib.config import fetch_domain
 from openmethane_prior.lib.grid.create_grid import create_grid_from_mcip
 from openmethane_prior.lib.grid.grid import Grid
-from openmethane_prior.lib.sector.config import PriorSectorConfig
-from openmethane_prior.sectors import all_sectors
 
+
+TEST_DOMAIN_URL="https://openmethane.s3.amazonaws.com/domains/au-test/v1/domain.au-test.nc"
 
 @pytest.fixture(scope="session")
 def root_dir() -> pathlib.Path:
@@ -26,17 +30,12 @@ def cache_dir(root_dir) -> pathlib.Path:
 
 
 @pytest.fixture(scope="session")
-def config_params(start_date, end_date):
-    """Default config parameters that most tests should use."""
-    return dict(
-        start_date=start_date,
-        end_date=end_date,
-        domain_path="https://openmethane.s3.amazonaws.com/domains/au-test/v1/domain.au-test.nc",
-    )
+def cache_dir(root_dir) -> pathlib.Path:
+    return root_dir / "data/.cache"
 
 
 @pytest.fixture()
-def config(tmp_path_factory, config_params, cache_dir) -> PriorConfig:
+def config(tmp_path_factory, cache_dir, start_date, end_date) -> PriorConfig:
     """Default configuration
 
     Uses a new temporary directory for each test, but a shared input_cache to
@@ -44,7 +43,9 @@ def config(tmp_path_factory, config_params, cache_dir) -> PriorConfig:
     """
     data_dir = tmp_path_factory.mktemp("data")
     config = PriorConfig(
-        **config_params,
+        start_date=start_date,
+        end_date=end_date,
+        domain_path=TEST_DOMAIN_URL,
         input_path=data_dir / "inputs",
         intermediates_path=data_dir / "intermediates",
         output_path=data_dir / "outputs",
@@ -56,17 +57,12 @@ def config(tmp_path_factory, config_params, cache_dir) -> PriorConfig:
 
 @pytest.fixture()
 def input_files(config):
-    """This fixture isn't required for tests that must use input files, but it
-    will cause input files to be loaded from a shared cache to prevent
-    refetching.
+    """Pre-fetch domain inputs from the shared cache.
 
     Tests that don't use this fixture will have a clean input folder for every
-    test, and will fetch any remote DataSources requested by the DataManager
-    which may be intended, ie for testing input fetching."""
+    test, and will fetch any remote DataSources on demand — which may be
+    intended when testing input fetching."""
     config.load_cached_inputs()
-
-    # fetch configured domains
-    config.domain()
 
     yield
 
@@ -78,76 +74,81 @@ def input_files(config):
 
 
 @pytest.fixture()
-def data_manager(config) -> DataManager:
-    return DataManager(data_path=config.input_path, prior_config=config)
+def cached_domain_path(tmp_path, cache_dir):
+    """Load test domain file from cache to avoid re-fetch on every test. If not
+    present, fetch and cached the file for subsequent tests."""
+    # if the input_cache already has the domain file in it, copy it across so
+    # it doesn't have to be downloaded on every test
+    domain_file = os.path.basename(TEST_DOMAIN_URL)
+    domain_cache_path = cache_dir / domain_file
+    domain_local_path = tmp_path / domain_file
+    if domain_cache_path.exists() and not domain_local_path.exists():
+        shutil.copy(domain_cache_path, domain_local_path)
+    else:
+        domain_local_path = fetch_domain(TEST_DOMAIN_URL, tmp_path)
+        # store the fetched file back in the cache for the next test
+        domain_cache_path.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy(domain_local_path, domain_cache_path)
+    return domain_local_path
 
 
 @pytest.fixture()
-def data_manager_fetch_only(config) -> DataManager:
-    return DataManager(data_path=config.input_path, prior_config=config, fetch_only=True)
+def params(cached_domain_path, start_date, end_date):
+    """Default per-run parameters, without a full PriorConfig."""
+    return PriorParameters(
+        domain=Domain.from_file(cached_domain_path),
+        start_date=start_date,
+        end_date=end_date,
+    )
 
 
 @pytest.fixture()
-def sector_config(data_manager) -> PriorSectorConfig:
-    return PriorSectorConfig(
-        prior_config=data_manager.prior_config,
-        data_manager=data_manager,
+def config_params(config) -> PriorParameters:
+    """Default per-run parameters."""
+    return PriorParameters.from_config(config)
+
+
+@pytest.fixture()
+def data_manager(input_files, config, config_params) -> DataManager:
+    """DataManager with the domain already resolved (input_files fetches it)."""
+    return DataManager(
+        data_path=config.input_path,
+        intermediates_path=config.intermediates_path,
+        prior_params=config_params,
+    )
+
+
+@pytest.fixture()
+def data_manager_fetch_only(config, config_params) -> DataManager:
+    return DataManager(
+        data_path=config.input_path,
+        intermediates_path=config.intermediates_path,
+        prior_params=config_params,
+        fetch_only=True,
     )
 
 
 @pytest.fixture(scope="session")
 def start_date() -> datetime.date:
-    """Default configuration
-
-    Uses the same range of dates for each test
-    """
+    """Default start date used across tests."""
     return datetime.strptime("2022-12-07", "%Y-%m-%d")
 
 
 @pytest.fixture(scope="session")
 def end_date() -> datetime.date:
-    """Default configuration
-
-    Uses the same range of dates for each test
-    """
+    """Default end date used across tests."""
     return datetime.strptime("2022-12-08", "%Y-%m-%d")
 
 
 @pytest.fixture()
-def input_domain(config, input_files) -> Generator[xr.Dataset, None, None]:
-    """
-    Get an input domain
-
-    Returns
-    -------
-        The input domain as an xarray dataset
-    """
-    yield config.domain().dataset
-
-
-@pytest.fixture(scope="session")
-def prior_emissions_ds(tmp_path_factory, cache_dir, config_params) -> Generator[xr.Dataset, None, None]:
-    """Run the full prior over the au-test domain."""
-    data_dir = tmp_path_factory.mktemp("data")
-    config = PriorConfig(
-        **config_params,
-        input_path=data_dir / "inputs",
-        intermediates_path=data_dir / "intermediates",
-        output_path=data_dir / "outputs",
-        input_cache=cache_dir,
-    )
-
-    # run the prior and return the result
-    return create_prior(config, all_sectors)
+def input_domain(params) -> xr.Dataset:
+    """Test domain as an xarray dataset"""
+    return params.domain.dataset
 
 
 @pytest.fixture()
 def aust10km_grid() -> Grid:
-    """
-    Return a large Grid with a non-standard projection.
-    :return: Grid
-    """
-    # aust10km projection details
+    """Return the aust10km Grid."""
     return create_grid_from_mcip(
         TRUELAT1=-15.0,
         TRUELAT2=-40.0,

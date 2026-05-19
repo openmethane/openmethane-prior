@@ -15,10 +15,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-from .config import PriorConfig
+from .config import PriorConfig, PriorParameters
 from .data_manager.manager import DataManager
 from .outputs import create_output_dataset, add_ch4_total, add_sector
-from .sector.config import PriorSectorConfig
 from .sector.sector import PriorSector
 
 
@@ -29,23 +28,27 @@ def create_prior(config: PriorConfig, sectors: list[PriorSector]):
     Parameters
     ----------
     config
-        Configuration used for the calculation
+        Static configuration describing input/output paths.
     sectors
-        List of PriorSector objects to process
+        List of PriorSector objects to process.
     """
-    if config.start_date is None:
+    params = PriorParameters.from_config(config)
+
+    if params.start_date is None:
         raise ValueError("Start date must be provided")
 
     config.prepare_paths()
     # if no cache is configured, this is a no-op
     config.load_cached_inputs()
 
-    data_manager = DataManager(data_path=config.input_path, prior_config=config)
+    data_manager = DataManager(
+        data_path=config.input_path,
+        intermediates_path=config.intermediates_path,
+        prior_params=params,
+    )
 
-    # Initialise the output dataset based on the domain provided in config
-    prior_ds = create_output_dataset(config)
-
-    sector_config = PriorSectorConfig(prior_config=config, data_manager=data_manager)
+    # Create empty output Dataset based on the domain and period
+    prior_ds = create_output_dataset(params)
 
     for sector in sectors:
         # all sector modules must implement a create_estimate method
@@ -53,7 +56,7 @@ def create_prior(config: PriorConfig, sectors: list[PriorSector]):
             raise ValueError("PriorSector module must include a create_estimate function")
 
         # calculate the emissions for the sector
-        sector_data = sector.create_estimate(sector, sector_config, prior_ds)
+        sector_data = sector.create_estimate(sector, params, data_manager, prior_ds)
 
         # add the sector emissions to the output
         add_sector(

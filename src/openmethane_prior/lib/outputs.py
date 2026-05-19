@@ -19,7 +19,7 @@ import numpy as np
 import numpy.typing as npt
 import xarray as xr
 
-from openmethane_prior.lib.config import PriorConfig
+from openmethane_prior.lib.config import PriorParameters
 from openmethane_prior.lib.sector.sector import PriorSector
 from openmethane_prior.lib.utils import SECS_PER_YEAR, get_version, get_timestamped_command, time_bounds, \
     list_cf_grid_mappings
@@ -44,10 +44,10 @@ def convert_to_timescale(emission, cell_area):
     return emission / cell_area / SECS_PER_YEAR
 
 
-def create_output_dataset(config: PriorConfig) -> xr.Dataset:
-    domain_ds = config.domain().dataset
-    period_start = config.start_date
-    period_end = config.end_date
+def create_output_dataset(params: PriorParameters) -> xr.Dataset:
+    domain_ds = params.domain.dataset
+    period_start = params.start_date
+    period_end = params.end_date
 
     # generate daily time steps
     time_steps = xr.date_range(start=period_start, end=period_end, freq="D", use_cftime=False, normalize=True)

@@ -3,33 +3,32 @@ import os
 import pathlib
 import pytest
 
-from openmethane_prior.lib.config import PriorConfig
+from openmethane_prior.lib.config import PriorConfig, PriorParameters
 
 
-# This fixture will allow each test to setup the required env variables and
-# then reset back to the initial env before the next test
 @pytest.fixture()
 def reset_env(monkeypatch):
+    """Reset environment variables after each test."""
     initial_env = dict(os.environ)
     os.environ.clear()
 
     yield
 
-    # Reset environment to initial state
     os.environ.clear()
     os.environ.update(initial_env)
 
 
-def test_prior_config_defaults(start_date, end_date):
+# ── PriorConfig tests ──────────────────────────────────────────────────────────
+
+def test_prior_config_defaults(start_date):
     test_config = PriorConfig(
         domain_path="domain.nc",
         start_date=start_date,
-        end_date=end_date,
     )
 
     assert test_config.domain_path == "domain.nc"
     assert test_config.start_date == start_date
-    assert test_config.end_date == end_date
+    assert test_config.end_date == start_date
 
     # defaults
     assert test_config.sectors is None
@@ -39,37 +38,32 @@ def test_prior_config_defaults(start_date, end_date):
     assert test_config.output_filename == "prior-emissions.nc"
     assert test_config.input_cache is None
 
-    test_config_none = PriorConfig(
+
+def test_prior_config_none_defaults(start_date):
+    test_config = PriorConfig(
         domain_path="domain.nc",
         start_date=start_date,
-        end_date=end_date,
         input_path=None,
         output_path=None,
         intermediates_path=None,
         output_filename=None,
     )
 
-    # defaults
-    assert test_config_none.input_path == pathlib.Path("data/inputs")
-    assert test_config_none.output_path == pathlib.Path("data/outputs")
-    assert test_config_none.intermediates_path == pathlib.Path("data/intermediates")
-    assert test_config_none.output_filename == "prior-emissions.nc"
+    assert test_config.input_path == pathlib.Path("data/inputs")
+    assert test_config.output_path == pathlib.Path("data/outputs")
+    assert test_config.intermediates_path == pathlib.Path("data/intermediates")
+    assert test_config.output_filename == "prior-emissions.nc"
 
 
-def test_prior_config_full(tmp_path: pathlib.Path, start_date, end_date):
+def test_prior_config_paths(tmp_path: pathlib.Path, start_date):
     test_config = PriorConfig(
         domain_path="domain.nc",
         start_date=start_date,
-        end_date=end_date,
         input_path=tmp_path / "in",
         output_path=tmp_path / "out",
         intermediates_path=tmp_path / "inter",
         output_filename="out.nc",
     )
-
-    assert test_config.as_input_file("test.nc") == tmp_path / "in" / "test.nc"
-    assert test_config.as_output_file("test.nc") == tmp_path / "out" / "test.nc"
-    assert test_config.as_intermediate_file("test.nc") == tmp_path / "inter" / "test.nc"
 
     assert test_config.output_file == tmp_path / "out" / "out.nc"
 
@@ -98,26 +92,18 @@ def test_prior_config_from_env(reset_env, start_date, end_date):
     assert test_config.output_filename == "env-output.nc"
 
 
-def test_prior_config_input_cache(tmp_path: pathlib.Path, start_date, end_date):
-    # these settings are required, but unimportant for the test
-    generic_params = dict(
-        domain_path="domain.nc",
-        start_date=start_date,
-        end_date=end_date,
-    )
-
+def test_prior_config_input_cache(tmp_path: pathlib.Path, start_date):
     data_path = tmp_path / "data"
     cache_path = tmp_path / "cache-test"
 
-    # created some cached content
     cache_path.mkdir(parents=True)
     cache_test_contents = f"cache test {datetime.datetime.now()}"
-    with open(cache_path / "cache-test.txt", "w") as cache_test_file:
-        cache_test_file.write(cache_test_contents)
+    with open(cache_path / "cache-test.txt", "w") as f:
+        f.write(cache_test_contents)
 
-    # create a config with input_cache
     test_config = PriorConfig(
-        **generic_params,
+        domain_path="domain.nc",
+        start_date=start_date,
         input_path=data_path / "input-test",
         input_cache=cache_path,
     )
@@ -149,10 +135,25 @@ def test_prior_config_input_cache(tmp_path: pathlib.Path, start_date, end_date):
 
     # create a config with a different input_cache
     test_config = PriorConfig(
-        **generic_params,
+        domain_path="domain.nc",
+        start_date=start_date,
         input_path=data_path / "new-input",
         input_cache=data_path / "new-cache",
     )
 
     # the file from the cache is NOT copied
     assert not (test_config.input_path / "cache-test.txt").exists()
+
+
+# ── PriorParameters tests ──────────────────────────────────────────────────────
+
+def test_prior_params_defaults(params, start_date, end_date):
+    params = PriorParameters(
+        domain=params.domain,
+        start_date=start_date,
+        end_date=end_date,
+    )
+
+    assert params.domain == params.domain
+    assert params.start_date == start_date
+    assert params.end_date == end_date

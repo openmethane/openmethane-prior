@@ -16,7 +16,7 @@
 # limitations under the License.
 #
 
-from .config import PriorConfig, parse_cli_to_env
+from .config import PriorConfig, PriorParameters, parse_cli_to_env
 from .data_manager.manager import (
     ConfiguredDataSource,
     DataAsset,
@@ -28,7 +28,6 @@ from .grid.regrid import regrid_data
 from .outputs import add_sector, convert_to_timescale
 from .create_prior import create_prior
 from .raster import remap_raster
-from .sector.config import PriorSectorConfig
 from .sector.sector import PriorSector
 from .units import kg_to_period_cell_flux
 from .utils import (

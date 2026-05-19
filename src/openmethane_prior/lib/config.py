@@ -3,7 +3,6 @@ from attrs import field, frozen
 from attrs.converters import default_if_none
 import datetime
 from environs import Env
-from functools import cache
 import os
 import pathlib
 import shutil
@@ -15,20 +14,21 @@ from .grid.domain import Domain
 
 @frozen
 class PriorConfig:
-    """Configuration used to describe the prior data sources and the output directories."""
+    """Static configuration describing where the prior reads inputs and writes
+    outputs. Set once per environment and does not change between runs."""
 
-    domain_path: pathlib.Path | str
-    """URL or file path to the domain of interest. Relative paths
-    will be interpreted relative to input_path"""
+    domain_path: str
+    """URL or file path to the domain of interest."""
 
     start_date: datetime.datetime
     """Start of the period over which emissions should be estimated."""
+
     end_date: datetime.datetime | None = None
     """End of the period over which emissions should be estimated. If not
     provided, estimates will cover a single day specified by start_date."""
 
     sectors: tuple[str] | None = None
-    """List of PriorSector names to process"""
+    """Names of the PriorSector modules to process. None means all sectors."""
 
     # workaround for from_env having to specify None values for missing paths
     # is to set the value using default_if_none
@@ -63,19 +63,6 @@ class PriorConfig:
             # can't set attributes on frozen class
             object.__setattr__(self, "end_date", self.start_date)
 
-
-    def as_input_file(self, name: str | pathlib.Path) -> pathlib.Path:
-        """Return the full path to an input file"""
-        return self.input_path / name
-
-    def as_intermediate_file(self, name: str | pathlib.Path) -> pathlib.Path:
-        """Return the full path to an intermediate file"""
-        return self.intermediates_path / name
-
-    def as_output_file(self, name: str | pathlib.Path) -> pathlib.Path:
-        """Return the full path to an output file"""
-        return self.output_path / name
-
     def prepare_paths(self):
         """Create any configured directory paths that don't already exist."""
         self.input_path.mkdir(parents=True, exist_ok=True)
@@ -94,22 +81,10 @@ class PriorConfig:
             self.input_cache.mkdir(parents=True, exist_ok=True)
             shutil.copytree(src=self.input_path, dst=self.input_cache, dirs_exist_ok=True)
 
-    @cache
-    def domain(self) -> Domain:
-        """Fetch and parse the domain file to return a readable Dataset and
-        Grid definition."""
-        domain_path = fetch_domain(self.domain_path, self.input_path)
-        return Domain.from_file(domain_path)
-
-    @property
-    def crs(self):
-        """Return the CRS used by the domain dataset"""
-        return self.domain().crs
-
     @property
     def output_file(self):
-        """Get the filename of the output domain"""
-        return self.as_output_file(self.output_filename)
+        """Get the filename of the output file"""
+        return self.output_path / self.output_filename
 
     @classmethod
     def from_env(cls) -> Self:
@@ -127,20 +102,52 @@ class PriorConfig:
 
         # split a string like "agriculture,coal,waste" into a list
         sectors = env.str("SECTORS", "").split(",")
-        sectors = tuple([s for s in sectors if s != ""]) # filter out empty strings
+        sectors = tuple([s for s in sectors if s != ""])
 
         return cls(
-            # required
             domain_path=env.str("DOMAIN_FILE"),
             start_date=start_date,
-            end_date =end_date,
-            # use defaults
+            end_date=end_date,
+            sectors=sectors if len(sectors) > 0 else None,
             input_path=env.path("INPUTS", None),
             output_path=env.path("OUTPUTS", None),
             intermediates_path=env.path("INTERMEDIATES", None),
             input_cache=env.path("INPUT_CACHE", None),
             output_filename=env.str("OUTPUT_FILENAME", None),
-            sectors=sectors if len(sectors) > 0 else None,
+        )
+
+
+@frozen
+class PriorParameters:
+    """Per-run parameters that control a single execution of the prior.
+    May change between runs (e.g. different date range or domain)."""
+
+    domain: Domain
+    """The domain of interest, parsed as a Domain."""
+
+    start_date: datetime.datetime
+    """Start of the period over which emissions should be estimated."""
+
+    end_date: datetime.datetime
+    """End of the period over which emissions should be estimated."""
+
+
+    @property
+    def crs(self):
+        """Return the CRS used by the domain."""
+        return self.domain.crs
+
+    @classmethod
+    def from_config(cls, config: PriorConfig) -> Self:
+        """Extract the runtime parameters from the config which are needed
+        to control the period and domain of emission estimates."""
+        domain_file = fetch_domain(config.domain_path, config.input_path)
+        domain = Domain.from_file(domain_file)
+
+        return cls(
+            domain=domain,
+            start_date=config.start_date,
+            end_date=config.end_date,
         )
 
 
@@ -148,19 +155,14 @@ def fetch_domain(
     path_or_url: pathlib.Path | str,
     input_path: pathlib.Path,
 ) -> pathlib.Path:
-    domain_path = input_path / os.path.basename(str(path_or_url))
-    if not os.path.exists(domain_path):
-        save_path, response = urllib.request.urlretrieve(
-            url=str(path_or_url),
-            filename=domain_path,
-        )
-    return domain_path
+    domain_file = input_path / os.path.basename(str(path_or_url))
+    if not os.path.exists(domain_file):
+        urllib.request.urlretrieve(url=str(path_or_url), filename=domain_file)
+    return domain_file
 
 
 def parse_cli_args():
-    """
-    Set up common CLI arguments that can be read in at start time.
-    """
+    """Set up common CLI arguments that can be read in at start time."""
     parser = argparse.ArgumentParser(
         description="Calculate the prior methane emissions estimate for Open Methane"
     )
@@ -182,11 +184,10 @@ def parse_cli_args():
 
     return parser.parse_args()
 
+
 def parse_cli_to_env():
-    """
-    Parse CLI arguments and set them as environment variables so they can be
-    read in by the config.
-    """
+    """Parse CLI arguments and set them as environment variables so they can be
+    read in by the config"""
     args = parse_cli_args()
 
     if args.start_date is not None:

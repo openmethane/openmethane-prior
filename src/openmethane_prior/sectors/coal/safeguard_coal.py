@@ -24,29 +24,28 @@ from openmethane_prior.data_sources.safeguard import (
     filter_facilities,
     filter_locations,
 )
-from openmethane_prior.lib.data_manager.parsers import parse_csv
 from openmethane_prior.lib import (
     convert_to_timescale,
     DataAsset,
     logger,
-    PriorConfig,
+    PriorParameters,
 )
 
 logger = logger.get_logger(__name__)
 
 def allocate_safeguard_facility_emissions(
-    config: PriorConfig,
+    params: PriorParameters,
     anzsic_codes: list[str],
     safeguard_facilities_asset: DataAsset,
     facility_locations_asset: DataAsset,
     reference_data_asset: DataAsset,
 ):
-    domain_grid = config.domain().grid
+    domain_grid = params.domain.grid
 
     sector_facilities = filter_facilities(
         facility_df=safeguard_facilities_asset.data,
         anzsic_codes=anzsic_codes,
-        period=(config.start_date.date(), config.end_date.date()),
+        period=(params.start_date.date(), params.end_date.date()),
     )
 
     coal_facilities, coal_locations_pivot = get_safeguard_facility_locations(

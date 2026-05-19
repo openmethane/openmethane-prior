@@ -32,7 +32,8 @@ from openmethane_prior.lib import (
     DataSource,
     load_zipped_pickle,
     PriorSector,
-    PriorSectorConfig,
+    PriorParameters,
+    DataManager,
     redistribute_spatially,
     save_zipped_pickle,
     datetime64_to_datetime,
@@ -44,13 +45,14 @@ wetlands_data_source = DataSource(
     url="https://openmethane.s3.amazonaws.com/prior/inputs/DLEM_totflux_CRU_diagnostic.nc",
 )
 
-def make_wetland_climatology(sector_config: PriorSectorConfig):  # noqa: PLR0915
+def make_wetland_climatology(
+    params: PriorParameters,
+    data_manager: DataManager,
+):  # noqa: PLR0915
     """
     Remap wetland emissions to the CMAQ domain
     """
-    config = sector_config.prior_config
-
-    wetlands_asset = sector_config.data_manager.get_asset(wetlands_data_source)
+    wetlands_asset = data_manager.get_asset(wetlands_data_source)
     ncin = nc.Dataset(wetlands_asset.path, "r")
 
     latWetland = np.around(np.float64(ncin.variables["lat"][:]), 3)
@@ -84,11 +86,11 @@ def make_wetland_climatology(sector_config: PriorSectorConfig):  # noqa: PLR0915
         )
 
     # now collect some domain information
-    domain_grid = config.domain().grid
+    domain_grid = params.domain.grid
 
-    indxPath = config.as_intermediate_file("WETLAND_ind_x.p.gz")
-    indyPath = config.as_intermediate_file("WETLAND_ind_y.p.gz")
-    coefsPath = config.as_intermediate_file("WETLAND_ind_coefs.p.gz")
+    indxPath = data_manager.intermediates_path / "WETLAND_ind_x.p.gz"
+    indyPath = data_manager.intermediates_path / "WETLAND_ind_y.p.gz"
+    coefsPath = data_manager.intermediates_path / "WETLAND_ind_coefs.p.gz"
 
     if (
         os.path.exists(indxPath)
@@ -187,13 +189,14 @@ def make_wetland_climatology(sector_config: PriorSectorConfig):  # noqa: PLR0915
 
 def process_emissions(
     sector: PriorSector,
-    sector_config: PriorSectorConfig,
+    params: PriorParameters,
+    data_manager: DataManager,
     prior_ds: xr.Dataset,
 ):
     """
     Process wetland emissions for the given date range
     """
-    climatology = make_wetland_climatology(sector_config)
+    climatology = make_wetland_climatology(params, data_manager)
     result_nd = []  # will be ndarray once built
     for date in prior_ds["time"].values:
         month = datetime64_to_datetime(date).month

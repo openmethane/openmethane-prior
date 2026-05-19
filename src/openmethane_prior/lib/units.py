@@ -20,7 +20,7 @@ import datetime
 import typing
 from numpy.typing import ArrayLike
 
-from openmethane_prior.lib.config import PriorConfig
+from openmethane_prior.lib.config import PriorParameters
 
 T = typing.TypeVar("T", bound=ArrayLike | float)
 
@@ -47,12 +47,12 @@ def kg_to_kg_m2_s(mass_kg: float, area_m2: float, time_s: float) -> float:
     return mass_kg / area_m2 / time_s
 
 
-def kg_to_period_cell_flux(mass_kg: T, config: PriorConfig) -> float:
+def kg_to_period_cell_flux(mass_kg: T, params: PriorParameters) -> float:
     """Convert from the total emission in a cell over the configured time
     period, to kg/m2/s within the cell."""
     return kg_to_kg_m2_s(
         mass_kg=mass_kg,
-        area_m2=config.domain().grid.cell_area,
-        time_s=seconds_in_period(config.start_date, config.end_date)
+        area_m2=params.domain.grid.cell_area,
+        time_s=seconds_in_period(params.start_date, params.end_date)
     )
 

@@ -7,12 +7,12 @@ from openmethane_prior.lib.sector.sector import PriorSector
 
 
 
-def test_create_output_dataset(config, input_files):
-    domain_ds = config.domain().dataset
+def test_create_output_dataset(config, params, input_files):
+    domain_ds = params.domain.dataset
 
     assert not config.output_file.exists()
 
-    output_ds = create_output_dataset(config)
+    output_ds = create_output_dataset(params)
 
     # validate input domain hasn't changed before we assert about output
     assert domain_ds.sizes["x"] == 10, "reference domain x dimension has changed"
@@ -39,9 +39,9 @@ def test_create_output_dataset(config, input_files):
     assert output_ds["lambert_conformal"].attrs == domain_ds["lambert_conformal"].attrs
 
     # bounds
-    assert output_ds["time"].size == (config.end_date - config.start_date).days + 1 # one time step per day, end inclusive
-    assert output_ds["time"].values[0] == np.datetime64(config.start_date)
-    assert output_ds["time"].values[-1] == np.datetime64(config.end_date)
+    assert output_ds["time"].size == (params.end_date - params.start_date).days + 1
+    assert output_ds["time"].values[0] == np.datetime64(params.start_date)
+    assert output_ds["time"].values[-1] == np.datetime64(params.end_date)
 
     assert output_ds["x"].attrs["bounds"] == "x_bounds"
     assert output_ds["x_bounds"].shape == (output_ds["x"].size, 2)
@@ -124,15 +124,15 @@ def test_expand_sector_dims_add_time_steps():
     assert list(expanded[2][0][0]) == [1, 2]
     assert list(expanded[2][0][1]) == [4, 5]
 
-def test_add_sector_defaults(config, input_files):
-    test_ds = create_output_dataset(config)
+def test_add_sector_defaults(params, input_files):
+    test_ds = create_output_dataset(params)
 
     sector_meta = PriorSector(
         name="test_sector",
         emission_category="natural",
-        create_estimate=lambda a, b, c: None
+        create_estimate=lambda a, b, c, d: None
     )
-    sector_shape = (test_ds.sizes["time"], 1, config.domain().grid.shape[0], config.domain().grid.shape[1])
+    sector_shape = (test_ds.sizes["time"], 1, params.domain.grid.shape[0], params.domain.grid.shape[1])
     sector_data = np.zeros(sector_shape)
 
     assert sector_meta.name not in test_ds
@@ -155,8 +155,8 @@ def test_add_sector_defaults(config, input_files):
     assert test_ds[sector_var].attrs["grid_mapping"] == test_ds["land_mask"].attrs["grid_mapping"]
 
 
-def test_add_sector_meta(config, input_files):
-    test_ds = create_output_dataset(config)
+def test_add_sector_meta(params, input_files):
+    test_ds = create_output_dataset(params)
 
     sector_meta = PriorSector(
         name="test_sector",
@@ -164,9 +164,9 @@ def test_add_sector_meta(config, input_files):
         unfccc_categories=["1.A"],
         cf_standard_name="standard_name_suffix",
         cf_long_name="test long name",
-        create_estimate=lambda a, b, c: None
+        create_estimate=lambda a, b, c, d: None
     )
-    sector_shape = (test_ds.sizes["time"], 1, config.domain().grid.shape[0], config.domain().grid.shape[1])
+    sector_shape = (test_ds.sizes["time"], 1, params.domain.grid.shape[0], params.domain.grid.shape[1])
     sector_data = np.zeros(sector_shape)
 
     assert sector_meta.name not in test_ds

@@ -20,7 +20,8 @@ import xarray as xr
 
 from openmethane_prior.lib import (
     logger,
-    PriorSectorConfig,
+    PriorParameters,
+    DataManager,
     kg_to_period_cell_flux,
 )
 from openmethane_prior.data_sources.inventory import get_sector_emissions_by_code, inventory_data_source
@@ -30,29 +31,32 @@ from .emission_sources.all_sources import all_emission_sources
 
 logger = logger.get_logger(__name__)
 
-def process_emissions(sector: AustraliaPriorSector, sector_config: PriorSectorConfig, prior_ds: xr.Dataset):
-    config = sector_config.prior_config
-
+def process_emissions(
+    sector: AustraliaPriorSector,
+    params: PriorParameters,
+    data_manager: DataManager,
+    prior_ds: xr.Dataset,
+):
     # read the total emissions over the sector (in kg)
-    emissions_inventory = sector_config.data_manager.get_asset(inventory_data_source).data
+    emissions_inventory = data_manager.get_asset(inventory_data_source).data
     sector_total_emissions = get_sector_emissions_by_code(
         emissions_inventory=emissions_inventory,
-        start_date=config.start_date,
-        end_date=config.end_date,
+        start_date=params.start_date,
+        end_date=params.end_date,
         category_codes=sector.unfccc_categories,
     )
 
     # create a DataFrame with all potential methane emission sources in the sector
     emission_sources_df = all_emission_sources(
-        data_manager=sector_config.data_manager,
-        prior_config=config,
+        data_manager=data_manager,
+        params=params,
     )
 
     # emission sources don't include a methane quantity or proxy, so naively
     # distribute sector emissions evenly to each active petroleum well
     emission_sources_df["emissions_quantity"] = sector_total_emissions / len(emission_sources_df)
 
-    domain_grid = config.domain().grid
+    domain_grid = params.domain.grid
 
     methane = np.zeros(domain_grid.shape)
 
@@ -68,7 +72,7 @@ def process_emissions(sector: AustraliaPriorSector, sector_config: PriorSectorCo
         else:
             raise NotImplementedError("Allocating emissions to non-point geometry is not implemented")
 
-    return kg_to_period_cell_flux(methane, config)
+    return kg_to_period_cell_flux(methane, params)
 
 
 sector = AustraliaPriorSector(

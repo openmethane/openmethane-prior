@@ -25,7 +25,8 @@ from openmethane_prior.data_sources.safeguard import (
 )
 from openmethane_prior.lib import (
     logger,
-    PriorSectorConfig,
+    PriorParameters,
+    DataManager,
     kg_to_period_cell_flux,
 )
 from openmethane_prior.data_sources.climate_trace import filter_emissions_sources
@@ -39,19 +40,22 @@ from .safeguard_coal import allocate_safeguard_facility_emissions
 logger = logger.get_logger(__name__)
 
 
-def process_emissions(sector: AustraliaPriorSector, sector_config: PriorSectorConfig, prior_ds: xr.Dataset):
-    config = sector_config.prior_config
-
+def process_emissions(
+    sector: AustraliaPriorSector,
+    params: PriorParameters,
+    data_manager: DataManager,
+    prior_ds: xr.Dataset,
+):
     # prepare a grid to allocate emissions
-    domain_grid = config.domain().grid
+    domain_grid = params.domain.grid
     methane = np.zeros(domain_grid.shape)
 
-    safeguard_mechanism_asset = sector_config.data_manager.get_asset(safeguard_mechanism_data_source)
-    facility_locations_asset = sector_config.data_manager.get_asset(safeguard_locations_data_source)
-    coal_facilities_asset = sector_config.data_manager.get_asset(coal_facilities_data_source)
+    safeguard_mechanism_asset = data_manager.get_asset(safeguard_mechanism_data_source)
+    facility_locations_asset = data_manager.get_asset(safeguard_locations_data_source)
+    coal_facilities_asset = data_manager.get_asset(coal_facilities_data_source)
 
     safeguard_facilities, safeguard_locations, safeguard_gridded_ch4 = allocate_safeguard_facility_emissions(
-        config=config,
+        params=params,
         anzsic_codes=["060"],
         safeguard_facilities_asset=safeguard_mechanism_asset,
         facility_locations_asset=facility_locations_asset,
@@ -62,23 +66,23 @@ def process_emissions(sector: AustraliaPriorSector, sector_config: PriorSectorCo
     methane += safeguard_gridded_ch4
 
     # read the total emissions over the sector (in kg)
-    emissions_inventory = sector_config.data_manager.get_asset(inventory_data_source).data
+    emissions_inventory = data_manager.get_asset(inventory_data_source).data
     sector_total_emissions = get_sector_emissions_by_code(
         emissions_inventory=emissions_inventory,
-        start_date=config.start_date,
-        end_date=config.end_date,
+        start_date=params.start_date,
+        end_date=params.end_date,
         category_codes=sector.unfccc_categories,
     )
 
     # SGM emissions have been allocated, find the remaining inventory
-    safeguard_allocated_emissions = safeguard_facilities["ch4_kg"].sum() * (days_in_period(config.start_date, config.end_date) / 365)
+    safeguard_allocated_emissions = safeguard_facilities["ch4_kg"].sum() * (days_in_period(params.start_date, params.end_date) / 365)
     sector_unallocated_emissions = sector_total_emissions - safeguard_allocated_emissions
 
     # select the emissions source data from the requested period
     coal_ch4_period = filter_emissions_sources(
         emissions_sources_df=coal_facilities_asset.data,
-        period_start=config.start_date,
-        period_end=config.end_date,
+        period_start=params.start_date,
+        period_end=params.end_date,
     )
 
     # remove facilities that were allocated Safeguard emissions
@@ -96,7 +100,7 @@ def process_emissions(sector: AustraliaPriorSector, sector_config: PriorSectorCo
         if cell_valid:
             unallocated_facilities_gridded[cell_y, cell_x] += facility["emissions_quantity"]
 
-    methane += kg_to_period_cell_flux(unallocated_facilities_gridded, config)
+    methane += kg_to_period_cell_flux(unallocated_facilities_gridded, params)
 
     return methane
 

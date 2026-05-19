@@ -4,16 +4,14 @@ import pytest
 
 from openmethane_prior.lib.outputs import create_output_dataset
 from openmethane_prior.sectors.termite.sector import sector as termites_sector, termites_data_source
-from openmethane_prior.lib.sector.config import PriorSectorConfig
 from openmethane_prior.lib.utils import area_of_rectangle_m2
 
 @pytest.mark.skip(reason="Makes no assertions")
-def test_termite_emis(config, input_files, data_manager):
+def test_termite_emis(params, input_files, data_manager):
     # TODO: Check the output correctly
-    prior_ds = create_output_dataset(config)
-    sector_config = PriorSectorConfig(prior_config=config, data_manager=data_manager)
+    prior_ds = create_output_dataset(params)
 
-    remapped = termites_sector.create_estimate(termites_sector, sector_config, prior_ds)
+    remapped = termites_sector.create_estimate(termites_sector, params, data_manager, prior_ds)
 
     termites_asset = data_manager.get_asset(termites_data_source)
     ncin = nc.Dataset(termites_asset.path, "r")
@@ -46,7 +44,7 @@ def test_termite_emis(config, input_files, data_manager):
             / lonTerm.size
         )
 
-    domain_ds = config.domain().dataset
+    domain_ds = params.domain.dataset
     LATD = domain_ds.variables["LATD"].values.squeeze()
     LOND = domain_ds.variables["LOND"].values.squeeze()
     indLat = (latTerm > LATD.min()) & (latTerm < LATD.max())

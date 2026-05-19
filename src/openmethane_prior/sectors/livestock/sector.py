@@ -24,7 +24,8 @@ from openmethane_prior.lib import (
     convert_to_timescale,
     logger,
     PriorSector,
-    PriorSectorConfig,
+    PriorParameters,
+    DataManager,
 )
 
 logger = logger.get_logger(__name__)
@@ -36,16 +37,15 @@ livestock_data_source = DataSource(
 
 def process_emissions(
     sector: PriorSector,
-    sector_config: PriorSectorConfig,
+    params: PriorParameters,
+    data_manager: DataManager,
     prior_ds: xr.Dataset,
 ):
-    config = sector_config.prior_config
-
-    livestock_asset = sector_config.data_manager.get_asset(livestock_data_source)
+    livestock_asset = data_manager.get_asset(livestock_data_source)
     with xr.open_dataset(livestock_asset.path) as lss:
         ls = lss.load()
 
-    domain_grid = config.domain().grid
+    domain_grid = params.domain.grid
 
     # Re-project into domain coordinates
     # - create meshgrids of the lats and lons

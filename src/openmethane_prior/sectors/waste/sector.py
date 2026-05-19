@@ -25,7 +25,8 @@ from openmethane_prior.data_sources.inventory import get_sector_emissions_by_cod
 from openmethane_prior.lib import (
     kg_to_period_cell_flux,
     logger,
-    PriorSectorConfig,
+    PriorParameters,
+    DataManager,
 )
 from openmethane_prior.lib.sector.au_sector import AustraliaPriorSector
 
@@ -39,34 +40,34 @@ logger = logger.get_logger(__name__)
 
 
 def process_emissions(
-        sector: AustraliaPriorSector,
-        sector_config: PriorSectorConfig,
-        prior_ds: xr.Dataset,
+    sector: AustraliaPriorSector,
+    params: PriorParameters,
+    data_manager: DataManager,
+    prior_ds: xr.Dataset,
 ):
-    config = sector_config.prior_config
-    domain_grid = config.domain().grid
+    domain_grid = params.domain.grid
 
     # load the national inventory data, ready to calculate sectoral totals
-    emissions_inventory = sector_config.data_manager.get_asset(inventory_data_source).data
+    emissions_inventory = data_manager.get_asset(inventory_data_source).data
     sector_total_emissions = get_sector_emissions_by_code(
         emissions_inventory=emissions_inventory,
-        start_date=config.start_date,
-        end_date=config.end_date,
+        start_date=params.start_date,
+        end_date=params.end_date,
         category_codes=sector.unfccc_categories,
     )
 
     # read all emissions sources corresponding to the waste sector
     emissions_sources = pd.concat([
-        sector_config.data_manager.get_asset(ct_wastewaster_domestic_data_source).data,
-        sector_config.data_manager.get_asset(ct_wastewaster_industrial_data_source).data,
-        sector_config.data_manager.get_asset(ct_solid_waste_data_source).data,
+        data_manager.get_asset(ct_wastewaster_domestic_data_source).data,
+        data_manager.get_asset(ct_wastewaster_industrial_data_source).data,
+        data_manager.get_asset(ct_solid_waste_data_source).data,
     ])
 
     # select the emissions source data from the requested period
     period_emissions_sources = filter_emissions_sources(
         emissions_sources,
-        config.start_date,
-        config.end_date,
+        params.start_date,
+        params.end_date,
     )
 
     # scale site emissions so the aggregate matches the inventory total
@@ -81,7 +82,7 @@ def process_emissions(
         if cell_valid:
             sector_gridded[cell_y, cell_x] += facility["emissions_quantity"]
 
-    return kg_to_period_cell_flux(sector_gridded, config)
+    return kg_to_period_cell_flux(sector_gridded, params)
 
 
 sector = AustraliaPriorSector(

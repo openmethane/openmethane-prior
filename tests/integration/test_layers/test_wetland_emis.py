@@ -6,10 +6,10 @@ from openmethane_prior.sectors.wetland.sector import make_wetland_climatology, w
 from openmethane_prior.lib.utils import area_of_rectangle_m2
 
 @pytest.mark.skip(reason="Makes no assertions")
-def test_wetland_emis(config, input_files, data_manager):
+def test_wetland_emis(params, input_files, data_manager):
     # TODO: convert into an actual test
     """Test totals for WETLAND emissions between original and remapped"""
-    remapped = make_wetland_climatology(sector_config=config, forceUpdate=True)
+    remapped = make_wetland_climatology(params=params, data_manager=data_manager)
 
     wetlands_asset = data_manager.get_asset(wetlands_data_source)
     ncin = nc.Dataset(wetlands_asset.path, "r")
@@ -42,7 +42,7 @@ def test_wetland_emis(config, input_files, data_manager):
             )
             / lonWetland.size
         )
-    domain_ds = config.domain().dataset
+    domain_ds = params.domain.dataset
     LATD = domain_ds.variables["LATD"].values.squeeze()
     LOND = domain_ds.variables["LOND"].values.squeeze()
     indLat = (latWetland > LATD.min()) & (latWetland < LATD.max())

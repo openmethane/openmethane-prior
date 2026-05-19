@@ -26,7 +26,8 @@ from openmethane_prior.lib import (
     DataSource,
     kg_to_period_cell_flux,
     logger,
-    PriorSectorConfig,
+    PriorParameters,
+    DataManager,
     PriorSector,
 )
 from openmethane_prior.data_sources.inventory import get_sector_emissions_by_code, inventory_data_source
@@ -40,27 +41,31 @@ electricity_facilities_data_source = DataSource(
     parse=parse_csv,
 )
 
-def process_emissions(sector: PriorSector, sector_config: PriorSectorConfig, prior_ds: xr.Dataset):
+def process_emissions(
+    sector: PriorSector,
+    params: PriorParameters,
+    data_manager: DataManager,
+    prior_ds: xr.Dataset,
+):
     """
     Process emissions from the electricity sector, adding them to the prior
     dataset.
     """
     logger.info("process_emissions for electricity")
-    config = sector_config.prior_config
 
     # read the total emissions over the sector (in kg)
-    emissions_inventory = sector_config.data_manager.get_asset(inventory_data_source).data
+    emissions_inventory = data_manager.get_asset(inventory_data_source).data
     sector_total_emissions = get_sector_emissions_by_code(
         emissions_inventory=emissions_inventory,
-        start_date=config.start_date,
-        end_date=config.end_date,
+        start_date=params.start_date,
+        end_date=params.end_date,
         category_codes=sector.unfccc_categories,
     )
 
-    electricity_facilities_asset = sector_config.data_manager.get_asset(electricity_facilities_data_source)
+    electricity_facilities_asset = data_manager.get_asset(electricity_facilities_data_source)
     electricity_facilities_records = electricity_facilities_asset.data.to_dict(orient="records")
 
-    domain_grid = config.domain().grid
+    domain_grid = params.domain.grid
 
     totalCapacity = sum(item["capacity"] for item in electricity_facilities_records)
 
@@ -72,7 +77,7 @@ def process_emissions(sector: PriorSector, sector_config: PriorSectorConfig, pri
         if cell_valid:
             methane[cell_y, cell_x] += (facility["capacity"] / totalCapacity) * sector_total_emissions
 
-    return kg_to_period_cell_flux(methane, config)
+    return kg_to_period_cell_flux(methane, params)
 
 
 sector = PriorSector(

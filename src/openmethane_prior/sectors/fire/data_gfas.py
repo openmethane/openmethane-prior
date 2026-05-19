@@ -22,19 +22,19 @@ import pathlib
 from openmethane_prior.lib import (
     ConfiguredDataSource,
     DataSource,
-    PriorConfig,
+    PriorParameters,
 )
 
-def gfas_file_name(data_source: DataSource, prior_config: PriorConfig) -> str:
-    return f"gfas_{prior_config.start_date.strftime('%Y-%m-%d')}_{prior_config.end_date.strftime('%Y-%m-%d')}.nc"
+def gfas_file_name(data_source: DataSource, prior_params: PriorParameters) -> str:
+    return f"gfas_{prior_params.start_date.strftime('%Y-%m-%d')}_{prior_params.end_date.strftime('%Y-%m-%d')}.nc"
 
 def gfas_fetch(data_source: ConfiguredDataSource) -> pathlib.Path:
     """
     Download GFAS methane between start and end date, returning the filename
     of the retrieved data.
     """
-    start_date_fmt = data_source.prior_config.start_date.strftime('%Y-%m-%d')
-    end_date_fmt = data_source.prior_config.end_date.strftime('%Y-%m-%d')
+    start_date_fmt = data_source.prior_params.start_date.strftime('%Y-%m-%d')
+    end_date_fmt = data_source.prior_params.end_date.strftime('%Y-%m-%d')
 
     c = cdsapi.Client(progress=False)
     c.retrieve(

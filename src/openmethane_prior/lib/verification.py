@@ -29,7 +29,7 @@ from openmethane_prior.data_sources.inventory import (
     inventory_domain_data_source,
 )
 
-from .config import PriorConfig
+from .config import PriorConfig, PriorParameters
 from .data_manager.manager import DataManager
 from .logger import get_logger
 from .sector.sector import PriorSector
@@ -42,10 +42,20 @@ logger = get_logger(__name__)
 MAX_ABS_DIFF = 0.1
 
 
-def verify_emis(sectors: list[PriorSector], config: PriorConfig, prior_ds: xr.Dataset, atol: float = MAX_ABS_DIFF):
+def verify_emis(
+    sectors: list[PriorSector],
+    config: PriorConfig,
+    prior_ds: xr.Dataset,
+    atol: float = MAX_ABS_DIFF,
+):
     """Check output sector emissions to make sure they tally up to the input emissions"""
-    data_manager = DataManager(data_path=config.input_path, prior_config=config)
-    domain = config.domain()
+    params = PriorParameters.from_config(config)
+    data_manager = DataManager(
+        data_path=config.input_path,
+        intermediates_path=config.intermediates_path,
+        prior_params=params,
+    )
+    domain = params.domain
     inventory_domain = data_manager.get_asset(inventory_domain_data_source).data
 
     if domain.grid != inventory_domain.grid:

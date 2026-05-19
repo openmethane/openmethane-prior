@@ -23,11 +23,11 @@ import os
 import pathlib
 import urllib.request
 
-from openmethane_prior.lib.config import PriorConfig
+from openmethane_prior.lib.config import PriorParameters
 from openmethane_prior.lib.data_manager.asset import DataAsset
 
 
-def file_path_from_url(_self: DataSource, prior_config: PriorConfig) -> str:
+def file_path_from_url(_self: DataSource, prior_params: PriorParameters) -> str:
     if _self.url is None:
         raise ValueError("DataSource: if url is not specified, file_path must be provided")
     return os.path.basename(_self.url)
@@ -70,7 +70,7 @@ class DataSource:
     url: str = attrs.field(default=None)
     """Publicly accessible URL where this data can be downloaded"""
 
-    file_path: str | pathlib.Path | Callable[[DataSource, PriorConfig], str] = attrs.field(
+    file_path: str | pathlib.Path | Callable[[DataSource, PriorParameters], str] = attrs.field(
         default=file_path_from_url,
     )
     """Optional path to the file on the local filesystem. By default this is
@@ -139,8 +139,8 @@ class ConfiguredDataSource:
     data_path: pathlib.Path
     """Path where input data should be saved"""
 
-    prior_config: PriorConfig
-    """Configuration for the current run of the prior"""
+    prior_params: PriorParameters
+    """Per-run parameters for the current execution of the prior"""
 
     data_assets: list[DataAsset]
     """Assets loaded from DataSources defined in DataSource.data_sources"""
@@ -165,14 +165,14 @@ class ConfiguredDataSource:
 
 def configure_data_source(
         data_source: DataSource,
-        prior_config: PriorConfig,
+        prior_params: PriorParameters,
         data_path: pathlib.Path,
         data_assets: list[DataAsset] = None,
 ):
-    """Create a ConfiguredDataSource from a DataSource and a PriorConfig"""
+    """Create a ConfiguredDataSource from a DataSource and PriorParameters."""
     file_path = data_source.file_path
     if callable(file_path):
-        file_path = file_path(data_source, prior_config)
+        file_path = file_path(data_source, prior_params)
 
     asset_path = file_path if os.path.isabs(file_path) else data_path / file_path
 
@@ -182,7 +182,7 @@ def configure_data_source(
         asset_path=pathlib.Path(asset_path),
         source_fetch=data_source.fetch,
         source_parse=data_source.parse,
-        prior_config=prior_config,
+        prior_params=prior_params,
         data_path=data_path,
         data_assets=data_assets if data_assets is not None else [],
     )

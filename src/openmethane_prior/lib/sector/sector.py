@@ -23,7 +23,8 @@ from collections.abc import Callable
 import numpy as np
 import xarray as xr
 
-from .config import PriorSectorConfig
+from openmethane_prior.lib.config import PriorParameters
+from openmethane_prior.lib.data_manager.manager import DataManager
 
 emission_categories = [
     "natural", # originating in natural processes
@@ -40,12 +41,11 @@ class PriorSector:
     """A machine-friendly sector name that will be used in the name of the
     output variable, like `ch4_sector_{name}`"""
 
-    create_estimate: Callable[[Self, PriorSectorConfig, xr.Dataset], xr.DataArray | np.ndarray]
-    """A method to create the emissions estimate for the sector based on the
-    parameters specified in PriorSectorConfig.
-    
-    The sector output should be added as a layer to provided Dataset using the
-    add_sector method.
+    create_estimate: Callable[[Self, PriorParameters, DataManager, xr.Dataset], xr.DataArray | np.ndarray]
+    """A method to create the emissions estimate for the sector.
+
+    Receives the per-run parameters, a data manager for fetching inputs, and
+    the output dataset being built. Returns gridded sector emissions.
     """
 
     emission_category: str = attrs.field()

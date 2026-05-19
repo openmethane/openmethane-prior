@@ -32,7 +32,8 @@ from shapely import geometry
 
 from openmethane_prior.lib import (
     PriorSector,
-    PriorSectorConfig,
+    PriorParameters,
+    DataManager,
     area_of_rectangle_m2,
     load_zipped_pickle,
     redistribute_spatially,
@@ -45,13 +46,16 @@ from .data_gfas import gfas_data_source
 logger = logger.get_logger(__name__)
 
 
-def process_emissions(sector: PriorSector, sector_config: PriorSectorConfig, prior_ds: xr.Dataset):
+def process_emissions(
+    sector: PriorSector,
+    params: PriorParameters,
+    data_manager: DataManager,
+    prior_ds: xr.Dataset,
+):
     """
     Remap GFAS fire emissions to the CMAQ domain
     """
-    config = sector_config.prior_config
-
-    gfas_asset = sector_config.data_manager.get_asset(gfas_data_source)
+    gfas_asset = data_manager.get_asset(gfas_data_source)
     gfas_ds = nc.Dataset(gfas_asset.path, "r")
 
     # dates are labelled at midnight at end of chosen day (hence looks like next day), subtract one day to fix
@@ -88,11 +92,11 @@ def process_emissions(sector: PriorSector, sector_config: PriorSectorConfig, pri
             / lonGfas.size
         )
     # now collect some domain information
-    domain_grid = config.domain().grid
+    domain_grid = params.domain.grid
 
-    indxPath = config.as_intermediate_file("GFAS_ind_x.p.gz")
-    indyPath = config.as_intermediate_file("GFAS_ind_y.p.gz")
-    coefsPath = config.as_intermediate_file("GFAS_ind_coefs.p.gz")
+    indxPath = data_manager.intermediates_path / "GFAS_ind_x.p.gz"
+    indyPath = data_manager.intermediates_path / "GFAS_ind_y.p.gz"
+    coefsPath = data_manager.intermediates_path / "GFAS_ind_coefs.p.gz"
 
     if (
         os.path.exists(indxPath)

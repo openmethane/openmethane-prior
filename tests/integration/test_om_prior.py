@@ -1,22 +1,23 @@
-import os
-import pytest
 
-from openmethane_prior.sectors.fire.sector import gfas_data_source
-from openmethane_prior.lib.sector.config import PriorSectorConfig
+from openmethane_prior.lib import create_prior
+from openmethane_prior.sectors import all_sectors
 from testing import dataset_metrics
 
 
-@pytest.mark.skip(reason="Duplicated by other tests")
-def test_002_cdsapi_connection(tmp_path, sector_config: PriorSectorConfig):
-    data_path = tmp_path / "sub"
-    data_path.mkdir(parents=True)
+def test_prior_emissions_ds(input_files, config):
+    prior_emissions_ds = create_prior(config, all_sectors)
 
-    gfas_asset = sector_config.data_manager.get_asset(gfas_data_source)
+    expected_dimensions = {
+        "time": 2,
+        "vertical": 1,
+        "y": 10,
+        "x": 10,
+        "cell_bounds": 2,
+        "time_period": 2,
+    }
 
-    assert os.path.exists(gfas_asset.path)
+    assert prior_emissions_ds.sizes == expected_dimensions
 
-
-def test_009_prior_emissions_ds(prior_emissions_ds):
     assert dataset_metrics(prior_emissions_ds) == {
         'max': {
             'LANDMASK': 1.0,
@@ -110,21 +111,6 @@ def test_009_prior_emissions_ds(prior_emissions_ds):
         },
     }
 
-
-def test_011_output_dims(prior_emissions_ds):
-    expected_dimensions = {
-        "time": 2,
-        "vertical": 1,
-        "y": 10,
-        "x": 10,
-        "cell_bounds": 2,
-        "time_period": 2,
-    }
-
-    assert prior_emissions_ds.sizes == expected_dimensions
-
-
-def test_012_output_variable_attributes(prior_emissions_ds):
     assert prior_emissions_ds.variables["ch4_total"].attrs == {
         "units": "kg/m2/s",
         "standard_name": "surface_upward_mass_flux_of_methane",

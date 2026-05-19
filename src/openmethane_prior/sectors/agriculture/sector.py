@@ -36,7 +36,8 @@ from openmethane_prior.lib import (
     logger,
     regrid_data,
     remap_raster,
-    PriorSectorConfig,
+    PriorParameters,
+    DataManager,
     PriorSector,
 )
 
@@ -44,25 +45,24 @@ logger = logger.get_logger(__name__)
 
 
 def process_emissions(
-        sector: PriorSector,
-        sector_config: PriorSectorConfig,
-        prior_ds: xr.Dataset,
+    sector: PriorSector,
+    params: PriorParameters,
+    data_manager: DataManager,
+    prior_ds: xr.Dataset,
 ):
-    config = sector_config.prior_config
-
     # Import a map of land use type numbers to emissions sectors
     # make a dictionary of all landuse types corresponding to sectors in map
-    sector_mapping_asset = sector_config.data_manager.get_asset(alum_sector_mapping_data_source)
+    sector_mapping_asset = data_manager.get_asset(alum_sector_mapping_data_source)
     sector_alum_codes = alum_codes_for_sector(sector.name, sector_mapping_asset.data)
 
     # load the national inventory data, ready to calculate sectoral totals
-    emissions_inventory = sector_config.data_manager.get_asset(inventory_data_source).data
+    emissions_inventory = data_manager.get_asset(inventory_data_source).data
 
     # Read the land use type data band
     logger.debug("Loading land use data")
     # this seems to need two approaches since rioxarray
     # seems to always convert to float which we don't want but we need it for the other tif attributes
-    landuse_asset = sector_config.data_manager.get_asset(landuse_map_data_source)
+    landuse_asset = data_manager.get_asset(landuse_map_data_source)
     landUseData = rxr.open_rasterio(landuse_asset.path, masked=True)
     lu_x = landUseData.x
     lu_y = landUseData.y
@@ -72,11 +72,11 @@ def process_emissions(
     dataBand = rasterio.open(landuse_asset.path, engine='rasterio').read()
     dataBand = dataBand.squeeze()
 
-    inventory_domain = sector_config.data_manager.get_asset(inventory_domain_data_source).data
+    inventory_domain = data_manager.get_asset(inventory_domain_data_source).data
     inventory_mask_regridded = regrid_data(
         inventory_domain.dataset['inventory_mask'],
         from_grid=inventory_domain.grid,
-        to_grid=config.domain().grid,
+        to_grid=params.domain.grid,
     )
 
     # create a mask of pixels which match the sector code
@@ -84,7 +84,7 @@ def process_emissions(
     sector_xr = xr.DataArray(sector_mask, coords={ 'y': lu_y, 'x': lu_x  })
 
     # now aggregate to coarser resolution of the domain grid
-    sector_gridded = remap_raster(sector_xr, config.domain().grid, input_crs=lu_crs)
+    sector_gridded = remap_raster(sector_xr, params.domain.grid, input_crs=lu_crs)
 
     # apply inventory mask before counting any land use
     sector_gridded *= inventory_mask_regridded
@@ -98,14 +98,14 @@ def process_emissions(
 
     sector_total_emissions = get_sector_emissions_by_code(
         emissions_inventory=emissions_inventory,
-        start_date=config.start_date,
-        end_date=config.end_date,
+        start_date=params.start_date,
+        end_date=params.end_date,
         category_codes=sector.unfccc_categories,
     )
     # distribute the emissions reported for the entire sector
     sector_gridded *= sector_total_emissions
 
-    return kg_to_period_cell_flux(sector_gridded, config)
+    return kg_to_period_cell_flux(sector_gridded, params)
 
 
 sector = PriorSector(

@@ -18,7 +18,7 @@
 import attrs
 import pathlib
 
-from openmethane_prior.lib.config import PriorConfig
+from openmethane_prior.lib.config import PriorParameters
 from openmethane_prior.lib.data_manager.asset import DataAsset
 from openmethane_prior.lib.data_manager.source import configure_data_source, ConfiguredDataSource, DataSource
 
@@ -33,8 +33,11 @@ class DataManager:
     data_path: pathlib.Path
     """Folder on the filesystem where fetched data will be stored"""
 
-    prior_config: PriorConfig
-    """Configuration for the current run of the prior"""
+    prior_params: PriorParameters
+    """Per-run parameters for the current execution of the prior"""
+
+    intermediates_path: pathlib.Path
+    """Folder on the filesystem where intermediate artifacts should be stored"""
 
     fetch_only: bool = False
     """If True, assets will only be fetched and not parsed"""
@@ -63,7 +66,7 @@ class DataManager:
 
         self.data_sources[source.name] = configure_data_source(
             data_source=source,
-            prior_config=self.prior_config,
+            prior_params=self.prior_params,
             data_path=self.data_path,
             data_assets=dependency_assets,
         )
@@ -72,8 +75,6 @@ class DataManager:
     def prepare_asset(self, source: ConfiguredDataSource) -> DataAsset:
         """Fetch and process data sources, turning them into data assets that
         are ready to be used."""
-        # if the file is already present on the filesystem, do not attempt to
-        # re-fetch it
         if source.asset_path.exists():
             data_asset = DataAsset(
                 name=source.name,

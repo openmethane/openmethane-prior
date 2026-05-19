@@ -28,7 +28,8 @@ import xarray as xr
 
 from openmethane_prior.lib import (
     DataSource,
-    PriorSectorConfig,
+    PriorParameters,
+    DataManager,
     PriorSector,
     area_of_rectangle_m2,
     load_zipped_pickle,
@@ -44,13 +45,12 @@ termites_data_source = DataSource(
 
 def process_emissions(  # noqa: PLR0915
     sector: PriorSector,
-    sector_config: PriorSectorConfig,
+    params: PriorParameters,
+    data_manager: DataManager,
     prior_ds: xr.Dataset,
 ):
-    """Remap termite emissions to the CMAQ domain"""
-    config = sector_config.prior_config
-
-    termites_asset = sector_config.data_manager.get_asset(termites_data_source)
+    """Remap termite emissions to the domain of interest."""
+    termites_asset = data_manager.get_asset(termites_data_source)
     ncin = nc.Dataset(termites_asset.path, "r")
     latTerm = np.around(np.float64(ncin.variables["lat"][:]), 3)
     latTerm = latTerm[-1::-1]  # we need it south-north
@@ -81,11 +81,11 @@ def process_emissions(  # noqa: PLR0915
         )
 
     # now collect some domain information
-    domain_grid = config.domain().grid
+    domain_grid = params.domain.grid
 
-    indxPath = config.as_intermediate_file("TERM_ind_x.p.gz")
-    indyPath = config.as_intermediate_file("TERM_ind_y.p.gz")
-    coefsPath = config.as_intermediate_file("TERM_ind_coefs.p.gz")
+    indxPath = data_manager.intermediates_path / "TERM_ind_x.p.gz"
+    indyPath = data_manager.intermediates_path / "TERM_ind_y.p.gz"
+    coefsPath = data_manager.intermediates_path / "TERM_ind_coefs.p.gz"
 
     if (
         os.path.exists(indxPath)

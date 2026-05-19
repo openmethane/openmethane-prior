@@ -3,20 +3,18 @@ import numpy as np
 import pytest
 
 from openmethane_prior.lib.outputs import create_output_dataset
-from openmethane_prior.lib.sector.config import PriorSectorConfig
 from openmethane_prior.sectors.fire.sector import sector as fire_sector
 from openmethane_prior.lib.utils import area_of_rectangle_m2
 
 
 @pytest.mark.skip(reason="Makes no assertions")
-def test_gfas_emis(config, input_files, data_manager):  # test totals for GFAS emissions between original and remapped
+def test_gfas_emis(params, input_files, data_manager):  # test totals for GFAS emissions between original and remapped
     # TODO: Check the output correctly
-    prior_ds = create_output_dataset(config)
-    sector_config = PriorSectorConfig(prior_config=config, data_manager=data_manager)
+    prior_ds = create_output_dataset(params)
 
-    remapped = fire_sector.create_estimate(fire_sector, sector_config, prior_ds)
+    remapped = fire_sector.create_estimate(fire_sector, params, data_manager, prior_ds)
 
-    GFASfile = config.input_path / f"gfas_{config.start_date.strftime('%Y-%m-%d')}_{config.end_date.strftime('%Y-%m-%d')}.nc"
+    GFASfile = params.config.input_path / f"gfas_{params.start_date.strftime('%Y-%m-%d')}_{params.end_date.strftime('%Y-%m-%d')}.nc"
     ncin = nc.Dataset(GFASfile, "r", format="NETCDF4")
     latGfas = np.around(np.float64(ncin.variables["latitude"][:]), 3)
     lonGfas = np.around(np.float64(ncin.variables["longitude"][:]), 3)
@@ -44,7 +42,7 @@ def test_gfas_emis(config, input_files, data_manager):  # test totals for GFAS e
             )
             / lonGfas.size
         )
-    domain_ds = config.domain().dataset
+    domain_ds = params.domain.dataset
     LATD = domain_ds.variables["LATD"].values.squeeze()
     LOND = domain_ds.variables["LOND"].values.squeeze()
     indLat = (latGfas > LATD.min()) & (latGfas < LATD.max())
