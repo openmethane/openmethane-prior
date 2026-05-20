@@ -48,7 +48,7 @@ def parse_ntlt_data_source(data_source: ConfiguredDataSource):
     inventory_ntlt *= prior_config.inventory_dataset()['inventory_mask']
 
     # we want proportions of total for scaling emissions
-    return om_ntlt / inventory_ntlt.sum().item()
+    return om_ntlt / float(inventory_ntlt.sum().item())
 
 
 night_lights_data_source = DataSource(

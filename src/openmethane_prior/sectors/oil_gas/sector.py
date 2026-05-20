@@ -24,11 +24,13 @@ from openmethane_prior.lib import (
     PriorSectorConfig,
     kg_to_period_cell_flux,
 )
+from openmethane_prior.data_sources.au_shapes import au_shapes_states_data_source
 from openmethane_prior.data_sources.inventory import (
     get_sector_emissions_by_code,
     inventory_data_source,
     qld_inventory_data_source,
 )
+from openmethane_prior.data_sources.nightlights import night_lights_data_source
 from openmethane_prior.data_sources.safeguard import (
     filter_facilities,
     safeguard_mechanism_data_source,
@@ -39,6 +41,7 @@ from openmethane_prior.lib.units import days_in_period
 
 from .emission_source import allocate_emissions_to_sources
 from .emission_sources.all_sources import all_emission_sources
+from .safeguard import gas_supply_emissions, get_sector_safeguard_facilities
 
 logger = logger.get_logger(__name__)
 
@@ -77,21 +80,33 @@ def process_emissions(sector: AustraliaPriorSector, sector_config: PriorSectorCo
 
     # identify Safeguard Mechanism facilities in this sector which reported
     # emissions during the period of interest
-    safeguard_facilities_df = sector_config.data_manager.get_asset(safeguard_mechanism_data_source).data
-    sector_facilities_df = filter_facilities(
-        facility_df=safeguard_facilities_df,
+    safeguard_facilities_da = sector_config.data_manager.get_asset(safeguard_mechanism_data_source)
+    sector_facilities_df = get_sector_safeguard_facilities(
+        safeguard_facilities_df=safeguard_facilities_da.data,
         anzsic_codes=sector.anzsic_codes,
         period=(config.start_date.date(), config.end_date.date()),
     )
-    logger.info(f"Found {len(sector_facilities_df)} Safeguard facilities, totalling {sector_facilities_df['ch4_kg'].sum() / 1e6:.2f} kt annual CH4")
 
-    # scale annual safeguard emissions to the total amount for the period (kg),
-    # the same unit output from get_sector_emissions_by_code
-    year_end = datetime.date(config.start_date.year + 1, config.start_date.month, config.start_date.day)
-    year_days = (year_end - config.start_date.date()).days
-    annual_fraction = days_in_period(config.start_date.date(), config.end_date.date()) / year_days
-    sector_facilities_df["ch4_kg"] *= annual_fraction
-    logger.info(f"{sector_facilities_df['ch4_kg'].sum() / 1e6:.2f} kt total Safeguard emissions reported in the period in sectors {sector.anzsic_codes}")
+    total_allocated_emissions = 0
+
+    # allocate Gas Supply sub-sector first, this is based on nighttime lights
+    # and not point emissions like the rest of the sources.
+    au_states_df = sector_config.data_manager.get_asset(au_shapes_states_data_source).data
+    night_lights = sector_config.data_manager.get_asset(night_lights_data_source).data
+    # filter out facilities with more than one state, ie "NSW; VIC"
+    gas_supply_facilities_mask = sector_facilities_df["anzsic_code"].str.startswith("27") \
+                                 & sector_facilities_df["state"].isin(au_states_df["short_name"])
+    gas_supply_nd = gas_supply_emissions(
+        domain_grid=config.domain_grid(),
+        facilities_df=sector_facilities_df[gas_supply_facilities_mask],
+        au_states=au_states_df,
+        nightlights=night_lights,
+    )
+    total_allocated_emissions += float(gas_supply_nd.sum())
+    logger.debug(f"{total_allocated_emissions / 1e6:.2f} kt allocated to SGM gas supply facilities")
+
+    # Remove gas supply facilities since they've been spatialised
+    sector_facilities_df = sector_facilities_df[~gas_supply_facilities_mask]
 
     # Safeguard locations dataset tells us where we can find locations of
     # wells and sites that correspond to a Safeguard facility
@@ -117,11 +132,7 @@ def process_emissions(sector: AustraliaPriorSector, sector_config: PriorSectorCo
             # add the emission sources for this location
             facility_emission_sources_mask |= location_emission_sources_mask
 
-            # if location_emission_sources_mask.sum() == 0:
-            #     logger.debug(f"No sources found for location {facility.facility_name} {location.data_source_name}:{location.data_source_id}")
-
         # if no locations can be related to an SGM facility, that's a problem
-        # TODO: find a method for locating "27 Gas Supply" sites
         if facility_emission_sources_mask.sum() == 0:
             logger.warning(f"No sources found for facility '{facility.facility_name}', unable to allocate {facility['ch4_kg']:.2f}kg CH4")
             continue
@@ -133,7 +144,8 @@ def process_emissions(sector: AustraliaPriorSector, sector_config: PriorSectorCo
             emission_mass=facility["ch4_kg"],
         )
 
-    logger.debug(f"{emission_sources_df['emissions_quantity'].sum() / 1e6:.2f} kt allocated to SGM facilities")
+    total_allocated_emissions += emission_sources_df['emissions_quantity'].sum()
+    logger.debug(f"{total_allocated_emissions / 1e6:.2f} kt allocated to SGM facilities")
 
     # find all QLD emission sources so we can allocate the QLD inventory
     qld_sources_mask = emission_sources_df["state"] == "QLD"
@@ -149,6 +161,7 @@ def process_emissions(sector: AustraliaPriorSector, sector_config: PriorSectorCo
         sources_mask=qld_unallocated_emission_sources_mask,
         emission_mass=qld_unallocated_emissions,
     )
+    total_allocated_emissions += qld_unallocated_emissions
 
     logger.debug(f"{qld_unallocated_emission_sources_mask.sum()} / {qld_sources_mask.sum()} unallocated QLD sources ({100 * qld_unallocated_emission_sources_mask.sum() / len(emission_sources_df):.1f}%)")
     logger.debug(f"{qld_unallocated_emissions / 1e6 :.2f} / {qld_total_emissions / 1e6:.2f} kt unallocated QLD emissions ({100 * qld_unallocated_emissions / qld_total_emissions:.1f}%)")
@@ -157,7 +170,7 @@ def process_emissions(sector: AustraliaPriorSector, sector_config: PriorSectorCo
     # distribute sector emissions evenly to each active source that hasn't
     # already had emissions allocated to it
     unallocated_emission_sources_mask = np.isnan(emission_sources_df["emissions_quantity"])
-    unallocated_national_emissions = sector_total_emissions - emission_sources_df["emissions_quantity"].sum()
+    unallocated_national_emissions = sector_total_emissions - total_allocated_emissions
     allocate_emissions_to_sources(
         sources_df=emission_sources_df,
         sources_mask=unallocated_emission_sources_mask,
@@ -169,7 +182,8 @@ def process_emissions(sector: AustraliaPriorSector, sector_config: PriorSectorCo
 
     domain_grid = config.domain_grid()
 
-    methane = np.zeros(domain_grid.shape)
+    methane_nd = np.zeros(domain_grid.shape)
+    methane_nd += gas_supply_nd
 
     for index, site in emission_sources_df.iterrows():
         # geometry type for each site will determine how to allocate emissions
@@ -179,11 +193,11 @@ def process_emissions(sector: AustraliaPriorSector, sector_config: PriorSectorCo
         if geom_type == "Point":
             cell_x, cell_y, cell_valid = domain_grid.xy_to_cell_index(site["geometry"].x, site["geometry"].y)
             if cell_valid:
-                methane[cell_y, cell_x] += site["emissions_quantity"]
+                methane_nd[cell_y, cell_x] += site["emissions_quantity"]
         else:
             raise NotImplementedError("Allocating emissions to non-point geometry is not implemented")
 
-    return kg_to_period_cell_flux(methane, config)
+    return kg_to_period_cell_flux(methane_nd, config)
 
 
 sector = AustraliaPriorSector(
@@ -193,7 +207,6 @@ sector = AustraliaPriorSector(
     anzsic_codes=[
         "07", # Oil and Gas Extraction
         "17", # Petroleum and Coal Product Manufacturing
-        # TODO: https://github.com/openmethane/openmethane-prior/issues/165
         "27", # Gas Supply
         "502", # Pipeline and other transport
     ],
