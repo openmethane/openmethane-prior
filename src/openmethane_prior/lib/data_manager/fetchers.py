@@ -15,12 +15,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import geopandas as gpd
+import os
 import pandas as pd
 import pathlib
+import tempfile
+import urllib.request
 import urllib.parse
+import zipfile
 
 from .source import ConfiguredDataSource
-
 
 def fetch_google_sheet_by_name_csv(
     sheet_id_or_url: str,
@@ -68,3 +72,27 @@ def fetch_google_sheet_csv(sheet_name: str):
         return data_source.asset_path
 
     return _data_source_fetch
+
+def fetch_zipped_shp_to_gdf(
+    url: str,
+    shp_file: str,
+) -> gpd.GeoDataFrame:
+    """Fetch a zip file specified by DataSource.url, extract the contents and
+    read in a Shapefile (.shp) from the archive as a GeoDataFrame."""
+
+    # use a temporary path to store and extract the zip contents, which will
+    # be cleaned up automatically afterwards
+    with tempfile.TemporaryDirectory(prefix="openmethane-prior") as tmp_dir:
+        tmp_path = pathlib.Path(tmp_dir)
+
+        # download and extract the zip file to a known location
+        zip_path, response = urllib.request.urlretrieve(
+            url=url,
+            filename=tmp_path / os.path.basename(url),
+        )
+        # entire zip must be extracted, as the .shp file depends on sibling files
+        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+            zip_ref.extractall(tmp_path)
+
+        # read the extracted Shapefile with geopandas
+        return gpd.read_file(tmp_path / shp_file)
