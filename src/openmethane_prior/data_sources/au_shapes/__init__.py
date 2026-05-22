@@ -16,4 +16,4 @@
 # limitations under the License.
 #
 
-from .states import au_shapes_states_data_source
+from .states import au_shapes_states_data_source, map_state_name_to_short_name
