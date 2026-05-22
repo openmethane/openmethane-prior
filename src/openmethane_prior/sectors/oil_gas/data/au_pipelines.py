@@ -23,9 +23,7 @@ from openmethane_prior.lib.data_manager.parsers import parse_geo
 
 
 def fetch_au_gas_pipelines(data_source: ConfiguredDataSource):
-    au_spatial_pipelines = restapi.MapService(
-        url="https://services.ga.gov.au/gis/rest/services/Oil_Gas_Pipelines/MapServer"
-    )
+    au_spatial_pipelines = restapi.MapService(url=data_source.url)
 
     # GA data source includes two layers: "Oil_Pipelines", "Gas_Pipelines"
     # However, methane emissions from oil pipelines seems unlikely.
@@ -54,6 +52,7 @@ def fetch_au_gas_pipelines(data_source: ConfiguredDataSource):
 # Source: https://ecat.ga.gov.au/geonetwork/srv/eng/catalog.search#/metadata/147583
 au_gas_pipelines_data_source = DataSource(
     name="AU-gas-pipelines",
+    url="https://services.ga.gov.au/gis/rest/services/Oil_Gas_Pipelines/MapServer",
     file_path="AU-gas-pipelines.geojson",
     fetch=fetch_au_gas_pipelines,
     parse=parse_geo,
