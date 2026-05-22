@@ -34,6 +34,14 @@ The spatialised estimates are then regridded onto the Open Methane grid.
 
 Some data sources are used by multiple sectors of the prior.
 
+## Australian State and Territory Boundaries
+
+The official Australian
+[Digital boundary files](https://www.abs.gov.au/statistics/standards/australian-statistical-geography-standard-asgs-edition-3/jul2021-jun2026/access-and-downloads/digital-boundary-files)
+provide high precision geometries of Australian states, which is used to
+mask other spatial data sources such as [NASA Nighttime Lights](#NASA_Nighttime_Lights).
+
+
 ## Australian UNFCCC Inventory
 
 Australia reports GHG emissions broken down by gas and by sector under its
@@ -410,11 +418,18 @@ Listed point location for each source is mapped to the relevant grid cell.
   - dataset created for Open Methane by researchers at The Superpower Institute
     for the purpose of locating sites that comprise Safeguard Mechanism facilities
 - [National Pollutant Inventory](#australian-national-pollutant-inventory)
+- [Oil and Gas Pipelines Database](https://pid.geoscience.gov.au/dataset/ga/147583)
+  - Vector shapes of oil and gas pipelines across Australia
 
 Locations of every borehole/drillhole/well in the public datasets from NSW, NT,
 QLD, SA, WA and NOPTA are correlated with petroleum production titles and
 filtered to only bores involved in petroleum production where the title period
 overlaps with the prior period of interest.
+
+Gas supply network emissions are spatialised according to
+[NASA Nighttime Lights](#NASA-Nighttime-Lights) masked to the state they have
+reported their emissions in. Gas pipelines are spatialised using area weighted
+grid of grid cells each pipeline intersects.
 
 The national inventory total for oil and gas emissions is divided evenly between
 these sites. The listed point location for each site is mapped to the relevant
@@ -442,6 +457,10 @@ very naive. Wells for different resources (i.e. oil vs coal seam gas) or in
 different regions (WA vs NSW) or in different infrastructure (onshore vs
 offshore) are likely to have very different emission profiles. Until we have
 solid evidence of what these profiles might be, we cannot model them.
+
+Our naive approach attempts to allocate more emissions to facilities and
+pipelines than to wells, due to the higher volume of resources which pass
+through each facility.
 
 3. Missing regions
 
