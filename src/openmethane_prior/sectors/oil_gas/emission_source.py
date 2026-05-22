@@ -20,6 +20,10 @@ import geopandas as gpd
 import pandas as pd
 from typing import Any
 
+from openmethane_prior.lib import logger
+
+logger = logger.get_logger(__name__)
+
 """
 An "emission source" in the oil and gas sector is any location that forms part
 of oil and gas extraction or production infrastructure where methane emission
@@ -56,22 +60,28 @@ emission_source_dtypes = {
     # (Optional) the state/region the emission source is in the jurisdiction
     # of. Can be useful for attributing inventory emissions, for example.
     "state": str,
-}
 
-emission_source_site_types = [
-    "drillhole-unknown",
-    "drillhole-csg",
-    "drillhole-petroleum",
-    "drillhole-gas",
-]
+    # (Optional) a weighting which can be used to scale emissions from this
+    # source relative to others of the same site_type. I.e. for a pipeline,
+    # this might be the pipeline length.
+    "weight": np.float64,
+}
 
 
 def normalise_emission_source_df(
     df: gpd.GeoDataFrame,
     crs: Any, # anything supported by GeoDataFrame.to_crs
 ) -> gpd.GeoDataFrame:
+    normalised_df = df.copy()
+
+    # use a default weight of 1 for each source if no weight is present
+    if "weight" not in normalised_df.columns:
+        normalised_df["weight"] = 1.0
+    else:
+        normalised_df["weight"].fillna(1.0)
+
     # select only columns which are present in emission_source_dtypes
-    normalised_df = df[list(emission_source_dtypes.keys())].set_crs(df.crs)
+    normalised_df = normalised_df[list(emission_source_dtypes.keys())].set_crs(df.crs)
 
     normalised_df = normalised_df.to_crs(crs)
 
@@ -94,20 +104,33 @@ def allocate_emissions_to_sources(
     drillholes_mask = sources_mask \
                       & ~pd.isna(sources_df["site_type"]) \
                       & sources_df["site_type"].str.startswith("drillhole")
-    facilities_mask = sources_mask & ~drillholes_mask
+    pipelines_mask = sources_mask \
+                      & ~pd.isna(sources_df["site_type"]) \
+                      & sources_df["site_type"].str.startswith("pipeline")
+    facilities_mask = sources_mask & ~drillholes_mask & ~pipelines_mask
 
-    # give each source an equal weighting when distributing the emissions
-    sources_weight = sources_mask * 1.0
+    # each source in the set may already have a weight based on the source type
+    # i.e. for pipelines this might be their length, so that longer pipelines
+    # get a larger share of the emission being distributed
+    sources_weight = sources_df["weight"].copy()
 
     # when there's a mix of drillholes and facilities, give the set of
     # facilities an equal weight to the set of drillholes. this naive
     # distribution assumes that every unit of extracted resource generates
     # emissions at the point of extraction and at least one facility.
-    if drillholes_mask.sum() > 0 and facilities_mask.sum() > 0:
-        sources_weight[facilities_mask] = drillholes_mask.sum() / facilities_mask.sum()
+    drillhole_count = drillholes_mask.sum()
+    pipeline_count = pipelines_mask.sum()
+    facility_count = facilities_mask.sum()
 
-    # turn weight into a proportion of the total
-    sources_weight /= sources_weight.sum()
+    drillhole_dividend = drillhole_count if drillhole_count > 0 else 1
+    if pipeline_count > 0:
+        # turn pipeline weights into a proportion of total length
+        sources_weight[pipelines_mask] *= drillhole_dividend / sources_weight[pipelines_mask].sum()
+    if facility_count > 0:
+        sources_weight[facilities_mask] *= drillhole_dividend / sources_weight[facilities_mask].sum()
+
+    # turn all weights into a proportion of the total
+    sources_weight[sources_mask] /= sources_weight[sources_mask].sum()
 
     # naively allocate the emissions across each emission source equally
-    sources_df["emissions_quantity"] += sources_weight * emission_mass
+    sources_df.loc[sources_mask, "emissions_quantity"] += sources_weight[sources_mask] * emission_mass
