@@ -35,8 +35,7 @@ def offshore_emission_sources(
     offshore_wells_df: gpd.GeoDataFrame = offshore_wells_da.data
     offshore_titles_df: gpd.GeoDataFrame = offshore_titles_da.data
 
-    # filter out wells that aren't actively used for production
-    wells_df = offshore_wells_df[offshore_wells_df["Purpose"] == "Development"]
+    # wells are filtered by purpose during fetch, no need to filter here
 
     # emissions are expected where production is ongoing, unlike exploration or retention
     titles_df = offshore_titles_df[offshore_titles_df["TitleType"] == "Production Licence"]
@@ -47,7 +46,7 @@ def offshore_emission_sources(
     # RigReleaseDate, we treat these as unique wells and don't de-duplicate
 
     # join drillholes with titles to use the title dates as start/end dates
-    sources_df = gpd.sjoin(wells_df, titles_df, how="inner", predicate="within")
+    sources_df = gpd.sjoin(offshore_wells_df, titles_df, how="inner", predicate="within")
 
     # start date of emissions must be after hole is drilled and after the title
     # is granted, so choose the latter of the two dates

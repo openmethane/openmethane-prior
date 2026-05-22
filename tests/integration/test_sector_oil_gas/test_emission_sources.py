@@ -169,7 +169,7 @@ def test_wa_emission_sources(input_files, data_manager):
     assert len(df[(df["activity_end"] < start_date) & (df["activity_start"] > start_date_end)]) == 0
 
     # no sources which aren't related to production
-    assert set(df["class"].unique()) == {"DEV"}
+    assert set(df["class"].unique()) == {"NPW", "DEV", "NFW", "EXT"}
 
     # no duplicate check, as we allow duplicate geometries from WA dataset
 
@@ -193,7 +193,7 @@ def test_offshore_emission_sources(input_files, data_manager):
     assert len(df[(df["activity_end"] < start_date) & (df["activity_start"] > start_date_end)]) == 0
 
     # no sources which aren't related to production
-    assert set(df["Purpose"].unique()) == {"Development"}
+    assert set(df["Purpose"].unique()) == {"Appraisal", "Development", "Exploration"}
     assert set(df["TitleType"].unique()) == {"Production Licence"}
 
     # no duplicate check, as we allow duplicate geometries from NOPTA dataset
@@ -249,11 +249,10 @@ def test_all_emission_sources(input_files, data_manager, config):
     df = all_emission_sources(
         data_manager=data_manager,
         prior_config=config,
-        anzsic_codes=["07", "17", "27"],
+        anzsic_codes=["07", "17", "27", "502"],
     )
 
     assert len(df) > 0
 
     # no sources where activity period doesn't intersect config period
     assert len(df[(df["activity_end"] < config.start_date) & (df["activity_start"] > end_date_end)]) == 0
-
