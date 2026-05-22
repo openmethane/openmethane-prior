@@ -1,5 +1,4 @@
 import datetime
-import numpy as np
 
 from openmethane_prior.data_sources.npi import npi_facilities_data_source
 from openmethane_prior.sectors.oil_gas.data.nopta import (
@@ -101,22 +100,25 @@ def test_qld_emission_sources(input_files, data_manager):
     assert len(df[(df["activity_end"] < start_date) & (df["activity_start"] > start_date_end)]) == 0
 
     # no sources which aren't related to hydrocarbon production
-    allowed_bore_types = {"COAL SEAM GAS", "PETROLEUM"}
+    allowed_bore_types = {"COAL SEAM GAS", "PETROLEUM", "UNCONVENTIONAL PETROLEUM"}
     assert set(df["bore_type"].unique()) - allowed_bore_types == set()
 
-    allowed_bore_subtypes = {"DEVELOPMENT WELL", "COAL SEAM GAS INJECTION WELL"}
+    allowed_bore_subtypes = {
+        "DEVELOPMENT WELL", "COAL SEAM GAS INJECTION WELL", "PETROLEUM INJECTION WELL",
+    }
     assert set(df["bore_subtype"].unique()) - allowed_bore_subtypes == set()
 
     allowed_results = {
-        'COAL SEAM GAS',
-        'DRY PLUS GAS SHOW', 'DRY PLUS OIL AND GAS SHOW', 'DRY PLUS OIL SHOW',
-        'GAS', 'GAS AND CONDENSATE', 'GAS PLUS CONDENSATE SHOW', 'GAS PLUS OIL SHOW',
-        'OIL', 'OIL AND GAS', 'OIL PLUS GAS SHOW',
+        "COAL SEAM GAS", "COAL",
+        "DRY PLUS GAS SHOW", "DRY PLUS OIL AND GAS SHOW", "DRY PLUS OIL SHOW",
+        "GAS", "GAS AND CONDENSATE", "GAS PLUS CONDENSATE SHOW", "GAS PLUS OIL SHOW",
+        "OIL", "OIL AND GAS", "OIL PLUS GAS SHOW",
+        "UNKNOWN",
     }
     assert set(df["result"].unique()) - allowed_results == set()
 
     allowed_status = {
-        "PLUGGED AND ABANDONED", 'PRODUCING', 'COMPLETED', 'SUSPENDED',
+        "PLUGGED AND ABANDONED", "PRODUCING", "COMPLETED", "SUSPENDED",
     }
     assert set(df["status"].unique()) - allowed_status == set()
 
@@ -206,6 +208,7 @@ def test_sites_emission_sources(input_files, data_manager):
         end_date=start_date.date(),
         oil_gas_sites_da=sites_da,
         npi_da=npi_da,
+        anzsic_codes=["07", "17", "27"],
     )
 
     # original datasets have been filtered down
@@ -216,8 +219,8 @@ def test_sites_emission_sources(input_files, data_manager):
     # no sources where activity period doesn't intersect date period
     assert len(df[(df["activity_end"] < start_date) & (df["activity_start"] > start_date_end)]) == 0
 
-    # no sources which aren't related to 07 or 17 ANZSIC codes
-    assert set(df["anzsic_code"].unique()) == {'070', '0700', '170', '1701', '1709'}
+    # no sources which aren't related to 07 / 17 / 27 ANZSIC codes
+    assert set(df["anzsic_code"].unique()) == {'070', '0700', '170', '1701', '1709', '2700'}
 
 
 def test_all_emission_sources(input_files, data_manager, config):
@@ -225,6 +228,7 @@ def test_all_emission_sources(input_files, data_manager, config):
     df = all_emission_sources(
         data_manager=data_manager,
         prior_config=config,
+        anzsic_codes=["07", "17", "27"],
     )
 
     assert len(df) > 0

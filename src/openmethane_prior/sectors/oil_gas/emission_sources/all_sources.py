@@ -25,7 +25,7 @@ from openmethane_prior.lib import (
     PriorConfig,
 )
 
-from .emission_source import normalise_emission_source_df
+from ..emission_source import normalise_emission_source_df
 from .nsw_sources import nsw_emission_sources
 from .nt_sources import nt_emission_sources
 from .offshore_sources import offshore_emission_sources
@@ -46,6 +46,7 @@ logger = logger.get_logger(__name__)
 def all_emission_sources(
     data_manager: DataManager,
     prior_config: PriorConfig,
+    anzsic_codes: list[str],
 ) -> gpd.GeoDataFrame:
     """Assemble a single DataFrame from multiple data sources, where each row
     represents a possible location of emissions in the oil and gas sector."""
@@ -145,6 +146,7 @@ def all_emission_sources(
         end_date=end_date,
         oil_gas_sites_da=oil_gas_sites_da,
         npi_da=npi_da,
+        anzsic_codes=anzsic_codes,
     )
     logger.debug(f"found {len(sites_df[sites_df['data_source'] == oil_gas_sites_da.name])} oil and gas facilities")
     logger.debug(f"found {len(sites_df[sites_df['data_source'] == npi_da.name])} NPI facilities")

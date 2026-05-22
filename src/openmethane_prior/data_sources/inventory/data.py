@@ -52,3 +52,10 @@ inventory_data_source = DataSource(
     parse=parse_inventory,
 )
 
+
+qld_inventory_data_source = DataSource(
+    name="ANGA-UNFCCC-inventory-QLD",
+    url="https://greenhouseaccounts.climatechange.gov.au/OData/AR5_ParisInventory_QLD",
+    data_sources=[unfccc_codes_data_source],
+    parse=parse_inventory,
+)
