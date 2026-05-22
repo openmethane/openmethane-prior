@@ -102,7 +102,7 @@ def gas_supply_emissions(
         if state_mask.sum() == 0:
             # no overlap between the state and the domain
             continue
-        state_nightlights = nightlights * state_mask
+        state_nightlights = nightlights.values * state_mask
         state_nightlights /= state_nightlights.sum()
 
         # distribute the state emission to grid cells based on night lights

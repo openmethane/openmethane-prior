@@ -15,7 +15,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-import datetime
 import numpy as np
 import xarray as xr
 
@@ -32,12 +31,11 @@ from openmethane_prior.data_sources.inventory import (
 )
 from openmethane_prior.data_sources.nightlights import night_lights_data_source
 from openmethane_prior.data_sources.safeguard import (
-    filter_facilities,
     safeguard_mechanism_data_source,
     safeguard_locations_data_source,
 )
+from openmethane_prior.lib.grid.geometry import grid_weights_from_linestring
 from openmethane_prior.lib.sector.au_sector import AustraliaPriorSector
-from openmethane_prior.lib.units import days_in_period
 
 from .emission_source import allocate_emissions_to_sources
 from .emission_sources.all_sources import all_emission_sources
@@ -96,13 +94,14 @@ def process_emissions(sector: AustraliaPriorSector, sector_config: PriorSectorCo
     # filter out facilities with more than one state, ie "NSW; VIC"
     gas_supply_facilities_mask = sector_facilities_df["anzsic_code"].str.startswith("27") \
                                  & sector_facilities_df["state"].isin(au_states_df["short_name"])
+    gas_supply_facilities_df = sector_facilities_df[gas_supply_facilities_mask]
     gas_supply_nd = gas_supply_emissions(
         domain_grid=config.domain_grid(),
-        facilities_df=sector_facilities_df[gas_supply_facilities_mask],
+        facilities_df=gas_supply_facilities_df,
         au_states=au_states_df,
         nightlights=night_lights,
     )
-    total_allocated_emissions += float(gas_supply_nd.sum())
+    total_allocated_emissions += float(gas_supply_facilities_df["ch4_kg"].sum())
     logger.debug(f"{total_allocated_emissions / 1e6:.2f} kt allocated to SGM gas supply facilities")
 
     # Remove gas supply facilities since they've been spatialised
@@ -164,7 +163,7 @@ def process_emissions(sector: AustraliaPriorSector, sector_config: PriorSectorCo
     total_allocated_emissions += qld_unallocated_emissions
 
     logger.debug(f"{qld_unallocated_emission_sources_mask.sum()} / {qld_sources_mask.sum()} unallocated QLD sources ({100 * qld_unallocated_emission_sources_mask.sum() / len(emission_sources_df):.1f}%)")
-    logger.debug(f"{qld_unallocated_emissions / 1e6 :.2f} / {qld_total_emissions / 1e6:.2f} kt unallocated QLD emissions ({100 * qld_unallocated_emissions / qld_total_emissions:.1f}%)")
+    logger.debug(f"{qld_unallocated_emissions / 1e6:.2f} / {qld_total_emissions / 1e6:.2f} kt unallocated QLD emissions ({100 * qld_unallocated_emissions / qld_total_emissions:.1f}%)")
 
     # emission sources don't include a methane quantity or proxy, so naively
     # distribute sector emissions evenly to each active source that hasn't
@@ -182,20 +181,25 @@ def process_emissions(sector: AustraliaPriorSector, sector_config: PriorSectorCo
 
     domain_grid = config.domain_grid()
 
+    # allocate all the collected emissions to the grid
     methane_nd = np.zeros(domain_grid.shape)
     methane_nd += gas_supply_nd
 
-    for index, site in emission_sources_df.iterrows():
-        # geometry type for each site will determine how to allocate emissions
-        # to the grid
-        geom_type = emission_sources_df.geom_type[index] if type(emission_sources_df.geom_type[index]) == str \
-                    else emission_sources_df.geom_type[index].iloc[0]
-        if geom_type == "Point":
-            cell_x, cell_y, cell_valid = domain_grid.xy_to_cell_index(site["geometry"].x, site["geometry"].y)
-            if cell_valid:
-                methane_nd[cell_y, cell_x] += site["emissions_quantity"]
-        else:
-            raise NotImplementedError("Allocating emissions to non-point geometry is not implemented")
+    # point sources can be efficiently allocated with np.add.at
+    point_sources_mask = emission_sources_df.geom_type == "Point"
+    logger.debug(f"Allocating {point_sources_mask.sum()} point source emissions")
+    point_sources_df = emission_sources_df[point_sources_mask]
+    cell_x, cell_y, cell_valid = domain_grid.xy_to_cell_index(point_sources_df["geometry"].x, point_sources_df["geometry"].y)
+    np.add.at(methane_nd, (cell_y[cell_valid], cell_x[cell_valid]), point_sources_df[cell_valid]["emissions_quantity"])
+
+    # line sources can be allocated to grid cells based on how much length of
+    # the line intersects with each grid cell, construct a weighted grid
+    line_sources_mask = emission_sources_df.geom_type.isin(["LineString", "MultiLineString"])
+    logger.debug(f"Allocating {line_sources_mask.sum()} line source emissions")
+    line_sources_df = emission_sources_df[line_sources_mask]
+    for index, line in line_sources_df.iterrows():
+        line_grid_weights = grid_weights_from_linestring(domain_grid, line["geometry"])
+        methane_nd += line_grid_weights * line["emissions_quantity"]
 
     return kg_to_period_cell_flux(methane_nd, config)
 
