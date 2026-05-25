@@ -17,6 +17,7 @@
 #
 import numpy as np
 import pandas as pd
+import pyproj
 import xarray as xr
 
 from openmethane_prior.lib import (
@@ -86,7 +87,12 @@ def process_emissions(
 
     livestock_headcount_da = sector_config.data_manager.get_asset(livestock_headcount_data_source)
     livestock_df: pd.DataFrame = livestock_headcount_da.data
-    livestock_df = livestock_df.rename(columns={"X": "lon", "Y": "lat"})
+
+    # dataset X/Y coords are ESPF:4283 (GDA94), convert to EPSG:4326
+    transformer = pyproj.Transformer.from_crs(4283,4326)
+    livestock_df["lon"], livestock_df["lat"] = transformer.transform(
+        yy=livestock_df["Y"], xx=livestock_df["X"],
+    )
 
     ch4_gridded = gridded_livestock_emissions_by_headcount(livestock_df, domain_grid)
 
