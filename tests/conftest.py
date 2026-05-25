@@ -98,7 +98,7 @@ def input_files(config):
 
 @pytest.fixture()
 def data_manager(config) -> DataManager:
-    return DataManager(data_path=config.input_path, prior_config=config)
+    return DataManager.from_config(config)
 
 
 @pytest.fixture()

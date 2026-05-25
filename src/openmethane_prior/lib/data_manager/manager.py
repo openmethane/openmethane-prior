@@ -15,6 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+from typing import Self
+
 import attrs
 import pathlib
 
@@ -126,3 +128,13 @@ class DataManager:
             self.data_assets[source.name] = asset
 
         return asset
+
+
+    @classmethod
+    def from_config(cls, config: PriorConfig) -> Self:
+        """Create DataManager instance based on settings in PriorConfig."""
+        return cls(
+            data_path=config.input_path,
+            static_path=config.static_path,
+            prior_config=config,
+        )
