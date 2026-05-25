@@ -55,4 +55,5 @@ gfas_data_source = DataSource(
     name="gfas",
     file_path=gfas_file_name,
     fetch=gfas_fetch,
+    dynamic=True,
 )

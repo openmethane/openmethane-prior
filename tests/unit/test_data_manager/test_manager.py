@@ -123,6 +123,32 @@ def test_manager_get_asset_parsed(tmp_path, mocker: MockerFixture, config):
     assert test_second_asset is test_asset
 
 
+def test_manager_static_path_default(tmp_path, config):
+    data_path = tmp_path / "data"
+    test_manager = DataManager(data_path=data_path, prior_config=config)
+
+    assert test_manager.static_path == data_path
+
+
+def test_manager_static_path_routing(tmp_path, config):
+    data_path = tmp_path / "dynamic"
+    static_path = tmp_path / "static"
+    test_manager = DataManager(data_path=data_path, prior_config=config, static_path=static_path)
+
+    static_source = test_manager.add_source(DataSource(
+        name="test-static",
+        file_path="static.txt",
+    ))
+    dynamic_source = test_manager.add_source(DataSource(
+        name="test-dynamic",
+        file_path="dynamic.txt",
+        dynamic=True,
+    ))
+
+    assert static_source.asset_path == static_path / "static.txt"
+    assert dynamic_source.asset_path == data_path / "dynamic.txt"
+
+
 def test_manager_get_asset_dependencies(tmp_path, mocker, config):
     data_path = tmp_path / "data"
     child_fetch = mocker.stub(name="child_fetch")

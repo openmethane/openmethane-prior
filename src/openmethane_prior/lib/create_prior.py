@@ -40,7 +40,11 @@ def create_prior(config: PriorConfig, sectors: list[PriorSector]):
     # if no cache is configured, this is a no-op
     config.load_cached_inputs()
 
-    data_manager = DataManager(data_path=config.input_path, prior_config=config)
+    data_manager = DataManager(
+        data_path=config.input_path,
+        static_path=config.static_path,
+        prior_config=config,
+    )
 
     # Initialise the output dataset based on the domain provided in config
     prior_ds = create_output_dataset(config)

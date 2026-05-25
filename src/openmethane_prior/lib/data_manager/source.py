@@ -67,6 +67,10 @@ class DataSource:
     name: str = attrs.field()
     """Unique, machine-friendly name that can be used to identify this data"""
 
+    dynamic: bool = False
+    """Set to True if the data source must be fetched on every run, or if the 
+    fetched data is dependent on prior parameters such as dates or domain."""
+
     url: str = attrs.field(default=None)
     """Publicly accessible URL where this data can be downloaded"""
 
@@ -164,17 +168,23 @@ class ConfiguredDataSource:
 
 
 def configure_data_source(
-        data_source: DataSource,
-        prior_config: PriorConfig,
-        data_path: pathlib.Path,
-        data_assets: list[DataAsset] = None,
+    data_source: DataSource,
+    prior_config: PriorConfig,
+    data_path: pathlib.Path,
+    static_path: pathlib.Path = None,
+    data_assets: list[DataAsset] = None,
 ):
     """Create a ConfiguredDataSource from a DataSource and a PriorConfig"""
     file_path = data_source.file_path
     if callable(file_path):
         file_path = file_path(data_source, prior_config)
 
-    asset_path = file_path if os.path.isabs(file_path) else data_path / file_path
+    # by default, dynamic data is stored in the configured data_path, while
+    # non-dynamic data is stored in the static_path.
+    data_storage_path = data_path
+    if not data_source.dynamic and static_path is not None:
+        data_storage_path = static_path
+    asset_path = file_path if os.path.isabs(file_path) else data_storage_path / file_path
 
     return ConfiguredDataSource(
         name=data_source.name,
@@ -183,6 +193,6 @@ def configure_data_source(
         source_fetch=data_source.fetch,
         source_parse=data_source.parse,
         prior_config=prior_config,
-        data_path=data_path,
+        data_path=data_storage_path,
         data_assets=data_assets if data_assets is not None else [],
     )

@@ -44,7 +44,11 @@ MAX_ABS_DIFF = 0.1
 
 def verify_emis(sectors: list[PriorSector], config: PriorConfig, prior_ds: xr.Dataset, atol: float = MAX_ABS_DIFF):
     """Check output sector emissions to make sure they tally up to the input emissions"""
-    data_manager = DataManager(data_path=config.input_path, prior_config=config)
+    data_manager = DataManager(
+        data_path=config.input_path,
+        static_path=config.static_path,
+        prior_config=config,
+    )
     domain = config.domain()
     inventory_domain = data_manager.get_asset(inventory_domain_data_source).data
 
