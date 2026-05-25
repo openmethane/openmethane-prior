@@ -100,6 +100,30 @@ def test_prior_config_prepare_paths_creates_static(tmp_path: pathlib.Path, start
     assert test_config.static_path.exists()
 
 
+def test_prior_config_to_yaml(start_date, end_date):
+    test_config = PriorConfig(
+        domain_path="domain.nc",
+        start_date=start_date,
+        end_date=end_date,
+        input_path=pathlib.Path("data/input"),
+        output_path=pathlib.Path("data/out"),
+        intermediates_path=pathlib.Path("data/inter"),
+        static_path=pathlib.Path("data/in"),
+    )
+
+    assert test_config.to_yaml() == """domain_path: domain.nc
+end_date: 2022-12-08 00:00:00
+input_cache: null
+input_path: data/input
+intermediates_path: data/inter
+output_filename: prior-emissions.nc
+output_path: data/out
+sectors: null
+start_date: 2022-12-07 00:00:00
+static_path: data/in
+"""
+
+
 def test_prior_config_from_env(reset_env, start_date, end_date):
     os.environ["DOMAIN_FILE"] = "env-domain.nc"
     os.environ["START_DATE"] = "2023-01-01"

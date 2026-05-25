@@ -54,3 +54,7 @@ if __name__ == "__main__":
     # write the output to file
     config.output_file.parent.mkdir(parents=True, exist_ok=True)
     prior_ds.to_netcdf(config.output_file)
+
+    # write config into output folder on success
+    with open(config.output_path / "config.yaml", "w") as config_out:
+        config_out.write(config.to_yaml())

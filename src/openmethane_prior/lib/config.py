@@ -1,4 +1,6 @@
 import argparse
+
+import attrs
 from attrs import field, frozen
 from attrs.converters import default_if_none
 import datetime
@@ -9,6 +11,7 @@ import pathlib
 import shutil
 from typing import Self
 import urllib.request
+import yaml
 
 from .grid.domain import Domain
 
@@ -109,6 +112,14 @@ class PriorConfig:
         for i, (data_path, cache_path) in enumerate(self._cache_paths.items()):
             if data_path.exists():
                 shutil.copytree(src=data_path, dst=cache_path, dirs_exist_ok=True)
+
+    def to_yaml(self):
+        attrs_dict = attrs.asdict(self)
+        for i, (key, value) in enumerate(attrs_dict.items()):
+            # cast Path objects to string for more terse output
+            if isinstance(value, pathlib.Path):
+                attrs_dict[key] = str(value)
+        return yaml.dump(attrs_dict)
 
     @cache
     def domain(self) -> Domain:
