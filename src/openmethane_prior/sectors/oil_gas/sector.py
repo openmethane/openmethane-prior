@@ -96,7 +96,7 @@ def process_emissions(sector: AustraliaPriorSector, sector_config: PriorSectorCo
                                  & sector_facilities_df["state"].isin(au_states_df["short_name"])
     gas_supply_facilities_df = sector_facilities_df[gas_supply_facilities_mask]
     gas_supply_nd = gas_supply_emissions(
-        domain_grid=config.domain_grid(),
+        domain_grid=config.domain().grid,
         facilities_df=gas_supply_facilities_df,
         au_states=au_states_df,
         nightlights=night_lights,
@@ -179,7 +179,7 @@ def process_emissions(sector: AustraliaPriorSector, sector_config: PriorSectorCo
     logger.debug(f"{unallocated_emission_sources_mask.sum()} / {len(emission_sources_df)} unallocated sources ({100 * unallocated_emission_sources_mask.sum() / len(emission_sources_df):.1f}%)")
     logger.debug(f"{unallocated_national_emissions / 1e6:.2f} / {sector_total_emissions / 1e6:.2f} kt unallocated emissions ({100 * unallocated_national_emissions / sector_total_emissions:.1f}%)")
 
-    domain_grid = config.domain_grid()
+    domain_grid = config.domain().grid
 
     # allocate all the collected emissions to the grid
     methane_nd = np.zeros(domain_grid.shape)

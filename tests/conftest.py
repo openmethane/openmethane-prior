@@ -11,7 +11,6 @@ from openmethane_prior.lib.config import PriorConfig
 from openmethane_prior.lib.data_manager.manager import DataManager
 from openmethane_prior.lib.grid.create_grid import create_grid_from_mcip
 from openmethane_prior.lib.grid.grid import Grid
-from openmethane_prior.lib.inputs import check_input_files
 from openmethane_prior.lib.sector.config import PriorSectorConfig
 from openmethane_prior.sectors import all_sectors
 
@@ -33,7 +32,6 @@ def config_params(start_date, end_date):
         start_date=start_date,
         end_date=end_date,
         domain_path="https://openmethane.s3.amazonaws.com/domains/au-test/v1/domain.au-test.nc",
-        inventory_domain_path="https://openmethane.s3.amazonaws.com/domains/aust10km/v1/domain.aust10km.nc",
     )
 
 
@@ -57,6 +55,25 @@ def config(tmp_path_factory, config_params, cache_dir) -> PriorConfig:
 
 
 @pytest.fixture()
+def aust10km_config(tmp_path_factory, start_date, end_date, cache_dir) -> PriorConfig:
+    """Full domain configuration, for tests or sectors where the small
+    au-test domain isn't sufficient to test data or behaviour."""
+    data_dir = tmp_path_factory.mktemp("data")
+    config = PriorConfig(
+        start_date=start_date,
+        end_date=end_date,
+        domain_path="https://openmethane.s3.amazonaws.com/domains/aust10km/v1/domain.aust10km.nc",
+        input_path=data_dir / "inputs",
+        intermediates_path=data_dir / "intermediates",
+        output_path=data_dir / "outputs",
+        input_cache=cache_dir,
+    )
+    config.prepare_paths()
+    config.load_cached_inputs()
+    return config
+
+
+@pytest.fixture()
 def input_files(config):
     """This fixture isn't required for tests that must use input files, but it
     will cause input files to be loaded from a shared cache to prevent
@@ -68,7 +85,7 @@ def input_files(config):
     config.load_cached_inputs()
 
     # fetch configured domains
-    check_input_files(config)
+    config.domain()
 
     yield
 
@@ -83,16 +100,18 @@ def input_files(config):
 def data_manager(config) -> DataManager:
     return DataManager(data_path=config.input_path, prior_config=config)
 
+
 @pytest.fixture()
 def data_manager_fetch_only(config) -> DataManager:
     return DataManager(data_path=config.input_path, prior_config=config, fetch_only=True)
 
 
 @pytest.fixture()
-def sector_config(config) -> PriorSectorConfig:
-    data_manager = DataManager(data_path=config.input_path, prior_config=config)
-    sector_config = PriorSectorConfig(prior_config=config, data_manager=data_manager)
-    return sector_config
+def sector_config(data_manager) -> PriorSectorConfig:
+    return PriorSectorConfig(
+        prior_config=data_manager.prior_config,
+        data_manager=data_manager,
+    )
 
 
 @pytest.fixture(scope="session")
@@ -122,9 +141,7 @@ def input_domain(config, input_files) -> Generator[xr.Dataset, None, None]:
     -------
         The input domain as an xarray dataset
     """
-    assert config.domain_file.exists()
-
-    yield config.domain_dataset()
+    yield config.domain().dataset
 
 
 @pytest.fixture(scope="session")

@@ -20,6 +20,7 @@ import pandas as pd
 
 from openmethane_prior.lib import (
     DataSource,
+    Domain,
     ConfiguredDataSource,
     logger,
 )
@@ -58,4 +59,15 @@ qld_inventory_data_source = DataSource(
     url="https://greenhouseaccounts.climatechange.gov.au/OData/AR5_ParisInventory_QLD",
     data_sources=[unfccc_codes_data_source],
     parse=parse_inventory,
+)
+
+
+def parse_domain(data_source: ConfiguredDataSource) -> Domain:
+    return Domain.from_file(data_source.asset_path)
+
+
+inventory_domain_data_source = DataSource(
+    name="AU-inventory-domain",
+    url="https://openmethane.s3.amazonaws.com/domains/aust10km/v1/domain.aust10km.nc",
+    parse=parse_domain,
 )

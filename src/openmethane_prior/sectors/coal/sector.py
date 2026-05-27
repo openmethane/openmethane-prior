@@ -43,7 +43,7 @@ def process_emissions(sector: AustraliaPriorSector, sector_config: PriorSectorCo
     config = sector_config.prior_config
 
     # prepare a grid to allocate emissions
-    domain_grid = config.domain_grid()
+    domain_grid = config.domain().grid
     methane = np.zeros(domain_grid.shape)
 
     safeguard_mechanism_asset = sector_config.data_manager.get_asset(safeguard_mechanism_data_source)

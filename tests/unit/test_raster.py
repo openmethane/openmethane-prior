@@ -2,18 +2,20 @@ import numpy as np
 import rioxarray as rxr
 import xarray as xr
 
+from openmethane_prior.data_sources.inventory import inventory_domain_data_source
+from openmethane_prior.data_sources.nightlights import night_lights_data_source
 from openmethane_prior.lib.grid.grid import Grid
-from openmethane_prior.sectors.industrial.sector import night_lights_data_source
 from openmethane_prior.lib.raster import remap_raster
 
-def test_remap_raster(config, input_files, data_manager_fetch_only):
+def test_remap_raster(config, input_files, data_manager, data_manager_fetch_only):
     test_coord = (2500, 3000) # let's read this in later
     distance_tolerance = 1e4 # allowed mismatch between initial and final coords in metres
     epsilon = 1e-5 # small number
     def maxloc(a): return np.unravel_index(a.argmax(), a.shape)
 
-    domain_dataset = config.inventory_dataset()
-    domain_grid = config.inventory_grid()
+    inventory_domain = data_manager.get_asset(inventory_domain_data_source).data
+    domain_dataset = inventory_domain.dataset
+    domain_grid = inventory_domain.grid
 
     lat = domain_dataset['lat']
     lon = domain_dataset['lon']

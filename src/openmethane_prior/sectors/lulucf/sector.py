@@ -21,7 +21,11 @@ import rasterio
 import rioxarray as rxr
 import xarray as xr
 
-from openmethane_prior.data_sources.inventory import get_sector_emissions_by_code, inventory_data_source
+from openmethane_prior.data_sources.inventory import (
+    get_sector_emissions_by_code,
+    inventory_data_source,
+    inventory_domain_data_source,
+)
 from openmethane_prior.data_sources.landuse import (
     alum_codes_for_sector,
     alum_sector_mapping_data_source,
@@ -68,21 +72,26 @@ def process_emissions(
     dataBand = rasterio.open(landuse_asset.path, engine='rasterio').read()
     dataBand = dataBand.squeeze()
 
-    inventory_mask_regridded = regrid_data(config.inventory_dataset()['inventory_mask'], from_grid=config.inventory_grid(), to_grid=config.domain_grid())
+    inventory_domain = sector_config.data_manager.get_asset(inventory_domain_data_source).data
+    inventory_mask_regridded = regrid_data(
+        inventory_domain.dataset['inventory_mask'],
+        from_grid=inventory_domain.grid,
+        to_grid=config.domain().grid,
+    )
 
     # create a mask of pixels which match the sector code
     sector_mask = np.isin(dataBand, sector_alum_codes)
     sector_xr = xr.DataArray(sector_mask, coords={ 'y': lu_y, 'x': lu_x  })
 
     # now aggregate to coarser resolution of the domain grid
-    sector_gridded = remap_raster(sector_xr, config.domain_grid(), input_crs=lu_crs)
+    sector_gridded = remap_raster(sector_xr, config.domain().grid, input_crs=lu_crs)
 
     # apply inventory mask before counting any land use
     sector_gridded *= inventory_mask_regridded
 
-    inventory_gridded = remap_raster(sector_xr, config.inventory_grid(), input_crs=lu_crs)
+    inventory_gridded = remap_raster(sector_xr, inventory_domain.grid, input_crs=lu_crs)
     # now mask to region of inventory
-    inventory_gridded *= config.inventory_dataset()['inventory_mask']
+    inventory_gridded *= inventory_domain.dataset['inventory_mask']
 
     # calculate the proportion of inventory emissions in each grid cell
     sector_gridded /=  inventory_gridded.sum().item()

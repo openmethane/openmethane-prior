@@ -96,3 +96,25 @@ def create_grid_from_mcip(
         cell_size=(XCELL, YCELL),
         proj_params=proj_params_adjusted,
     )
+
+
+def create_grid_from_dataset(ds: xr.Dataset) -> Grid:
+    """Determine the type of NetCDF input and build a Grid from its data and
+    attributes."""
+    if "Conventions" in ds.attrs:
+        return create_grid_from_domain(ds)
+    else:
+        return create_grid_from_mcip(
+            TRUELAT1=ds.TRUELAT1,
+            TRUELAT2=ds.TRUELAT2,
+            MOAD_CEN_LAT=ds.MOAD_CEN_LAT,
+            STAND_LON=ds.STAND_LON,
+            COLS=ds.COL.size,
+            ROWS=ds.ROW.size,
+            XCENT=ds.XCENT,
+            YCENT=ds.YCENT,
+            XORIG=ds.XORIG,
+            YORIG=ds.YORIG,
+            XCELL=ds.XCELL,
+            YCELL=ds.YCELL,
+        )

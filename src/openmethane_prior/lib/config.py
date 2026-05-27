@@ -6,14 +6,11 @@ from environs import Env
 from functools import cache
 import os
 import pathlib
-import pyproj
 import shutil
 from typing import Self
-import xarray as xr
+import urllib.request
 
-from .grid.grid import Grid
-from .grid.create_grid import create_grid_from_domain, create_grid_from_mcip
-from .utils import is_url
+from .grid.domain import Domain
 
 
 @frozen
@@ -22,9 +19,6 @@ class PriorConfig:
 
     domain_path: pathlib.Path | str
     """URL or file path to the domain of interest. Relative paths
-    will be interpreted relative to input_path"""
-    inventory_domain_path: pathlib.Path | str
-    """URL or file path to the inventory domain of interest. Relative paths
     will be interpreted relative to input_path"""
 
     start_date: datetime.datetime
@@ -101,78 +95,16 @@ class PriorConfig:
             shutil.copytree(src=self.input_path, dst=self.input_cache, dirs_exist_ok=True)
 
     @cache
-    def domain_dataset(self):
-        """Load the input domain dataset"""
-        if not self.domain_file.exists():
-            raise ValueError(f"Missing domain file: {self.domain_file}")
-        return xr.open_dataset(self.domain_file)
-
-    @cache
-    def inventory_dataset(self):
-        """Load the inventory domain dataset"""
-        if not self.inventory_domain_file.exists():
-            raise ValueError(f"Missing inventory domain file: {self.inventory_domain_file}")
-        return xr.open_dataset(self.inventory_domain_file)
-
-
-    @cache
-    def domain_grid(self) -> Grid:
-        """Create a Grid from the domain dataset"""
-        domain_ds = self.domain_dataset()
-        if ("Conventions" in domain_ds.attrs):
-            return create_grid_from_domain(domain_ds)
-        return create_grid_from_mcip(
-            TRUELAT1=domain_ds.TRUELAT1,
-            TRUELAT2=domain_ds.TRUELAT2,
-            MOAD_CEN_LAT=domain_ds.MOAD_CEN_LAT,
-            STAND_LON=domain_ds.STAND_LON,
-            COLS=domain_ds.COL.size,
-            ROWS=domain_ds.ROW.size,
-            XCENT=domain_ds.XCENT,
-            YCENT=domain_ds.YCENT,
-            XORIG=domain_ds.XORIG,
-            YORIG=domain_ds.YORIG,
-            XCELL=domain_ds.XCELL,
-            YCELL=domain_ds.YCELL,
-        )
-
-    @cache
-    def domain_projection(self) -> pyproj.Proj:
-        """Query the projection used by the input domain"""
-        return self.domain_grid().projection
-
-    @cache
-    def inventory_grid(self) -> Grid:
-        """Create a Grid from the inventory dataset"""
-        return create_grid_from_domain(domain_ds=self.inventory_dataset())
-
-    @cache
-    def inventory_projection(self) -> pyproj.Proj:
-        """Query the projection used by the inventory domain"""
-        return self.inventory_grid().projection
+    def domain(self) -> Domain:
+        """Fetch and parse the domain file to return a readable Dataset and
+        Grid definition."""
+        domain_path = fetch_domain(self.domain_path, self.input_path)
+        return Domain.from_file(domain_path)
 
     @property
     def crs(self):
         """Return the CRS used by the domain dataset"""
-        return self.domain_projection().crs
-
-    @property
-    def domain_file(self):
-        """Filesystem path of the input domain"""
-        if is_url(self.domain_path):
-            return self.as_input_file(os.path.basename(self.domain_path))
-        elif not self.domain_path.startswith("/"):
-            return self.as_input_file(self.domain_path)
-        return pathlib.Path(self.domain_path)
-
-    @property
-    def inventory_domain_file(self):
-        """Filesystem path of the inventory domain"""
-        if is_url(self.inventory_domain_path):
-            return self.as_input_file(os.path.basename(self.inventory_domain_path))
-        elif not self.inventory_domain_path.startswith("/"):
-            return self.as_input_file(self.inventory_domain_path)
-        return pathlib.Path(self.inventory_domain_path)
+        return self.domain().crs
 
     @property
     def output_file(self):
@@ -200,7 +132,6 @@ class PriorConfig:
         return cls(
             # required
             domain_path=env.str("DOMAIN_FILE"),
-            inventory_domain_path=env.str("INVENTORY_DOMAIN_FILE"),
             start_date=start_date,
             end_date =end_date,
             # use defaults
@@ -211,6 +142,20 @@ class PriorConfig:
             output_filename=env.str("OUTPUT_FILENAME", None),
             sectors=sectors if len(sectors) > 0 else None,
         )
+
+
+def fetch_domain(
+    path_or_url: pathlib.Path | str,
+    input_path: pathlib.Path,
+) -> pathlib.Path:
+    domain_path = input_path / os.path.basename(str(path_or_url))
+    if not os.path.exists(domain_path):
+        save_path, response = urllib.request.urlretrieve(
+            url=str(path_or_url),
+            filename=domain_path,
+        )
+    return domain_path
+
 
 def parse_cli_args():
     """

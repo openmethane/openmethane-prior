@@ -10,7 +10,6 @@ def oil_gas_config_params(cache_dir, config_params, tmp_path):
     data_dir = tmp_path / "oil_gas_test"
     return dict(
         domain_path=config_params["domain_path"],
-        inventory_domain_path=config_params["inventory_domain_path"],
         input_path=data_dir / "inputs",
         intermediates_path=data_dir / "intermediates",
         output_path=data_dir / "outputs",

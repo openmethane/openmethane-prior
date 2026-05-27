@@ -52,7 +52,7 @@ def kg_to_period_cell_flux(mass_kg: T, config: PriorConfig) -> float:
     period, to kg/m2/s within the cell."""
     return kg_to_kg_m2_s(
         mass_kg=mass_kg,
-        area_m2=config.domain_grid().cell_area,
+        area_m2=config.domain().grid.cell_area,
         time_s=seconds_in_period(config.start_date, config.end_date)
     )
 

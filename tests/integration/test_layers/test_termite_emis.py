@@ -46,7 +46,7 @@ def test_termite_emis(config, input_files, data_manager):
             / lonTerm.size
         )
 
-    domain_ds = config.domain_dataset()
+    domain_ds = config.domain().dataset
     LATD = domain_ds.variables["LATD"].values.squeeze()
     LOND = domain_ds.variables["LOND"].values.squeeze()
     indLat = (latTerm > LATD.min()) & (latTerm < LATD.max())

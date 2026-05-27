@@ -38,7 +38,7 @@ def test_safeguard_allocate_emissions(config, input_files, data_manager):
     assert len(mines_capcoal_lonlat) == 1
     capcoal_lonlat = mines_capcoal_lonlat.iloc[0]
     assert (capcoal_lonlat["lon"], capcoal_lonlat["lat"]) == (148.580506, -22.990997)
-    assert config.domain_grid().lonlat_to_cell_index(capcoal_lonlat["lon"], capcoal_lonlat["lat"]) == (4, 8, True)
+    assert config.domain().grid.lonlat_to_cell_index(capcoal_lonlat["lon"], capcoal_lonlat["lat"]) == (4, 8, True)
 
     # run the test
     facilities, locations, gridded_emissions = allocate_safeguard_facility_emissions(
@@ -51,7 +51,7 @@ def test_safeguard_allocate_emissions(config, input_files, data_manager):
 
     # convert facility annual emissions to kg/m2/s
     expected_emissions = (sgm_capcoal_facility.iloc[0]["ch4_kg"]
-                          / config.domain_grid().cell_area
+                          / config.domain().grid.cell_area
                           / (365 * 24 * 60 * 60))
 
     # check the emissions are allocated to the right grid cell

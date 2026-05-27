@@ -15,10 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
 from .config import PriorConfig
 from .data_manager.manager import DataManager
-from .inputs import check_input_files
 from .outputs import create_output_dataset, add_ch4_total, add_sector
 from .sector.config import PriorSectorConfig
 from .sector.sector import PriorSector
@@ -43,7 +41,6 @@ def create_prior(config: PriorConfig, sectors: list[PriorSector]):
     config.load_cached_inputs()
 
     data_manager = DataManager(data_path=config.input_path, prior_config=config)
-    check_input_files(config)
 
     # Initialise the output dataset based on the domain provided in config
     prior_ds = create_output_dataset(config)
