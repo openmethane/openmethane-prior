@@ -17,6 +17,36 @@ def test_source_file_path(tmp_path, config):
 
     assert configured_data_source.asset_path == tmp_path / "something-else.json"
 
+def test_source_data_path(tmp_path, config):
+    data_path = tmp_path / "dynamic"
+    static_path = tmp_path / "static"
+
+    static_data_source = DataSource(
+        name="test-static",
+        file_path="static.txt",
+    )
+    configured_static = configure_data_source(
+        data_source=static_data_source,
+        prior_config=config,
+        data_path=data_path,
+        static_path=static_path,
+    )
+
+    assert configured_static.asset_path == static_path / "static.txt"
+
+    dynamic_data_source = DataSource(
+        name="test-dynamic",
+        file_path="dynamic.txt",
+        dynamic=True,
+    )
+    configured_dynamic = configure_data_source(
+        data_source=dynamic_data_source,
+        prior_config=config,
+        data_path=data_path,
+        static_path=static_path,
+    )
+    assert configured_dynamic.asset_path == data_path / "dynamic.txt"
+
 def test_source_file_path_absolute(tmp_path, config):
     # file_path provided
     test_data_source = DataSource(
@@ -51,6 +81,28 @@ def test_source_file_path_callable(tmp_path, config):
     configured_data_source = configure_data_source(test_data_source, config, tmp_path)
 
     assert configured_data_source.asset_path == tmp_path / "test-unfccc-codes.nc"
+
+
+def test_source_file_path_callable_dynamic(tmp_path, config):
+    data_path = tmp_path / "dynamic"
+    static_path = tmp_path / "static"
+
+    def file_path_from_name(_self: DataSource, config: PriorConfig):
+        return f"{_self.name}.nc"
+
+    dynamic_data_source = DataSource(
+        name="test-dynamic",
+        file_path=file_path_from_name,
+        dynamic=True,
+    )
+    configured = configure_data_source(
+        data_source=dynamic_data_source,
+        prior_config=config,
+        data_path=data_path,
+        static_path=static_path,
+    )
+
+    assert configured.asset_path == data_path / "test-dynamic.nc"
 
 
 def test_source_fetch_default(tmp_path, config):

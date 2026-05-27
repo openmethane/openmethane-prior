@@ -15,6 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+from typing import Self
+
 import attrs
 import pathlib
 
@@ -36,6 +38,9 @@ class DataManager:
     prior_config: PriorConfig
     """Configuration for the current run of the prior"""
 
+    static_path: pathlib.Path = None
+    """Folder on the filesystem where fetched data will be stored"""
+
     fetch_only: bool = False
     """If True, assets will only be fetched and not parsed"""
 
@@ -44,6 +49,12 @@ class DataManager:
 
     data_assets: dict[str, DataAsset] = attrs.Factory(dict)
     """All data assets that have been fetched and processed"""
+
+    # @see: https://www.attrs.org/en/stable/init.html
+    def __attrs_post_init__(self):
+        # if no static_path is provided, use the data_path
+        if self.static_path is None:
+            self.static_path = self.data_path
 
     def add_source(self, source: DataSource) -> ConfiguredDataSource:
         """Add a data source to this data manager"""
@@ -65,6 +76,7 @@ class DataManager:
             data_source=source,
             prior_config=self.prior_config,
             data_path=self.data_path,
+            static_path=self.static_path,
             data_assets=dependency_assets,
         )
         return self.data_sources[source.name]
@@ -116,3 +128,13 @@ class DataManager:
             self.data_assets[source.name] = asset
 
         return asset
+
+
+    @classmethod
+    def from_config(cls, config: PriorConfig) -> Self:
+        """Create DataManager instance based on settings in PriorConfig."""
+        return cls(
+            data_path=config.input_path,
+            static_path=config.static_path,
+            prior_config=config,
+        )

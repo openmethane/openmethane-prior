@@ -213,9 +213,7 @@ pyrightconfig.json
 
 # Custom ignores
 
-outputs
-inputs
-intermediates
-processed
+# Default data paths
+data/*
 
 !src/openmethane_prior/lib

@@ -1,4 +1,6 @@
 import argparse
+
+import attrs
 from attrs import field, frozen
 from attrs.converters import default_if_none
 import datetime
@@ -9,6 +11,7 @@ import pathlib
 import shutil
 from typing import Self
 import urllib.request
+import yaml
 
 from .grid.domain import Domain
 
@@ -51,6 +54,9 @@ class PriorConfig:
     """Filename to write the prior output to as a NetCDFv4 file in
     `output_path`"""
 
+    static_path: pathlib.Path = None
+    """Filesystem path where static input files exist or should be fetched to."""
+
     input_cache: pathlib.Path = None
     """If provided, a local path where remote inputs can be cached."""
 
@@ -58,41 +64,62 @@ class PriorConfig:
     # by attrs has run.
     # @see: https://www.attrs.org/en/stable/init.html
     def __attrs_post_init__(self):
+        # Note: __setattr__ is used due to frozen class attributes being read-only
+
+        # if no static_path is provided, use the input_path
+        if self.static_path is None:
+            object.__setattr__(self, "static_path", self.input_path)
         # if no end_date is provided, estimate a single day specified by start_date
         if self.end_date is None:
-            # can't set attributes on frozen class
             object.__setattr__(self, "end_date", self.start_date)
-
-
-    def as_input_file(self, name: str | pathlib.Path) -> pathlib.Path:
-        """Return the full path to an input file"""
-        return self.input_path / name
 
     def as_intermediate_file(self, name: str | pathlib.Path) -> pathlib.Path:
         """Return the full path to an intermediate file"""
         return self.intermediates_path / name
-
-    def as_output_file(self, name: str | pathlib.Path) -> pathlib.Path:
-        """Return the full path to an output file"""
-        return self.output_path / name
 
     def prepare_paths(self):
         """Create any configured directory paths that don't already exist."""
         self.input_path.mkdir(parents=True, exist_ok=True)
         self.intermediates_path.mkdir(parents=True, exist_ok=True)
         self.output_path.mkdir(parents=True, exist_ok=True)
+        self.static_path.mkdir(parents=True, exist_ok=True)
+
+    @property
+    def _cache_paths(self):
+        if self.input_cache is None:
+            return None
+        # TODO add control to disable caching dynamic data
+        cache_paths = {
+            self.input_path: self.input_cache / "inputs",
+            self.intermediates_path: self.input_cache / "intermediates",
+        }
+        if self.static_path != self.input_path:
+            cache_paths[self.static_path] = self.input_cache / "static"
+        return cache_paths
 
     def load_cached_inputs(self):
-        """Copy the contents of the input cache into the input folder."""
-        if self.input_cache is not None and self.input_cache.exists():
-            shutil.copytree(src=self.input_cache, dst=self.input_path, dirs_exist_ok=True)
+        """Copy the contents of the cache into the corresponding data paths."""
+        if self.input_cache is None or self._cache_paths is None:
+            return
+        for i, (data_path, cache_path) in enumerate(self._cache_paths.items()):
+            if cache_path.exists():
+                shutil.copytree(src=cache_path, dst=data_path, dirs_exist_ok=True)
 
     def cache_inputs(self):
-        """Copy everything in the inputs folder back into the cache, so that
-        any new inputs fetched during this run will be cached."""
-        if self.input_cache is not None:
-            self.input_cache.mkdir(parents=True, exist_ok=True)
-            shutil.copytree(src=self.input_path, dst=self.input_cache, dirs_exist_ok=True)
+        """Cache inputs and intermediates for re-use on subsequent runs."""
+        if self.input_cache is None or self._cache_paths is None:
+            return
+        for i, (data_path, cache_path) in enumerate(self._cache_paths.items()):
+            if data_path.exists():
+                shutil.copytree(src=data_path, dst=cache_path, dirs_exist_ok=True)
+
+    def to_yaml(self):
+        attrs_dict = attrs.asdict(self)
+        for i, (key, value) in enumerate(attrs_dict.items()):
+            # cast Path objects to string for more terse output
+            if isinstance(value, pathlib.Path):
+                attrs_dict[key] = str(value)
+        return yaml.dump(attrs_dict)
 
     @cache
     def domain(self) -> Domain:
@@ -109,7 +136,7 @@ class PriorConfig:
     @property
     def output_file(self):
         """Get the filename of the output domain"""
-        return self.as_output_file(self.output_filename)
+        return self.output_path / self.output_filename
 
     @classmethod
     def from_env(cls) -> Self:
@@ -138,6 +165,7 @@ class PriorConfig:
             input_path=env.path("INPUTS", None),
             output_path=env.path("OUTPUTS", None),
             intermediates_path=env.path("INTERMEDIATES", None),
+            static_path=env.path("STATIC_INPUTS", None),
             input_cache=env.path("INPUT_CACHE", None),
             output_filename=env.str("OUTPUT_FILENAME", None),
             sectors=sectors if len(sectors) > 0 else None,
