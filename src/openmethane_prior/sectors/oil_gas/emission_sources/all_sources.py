@@ -29,10 +29,12 @@ from ..emission_source import normalise_emission_source_df
 from .nsw_sources import nsw_emission_sources
 from .nt_sources import nt_emission_sources
 from .offshore_sources import offshore_emission_sources
+from .pipeline_sources import pipeline_emission_sources
 from .qld_sources import qld_emission_sources
 from .sa_sources import sa_emission_sources
 from .site_sources import oil_gas_site_emission_sources
 from .wa_sources import wa_emission_sources
+from ..data.au_pipelines import au_gas_pipelines_data_source
 from ..data.nopta import nopta_titles_data_source, nopta_wells_data_source
 from ..data.nsw_geo import nsw_drillholes_data_source, nsw_titles_data_source
 from ..data.nt_geo import nt_titles_data_source, nt_wells_data_source
@@ -148,13 +150,25 @@ def all_emission_sources(
         npi_da=npi_da,
         anzsic_codes=anzsic_codes,
     )
+    sites_df = normalise_emission_source_df(sites_df, prior_config.crs)
     logger.debug(f"found {len(sites_df[sites_df['data_source'] == oil_gas_sites_da.name])} oil and gas facilities")
     logger.debug(f"found {len(sites_df[sites_df['data_source'] == npi_da.name])} NPI facilities")
+
+    # national oil and gas pipelines dataset
+    pipelines_da = data_manager.get_asset(au_gas_pipelines_data_source)
+    pipelines_df = pipeline_emission_sources(
+        start_date=start_date,
+        end_date=end_date,
+        gas_pipelines_da=pipelines_da,
+    )
+    pipelines_df = normalise_emission_source_df(pipelines_df, prior_config.crs)
+    logger.debug(f"found {len(pipelines_df)} pipelines")
 
     all_df: gpd.GeoDataFrame = pd.concat([
         states_df,
         offshore_new,
         sites_df,
+        pipelines_df,
     ])
 
     return all_df

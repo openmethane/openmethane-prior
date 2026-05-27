@@ -16,42 +16,12 @@
 # limitations under the License.
 #
 import datetime
-import geopandas as gpd
 import numpy as np
-import os
 import pathlib
-import shutil
-import tempfile
-import urllib
-import zipfile
 
-from openmethane_prior.lib import DataSource
+from openmethane_prior.lib import DataSource, ConfiguredDataSource
+from openmethane_prior.lib.data_manager.fetchers import fetch_zipped_shp_to_gdf
 from openmethane_prior.lib.data_manager.parsers import parse_geo
-from openmethane_prior.lib.data_manager.source import ConfiguredDataSource
-
-def fetch_zipped_shp_to_gdf(
-    url: str,
-    shp_file: str,
-) -> gpd.GeoDataFrame:
-    """Fetch a zip file specified by DataSource.url, extract the contents and
-    read in a Shapefile (.shp) from the archive as a GeoDataFrame."""
-
-    # use a temporary path to store and extract the zip contents, which will
-    # be cleaned up automatically afterwards
-    with tempfile.TemporaryDirectory(prefix="openmethane-prior") as tmp_dir:
-        tmp_path = pathlib.Path(tmp_dir)
-
-        # download and extract the zip file to a known location
-        zip_path, response = urllib.request.urlretrieve(
-            url=url,
-            filename=tmp_path / os.path.basename(url),
-        )
-        # entire zip must be extracted, as the .shp file depends on sibling files
-        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-            zip_ref.extractall(tmp_path)
-
-        # read the extracted Shapefile with geopandas
-        return gpd.read_file(tmp_path / shp_file)
 
 
 def fetch_nt_titles(data_source: ConfiguredDataSource) -> pathlib.Path:

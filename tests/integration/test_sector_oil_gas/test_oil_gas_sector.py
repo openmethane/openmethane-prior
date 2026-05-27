@@ -35,11 +35,12 @@ def test_oil_gas_sector_pre_sgm(input_files, oil_gas_config_params, start_date, 
 
     # config.cache_inputs()
 
-    assert prior_oil_gas_ds['ch4_total'].max().item() == 2.3294189726416945e-12
-    assert prior_oil_gas_ds['ch4_sector_oil_gas'].max().item() == 2.3294189726416945e-12
+    assert prior_oil_gas_ds['ch4_total'].max().item() == 5.671488137556794e-11
+    assert prior_oil_gas_ds['ch4_sector_oil_gas'].max().item() == 5.671488137556794e-11
 
-    assert prior_oil_gas_ds['ch4_total'].mean().item() == 2.3294189726416945e-14
-    assert prior_oil_gas_ds['ch4_sector_oil_gas'].mean().item() == 2.3294189726416945e-14
+    assert prior_oil_gas_ds['ch4_total'].mean().item() == 5.671488137556793e-13
+    assert prior_oil_gas_ds['ch4_sector_oil_gas'].mean().item() == 5.671488137556793e-13
+
 
 def test_oil_gas_sector_post_sgm(input_files, oil_gas_config_params):
     """Run the full oil and gas sector over the au-test domain, for a period
@@ -60,8 +61,8 @@ def test_oil_gas_sector_post_sgm(input_files, oil_gas_config_params):
 
     # config.cache_inputs()
 
-    assert prior_oil_gas_ds['ch4_total'].max().item() == 9.182117951453263e-12
-    assert prior_oil_gas_ds['ch4_sector_oil_gas'].max().item() == 9.182117951453263e-12
+    assert prior_oil_gas_ds['ch4_total'].max().item() == 5.981512482274273e-11
+    assert prior_oil_gas_ds['ch4_sector_oil_gas'].max().item() == 5.981512482274273e-11
 
-    assert prior_oil_gas_ds['ch4_total'].mean().item() == 9.182117951453263e-14
-    assert prior_oil_gas_ds['ch4_sector_oil_gas'].mean().item() == 9.182117951453263e-14
+    assert prior_oil_gas_ds['ch4_total'].mean().item() == 5.981512482274273e-13
+    assert prior_oil_gas_ds['ch4_sector_oil_gas'].mean().item() == 5.981512482274273e-13

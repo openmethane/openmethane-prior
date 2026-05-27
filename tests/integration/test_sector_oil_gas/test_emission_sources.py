@@ -1,6 +1,7 @@
 import datetime
 
 from openmethane_prior.data_sources.npi import npi_facilities_data_source
+from openmethane_prior.sectors.oil_gas.data.au_pipelines import au_gas_pipelines_data_source
 from openmethane_prior.sectors.oil_gas.data.nopta import (
     nopta_titles_data_source, nopta_wells_data_source,
 )
@@ -24,6 +25,7 @@ from openmethane_prior.sectors.oil_gas.emission_sources.all_sources import all_e
 from openmethane_prior.sectors.oil_gas.emission_sources.nsw_sources import nsw_emission_sources
 from openmethane_prior.sectors.oil_gas.emission_sources.nt_sources import nt_emission_sources
 from openmethane_prior.sectors.oil_gas.emission_sources.offshore_sources import offshore_emission_sources
+from openmethane_prior.sectors.oil_gas.emission_sources.pipeline_sources import pipeline_emission_sources
 from openmethane_prior.sectors.oil_gas.emission_sources.qld_sources import qld_emission_sources
 from openmethane_prior.sectors.oil_gas.emission_sources.sa_sources import sa_emission_sources
 from openmethane_prior.sectors.oil_gas.emission_sources.site_sources import oil_gas_site_emission_sources
@@ -167,7 +169,7 @@ def test_wa_emission_sources(input_files, data_manager):
     assert len(df[(df["activity_end"] < start_date) & (df["activity_start"] > start_date_end)]) == 0
 
     # no sources which aren't related to production
-    assert set(df["class"].unique()) == {"DEV"}
+    assert set(df["class"].unique()) == {"NPW", "DEV", "NFW", "EXT"}
 
     # no duplicate check, as we allow duplicate geometries from WA dataset
 
@@ -191,7 +193,7 @@ def test_offshore_emission_sources(input_files, data_manager):
     assert len(df[(df["activity_end"] < start_date) & (df["activity_start"] > start_date_end)]) == 0
 
     # no sources which aren't related to production
-    assert set(df["Purpose"].unique()) == {"Development"}
+    assert set(df["Purpose"].unique()) == {"Appraisal", "Development", "Exploration"}
     assert set(df["TitleType"].unique()) == {"Production Licence"}
 
     # no duplicate check, as we allow duplicate geometries from NOPTA dataset
@@ -223,16 +225,34 @@ def test_sites_emission_sources(input_files, data_manager):
     assert set(df["anzsic_code"].unique()) == {'070', '0700', '170', '1701', '1709', '2700'}
 
 
+def test_au_pipelines(input_files, data_manager, config):
+    start_date = datetime.datetime(2023, 1, 1, 0, 0)
+    start_date_end = datetime.datetime(2023, 1, 2, 0, 0)
+    pipelines_da = data_manager.get_asset(au_gas_pipelines_data_source)
+    df = pipeline_emission_sources(
+        start_date=start_date,
+        end_date=start_date_end,
+        gas_pipelines_da=pipelines_da,
+    )
+
+    # original datasets have been filtered down
+    assert len(pipelines_da.data) > 0
+    assert len(df) <= len(pipelines_da.data)
+
+    # no sources which aren't operational gas pipelines
+    assert set(df["site_type"].unique()) == {"pipeline-gas"}
+    assert set(df["operational_status"].unique()) == {"Fully capable of operation."}
+
+
 def test_all_emission_sources(input_files, data_manager, config):
     end_date_end = config.end_date + datetime.timedelta(days=1)
     df = all_emission_sources(
         data_manager=data_manager,
         prior_config=config,
-        anzsic_codes=["07", "17", "27"],
+        anzsic_codes=["07", "17", "27", "502"],
     )
 
     assert len(df) > 0
 
     # no sources where activity period doesn't intersect config period
     assert len(df[(df["activity_end"] < config.start_date) & (df["activity_start"] > end_date_end)]) == 0
-

@@ -36,7 +36,13 @@ def wa_emission_sources(
     wa_titles_df: gpd.GeoDataFrame = wa_titles_da.data
 
     # filter out wells that aren't actively used for production
-    wells_df = wa_wells_df[wa_wells_df["class"] == "DEV"]
+    # "class" values follow Lahee classification system
+    wells_df = wa_wells_df[wa_wells_df["class"].isin([
+        "DEV", # Development
+        "EXT", # Extension
+        "NFW", # New Field Wildcat
+        "NPW", # New Pool Wildcat
+    ])]
 
     # WA wells dataset appears to re-use lat/lon coords for multiple wells
     # within the same field. Since these contain unique uwi/well_name values
