@@ -3,7 +3,7 @@ import os
 import pathlib
 import pytest
 
-from openmethane_prior.lib.config import PriorConfig
+from openmethane_prior.lib.config import PriorConfig, fetch_domain
 
 
 # This fixture will allow each test to setup the required env variables and
@@ -203,3 +203,89 @@ def test_prior_config_input_cache(tmp_path: pathlib.Path, start_date, end_date):
 
     # the file from the cache is NOT copied
     assert not (test_config.input_path / "cache-test.txt").exists()
+
+
+# ---------------------------------------------------------------------------
+# fetch_domain tests
+# ---------------------------------------------------------------------------
+
+@pytest.fixture()
+def input_path(tmp_path):
+    path = tmp_path / "inputs"
+    path.mkdir()
+    return path
+
+
+@pytest.fixture()
+def mock_retrieve(mocker):
+    return mocker.patch("urllib.request.urlretrieve")
+
+
+def test_fetch_domain_returns_path_under_input_path(input_path, mock_retrieve):
+    """Returned path is always input_path / basename(path_or_url)."""
+    mock_retrieve.return_value = (str(input_path / "domain.nc"), None)
+    result = fetch_domain("https://example.com/some/nested/domain.nc", input_path)
+    assert result == input_path / "domain.nc"
+
+
+def test_fetch_domain_downloads_url_when_file_missing(input_path, mock_retrieve):
+    """Calls urlretrieve with the URL and destination path when file is absent."""
+    url = "https://example.com/domain.nc"
+    expected_dest = input_path / "domain.nc"
+    mock_retrieve.return_value = (str(expected_dest), None)
+
+    fetch_domain(url, input_path)
+
+    mock_retrieve.assert_called_once_with(url=url, filename=expected_dest)
+
+
+def test_fetch_domain_skips_download_when_file_exists(input_path, mock_retrieve):
+    """Does not call urlretrieve when the destination file already exists."""
+    (input_path / "domain.nc").touch()
+
+    result = fetch_domain("https://example.com/domain.nc", input_path)
+
+    mock_retrieve.assert_not_called()
+    assert result == input_path / "domain.nc"
+
+
+def test_fetch_domain_uses_basename_of_url(input_path, mock_retrieve):
+    """Only the basename of a URL with path segments is used as the filename."""
+    url = "https://example.com/v1/au-test/my-domain-file.nc"
+    expected_dest = input_path / "my-domain-file.nc"
+    mock_retrieve.return_value = (str(expected_dest), None)
+
+    result = fetch_domain(url, input_path)
+
+    assert result.name == "my-domain-file.nc"
+    mock_retrieve.assert_called_once_with(url=url, filename=expected_dest)
+
+
+def test_fetch_domain_hardlinks_local_file(input_path, mock_retrieve):
+    """Creates a hard link in input_path when given a path to an existing local file."""
+    source = input_path.parent / "source" / "domain.nc"
+    source.parent.mkdir()
+    source.write_text("domain content")
+
+    result = fetch_domain(str(source), input_path)
+
+    mock_retrieve.assert_not_called()
+    assert result == input_path / "domain.nc"
+    assert result.exists()
+    assert result.read_text() == "domain content"
+
+
+def test_fetch_domain_skips_hardlink_when_dest_exists(input_path, mocker, mock_retrieve):
+    """Does not create a hard link when the destination already exists."""
+    source = input_path.parent / "source" / "domain.nc"
+    source.parent.mkdir()
+    source.write_text("source content")
+
+    existing = input_path / "domain.nc"
+    existing.write_text("existing content")
+
+    mock_hardlink = mocker.patch.object(pathlib.Path, "hardlink_to")
+    result = fetch_domain(str(source), input_path)
+
+    mock_hardlink.assert_not_called()
+    assert result.read_text() == "existing content"

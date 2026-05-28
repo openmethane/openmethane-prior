@@ -178,10 +178,14 @@ def fetch_domain(
 ) -> pathlib.Path:
     domain_path = input_path / os.path.basename(str(path_or_url))
     if not os.path.exists(domain_path):
-        save_path, response = urllib.request.urlretrieve(
-            url=str(path_or_url),
-            filename=domain_path,
-        )
+        as_path = pathlib.Path(path_or_url)
+        if as_path.is_file():
+            domain_path.hardlink_to(as_path)
+        else:
+            save_path, response = urllib.request.urlretrieve(
+                url=str(path_or_url),
+                filename=domain_path,
+            )
     return domain_path
 
 
