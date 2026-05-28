@@ -67,39 +67,16 @@ To allocate ANGA inventory emissions to prior sectors, we utilise the
 `unfccc_categories` in each sector, which contain UNFCCC CRT category codes,
 like "5" (Waste), "3.B" (Agriculture - Enteric Fermentation). However, the
 [Australian UNFCCC Inventory](#Australian-UNFCCC-Inventory) doesn't include
-category codes, only full names of the UNFCCC categories (some of which are
-not exact from the original definitions).
+category codes, only full names of the UNFCCC category levels (some of which
+don't match official forms exactly).
 
-A mapping from Australia's inventory categories to UNFCCC has been created to
-assist this process. The mapping was created manually by fetching all the
-category names present in the Australian inventory, and assigning the correct
-code to each category.
+A mapping from ANGA inventory "levels" to UNFCCC codes has been created using
+an unofficial ANGA API which is used to power the ANGA website. This is
+necessary because in the past ANGA has made slight changes to level names, and
+has also added and removed categories from the inventory from year to year.
 
-File can be created initially by finding unique categories in the bulk data:
-
-```shell
-curl -s https://greenhouseaccounts.climatechange.gov.au/OData/AR5_ParisInventory_AUSTRALIA \
-  | jq --raw-output '
-    (["UNFCCC_Code", "UNFCCC_Level_1", "UNFCCC_Level_2", "UNFCCC_Level_3", "UNFCCC_Level_4"] | @csv),
-    (
-      .value[]
-      | select(.Gas_Level_0 == "CH4")
-      | ["", .UNFCCC_Level_1, .UNFCCC_Level_2, .UNFCCC_Level_3, .UNFCCC_Level_4]
-      | @csv
-    )
-  ' \
-  | uniq \
-  > UNFCCC-codes.csv
-```
-
-Note: this excludes level 5 categorisation, where codes are sometimes harder to
-identify and prior sectors are unlikely to model categories to this level.
-
-This generates a file with empty values for "UNFCCC_Code" which must then be
-populated manually.
-
-The completed mapping is available in our public data store:
-https://openmethane.s3.amazonaws.com/prior/inputs/UNFCCC-codes-AU.csv
+If this unofficial API changes or becomes inaccessible, we can make the
+generated UNFCCC codes CSV available via our public data store. 
 
 
 ## Safeguard Mechanism Baselines and Emissions
