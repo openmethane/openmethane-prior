@@ -28,10 +28,11 @@ def all_sector_meta():
 
 def test_inventory_get_sector_emissions_by_code(all_sector_meta, inventory_df):
     expected_annual_emissions = {
-        "agriculture": 153367168.69052473,
+        "agriculture": 166010041.1571281,
         "coal": 901455051.0124931,
         "electricity": 11164637.314332796,
         "industrial": 2937681.1201194106,
+        "livestock": 2107296329.3320558,
         "lulucf": 661762727.6374531,
         "oil_gas": 266446833.76762065,
         "stationary": 73354555.56013045,
