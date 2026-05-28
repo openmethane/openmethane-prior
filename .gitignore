@@ -216,4 +216,6 @@ pyrightconfig.json
 # Default data paths
 data/*
 
+.claude/
+
 !src/openmethane_prior/lib

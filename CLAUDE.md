@@ -10,6 +10,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```bash
 uv sync                  # Install dependencies
+uv add <package>         # Add a new dependency (do not edit pyproject.toml manually)
 make test                # Run all tests
 make format              # Format code with Ruff
 make run-example         # Run for test date 2022-07-01

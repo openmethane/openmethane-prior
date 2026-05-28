@@ -86,47 +86,6 @@ def area_of_rectangle_m2(lat1: T, lat2: T, lon1: T, lon2: T) -> T:
     return area
 
 
-def redistribute_spatially(lat_shape, ind_x, ind_y, coefs, subset, from_areas, to_areas):  # noqa: PLR0913
-    """Redistribute GFAS emissions horizontally and vertically.
-
-    This little function does most of the work.
-
-    Parameters
-    ----------
-    lat_shape
-        Shape of the LAT variable
-    ind_x
-        x-indices in the GFAS domain corresponding to indices in the CMAQ domain
-    ind_y
-        y-indices in the GFAS domain corresponding to indices in the CMAQ domain
-    coefs
-        Area-weighting coefficients to redistribute the emissions
-    subset
-        Emissions to distribute
-    from_areas
-        Areas of input grid-cells in units of m^2
-    to_areas
-        Area of output grid-cells in units of m^2
-
-    Returns
-    -------
-        gridded: concentrations on the 2D CMAQ grid
-
-    """
-    ##
-    gridded = np.zeros(lat_shape, dtype=np.float32)
-    ij = 0
-    for i in range(lat_shape[0]):
-        for j in range(lat_shape[1]):
-            ij += 1
-            for k in range(len(ind_x[ij])):
-                ix = ind_x[ij][k]
-                iy = ind_y[ij][k]
-                gridded[i, j] += subset[iy, ix] * coefs[ij][k] * from_areas[iy, ix]
-    gridded /= to_areas
-    return gridded
-
-
 def get_command():
     return " ".join(sys.argv)
 
@@ -151,15 +110,6 @@ def time_bounds(
         bounds.append([period_start, period_start + interval])
     return bounds
 
-
-def datetime64_to_datetime( dt: np.datetime64) -> datetime.datetime:
-    """ converts a datetime64 object into a datetime.datetime object.
-    borrows from https://stackoverflow.com/questions/13703720/converting-between-datetime-timestamp-and-datetime64 """
-    epoch = np.datetime64(0,'s')
-    one_second = np.timedelta64(1,'s')
-    seconds_since_epoch = (dt - epoch)/one_second
-    return datetime.datetime.utcfromtimestamp(seconds_since_epoch)
-    
 
 def bounds_from_cell_edges(cell_edges: xr.DataArray) -> np.array:
     """

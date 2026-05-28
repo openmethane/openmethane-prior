@@ -25,6 +25,7 @@ from .data_manager.manager import (
 )
 from .grid.domain import Domain
 from .grid.regrid import regrid_data
+from .regrid import regrid_data_array_conservative
 from .outputs import add_sector, convert_to_timescale
 from .create_prior import create_prior
 from .raster import remap_raster
@@ -33,12 +34,10 @@ from .sector.sector import PriorSector
 from .units import kg_to_period_cell_flux
 from .utils import (
     area_of_rectangle_m2,
-    datetime64_to_datetime,
     get_timestamped_command,
     get_version,
     list_cf_grid_mappings,
     load_zipped_pickle,
-    redistribute_spatially,
     save_zipped_pickle,
     rows_in_period,
 )
