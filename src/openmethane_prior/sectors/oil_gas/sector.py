@@ -31,6 +31,7 @@ from openmethane_prior.data_sources.inventory import (
 )
 from openmethane_prior.data_sources.nightlights import night_lights_data_source
 from openmethane_prior.data_sources.safeguard import (
+    get_sector_safeguard_facilities,
     safeguard_mechanism_data_source,
     safeguard_locations_data_source,
 )
@@ -39,7 +40,7 @@ from openmethane_prior.lib.sector.au_sector import AustraliaPriorSector
 
 from .emission_source import allocate_emissions_to_sources
 from .emission_sources.all_sources import all_emission_sources
-from .safeguard import gas_supply_emissions, get_sector_safeguard_facilities
+from .safeguard import gas_supply_emissions
 
 logger = logger.get_logger(__name__)
 
@@ -84,6 +85,10 @@ def process_emissions(sector: AustraliaPriorSector, sector_config: PriorSectorCo
         anzsic_codes=sector.anzsic_codes,
         period=(config.start_date.date(), config.end_date.date()),
     )
+    if len(sector_facilities_df) == 0:
+        logger.info(f"No Safeguard facilities found for the period")
+    else:
+        logger.info(f"{sector_facilities_df['ch4_kg'].sum() / 1e6:.2f} kt total Safeguard emissions in the period in sectors: {','.join(sector.anzsic_codes)}")
 
     total_allocated_emissions = 0
 

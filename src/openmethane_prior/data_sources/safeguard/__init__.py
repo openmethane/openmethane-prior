@@ -5,6 +5,7 @@ from .data import (
 )
 from .facility import (
     filter_facilities,
+    get_sector_safeguard_facilities,
 )
 from .location import (
     filter_locations,

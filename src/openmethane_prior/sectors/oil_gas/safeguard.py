@@ -15,56 +15,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-import datetime
 import geopandas as gpd
 import numpy as np
 import pandas as pd
 
-from openmethane_prior.data_sources.safeguard import filter_facilities
 from openmethane_prior.lib.grid.geometry import grid_mask_from_polygon
 from openmethane_prior.lib.grid.grid import Grid
 from openmethane_prior.lib.logger import get_logger
-from openmethane_prior.lib.units import days_in_period
 
 logger = get_logger(__name__)
-
-def get_sector_safeguard_facilities(
-    safeguard_facilities_df: pd.DataFrame,
-    anzsic_codes: list[str] = None,
-    period: tuple[datetime.date, datetime.date] = None,
-):
-    """Find Safeguard Mechanism facilities in the provided sector with reported
-    emissions in the period of interest. Scale the annual Safeguard emissions
-    to the length of the period.
-
-    :return: DataFrame of facilities with the total CH4 emissions expected
-      over the period.
-    """
-    # identify Safeguard Mechanism facilities in this sector which reported
-    # emissions during the period of interest
-    sector_facilities_df = filter_facilities(
-        facility_df=safeguard_facilities_df,
-        anzsic_codes=anzsic_codes,
-        period=period,
-    )
-
-    if len(sector_facilities_df) == 0:
-        logger.info(f"No Safeguard facilities found for the period")
-        return sector_facilities_df
-
-    logger.info(f"Found {len(sector_facilities_df)} Safeguard facilities, totalling {sector_facilities_df['ch4_kg'].sum() / 1e6:.2f} kt annual CH4")
-
-    # scale annual safeguard emissions to the total amount for the period (kg),
-    # the same unit output from get_sector_emissions_by_code
-    safeguard_period_start = sector_facilities_df.iloc[0]["reporting_start"]
-    safeguard_period_end = sector_facilities_df.iloc[0]["reporting_end"]
-    year_days = days_in_period(safeguard_period_start, safeguard_period_end)
-    period_days = days_in_period(period[0], period[1])
-    sector_facilities_df["ch4_kg"] *= period_days / year_days
-
-    logger.info(f"{sector_facilities_df['ch4_kg'].sum() / 1e6:.2f} kt total Safeguard emissions in the period in sectors: {','.join(anzsic_codes)}")
-
-    return sector_facilities_df
 
 
 def gas_supply_emissions(
