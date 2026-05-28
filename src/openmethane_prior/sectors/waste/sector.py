@@ -15,12 +15,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
 import numpy as np
-import pandas as pd
 import xarray as xr
 
-from openmethane_prior.data_sources.climate_trace import filter_emissions_sources
 from openmethane_prior.data_sources.inventory import get_sector_emissions_by_code, inventory_data_source
 from openmethane_prior.data_sources.safeguard import (
     get_sector_safeguard_facilities,
@@ -34,11 +31,7 @@ from openmethane_prior.lib import (
 )
 from openmethane_prior.lib.sector.au_sector import AustraliaPriorSector
 
-from .data import (
-    ct_wastewaster_domestic_data_source,
-    ct_wastewaster_industrial_data_source,
-    ct_solid_waste_data_source,
-)
+from .emission_sources import waste_emission_sources
 
 logger = logger.get_logger(__name__)
 
@@ -60,28 +53,8 @@ def process_emissions(
         category_codes=sector.unfccc_categories,
     )
 
-    # read all emissions sources corresponding to the waste sector
-    wastewater_domestic_df = sector_config.data_manager.get_asset(ct_wastewaster_domestic_data_source).data
-    wastewater_industrial_df = sector_config.data_manager.get_asset(ct_wastewaster_industrial_data_source).data
-    solid_waste_df = sector_config.data_manager.get_asset(ct_solid_waste_data_source).data
-
-    emission_sources_df = pd.concat([
-        wastewater_domestic_df,
-        wastewater_industrial_df,
-        solid_waste_df,
-    ])
-
-    # ClimateTRACE has "emission_quantity" column with their own estimate.
-    # Add a column for the emission from each source from inventories, using
-    # NaN to indicate "not yet allocated" instead of "no emission"
-    emission_sources_df["inventory_quantity"] = np.nan
-
-    # select the emissions source data from the requested period
-    emission_sources_df = filter_emissions_sources(
-        emissions_sources_df=emission_sources_df,
-        period_start=config.start_date,
-        period_end=config.end_date,
-    )
+    # find all known locations for waste sector emissions
+    emission_sources_df = waste_emission_sources(config, sector_config.data_manager)
 
     # identify Safeguard Mechanism facilities in this sector which reported
     # emissions during the period of interest
