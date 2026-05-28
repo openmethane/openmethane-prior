@@ -54,7 +54,16 @@ def process_emissions(
     )
 
     # find all known locations for waste sector emissions
-    emission_sources_df = waste_emission_sources(config, sector_config.data_manager)
+    emission_sources_df = waste_emission_sources(
+        config=config,
+        data_manager=sector_config.data_manager,
+        anzsic_codes=sector.anzsic_codes,
+    )
+
+    # NPI facilities have no emissions_quantity estimate, so add one by
+    # taking the average emission from CT emission sources
+    emission_quantity_mean = emission_sources_df["emissions_quantity"].mean()
+    emission_sources_df.loc[np.isnan(emission_sources_df["emissions_quantity"]), "emissions_quantity"] = emission_quantity_mean
 
     # identify Safeguard Mechanism facilities in this sector which reported
     # emissions during the period of interest
