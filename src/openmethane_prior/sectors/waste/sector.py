@@ -22,6 +22,11 @@ import xarray as xr
 
 from openmethane_prior.data_sources.climate_trace import filter_emissions_sources
 from openmethane_prior.data_sources.inventory import get_sector_emissions_by_code, inventory_data_source
+from openmethane_prior.data_sources.safeguard import (
+    get_sector_safeguard_facilities,
+    safeguard_mechanism_data_source,
+    safeguard_locations_data_source,
+)
 from openmethane_prior.lib import (
     kg_to_period_cell_flux,
     logger,
@@ -56,32 +61,91 @@ def process_emissions(
     )
 
     # read all emissions sources corresponding to the waste sector
-    emissions_sources = pd.concat([
-        sector_config.data_manager.get_asset(ct_wastewaster_domestic_data_source).data,
-        sector_config.data_manager.get_asset(ct_wastewaster_industrial_data_source).data,
-        sector_config.data_manager.get_asset(ct_solid_waste_data_source).data,
+    wastewater_domestic_df = sector_config.data_manager.get_asset(ct_wastewaster_domestic_data_source).data
+    wastewater_industrial_df = sector_config.data_manager.get_asset(ct_wastewaster_industrial_data_source).data
+    solid_waste_df = sector_config.data_manager.get_asset(ct_solid_waste_data_source).data
+
+    emission_sources_df = pd.concat([
+        wastewater_domestic_df,
+        wastewater_industrial_df,
+        solid_waste_df,
     ])
 
+    # ClimateTRACE has "emission_quantity" column with their own estimate.
+    # Add a column for the emission from each source from inventories, using
+    # NaN to indicate "not yet allocated" instead of "no emission"
+    emission_sources_df["inventory_quantity"] = np.nan
+
     # select the emissions source data from the requested period
-    period_emissions_sources = filter_emissions_sources(
-        emissions_sources,
-        config.start_date,
-        config.end_date,
+    emission_sources_df = filter_emissions_sources(
+        emissions_sources_df=emission_sources_df,
+        period_start=config.start_date,
+        period_end=config.end_date,
     )
+
+    # identify Safeguard Mechanism facilities in this sector which reported
+    # emissions during the period of interest
+    safeguard_facilities_da = sector_config.data_manager.get_asset(safeguard_mechanism_data_source)
+    sector_facilities_df = get_sector_safeguard_facilities(
+        safeguard_facilities_df=safeguard_facilities_da.data,
+        anzsic_codes=sector.anzsic_codes,
+        period=(config.start_date.date(), config.end_date.date()),
+    )
+    if len(sector_facilities_df) == 0:
+        logger.info(f"No Safeguard facilities found for the period")
+    else:
+        logger.info(f"{sector_facilities_df['ch4_kg'].sum() / 1e6:.2f} kt total Safeguard emissions in the period in sectors: {','.join(sector.anzsic_codes)}")
+
+    # Safeguard locations dataset tells us where we can find locations of
+    # wells and sites that correspond to a Safeguard facility
+    facility_locations_df = sector_config.data_manager.get_asset(safeguard_locations_data_source).data
+    located_facilities_df = sector_facilities_df.merge(
+        facility_locations_df,
+        left_on="facility_name",
+        right_on="safeguard_facility_name",
+    )
+
+    for idx_fac, facility in sector_facilities_df.iterrows():
+        locations = located_facilities_df[located_facilities_df["facility_name"] == facility.facility_name]
+
+        # build a list of emission sources related to this SGM facility
+        # note: may be overkill, most waste sources only have a single location
+        facility_mask = emission_sources_df["data_source"] == False
+        for idx_loc, location in located_facilities_df.loc[locations.index].iterrows():
+            # add the emission sources for this location
+            facility_mask |= (emission_sources_df["data_source"] == location["data_source_name"]) \
+                & (emission_sources_df["data_source_id"] == location["data_source_id"])
+
+        # if no locations can be related to an SGM facility, that's a problem
+        if facility_mask.sum() == 0:
+            logger.warning(f"No sources found for facility '{facility.facility_name}', unable to allocate {facility['ch4_kg']:.2f}kg CH4")
+            continue
+
+        # allocate SGM emissions for this facility equally to its locations
+        emission_sources_df.loc[facility_mask, "inventory_quantity"] = facility["ch4_kg"] / facility_mask.sum()
+
+    allocated_emissions = emission_sources_df["inventory_quantity"].sum()
+    logger.debug(f"{allocated_emissions / 1e6:.2f} kt allocated to SGM facilities")
+
+    unallocated_emission_sources_mask = np.isnan(emission_sources_df["inventory_quantity"])
+    unallocated_national_emissions = sector_total_emissions - allocated_emissions
+    unallocated_emissions_scale = unallocated_national_emissions / emission_sources_df[unallocated_emission_sources_mask]["emissions_quantity"].sum()
+
+    logger.debug(f"{unallocated_emission_sources_mask.sum()} / {len(emission_sources_df)} unallocated sources ({100 * unallocated_emission_sources_mask.sum() / len(emission_sources_df):.1f}%)")
+    logger.debug(f"{unallocated_national_emissions / 1e6:.2f} / {sector_total_emissions / 1e6:.2f} kt unallocated emissions ({100 * unallocated_national_emissions / sector_total_emissions:.1f}%)")
 
     # scale site emissions so the aggregate matches the inventory total
-    period_emissions_sources.loc[:, "emissions_quantity"] *= (
-        sector_total_emissions / period_emissions_sources["emissions_quantity"].sum()
+    emission_sources_df.loc[unallocated_emission_sources_mask, "inventory_quantity"] = (
+        unallocated_emissions_scale * emission_sources_df.loc[unallocated_emission_sources_mask, "emissions_quantity"]
     )
 
-    sector_gridded = np.zeros(domain_grid.shape)
-    for _, facility in period_emissions_sources.iterrows():
-        cell_x, cell_y, cell_valid = domain_grid.lonlat_to_cell_index(facility["lon"], facility["lat"])
+    methane_nd = np.zeros(domain_grid.shape)
 
-        if cell_valid:
-            sector_gridded[cell_y, cell_x] += facility["emissions_quantity"]
+    logger.debug(f"Allocating point source emissions")
+    cell_x, cell_y, cell_valid = domain_grid.xy_to_cell_index(emission_sources_df["geometry"].x, emission_sources_df["geometry"].y)
+    np.add.at(methane_nd, (cell_y[cell_valid], cell_x[cell_valid]), emission_sources_df[cell_valid]["inventory_quantity"])
 
-    return kg_to_period_cell_flux(sector_gridded, config)
+    return kg_to_period_cell_flux(methane_nd, config)
 
 
 sector = AustraliaPriorSector(
