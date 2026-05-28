@@ -20,15 +20,19 @@ import pandas as pd
 import pyproj
 import xarray as xr
 
+from openmethane_prior.data_sources.inventory import (
+    inventory_data_source,
+    get_sector_emissions_by_code,
+)
+from openmethane_prior.lib.data_manager.parsers import parse_csv
 from openmethane_prior.lib import (
     DataSource,
     Grid,
-    convert_to_timescale,
     logger,
     PriorSector,
     PriorSectorConfig,
 )
-from openmethane_prior.lib.data_manager.parsers import parse_csv
+from openmethane_prior.lib.units import seconds_in_period
 
 logger = logger.get_logger(__name__)
 
@@ -38,19 +42,10 @@ livestock_headcount_data_source = DataSource(
     parse=parse_csv,
 )
 
-# Estimated kg CH4 emitted per animal, per year
-# TODO: these figures came from example code, a reference should be added
-# citing their origin
-ENTERIC_ANNUAL_KG_CH4 = {
-    "beef_cattle": 51.0,
-    "dairy_cattle": 93.0,
-    "sheep": 6.8,
-}
-
-def gridded_livestock_emissions_by_headcount(
+def gridded_livestock_headcounts(
     livestock_df: pd.DataFrame,
     domain_grid: Grid,
-) -> np.ndarray:
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Given a list of coordinates for livestock areas with headcounts of beef
     cattle, dairy cattle and sheep, calculate the annual methane emissions in
     each area, and return as gridded emissions over the domain of interest."""
@@ -63,18 +58,17 @@ def gridded_livestock_emissions_by_headcount(
     # discard data outside the domain
     livestock_df = livestock_df[valid_cells]
 
-    logger.debug(f"Calculating annual livestock emissions per headcount")
-    total_ch4 = (
-        livestock_df["heads_mapped_mix_beef"] * ENTERIC_ANNUAL_KG_CH4["beef_cattle"]
-        + livestock_df["heads_mapped_mix_sheep"] * ENTERIC_ANNUAL_KG_CH4["sheep"]
-        + livestock_df["heads_mapped_dairy"] * ENTERIC_ANNUAL_KG_CH4["dairy_cattle"]
-    )
+    logger.debug(f"Mapping livestock headcounts to domain grid")
+    beef_gridded = np.zeros(domain_grid.shape)
+    dairy_gridded = np.zeros(domain_grid.shape)
+    sheep_gridded = np.zeros(domain_grid.shape)
 
-    logger.debug(f"Adding livestock emissions to domain grid")
-    ch4_gridded = np.zeros(domain_grid.shape)
-    np.add.at(ch4_gridded, (livestock_df["iy"], livestock_df["ix"]), total_ch4)
+    row_idx = (livestock_df["iy"], livestock_df["ix"])
+    np.add.at(beef_gridded, row_idx, livestock_df["heads_mapped_mix_beef"])
+    np.add.at(dairy_gridded, row_idx, livestock_df["heads_mapped_dairy"])
+    np.add.at(sheep_gridded, row_idx, livestock_df["heads_mapped_mix_sheep"])
 
-    return ch4_gridded
+    return beef_gridded, dairy_gridded, sheep_gridded
 
 
 def process_emissions(
@@ -94,16 +88,49 @@ def process_emissions(
         yy=livestock_df["Y"], xx=livestock_df["X"],
     )
 
-    ch4_gridded = gridded_livestock_emissions_by_headcount(livestock_df, domain_grid)
+    # place gridded headcounts on the grid
+    beef_np, dairy_np, sheep_np = gridded_livestock_headcounts(livestock_df, domain_grid)
 
-    # convert annual CH4 kg to CH4 kg/s/m3
-    return convert_to_timescale(ch4_gridded, domain_grid.cell_area)
+    # get inventory totals using animal-specific UNFCCC sectors
+    emissions_inventory = sector_config.data_manager.get_asset(inventory_data_source).data
+    get_emissions_params = dict(
+        emissions_inventory=emissions_inventory,
+        start_date=config.start_date,
+        end_date=config.end_date,
+    )
+    beef_total_emissions = get_sector_emissions_by_code(
+        category_codes=["3.A.1.b", "3.A.1.c"], **get_emissions_params,
+    )
+    dairy_total_emissions = get_sector_emissions_by_code(
+        category_codes=["3.A.1.a"], **get_emissions_params,
+    )
+    sheep_total_emissions = get_sector_emissions_by_code(
+        category_codes=["3.A.2"], **get_emissions_params,
+    )
+    logger.debug(f"Total emissions from beef: {beef_total_emissions / 1e6:.2f} kt, dairy: {dairy_total_emissions / 1e6:.2f} kt, sheep: {sheep_total_emissions / 1e6:.2f} kt")
+
+    beef_total_headcount = livestock_df["heads_mapped_mix_beef"].sum()
+    dairy_total_headcount = livestock_df["heads_mapped_dairy"].sum()
+    sheep_total_headcount = livestock_df["heads_mapped_mix_sheep"].sum()
+
+    # distribute the national emission totals by headcount proportion
+    beef_ch4_np = beef_total_emissions * beef_np / beef_total_headcount
+    dairy_ch4_np = dairy_total_emissions * dairy_np / dairy_total_headcount
+    sheep_ch4_np = sheep_total_emissions * sheep_np / sheep_total_headcount
+
+    total_ch4_np = beef_ch4_np + dairy_ch4_np + sheep_ch4_np
+
+    # convert CH4 kg to CH4 kg/s/m3
+    return total_ch4_np / domain_grid.cell_area / seconds_in_period(config.start_date, config.end_date)
 
 
 sector = PriorSector(
     name="livestock",
     emission_category="anthropogenic",
-    unfccc_categories=["3.A"], # Enteric Fermentation
+    unfccc_categories=[
+        "3.A.1", # Enteric Fermentation - Cattle
+        "3.A.2", # Enteric Fermentation - Sheep
+    ],
     cf_standard_name="domesticated_livestock",
     create_estimate=process_emissions,
 )
