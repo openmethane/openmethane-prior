@@ -41,12 +41,7 @@ logger = logger.get_logger(__name__)
 # ALUM Classification Version 8
 # Source: https://www.agriculture.gov.au/abares/aclump/land-use/alum-classification
 alum_codes_agriculture = [
-    210, # Grazing native vegetation
-    320, # Grazing modified pastures
-    420, # Grazing irrigated modified pastures
     520, # Intensive animal production
-    521, # Dairy sheds and yards
-    522, # Feedlots
     523, # Poultry farms
     524, # Piggeries
     525, # Aquaculture
