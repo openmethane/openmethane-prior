@@ -99,13 +99,13 @@ def process_emissions(
         end_date=config.end_date,
     )
     beef_total_emissions = get_sector_emissions_by_code(
-        category_codes=["3.A.1.b", "3.A.1.c"], **get_emissions_params,
+        category_codes=["3.A.1.b", "3.A.1.c", "3.B.1.b", "3.B.1.c"], **get_emissions_params,
     )
     dairy_total_emissions = get_sector_emissions_by_code(
-        category_codes=["3.A.1.a"], **get_emissions_params,
+        category_codes=["3.A.1.a", "3.B.1.a"], **get_emissions_params,
     )
     sheep_total_emissions = get_sector_emissions_by_code(
-        category_codes=["3.A.2"], **get_emissions_params,
+        category_codes=["3.A.2", "3.B.2"], **get_emissions_params,
     )
     logger.debug(f"Total emissions from beef: {beef_total_emissions / 1e6:.2f} kt, dairy: {dairy_total_emissions / 1e6:.2f} kt, sheep: {sheep_total_emissions / 1e6:.2f} kt")
 
@@ -130,6 +130,8 @@ sector = PriorSector(
     unfccc_categories=[
         "3.A.1", # Enteric Fermentation - Cattle
         "3.A.2", # Enteric Fermentation - Sheep
+        "3.B.1", # Manure Management - Cattle
+        "3.B.2", # Manure Management - Sheep
     ],
     cf_standard_name="domesticated_livestock",
     create_estimate=process_emissions,
