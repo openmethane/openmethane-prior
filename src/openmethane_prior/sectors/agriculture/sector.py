@@ -121,7 +121,8 @@ sector = PriorSector(
     unfccc_categories=[ # All Agriculture, except cattle and sheep
         "3.A.3", # Enteric Fermentation - Swine
         "3.A.4", # Enteric Fermentation - Other Livestock
-        "3.B", # Manure Management
+        "3.B.3", # Manure Management - Swine
+        "3.B.4", # Manure Management - Other Livestock
         "3.C", # Rice Cultivation
         "3.D", # Agricultural Soils
         "3.E", # Prescribed Burning of Savannas
