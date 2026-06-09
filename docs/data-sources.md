@@ -140,12 +140,9 @@ Superpower Institute, with data synced using
 Some sectoral inventories are spatialised by identifying which Australian Land
 Use and Management (ALUM) Classification codes fall within those sectors, and
 then distributing inventory emissions to the areas where those ALUM codes are
-featured in the Land Use of Australia geographical dataset provided by the
-Australian Department of Agriculture.
-
-This is done using a combination of the official
+featured in the
 [Land Use of Australia](https://www.agriculture.gov.au/abares/aclump/land-use/land-use-of-australia-2010-11-to-2020-21)
-GeoTIFF raster, and a manual [mapping between ALUM codes and Open Methane sectors][4].
+geographical dataset provided by the Australian Department of Agriculture.
 
 Due to issues fetching the file directly from the agriculture.gov.au service
 in cloud-hosted services, the land use dataset is mirrored from the Open
@@ -238,7 +235,7 @@ Global dataset of CH4 flux estimates from termites.
 Termite emissions used in [Saunois et al. 2020](https://essd.copernicus.org/articles/12/1561/2020/)
 supplied by Simona Castaldi and Sergio Noce.
 
-- Dataset: [termite_emissions_2010-2016.nc][5]
+- Dataset: [termite_emissions_2010-2016.nc][4]
 - Resolution: 0.5 degree
 - Period: mean of 2010 – 2016
 - Updates: never
@@ -475,5 +472,4 @@ spatialised according to the [Land Use of Australia](#Land-Use-of-Australia) dat
 [1]: https://openmethane.s3.amazonaws.com/prior/inputs/DLEM_totflux_CRU_diagnostic.nc
 [2]: https://openmethane.s3.amazonaws.com/prior/inputs/EntericFermentation.nc
 [3]: https://openmethane.s3.amazonaws.com/prior/inputs/ch4-electricity.csv
-[4]: https://openmethane.s3.amazonaws.com/prior/inputs/landuse-sector-map.csv
-[5]: https://openmethane.s3.amazonaws.com/prior/inputs/termite_emissions_2010-2016.nc
+[4]: https://openmethane.s3.amazonaws.com/prior/inputs/termite_emissions_2010-2016.nc

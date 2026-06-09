@@ -26,11 +26,7 @@ from openmethane_prior.data_sources.inventory import (
     inventory_data_source,
     inventory_domain_data_source,
 )
-from openmethane_prior.data_sources.landuse import (
-    alum_codes_for_sector,
-    alum_sector_mapping_data_source,
-    landuse_map_data_source,
-)
+from openmethane_prior.data_sources.landuse import landuse_map_data_source
 from openmethane_prior.lib import (
     kg_to_period_cell_flux,
     logger,
@@ -42,6 +38,17 @@ from openmethane_prior.lib import (
 
 logger = logger.get_logger(__name__)
 
+# ALUM Classification Version 8
+# Source: https://www.agriculture.gov.au/abares/aclump/land-use/alum-classification
+alum_codes_agriculture = [
+    520, # Intensive animal production
+    523, # Poultry farms
+    524, # Piggeries
+    525, # Aquaculture
+    526, # Horse studs
+    527, # Saleyards/stockyards
+    542, # Rural residential with agriculture
+]
 
 def process_emissions(
         sector: PriorSector,
@@ -49,11 +56,6 @@ def process_emissions(
         prior_ds: xr.Dataset,
 ):
     config = sector_config.prior_config
-
-    # Import a map of land use type numbers to emissions sectors
-    # make a dictionary of all landuse types corresponding to sectors in map
-    sector_mapping_asset = sector_config.data_manager.get_asset(alum_sector_mapping_data_source)
-    sector_alum_codes = alum_codes_for_sector(sector.name, sector_mapping_asset.data)
 
     # load the national inventory data, ready to calculate sectoral totals
     emissions_inventory = sector_config.data_manager.get_asset(inventory_data_source).data
@@ -80,7 +82,7 @@ def process_emissions(
     )
 
     # create a mask of pixels which match the sector code
-    sector_mask = np.isin(dataBand, sector_alum_codes)
+    sector_mask = np.isin(dataBand, alum_codes_agriculture)
     sector_xr = xr.DataArray(sector_mask, coords={ 'y': lu_y, 'x': lu_x  })
 
     # now aggregate to coarser resolution of the domain grid
@@ -111,8 +113,11 @@ def process_emissions(
 sector = PriorSector(
     name="agriculture",
     emission_category="anthropogenic",
-    unfccc_categories=[ # All Agriculture, except Enteric Fermentation
-        "3.B", # Manure Management
+    unfccc_categories=[ # All Agriculture, except cattle and sheep
+        "3.A.3", # Enteric Fermentation - Swine
+        "3.A.4", # Enteric Fermentation - Other Livestock
+        "3.B.3", # Manure Management - Swine
+        "3.B.4", # Manure Management - Other Livestock
         "3.C", # Rice Cultivation
         "3.D", # Agricultural Soils
         "3.E", # Prescribed Burning of Savannas
