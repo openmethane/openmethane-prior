@@ -120,7 +120,7 @@ def process_emissions(
 
     total_ch4_np = beef_ch4_np + dairy_ch4_np + sheep_ch4_np
 
-    # convert CH4 kg to CH4 kg/s/m3
+    # convert CH4 kg to CH4 kg/s/m2
     return total_ch4_np / domain_grid.cell_area / seconds_in_period(config.start_date, config.end_date)
 
 
