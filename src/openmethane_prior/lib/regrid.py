@@ -185,6 +185,7 @@ def regrid_data_array_conservative(
     leading_shape = values.shape[:-2]
 
     flat = values.reshape(-1, n_lat * n_lon)
+    flat = np.nan_to_num(flat, nan=0.0)
     regridded = (W @ flat.T).T.reshape(*leading_shape, *domain_grid.shape)
 
     leading_coords = {d: data_da[d].values for d in leading_dims if d in data_da.coords}
