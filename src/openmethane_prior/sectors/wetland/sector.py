@@ -61,16 +61,6 @@ def process_emissions(
     start_ym = (start_date.year, start_date.month)
     end_ym = (end_date.year, end_date.month)
 
-    if start_ym < wetlands_min_ym or end_ym > wetlands_max_ym:
-        logger.info(
-            "Requested period %s - %s extends outside the SatWet data range %s - %s; "
-            "monthly climatology will be used for out-of-range months.",
-            start_date,
-            end_date,
-            wetlands_min_dt,
-            wetlands_max_dt,
-        )
-
     # Regrid all SatWet time steps to the domain grid (no climatology, no unit conversion)
     regridded_da = regrid_data_array_conservative(
         data_da=wetlands_ds["fch4_mean"],
@@ -94,14 +84,27 @@ def process_emissions(
         for i, t in enumerate(wetlands_time)
     }
 
-    # Compute monthly climatology (mean across all years per calendar month) for fallback
-    monthly_climatology = {
-        month: np.mean(
-            regridded[[i for i, t in enumerate(regridded_da['time'].values) if pd.Timestamp(t).month == month]],
-            axis=0,
+    # If the period of interest lies outside the range of dates in the input
+    # data, compute monthly climatology (mean across all years per calendar
+    # month) to use as a fallback.
+    monthly_climatology = None
+    if start_ym < wetlands_min_ym or end_ym > wetlands_max_ym:
+        logger.info(
+            "Requested period %s - %s extends outside the SatWet data range %s - %s; "
+            "monthly climatology will be used for out-of-range months.",
+            start_date,
+            end_date,
+            wetlands_min_dt,
+            wetlands_max_dt,
         )
-        for month in range(1, 13)
-    }
+
+        monthly_climatology = {
+            month: np.mean(
+                regridded[[i for i, t in enumerate(regridded_da['time'].values) if pd.Timestamp(t).month == month]],
+                axis=0,
+            )
+            for month in range(1, 13)
+        }
 
     # Select the monthly emissions for each time step. If the time step falls
     # outside the monthly results, use climatology for that calendar month.
@@ -112,6 +115,8 @@ def process_emissions(
         if ym in satwet_index:
             result_nd[out_idx] = regridded[satwet_index[ym]]
         else:
+            if monthly_climatology is None:
+                raise ValueError("Climatology was not calculated despite out of bounds time step")
             result_nd[out_idx] = monthly_climatology[dt.month]
 
     # source dataset is a coarse grid, and has emissions over ocean which
