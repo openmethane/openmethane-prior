@@ -6,6 +6,15 @@ from openmethane_prior.lib.outputs import create_output_dataset, expand_sector_d
 from openmethane_prior.lib.sector.sector import PriorSector
 
 
+def create_mock_prior_sector(**kwargs) -> PriorSector:
+    """Return a minimal PriorSector for use in tests, with overridable fields."""
+    defaults = dict(
+        name="test_sector",
+        emission_category="natural",
+        create_estimate=lambda a, b, c: None,
+    )
+    return PriorSector(**(defaults | kwargs))
+
 
 def test_create_output_dataset(config, input_files):
     domain_ds = config.domain().dataset
@@ -127,11 +136,7 @@ def test_expand_sector_dims_add_time_steps():
 def test_add_sector_defaults(config, input_files):
     test_ds = create_output_dataset(config)
 
-    sector_meta = PriorSector(
-        name="test_sector",
-        emission_category="natural",
-        create_estimate=lambda a, b, c: None
-    )
+    sector_meta = create_mock_prior_sector()
     sector_shape = (test_ds.sizes["time"], 1, config.domain().grid.shape[0], config.domain().grid.shape[1])
     sector_data = np.zeros(sector_shape)
 
@@ -158,13 +163,11 @@ def test_add_sector_defaults(config, input_files):
 def test_add_sector_meta(config, input_files):
     test_ds = create_output_dataset(config)
 
-    sector_meta = PriorSector(
-        name="test_sector",
+    sector_meta = create_mock_prior_sector(
         emission_category="anthropogenic",
         unfccc_categories=["1.A"],
         cf_standard_name="standard_name_suffix",
         cf_long_name="test long name",
-        create_estimate=lambda a, b, c: None
     )
     sector_shape = (test_ds.sizes["time"], 1, config.domain().grid.shape[0], config.domain().grid.shape[1])
     sector_data = np.zeros(sector_shape)
@@ -188,3 +191,48 @@ def test_add_sector_meta(config, input_files):
     assert test_ds[sector_var].attrs["emission_category"] == "anthropogenic"
     assert test_ds[sector_var].attrs["units"] == "kg/m2/s"
     assert test_ds[sector_var].attrs["grid_mapping"] == test_ds["land_mask"].attrs["grid_mapping"]
+
+
+def test_add_sector_masked_dataarray(config, input_files):
+    """A DataArray created from a masked array should have masked cells stored as zero, not NaN."""
+    test_ds = create_output_dataset(config)
+
+    sector_meta = create_mock_prior_sector()
+    grid_y, grid_x = config.domain().grid.shape
+
+    raw = np.ones((grid_y, grid_x))
+    mask = np.zeros((grid_y, grid_x), dtype=bool)
+    mask[0, 0] = True  # mask the top-left cell
+    # xarray converts masked values to NaN internally; add_sector must then replace them with zero
+    sector_data = xr.DataArray(data=np.ma.MaskedArray(raw, mask=mask), dims=["y", "x"])
+
+    add_sector(prior_ds=test_ds, sector_data=sector_data, sector_meta=sector_meta)
+
+    sector_var = f"ch4_sector_{sector_meta.name}"
+    result = test_ds[sector_var]
+
+    assert not isinstance(result.values, np.ma.MaskedArray), "output must not be a masked array"
+    assert not np.isnan(result.values).any(), "output must not contain NaN values"
+    assert (result.values[:, :, 0, 0] == 0.0).all(), "masked cells must be replaced with zero"
+    assert (result.values[:, :, 0, 1] == 1.0).all(), "unmasked cells must retain their value"
+
+
+def test_add_sector_nan_values(config, input_files):
+    """NaN values in sector data should be replaced with zero in the output."""
+    test_ds = create_output_dataset(config)
+
+    sector_meta = create_mock_prior_sector()
+    grid_y, grid_x = config.domain().grid.shape
+
+    raw = np.ones((grid_y, grid_x))
+    raw[0, 0] = np.nan  # inject NaN into the top-left cell
+    sector_data = xr.DataArray(data=raw, dims=["y", "x"])
+
+    add_sector(prior_ds=test_ds, sector_data=sector_data, sector_meta=sector_meta)
+
+    sector_var = f"ch4_sector_{sector_meta.name}"
+    result = test_ds[sector_var]
+
+    assert not np.isnan(result.values).any(), "output must not contain NaN values"
+    assert (result.values[:, :, 0, 0] == 0.0).all(), "NaN cells must be replaced with zero"
+    assert (result.values[:, :, 0, 1] == 1.0).all(), "non-NaN cells must retain their value"

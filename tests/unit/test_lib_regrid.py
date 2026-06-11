@@ -119,3 +119,27 @@ def test_mass_conservation(domain_grid, source_da, tmp_path):
     total_out = float((result.values * domain_grid.cell_area).sum())
 
     np.testing.assert_allclose(total_out, total_in, rtol=0.005)
+
+
+def test_nan_source_cells_not_propagated(domain_grid, source_da, tmp_path):
+    # Domain cell (y=0, x=0) covers lon 138–140, lat –38 to –36 and intersects
+    # four 1° source cells. Setting one of them to NaN must not make the domain
+    # cell NaN — the remaining three concrete cells should still contribute.
+    da_with_nan = source_da.copy(deep=True)
+    da_with_nan.values[0, 0] = np.nan  # lat –37.5, lon 138.5
+
+    result = regrid_data_array_conservative(da_with_nan, domain_grid, tmp_path, "tnan")
+
+    assert np.isfinite(result.values[0, 0]), (
+        "Domain cell overlapping a NaN source cell must not itself become NaN "
+        "when other intersecting source cells have concrete values."
+    )
+
+    # Run the same test with a zero in the cell which had np.nan, the results
+    # should be identical
+    da_with_zero = source_da.copy(deep=True)
+    da_with_zero.values[0, 0] = 0  # same coords as da_with_nan nan value
+
+    result_clean = regrid_data_array_conservative(da_with_zero, domain_grid, tmp_path, "tnan_clean")
+
+    np.testing.assert_array_equal(result, result_clean)

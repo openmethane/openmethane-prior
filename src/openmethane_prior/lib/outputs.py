@@ -161,6 +161,15 @@ def add_sector(
             data=expand_sector_dims(sector_data, prior_ds.sizes["time"]),
         )
 
+    # Convert masked arrays and NaN values to zero so sector outputs are clean
+    raw = sector_data.values
+    if isinstance(raw, np.ma.MaskedArray):
+        raw = raw.filled(0)
+
+    # Outputs shouldn't include an NaN values, replace NaN with zeroes
+    raw = np.nan_to_num(raw, nan=0.0)
+    sector_data = sector_data.copy(data=raw)
+
     # enable compression for layer data variables
     sector_data.encoding["zlib"] = True
 
