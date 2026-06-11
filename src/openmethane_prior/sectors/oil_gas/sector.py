@@ -88,7 +88,8 @@ def process_emissions(sector: AustraliaPriorSector, sector_config: PriorSectorCo
     if len(sector_facilities_df) == 0:
         logger.info(f"No Safeguard facilities found for the period")
     else:
-        logger.info(f"{sector_facilities_df['ch4_kg'].sum() / 1e6:.2f} kt total Safeguard emissions in the period in sectors: {','.join(sector.anzsic_codes)}")
+        logger.info(f"Found {len(sector_facilities_df)} Safeguard facilities in the period in sectors: {','.join(sector.anzsic_codes)}")
+        logger.info(f"{sector_facilities_df['ch4_kg'].sum() / 1e6:.2f} kt total Safeguard emissions in the period")
 
     total_allocated_emissions = 0
 
