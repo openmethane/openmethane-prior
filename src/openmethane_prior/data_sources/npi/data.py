@@ -64,6 +64,7 @@ def parse_npi_facilities_csv(data_source: ConfiguredDataSource) -> gpd.GeoDataFr
         data_source.asset_path,
         converters={
             # ensure codes like "0700" are not turned into numeric 700
+            "facility_id": str,
             "primary_anzsic_class_code": str,
         },
     )

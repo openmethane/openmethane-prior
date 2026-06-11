@@ -17,6 +17,7 @@
 #
 import calendar
 import datetime
+import geopandas as gpd
 import pandas as pd
 
 from openmethane_prior.lib import ConfiguredDataSource
@@ -24,13 +25,36 @@ from openmethane_prior.lib import ConfiguredDataSource
 
 def parse_emissions_sources(data_source: ConfiguredDataSource) -> pd.DataFrame:
     """Read and parse a Climate TRACE emissions sources CSV file."""
-    return pd.read_csv(
+    emissions_sources_df = pd.read_csv(
         data_source.asset_path,
         converters={
             "start_time": datetime.datetime.fromisoformat,
             "end_time": datetime.datetime.fromisoformat,
+            # CT ids look like integers, but must be comparable to strings
+            "source_id": str,
         },
     )
+
+    # annotate with some columns that come in handy for correlation
+    emissions_sources_df["data_source"] = data_source.name
+    emissions_sources_df["data_source_id"] = emissions_sources_df["source_id"]
+    return emissions_sources_df
+
+
+def parse_emissions_sources_geo(data_source: ConfiguredDataSource) -> gpd.GeoDataFrame:
+    """Read and parse a Climate TRACE emissions sources CSV file into
+    a GeoDataFrame with Point geometry in the domain CRS."""
+    df = parse_emissions_sources(data_source)
+
+    gdf = gpd.GeoDataFrame(
+        data=df,
+        geometry=gpd.points_from_xy(df["lon"], df["lat"]),
+        crs="EPSG:4326",
+    )
+
+    gdf = gdf.to_crs(data_source.prior_config.crs)
+
+    return gdf
 
 
 def filter_emissions_sources(
