@@ -19,6 +19,34 @@ of rst and use slightly different categories.
 
 <!-- towncrier release notes start -->
 
+## openmethane-prior v1.5.0 (2026-06-14)
+
+### ⚠️ Breaking Changes
+
+- Remove IVENTORY_DOMAIN_PATH env variable and config ([#188](https://github.com/openmethane/openmethane-prior/pull/188))
+
+### 🆕 Features
+
+- Utilise state-based petroleum well and borehole datasets to locate oil and gas emission sources ([#161](https://github.com/openmethane/openmethane-prior/pull/161))
+- Add possible oil and gas infrastructure and facility emission sources ([#167](https://github.com/openmethane/openmethane-prior/pull/167))
+- Add Safeguard Mechanism facilities to oil & gas sector ([#170](https://github.com/openmethane/openmethane-prior/pull/170))
+- Add gas supply and pipeline locations to oil and gas sector ([#191](https://github.com/openmethane/openmethane-prior/pull/191))
+- Allow storing static data in a separate path ([#193](https://github.com/openmethane/openmethane-prior/pull/193))
+- Add Safeguard Mechanism facilities to waste sector ([#197](https://github.com/openmethane/openmethane-prior/pull/197))
+
+### 🎉 Improvements
+
+- Refactor and centralise conservative regridding in fire, termite and wetlands sectors ([#186](https://github.com/openmethane/openmethane-prior/pull/186))
+- Simplify domain handling in PriorConfig ([#188](https://github.com/openmethane/openmethane-prior/pull/188))
+- Fetch UNFCCC codes and level names from unofficial ANGA website API ([#194](https://github.com/openmethane/openmethane-prior/pull/194))
+
+### 🐛 Bug Fixes
+
+- Update Safeguard baselines CSV parsing to reflect updated format ([#189](https://github.com/openmethane/openmethane-prior/pull/189))
+- Fix prior failing when DOMAIN_PATH is a file path ([#195](https://github.com/openmethane/openmethane-prior/pull/195))
+- Ensure output doesn't include NaN values or MaskedArrays ([#198](https://github.com/openmethane/openmethane-prior/pull/198))
+
+
 ## openmethane-prior v1.4.1 (2026-04-27)
 
 ### 🐛 Bug Fixes
