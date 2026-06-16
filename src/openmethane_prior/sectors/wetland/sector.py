@@ -17,8 +17,7 @@
 #
 
 """Processing wetland emissions"""
-import datetime
-import math
+import calendar
 import numpy as np
 import pandas as pd
 import xarray as xr
@@ -30,12 +29,13 @@ from openmethane_prior.lib import (
     logger,
     regrid_data_array_conservative,
 )
+from openmethane_prior.lib.units import SECONDS_PER_DAY
 
 logger = logger.get_logger(__name__)
 
-wetlands_data_source = DataSource(
-    name="wetlands",
-    url="https://openmethane.s3.amazonaws.com/prior/inputs/DLEM_totflux_CRU_diagnostic.nc",
+satwet_giems_data_source = DataSource(
+    name="SatWet-GIEMS",
+    url="https://openmethane.s3.amazonaws.com/prior/inputs/SatWetCH4_GIEMS-MC_v2-90.nc",
 )
 
 def process_emissions(
@@ -46,21 +46,25 @@ def process_emissions(
     """Process wetland emissions for the given date range."""
     config = sector_config.prior_config
     domain_grid = config.domain().grid
-    wetlands_da = sector_config.data_manager.get_asset(wetlands_data_source)
-    wetlands_ds = xr.open_dataset(wetlands_da.path, decode_times=False)
+    wetlands_da = sector_config.data_manager.get_asset(satwet_giems_data_source)
+    wetlands_ds = xr.open_dataset(wetlands_da.path)
 
-    # input dataset has an improperly formatted time step
-    wetlands_start = datetime.date(2000, 1, 1)
-    wetlands_months = len(wetlands_ds["time"])
-    wetlands_end = datetime.date(2000 + math.floor(wetlands_months / 12), (wetlands_months % 12) + 1, 1)
-    wetlands_ds["time"] = xr.date_range(wetlands_start, wetlands_end, freq="M")
+    # SatWet time coordinates are first-of-month; compare at (year, month) granularity
+    wetlands_time = wetlands_ds["time"].values
+    wetlands_min_dt = pd.Timestamp(wetlands_time.min())
+    wetlands_max_dt = pd.Timestamp(wetlands_time.max())
+    wetlands_min_ym = (wetlands_min_dt.year, wetlands_min_dt.month)
+    wetlands_max_ym = (wetlands_max_dt.year, wetlands_max_dt.month)
+
+    start_date = sector_config.prior_config.start_date
+    end_date = sector_config.prior_config.end_date
+    start_ym = (start_date.year, start_date.month)
+    end_ym = (end_date.year, end_date.month)
 
     # Regrid all SatWet time steps to the domain grid (no climatology, no unit conversion)
     regridded_da = regrid_data_array_conservative(
-        data_da=wetlands_ds["totflux"],
+        data_da=wetlands_ds["fch4_mean"],
         domain_grid=domain_grid,
-        lat_dim="lat",
-        lon_dim="lon",
         cache_path=config.intermediates_path,
         cache_name=f"{wetlands_da.name}_{prior_ds.domain_name}",
     )
@@ -68,19 +72,52 @@ def process_emissions(
 
     regridded = regridded_da.values
 
-    # Compute monthly climatology (mean across all years per calendar month) for fallback
-    monthly_climatology = {
-        month: np.mean(
-            regridded[[i for i, t in enumerate(regridded_da['time'].values) if pd.Timestamp(t).month == month]],
-            axis=0,
-        )
-        for month in range(1, 13)
+    # Convert units: gCH4/m2/month → kg/m2/s using the actual year+month per time step
+    for t_idx, t in enumerate(wetlands_time):
+        dt = pd.Timestamp(t)
+        _, days_in_month = calendar.monthrange(dt.year, dt.month)
+        regridded[t_idx] /= 1000.0 * days_in_month * SECONDS_PER_DAY
+
+    # Build (year, month) → index lookup for O(1) time-step selection
+    satwet_index = {
+        (pd.Timestamp(t).year, pd.Timestamp(t).month): i
+        for i, t in enumerate(wetlands_time)
     }
 
-    # Select the monthly climatology for each time step
+    # If the period of interest lies outside the range of dates in the input
+    # data, compute monthly climatology (mean across all years per calendar
+    # month) to use as a fallback.
+    monthly_climatology = None
+    if start_ym < wetlands_min_ym or end_ym > wetlands_max_ym:
+        logger.info(
+            "Requested period %s - %s extends outside the SatWet data range %s - %s; "
+            "monthly climatology will be used for out-of-range months.",
+            start_date,
+            end_date,
+            wetlands_min_dt,
+            wetlands_max_dt,
+        )
+
+        monthly_climatology = {
+            month: np.mean(
+                regridded[[i for i, t in enumerate(regridded_da['time'].values) if pd.Timestamp(t).month == month]],
+                axis=0,
+            )
+            for month in range(1, 13)
+        }
+
+    # Select the monthly emissions for each time step. If the time step falls
+    # outside the monthly results, use climatology for that calendar month.
     result_nd = np.zeros((len(prior_ds["time"]), domain_grid.shape[0], domain_grid.shape[1]))
     for out_idx, date in enumerate(prior_ds["time"].values):
-        result_nd[out_idx] = monthly_climatology[pd.Timestamp(date).month]
+        dt = pd.Timestamp(date)
+        ym = (dt.year, dt.month)
+        if ym in satwet_index:
+            result_nd[out_idx] = regridded[satwet_index[ym]]
+        else:
+            if monthly_climatology is None:
+                raise ValueError("Climatology was not calculated despite out of bounds time step")
+            result_nd[out_idx] = monthly_climatology[dt.month]
 
     # source dataset is a coarse grid, and has emissions over ocean which
     # definitely shouldn't be classified as wetlands
