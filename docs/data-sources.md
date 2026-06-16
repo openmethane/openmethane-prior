@@ -281,8 +281,9 @@ Daily emissions from the Global Fire Assimilation System (Kaiser et al., 2012, d
 ### Sources
 
 Monthly wetland emissions from
-[SatWetCH4](https://doi.org/10.5194/gmd-18-863-2025).
-Developed as part of the ongoing
+[SatWetCH4](https://doi.org/10.5194/gmd-18-863-2025), with a wetland extent
+based on [GIEMS](https://doi.org/10.5194/essd-17-2985-2025). Developed as part
+of the ongoing
 [Global Methane Budget](https://www.globalcarbonproject.org/methanebudget/.
 
 - Dataset: TBD (not yet published)
@@ -294,8 +295,8 @@ Developed as part of the ongoing
 
 - No Australian database
 - Rough spatial resolution
-- Paper published with source code but without results file, the dataset
-  was provided to us directly by the leading researcher, Juliette Bernard.
+- The paper for this dataset has not yet been published. It was provided to
+  us directly by the leading researcher, Juliette Bernard.
 
 
 ## Sector: Agriculture
