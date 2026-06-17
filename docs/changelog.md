@@ -19,6 +19,13 @@ of rst and use slightly different categories.
 
 <!-- towncrier release notes start -->
 
+## openmethane-prior v1.6.0 (2026-06-17)
+
+### 🆕 Features
+
+- Update wetlands sector implementations to use SatWet-GIEMS dataset ([#184](https://github.com/openmethane/openmethane-prior/pull/184))
+
+
 ## openmethane-prior v1.5.0 (2026-06-14)
 
 ### ⚠️ Breaking Changes
