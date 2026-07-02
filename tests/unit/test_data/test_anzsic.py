@@ -62,13 +62,23 @@ def test_filter_by_anzsic_code_family_padded_codes():
     by_padded = filter_by_anzsic_code_family(df, ["2100"], column="anzsic_code")
     assert list(by_short["anzsic_code"]) == list(by_padded["anzsic_code"]) == ["2110", "2120"]
 
-    df_group = pd.DataFrame({"anzsic_code": ["202", "2021", "2029", "20", "201", "22"]})
+    # group-level: 2020 and 202 are equivalent; exclude subdivision/group siblings
+    df_group = pd.DataFrame({"anzsic_code": ["20", "201", "202", "2021", "2029", "22"]})
     by_group = filter_by_anzsic_code_family(df_group, ["202"], column="anzsic_code")
     by_padded_group = filter_by_anzsic_code_family(df_group, ["2020"], column="anzsic_code")
     assert list(by_group["anzsic_code"]) == list(by_padded_group["anzsic_code"]) == ["202", "2021", "2029"]
 
-    df_subdivision = pd.DataFrame({"anzsic_code": ["2021", "2030", "2120", "3020"]})
-    filtered = filter_by_anzsic_code_family(df_subdivision, ["2000"], column="anzsic_code")
+    # subdivision-level: 2000 and 20 are equivalent; match entire subdivision 20
+    by_subdivision = filter_by_anzsic_code_family(df_group, ["20"], column="anzsic_code")
+    by_padded_subdivision = filter_by_anzsic_code_family(df_group, ["2000"], column="anzsic_code")
+    assert (
+        list(by_subdivision["anzsic_code"])
+        == list(by_padded_subdivision["anzsic_code"])
+        == ["20", "201", "202", "2021", "2029"]
+    )
+
+    df_outside_subdivision = pd.DataFrame({"anzsic_code": ["2021", "2030", "2120", "3020"]})
+    filtered = filter_by_anzsic_code_family(df_outside_subdivision, ["2000"], column="anzsic_code")
     assert list(filtered["anzsic_code"]) == ["2021", "2030"]
 
 
