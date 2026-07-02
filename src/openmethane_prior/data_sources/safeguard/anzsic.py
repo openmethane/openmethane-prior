@@ -34,16 +34,23 @@ def simplify_anzsic_code(anzsic_code: str) -> str:
     return anzsic_code.rstrip("0")
 
 
-def filter_by_anzsic_prefixes(
+def filter_by_anzsic_code_family(
     df: pd.DataFrame,
     anzsic_codes: list[str],
     *,
     column: str,
 ) -> pd.DataFrame:
-    """Return rows whose ``column`` value starts with any simplified ANZSIC prefix."""
+    """Return rows whose ``column`` value belongs to any requested ANZSIC code family.
+
+    Each entry in ``anzsic_codes`` may be a division, subdivision, group, or class
+    code. Codes are simplified (trailing zeros removed) before matching, so filtering
+    by ``"06"`` matches ``"06"``, ``"060"``, ``"0600"``, ``"061"``, and ``"0612"``.
+    Filtering by ``"202"`` matches ``"202"``, ``"2021"``, and ``"2029"`` but not
+    ``"20"``, ``"201"``, or ``"22"``.
+    """
     if not anzsic_codes:
         return df
 
-    prefixes = [simplify_anzsic_code(code) for code in anzsic_codes]
-    mask = np.logical_or.reduce([df[column].str.startswith(prefix) for prefix in prefixes])
+    code_families = [simplify_anzsic_code(code) for code in anzsic_codes]
+    mask = np.logical_or.reduce([df[column].str.startswith(family) for family in code_families])
     return df[mask]

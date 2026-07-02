@@ -18,7 +18,7 @@
 import datetime
 import pandas as pd
 
-from openmethane_prior.data_sources.safeguard.anzsic import filter_by_anzsic_prefixes
+from openmethane_prior.data_sources.safeguard.anzsic import filter_by_anzsic_code_family
 from openmethane_prior.lib import rows_in_period
 
 
@@ -51,7 +51,7 @@ def filter_npi_facilities(
     )
 
     if anzsic_codes is not None:
-        facilities_df = filter_by_anzsic_prefixes(
+        facilities_df = filter_by_anzsic_code_family(
             facilities_df,
             anzsic_codes,
             column="primary_anzsic_class_code",
