@@ -1,5 +1,9 @@
+import pandas as pd
 
-from openmethane_prior.data_sources.safeguard.anzsic import simplify_anzsic_code
+from openmethane_prior.data_sources.safeguard.anzsic import (
+    filter_by_anzsic_prefixes,
+    simplify_anzsic_code,
+)
 
 
 def test_simplify_anzsic_code():
@@ -24,3 +28,9 @@ def test_simplify_anzsic_code():
 
     # not handled
     # assert simplify_anzsic_code("0301a") == "030a1a" # Native Forestry and Logging, Native Forestry
+
+
+def test_filter_by_anzsic_prefixes():
+    df = pd.DataFrame({"anzsic_code": ["0600", "1212", "0700", "9999"]})
+    filtered = filter_by_anzsic_prefixes(df, ["06", "07"], column="anzsic_code")
+    assert list(filtered["anzsic_code"]) == ["0600", "0700"]

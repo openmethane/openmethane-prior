@@ -19,6 +19,10 @@
 # Utility functions for working with ANZSIC classification codes. See:
 # https://www.abs.gov.au/statistics/classifications/australian-and-new-zealand-standard-industrial-classification-anzsic/2006-revision-2-0/introduction#anzsic-structure
 
+import numpy as np
+import pandas as pd
+
+
 def simplify_anzsic_code(anzsic_code: str) -> str:
     """Given an ANZSIC code of 2 or more characters, returns only significant
     parts. For example, simplifying a code of "0600" gives "06".
@@ -28,3 +32,18 @@ def simplify_anzsic_code(anzsic_code: str) -> str:
 
     # strip non-significant characters (0s) from the end of the code
     return anzsic_code.rstrip("0")
+
+
+def filter_by_anzsic_prefixes(
+    df: pd.DataFrame,
+    anzsic_codes: list[str],
+    *,
+    column: str,
+) -> pd.DataFrame:
+    """Return rows whose ``column`` value starts with any simplified ANZSIC prefix."""
+    if not anzsic_codes:
+        return df
+
+    prefixes = [simplify_anzsic_code(code) for code in anzsic_codes]
+    mask = np.logical_or.reduce([df[column].str.startswith(prefix) for prefix in prefixes])
+    return df[mask]
