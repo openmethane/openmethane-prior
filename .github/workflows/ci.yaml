@@ -41,8 +41,7 @@ jobs:
           INPUT_CACHE: data/.cache
       # Run tests which require GitHub Actions secrets only on internal PRs and merges
       - name: Run tests with credentials
-        if: github.event.push.repository.full_name == 'openmethane/openmethane-prior'
-          || github.event.pull_request.head.repo.full_name == github.repository
+        if: '!github.event.push.repository.fork'
         run: |
           uv run python -m pytest -r a -v tests -k "test_cdsapi_connection"
         env:
