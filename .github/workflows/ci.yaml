@@ -36,11 +36,18 @@ jobs:
           curl -L -o data/.cache/inputs/gfas_2022-12-07_2022-12-08.nc "https://openmethane.s3.amazonaws.com/tests/gfas/gfas_2022-12-07_2022-12-08.nc"
       - name: Run tests
         run: |
-          make test
+          uv run python -m pytest -r a -v tests -k "not test_cdsapi_connection"
         env:
-#          CDSAPI_KEY: ${{ secrets.CDSAPI_ADS_KEY }}
-#          CDSAPI_URL: https://ads.atmosphere.copernicus.eu/api
           INPUT_CACHE: data/.cache
+      # Run tests which require GitHub Actions secrets only on internal PRs and merges
+      - name: Run tests with credentials
+        if: github.event.push.repository.full_name == 'openmethane/openmethane-prior'
+          || github.event.pull_request.head.repo.full_name == github.repository
+        run: |
+          uv run python -m pytest -r a -v tests -k "test_cdsapi_connection"
+        env:
+          CDSAPI_KEY: ${{ secrets.CDSAPI_ADS_KEY }}
+          CDSAPI_URL: https://ads.atmosphere.copernicus.eu/api
 
   check-build:
     runs-on: ubuntu-latest
