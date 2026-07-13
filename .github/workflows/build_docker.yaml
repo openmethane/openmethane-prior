@@ -16,7 +16,10 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
-
+    # prevent workflow running on external PRs, but build on any push or PR
+    # to the official repo.
+    if: github.event.push.repository.full_name == 'openmethane/openmethane-prior'
+      || github.event.pull_request.head.repo.full_name == github.repository
     strategy:
       matrix:
         platform:
