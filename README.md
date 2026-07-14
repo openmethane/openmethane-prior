@@ -41,11 +41,13 @@ uv sync
 ### Input Data
 
 Input data will be downloaded on-demand by the layers that use it while running
-omPrior.py. To inspect where data is fetched from, look for instances of
-`DataSource` defined in each layer.
+omPrior.py. The downloaded files will be stored in the path specified in
+`INPUTS` environment variable (`data/inputs` by default), and `STATIC_INPUTS`
+if specified.
 
-The downloaded files will be stored in the path specified in `INPUTS` env var
-(`data/inputs` by default).
+Data sources are documented in (docs/data-sources.md)[docs/data-sources.md]. To
+inspect where data is fetched from in more detail, look for instances of
+`DataSource` defined in each layer.
 
 ### Domain Info
 
