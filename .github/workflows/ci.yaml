@@ -41,7 +41,7 @@ jobs:
           INPUT_CACHE: data/.cache
       # Run tests which require GitHub Actions secrets only on internal PRs and merges
       - name: Run tests with credentials
-        if: '!github.event.push.repository.fork'
+        if: '!github.event.push.repository.fork && !github.event.pull_request.head.repo.fork'
         run: |
           uv run python -m pytest -r a -v tests -k "test_cdsapi_connection"
         env:

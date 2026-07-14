@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     # prevent workflow running on external PRs, but build on any push or PR
     # to the official repo.
-    if: '!github.event.push.repository.fork'
+    if: '!github.event.push.repository.fork && !github.event.pull_request.head.repo.fork'
     strategy:
       matrix:
         platform:
