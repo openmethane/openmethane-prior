@@ -19,12 +19,45 @@
 # Utility functions for working with ANZSIC classification codes. See:
 # https://www.abs.gov.au/statistics/classifications/australian-and-new-zealand-standard-industrial-classification-anzsic/2006-revision-2-0/introduction#anzsic-structure
 
+import numpy as np
+import pandas as pd
+
+
 def simplify_anzsic_code(anzsic_code: str) -> str:
     """Given an ANZSIC code of 2 or more characters, returns only significant
     parts. For example, simplifying a code of "0600" gives "06".
+
+    Trailing zeros are only stripped from the group/class portion (characters
+    after the subdivision), so subdivision codes like "30" are not shortened
+    to "3".
     """
     if len(anzsic_code) < 2:
         raise ValueError(f"invalid ANZSIC code '{anzsic_code}'")
 
-    # strip non-significant characters (0s) from the end of the code
-    return anzsic_code.rstrip("0")
+    subdivision = anzsic_code[:2]
+    group_and_class = anzsic_code[2:].rstrip("0")
+    return subdivision + group_and_class
+
+
+def filter_by_anzsic_code_family(
+    df: pd.DataFrame,
+    anzsic_codes: list[str],
+    *,
+    column: str,
+) -> pd.DataFrame:
+    """Return rows whose ``column`` value belongs to any requested ANZSIC code family.
+
+    Each entry in ``anzsic_codes`` may be a subdivision, group, or class code.
+    Codes are simplified, so specifying a subdivision like ``"0600"`` will match
+    any group or class within it. For example:
+
+    - ``"0600"`` or ``"06"`` matches ``"06"``, ``"060"``, ``"0600"``, ``"061"``, and ``"0612"``
+    - ``"202"`` matches ``"202"``, ``"2021"``, and ``"2029"`` but not
+      ``"20"``, ``"201"``, or ``"22"``.
+    """
+    if not anzsic_codes:
+        return df
+
+    code_families = [simplify_anzsic_code(code) for code in anzsic_codes]
+    mask = np.logical_or.reduce([df[column].str.startswith(family) for family in code_families])
+    return df[mask]

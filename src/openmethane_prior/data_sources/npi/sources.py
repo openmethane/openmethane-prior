@@ -16,10 +16,9 @@
 # limitations under the License.
 #
 import datetime
-import numpy as np
 import pandas as pd
 
-from openmethane_prior.data_sources.safeguard.anzsic import simplify_anzsic_code
+from openmethane_prior.data_sources.safeguard.anzsic import filter_by_anzsic_code_family
 from openmethane_prior.lib import rows_in_period
 
 
@@ -52,12 +51,10 @@ def filter_npi_facilities(
     )
 
     if anzsic_codes is not None:
-        anzsic_prefixes = [simplify_anzsic_code(anzsic) for anzsic in anzsic_codes]
-        # filter to include every row where the ANZSIC code matches any prefix
-        anzsic_sectors_mask = np.logical_or.reduce([
-            facilities_df["primary_anzsic_class_code"].str.startswith(anzsic_prefix)
-            for anzsic_prefix in anzsic_prefixes
-        ])
-        facilities_df: pd.DataFrame = facilities_df[anzsic_sectors_mask]
+        facilities_df = filter_by_anzsic_code_family(
+            facilities_df,
+            anzsic_codes,
+            column="primary_anzsic_class_code",
+        )
 
     return facilities_df

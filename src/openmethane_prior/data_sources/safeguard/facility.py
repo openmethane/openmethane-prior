@@ -23,7 +23,7 @@ import re
 
 from openmethane_prior.lib.units import days_in_period
 
-from .anzsic import simplify_anzsic_code
+from .anzsic import filter_by_anzsic_code_family
 
 
 @attrs.define()
@@ -109,12 +109,11 @@ def filter_facilities(
     """Filter safeguard mechanism rows, returning facilities which match the
     provided sector and period filters."""
     if anzsic_codes is not None:
-        anzsic_prefixes = [simplify_anzsic_code(anzsic) for anzsic in anzsic_codes]
-        # filter to include every row where the ANZSIC code matches any prefix
-        facility_df = facility_df[np.logical_or.reduce([
-            facility_df["anzsic_code"].str.startswith(anzsic_prefix)
-            for anzsic_prefix in anzsic_prefixes
-        ])]
+        facility_df = filter_by_anzsic_code_family(
+            facility_df,
+            anzsic_codes,
+            column="anzsic_code",
+        )
 
     if period is not None:
         facility_df = facility_df[
