@@ -5,10 +5,15 @@ from openmethane_prior.lib import create_prior
 from openmethane_prior.sectors.fire import gfas_data_source, sector
 
 
-@pytest.mark.skip(reason="Duplicated by test_sector_fire")
-def test_cdsapi_connection(tmp_path, data_manager):
+def test_cdsapi_connection(tmp_path, data_manager, start_date, end_date):
+    """Test fetching GFAS data from the authenticated Copernicus ADS service.
+    Note that this requires valid ADS credentials to be present."""
+    expected_path = data_manager.data_path / f"gfas_{start_date.strftime('%Y-%m-%d')}_{end_date.strftime('%Y-%m-%d')}.nc"
+    assert not os.path.exists(expected_path)
+
     gfas_asset = data_manager.get_asset(gfas_data_source)
 
+    assert gfas_asset.path == expected_path
     assert os.path.exists(gfas_asset.path)
 
 
