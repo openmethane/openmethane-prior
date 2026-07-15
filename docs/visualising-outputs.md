@@ -1,73 +1,55 @@
 # Visualising prior outputs
 
-Prior emissions are written to NetCDF in `data/outputs/` (default filename
-`prior-emissions.nc`). All methane flux layers use the CF-standard unit
-**`kg/m2/s`** (kilograms of methane per square metre per second).
+After a run, emissions layers are written to NetCDF in `data/outputs/`
+(default filename `prior-emissions.nc`). Flux variables such as `ch4_total`
+and `ch4_sector_*` use the unit **`kg/m2/s`**.
 
-These units are correct for model interchange, but the numeric values are often
-very small (frequently `1e-11` to `1e-8`). That can make quick visual inspection
-awkward in Python, QGIS, or other GIS tools unless values are converted for
-display or plotted on a logarithmic scale.
+Those values are often very small (commonly `1e-11` to `1e-8`). That is
+expected for a per-second, per-square-metre flux, but it makes maps hard to read
+unless you convert units for display or use a logarithmic colour scale.
 
-This document describes recommended **display conversions** and a basic **QGIS
-workflow**. It does not change the canonical NetCDF output format.
-
-Resolves the discussion in [issue #206](https://github.com/openmethane/openmethane-prior/issues/206).
-
-## Output variables
-
-The main variables of interest are:
+## Main variables
 
 | Variable | Description |
 | -------- | ----------- |
 | `ch4_total` | Total methane flux across all sectors |
-| `ch4_sector_*` | Per-sector flux layers (e.g. `ch4_sector_livestock`) |
-| `land_mask` | Binary land/sea mask (useful for context maps) |
+| `ch4_sector_*` | Per-sector flux (e.g. `ch4_sector_coal`, `ch4_sector_transport`) |
+| `land_mask` | Land/sea mask |
 
-Each flux variable includes `units = "kg/m2/s"` in its metadata.
+## Display unit conversions
 
-## Why values look "small"
-
-Flux is reported **per second** and **per square metre**. A cell emitting
-`2e-8 kg/m2/s` is equivalent to roughly **1.7 g/m²/day** — a more intuitive
-magnitude for maps, but still stored in SI flux units in the NetCDF file.
-
-## Recommended display conversions
+These conversions are for **inspection and mapping only**. The NetCDF file
+keeps `kg/m2/s`.
 
 Let `flux` be a value in `kg/m2/s`.
 
-### Per unit area
+| Display unit | Formula |
+| ------------ | ------- |
+| g/m²/day | `flux × 86400 × 1000` |
+| ng/m²/s | `flux × 1e9` |
 
-| Display unit | Formula | Notes |
-| ------------ | ------- | ----- |
-| **g/m²/day** | `flux × 86400 × 1000` | Often easier to read on maps |
-| **ng/m²/s** | `flux × 1e9` | Same quantity, larger numeric scale |
-| **t/m²/day** | `flux × 86400 / 1000` | Useful for very large sources |
+Example: `2.2e-8 kg/m2/s` ≈ **1.9 g/m²/day**.
 
-Example: if `ch4_total` max = `2.2e-8 kg/m2/s`, then max ≈ **1.9 g/m²/day**.
+### Per-cell totals
 
-### Per grid cell (totals)
-
-To estimate emissions from a whole grid cell over a period, multiply by cell
-area and elapsed time:
+To estimate emissions from one grid cell over a day:
 
 ```
 kg/day per cell = flux_kg_m2_s × cell_area_m2 × 86400
-kg/year per cell = flux_kg_m2_s × cell_area_m2 × 86400 × 365
 ```
 
-Cell area can be approximated from domain attributes `DX` and `DY` (in metres):
+Open Methane domains use a **rectilinear grid** with constant cell size. Cell
+area is:
 
 ```
 cell_area_m2 = DX × DY
 ```
 
-For the default `aust10km` domain, `DX = DY = 10000`, so `cell_area_m2 = 1e8`.
+where `DX` and `DY` (metres) are stored as attributes on the output file. For
+the default `aust10km` domain, `DX = DY = 10000`, so each cell is
+`1 × 10⁸ m²`.
 
-These totals are useful for sanity checks; they are not a substitute for formal
-inventory reconciliation.
-
-### Python example
+### Python check
 
 ```python
 import xarray as xr
@@ -81,71 +63,84 @@ kg_per_day = flux * cell_area_m2 * 86400
 
 print("max flux (kg/m2/s):", float(flux.max()))
 print("max flux (g/m2/day):", float(g_per_m2_day.max()))
-print("max cell total (kg/day):", float(kg_per_day.max()))
 ```
 
 ## QGIS workflow
 
-### Option A: Open the NetCDF directly
+These steps assume QGIS 3.x and a completed local run with
+`data/outputs/prior-emissions.nc` present.
+
+### Load a flux layer
 
 1. **Layer → Add Layer → Add Raster Layer**
-2. Select `data/outputs/prior-emissions.nc`
-3. Choose the sub-dataset (e.g. `ch4_total`) when prompted
+2. Select `prior-emissions.nc`
+3. When prompted, choose the subdataset for the variable you want (e.g.
+   `ch4_total`)
 
-The layer uses the Lambert Conformal projection stored in the file. For overlay
-with WGS84 basemaps, enable **on-the-fly reprojection** (QGIS does this by
-default).
+The raster uses the Lambert Conformal projection from the domain file. QGIS
+reprojects on the fly for WGS84 basemaps by default.
 
-### Option B: Use a GeoTIFF export
+If your output has a `time` dimension, pick one timestep (Temporal Controller or
+by exporting a single band) before mapping.
 
-If you already have a WGS84 GeoTIFF (e.g. `ch4_total_wgs84.tif` in
-`data/outputs/`), add it as a raster layer. This avoids sub-dataset selection
-and is often simpler for quick maps.
+### Symbology
 
-### Symbology: use a log scale
+Linear scales often hide spatial structure because most cells are near zero.
 
-Linear colour scales compress most flux values near zero and make spatial
-patterns hard to see.
+1. **Layer Properties → Symbology**
+2. Render type: **Singleband pseudocolor**
+3. Min/max: **Min/max** or **Percentile**
+4. Check **Logarithmic** (under min/max settings, depending on QGIS version)
 
-1. Open **Layer Properties → Symbology**
-2. Change render type to **Singleband pseudocolor** (or **Paletted/Unique values** for masks)
-3. For flux layers, set **Min/max value settings** to **Min/max** or **Percentile**
-4. Enable **Logarithmic** scale (or use a **Symbology → Min/max → Load** on
-   `log10(flux + epsilon)` via Raster Calculator)
+Use a simple palette for `land_mask`.
 
-For `land_mask`, use a simple two-colour palette.
+### Convert to g/m²/day in QGIS
 
-### Raster Calculator (display units)
-
-To create a temporary visualisation layer in **g/m²/day**:
+**Raster → Raster Calculator**:
 
 ```
 "ch4_total@1" * 86400 * 1000
 ```
 
-(Adjust the band/layer name to match your import.)
+Adjust the layer/band name to match your import. Label the legend as g/m²/day.
 
-Label the legend clearly, e.g. **g CH₄/m²/day (derived from kg/m²/s)**.
+### Comparing more than one layer
 
-### Common pitfalls
+QGIS applies symbology **independently** to each layer. If you overlay
+`ch4_sector_coal` and `ch4_sector_transport`, each layer is stretched to its
+own min/max. A saturated colour on transport does **not** mean it has the same
+flux as coal — coal values are often orders of magnitude larger.
 
-- **Tiny linear colour range** — switch to log symbology or convert units first.
-- **Sea vs land** — mask with `land_mask` or hide ocean cells when inspecting
-  terrestrial sectors.
-- **Time dimension** — output may include a `time` dimension; select a single
-  timestep before mapping or use the temporal controller.
-- **Comparing to inventory totals** — flux maps show spatial *distribution*;
-  sector totals require integrating over area and time.
+To compare sectors fairly:
 
-## Related material
+- use the **same display unit** (e.g. g/m²/day) on each layer, and
+- set **matching min/max** or **percentile** ranges manually, or
+- compare layers one at a time, or
+- subtract layers (Raster Calculator) when looking at before/after or
+  difference maps.
 
-- [Outputs section in README](../README.md#outputs)
+### Export a GeoTIFF (optional)
+
+To share a map or reload it without selecting NetCDF subdatasets:
+
+1. Load and style the layer as above
+2. **Project → Export → Export Map to Raster** for a map image, or
+3. **Right-click layer → Export → Save As…** to write a GeoTIFF (choose target
+   CRS, e.g. EPSG:4326, if you need WGS84)
+
+There is no built-in prior step that writes GeoTIFFs automatically; export from
+QGIS or a separate script if you need them.
+
+## Common pitfalls
+
+- **Linear colour scale on raw `kg/m2/s`** — use log symbology or g/m²/day first.
+- **Overlaying sectors without shared scaling** — colours are not comparable
+  (see above).
+- **Ocean cells** — mask with `land_mask` when inspecting land-based sectors.
+- **Inventory totals** — maps show spatial distribution; integrating flux over
+  area and time is a separate calculation.
+
+## See also
+
+- [Outputs](../README.md#outputs) in the README
 - [Data sources](./data-sources.md)
-- Legacy scripts (`plot_emis.ncl`, notebooks in `notebooks/`) exist but are not
-  actively maintained; prefer this guide and direct QGIS/Python inspection.
-
-## Future work
-
-A standalone script or utility to export visualisation-ready GeoTIFFs (e.g.
-g/m²/day) or print summary statistics may be added later. Documentation-only
-changes are the first step; see issue #206 for discussion.
