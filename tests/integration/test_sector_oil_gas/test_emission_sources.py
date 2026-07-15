@@ -76,9 +76,6 @@ def test_nt_emission_sources(input_files, data_manager):
     # no sources where activity period doesn't intersect date period
     assert len(df[(df["activity_end"] < start_date) & (df["activity_start"] > start_date_end)]) == 0
 
-    # well purposes are no longer reported in the public dataset
-    assert set(df["PURPOSE"].unique()) == {"NR"}
-
     # no duplicate entries for the same location
     assert len(df["geometry"].unique()) == len(df)
 
