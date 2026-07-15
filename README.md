@@ -165,16 +165,18 @@ Outputs can be found in the `data/outputs` folder. The emissions layers will be 
 input domain file, with an `ch4_sector_` prefix for the methane layer variable names. The sum of all layers will be stored in
 the `ch4_total` layer.
 
-The name of the layered output file will be `om-prior-output.nc`.
+The name of the layered output file will be `prior-emissions.nc` by default
+(configurable via the `OUTPUT_FILENAME` environment variable).
+
+For guidance on inspecting flux values and creating maps (including unit
+conversions and QGIS symbology), see
+[Visualising outputs](./docs/visualising-outputs.md).
 
 The `data/processed` folder will contain any re-projected raster data, and any files downloaded or generated in the
 process.
 
-Outputs can be plotted using the ncl file `plot_emis.ncl`. 
-
-```console 
-ncl plot_emis.ncl
-```
+Legacy plotting tools (`plot_emis.ncl`, notebooks in `notebooks/`) exist but are
+not actively maintained.
 
 ## Source data
 
