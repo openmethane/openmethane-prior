@@ -6,7 +6,8 @@ and `ch4_sector_*` use the unit **`kg/m2/s`**.
 
 Those values are often very small (commonly `1e-11` to `1e-8`). That is
 expected for a per-second, per-square-metre flux, but it makes maps hard to read
-unless you convert units for display or use a logarithmic colour scale.
+on a linear scale. Two practical options are a **power-of-ten display scale**
+(see below) or converting to another unit such as g/m²/day.
 
 ## Main variables
 
@@ -29,6 +30,21 @@ Let `flux` be a value in `kg/m2/s`.
 | ng/m²/s | `flux × 1e9` |
 
 Example: `2.2e-8 kg/m2/s` ≈ **1.9 g/m²/day**.
+
+### Power-of-ten display scale
+
+If you mainly want a readable colour ramp in QGIS without changing the
+physical unit, multiply the raster by `10^n` and note the exponent on the
+legend. The underlying data stay in `kg/m2/s`.
+
+| Raw max (approx.) | Multiply raster by | Legend label example |
+| ----------------- | ------------------ | -------------------- |
+| `1e-8` | `1e8` | ×10⁻⁸ kg/m²/s |
+| `1e-11` | `1e11` | ×10⁻¹¹ kg/m²/s |
+
+Pick `n` so that typical non-zero values land roughly in `0.1`–`100` on the
+colour bar. This is a display trick only — use g/m²/day or the raw unit when
+comparing numbers across runs.
 
 ### Per-cell totals
 
@@ -67,34 +83,52 @@ print("max flux (g/m2/day):", float(g_per_m2_day.max()))
 
 ## QGIS workflow
 
-These steps assume QGIS 3.x and a completed local run with
-`data/outputs/prior-emissions.nc` present.
+Tested with QGIS 3.x against a local `aust10km` run (`prior-emissions.nc`,
+single `time` step, Lambert Conformal projection).
 
 ### Load a flux layer
 
 1. **Layer → Add Layer → Add Raster Layer**
-2. Select `prior-emissions.nc`
-3. When prompted, choose the subdataset for the variable you want (e.g.
-   `ch4_total`)
+2. Select `data/outputs/prior-emissions.nc`
+3. QGIS lists one subdataset per variable. Pick the one you need, e.g.
+   `...:ch4_total` (the exact prefix depends on GDAL/QGIS version)
+4. Confirm the layer CRS matches the domain Lambert Conformal projection — WGS84
+   basemaps should still align with on-the-fly reprojection enabled
 
-The raster uses the Lambert Conformal projection from the domain file. QGIS
-reprojects on the fly for WGS84 basemaps by default.
-
-If your output has a `time` dimension, pick one timestep (Temporal Controller or
-by exporting a single band) before mapping.
+For a single-day run the file has one `time` step; QGIS usually loads it as a
+single band without extra steps. Multi-day outputs may need the Temporal
+Controller to pick one date.
 
 ### Symbology
 
-Linear scales often hide spatial structure because most cells are near zero.
+Raw `kg/m2/s` on a **linear** scale hides most structure. Either:
+
+- enable **Logarithmic** min/max under **Layer Properties → Symbology**, or
+- use a **power-of-ten scale** (below) so the colour bar shows ordinary-sized
+  numbers
+
+Steps:
 
 1. **Layer Properties → Symbology**
 2. Render type: **Singleband pseudocolor**
 3. Min/max: **Min/max** or **Percentile**
-4. Check **Logarithmic** (under min/max settings, depending on QGIS version)
+4. For log view: enable **Logarithmic** (wording varies slightly by QGIS version)
 
 Use a simple palette for `land_mask`.
 
-### Convert to g/m²/day in QGIS
+### Power-of-ten scale in QGIS
+
+**Raster → Raster Calculator** (example for typical `ch4_total` magnitudes):
+
+```
+"ch4_total@1" * 100000000
+```
+
+Label the legend **×10⁻⁸ kg/m²/s**. Adjust the multiplier and exponent label to
+match your layer (e.g. `* 1000000000000` with legend **×10⁻¹¹ kg/m²/s** when
+values are closer to `1e-11`).
+
+### Convert to g/m²/day (alternative)
 
 **Raster → Raster Calculator**:
 
@@ -102,7 +136,8 @@ Use a simple palette for `land_mask`.
 "ch4_total@1" * 86400 * 1000
 ```
 
-Adjust the layer/band name to match your import. Label the legend as g/m²/day.
+Label the legend as g/m²/day. Adjust `@1` to match the band name shown in the
+layer list.
 
 ### Comparing more than one layer
 
@@ -133,7 +168,8 @@ QGIS or a separate script if you need them.
 
 ## Common pitfalls
 
-- **Linear colour scale on raw `kg/m2/s`** — use log symbology or g/m²/day first.
+- **Linear colour scale on raw `kg/m2/s`** — use log symbology or a
+  power-of-ten multiplier first.
 - **Overlaying sectors without shared scaling** — colours are not comparable
   (see above).
 - **Ocean cells** — mask with `land_mask` when inspecting land-based sectors.
