@@ -19,6 +19,19 @@ of rst and use slightly different categories.
 
 <!-- towncrier release notes start -->
 
+## openmethane-prior v1.6.1 (2026-07-15)
+
+### 🎉 Improvements
+
+- Extracted shared `filter_by_anzsic_code_family()` helper to remove duplicated ANZSIC code family filtering in NPI, Safeguard, and oil/gas site sources. Fixed `simplify_anzsic_code()` so subdivision codes ending in zero (e.g. "30") are not over-shortened. ([#200](https://github.com/openmethane/openmethane-prior/pull/200))
+- Only runs tests and actions which need credentials for internal PRs and pushes ([#202](https://github.com/openmethane/openmethane-prior/pull/202))
+
+### 🐛 Bug Fixes
+
+- Fix failing tests due to updated ANGA inventory ([#204](https://github.com/openmethane/openmethane-prior/pull/204))
+- Remove NT oil well filtering based on the PURPOSE field which no longer contains accurate data ([#207](https://github.com/openmethane/openmethane-prior/pull/207))
+
+
 ## openmethane-prior v1.6.0 (2026-06-17)
 
 ### 🆕 Features
