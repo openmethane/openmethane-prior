@@ -9,7 +9,7 @@ authors = [
     { name = "Jared Lewis", email = "jared.lewis@climate-resource.com" },
     { name = "Daniel Busch", email = "daniel.busch@climate-resource.com" },
 ]
-requires-python = ">=3.11,<3.12"
+requires-python = ">=3.12,<3.13"
 readme = "README.md"
 dependencies = [
     "numpy>=2.4.3,<3",
@@ -26,14 +26,16 @@ dependencies = [
     "shapely>=2.0.4,<3",
     "environs>=11.0.0,<12",
     "prettyprinter>=0.18.0,<0.19",
-    "pytest-mock>=3.15.1,<4",
     "bmi-arcgis-restapi>=2.4.15",
     "owslib>=0.35.0",
     "openpyxl>=3.1.5",
 ]
 
 [dependency-groups]
-tests = ["pytest>=8.2.1,<9"]
+tests = [
+    "pytest>=8.2.1,<9",
+    "pytest-mock>=3.15.1,<4",
+]
 dev = [
     "licenseheaders>=0.8.8,<0.9",
     "pandas-stubs~=2.2.3",
