@@ -35,6 +35,10 @@ def nt_emission_sources(
     nt_wells_df: gpd.GeoDataFrame = nt_wells_da.data
     nt_titles_df: gpd.GeoDataFrame = nt_titles_da.data
 
+    # filter out non-production wells
+    emitting_well_purposes = ["Development", "Production"]
+    nt_wells_df = nt_wells_df[nt_wells_df["PURPOSE"].isin(emitting_well_purposes)]
+
     # well datasets may have duplicate rows for a single location due to
     # further drilling at a site to deepen/extend an existing hole
     nt_wells_df = nt_wells_df.sort_values(by="DT_RELEASE")
