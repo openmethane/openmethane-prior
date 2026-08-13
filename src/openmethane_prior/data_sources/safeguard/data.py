@@ -17,6 +17,7 @@
 #
 import pandas as pd
 import pathlib
+import unicodedata
 
 from openmethane_prior.lib import ConfiguredDataSource, DataSource
 from openmethane_prior.lib.data_manager.fetchers import fetch_google_sheet_by_name_csv
@@ -73,6 +74,11 @@ def parse_csv_numeric(csv_value: str) -> float | None:
         return None
     return float(raw.replace(",", ""))
 
+def parse_csv_text(csv_value: str) -> str | None:
+    """Convert messy input values like " 124,138 " to float. Values of "-" are
+    interpreted as None."""
+    raw = csv_value.strip()
+    return unicodedata.normalize("NFKC", csv_value)
 
 def parse_safeguard_csv(data_source: ConfiguredDataSource):
     """Read the Safeguard Mechanism Baselines and Emissions Table CSV,
@@ -82,7 +88,12 @@ def parse_safeguard_csv(data_source: ConfiguredDataSource):
         header=0,
         names=safeguard_mechanism_csv_columns,
         usecols=["facility_name", "state", "anzsic", "co2e_ch4"],  # from safeguard_mechanism_csv_columns
-        converters={"co2e_ch4": parse_csv_numeric},
+        converters={
+            "co2e_ch4": parse_csv_numeric,
+            "facility_name": parse_csv_text,
+            "state": parse_csv_text,
+            "anzsic": parse_csv_text,
+        },
         # CER appears to publish this file in windows-1252 encoding
         encoding='cp1252',
     )
