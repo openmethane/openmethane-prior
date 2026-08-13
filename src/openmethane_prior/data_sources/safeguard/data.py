@@ -83,6 +83,8 @@ def parse_safeguard_csv(data_source: ConfiguredDataSource):
         names=safeguard_mechanism_csv_columns,
         usecols=["facility_name", "state", "anzsic", "co2e_ch4"],  # from safeguard_mechanism_csv_columns
         converters={"co2e_ch4": parse_csv_numeric},
+        # CER appears to publish this file in windows-1252 encoding
+        encoding='cp1252',
     )
 
     return create_facilities_from_safeguard_rows(
