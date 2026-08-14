@@ -19,6 +19,18 @@ of rst and use slightly different categories.
 
 <!-- towncrier release notes start -->
 
+## openmethane-prior v1.6.2 (2026-08-14)
+
+### 🐛 Bug Fixes
+
+- Restore NT oil well filtering based on the PURPOSE field ([#209](https://github.com/openmethane/openmethane-prior/pull/209))
+- Fix Safeguard CSV failing to parse due to windows-1252 encoding ([#210](https://github.com/openmethane/openmethane-prior/pull/210))
+
+### 📚 Improved Documentation
+
+- Added documentation for visualising prior outputs, including recommended flux unit conversions and a basic QGIS workflow. ([#208](https://github.com/openmethane/openmethane-prior/pull/208))
+
+
 ## openmethane-prior v1.6.1 (2026-07-15)
 
 ### 🎉 Improvements
