@@ -204,7 +204,7 @@ make build
 Then run the commands to with the project path mounted as a volume:
 
 ```
-docker run --rm -v </your/path/to/openmethane-prior>:/opt/project openmethane-prior python scripts/omPrior.py --start-date 2022-12-07
+docker run --rm -v </your/path/to/openmethane-prior>:/app openmethane-prior python scripts/omPrior.py --start-date 2022-12-07
 ```
 
 Replace the python files according to the commands in the Makefile for the other steps.

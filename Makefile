@@ -37,8 +37,8 @@ build:  ## Build the docker container locally
 start: build  ## Start the docker container locally
 	docker run --rm -it \
 		-v ~/.cdsapirc:/home/app/.cdsapirc \
-		-v $(PWD):/opt/project \
-		-v /opt/project/.venv \
+		-v $(PWD):/app \
+		-v /app/.venv \
 		openmethane-prior
 
 .PHONY: run
@@ -46,7 +46,7 @@ run: build clean  ## Run the prior in the docker container
 	# This requires a valid `~/.cdsapirc` file
 	docker run --rm -it \
 		-v ~/.cdsapirc:/home/app/.cdsapirc \
-		-v $(PWD):/opt/project \
-		-v /opt/project/.venv \
+		-v $(PWD):/app \
+		-v /app/.venv \
 		openmethane-prior \
 		python scripts/omPrior.py --start-date 2022-07-22 --end-date 2022-07-22

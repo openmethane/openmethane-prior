@@ -33,6 +33,10 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 # Then, use a final image without uv for our runtime environment
 FROM debian:bookworm-slim
 
+# Setup a non-root user
+RUN groupadd --system --gid 1000 app \
+ && useradd --system --gid 1000 --uid 1000 --create-home app
+
 # Install the bare minimum software requirements on top of bookworm-slim
 RUN <<EOT
 apt-get update -qy
@@ -52,16 +56,19 @@ COPY --from=chamber /chamber /bin/chamber
 # Copy the Python version
 COPY --from=builder --chown=python:python /python /python
 
-# Copy the application from the builder into /opt/project
-COPY --from=builder --chown=app:app /app /opt/project
+# Copy the application from the builder into /app
+COPY --from=builder --chown=app:app /app /app
 
 # Place executables in the environment at the front of the path
-ENV PATH="/opt/project/.venv/bin:$PATH"
+ENV PATH="/app/.venv/bin:$PATH"
 # Place the package root in the python import path so files in scripts/ can resolve
-ENV PYTHONPATH="/opt/project/src"
+ENV PYTHONPATH="/app/src"
 
-# Use `/opt/project` as the working directory
-WORKDIR /opt/project
+# Use the non-root user to run our application
+USER app
+
+# Use `/app` as the working directory
+WORKDIR /app
 
 # These will be overwritten in GHA due to https://github.com/docker/metadata-action/issues/295
 # These must be duplicated in .github/workflows/build_docker.yaml
