@@ -19,6 +19,19 @@ of rst and use slightly different categories.
 
 <!-- towncrier release notes start -->
 
+## openmethane-prior v1.7.0 (2026-08-18)
+
+### ⚠️ Breaking Changes
+
+- Update Docker image from bookworm-based images to trixie ([#192](https://github.com/openmethane/openmethane-prior/pull/192))
+- Update default python version from 3.11 to 3.12 ([#192](https://github.com/openmethane/openmethane-prior/pull/192))
+- Changes to the docker image:
+  - Run as non-root `app` user (uid: 1000) in docker container
+  - App is moved from `/opt/project` to `/app`
+
+  ([#211](https://github.com/openmethane/openmethane-prior/pull/211))
+
+
 ## openmethane-prior v1.6.2 (2026-08-14)
 
 ### 🐛 Bug Fixes

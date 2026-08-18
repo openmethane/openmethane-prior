@@ -1197,7 +1197,7 @@ wheels = [
 
 [[package]]
 name = "openmethane-prior"
-version = "1.6.3.dev1"
+version = "1.7.0"
 source = { editable = "." }
 dependencies = [
     { name = "bmi-arcgis-restapi" },
