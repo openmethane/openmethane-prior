@@ -38,6 +38,53 @@ TOTAL_LAYER_ATTRIBUTES = {
 }
 SECTOR_PREFIX = "ch4_sector"
 
+# Spatial extent of a single chunk of emissions data, in grid cells.
+EMISSION_CHUNK_CELLS = 64
+# Deflate level applied to compressed variables. Higher levels cost noticeably
+# more time for less than 1MB on a month of output.
+DEFLATE_LEVEL = 4
+
+
+def emission_encoding(data_shape: tuple[int, ...]) -> dict:
+    """
+    Build the netCDF encoding used for every 4-dimensional emissions layer.
+
+    Emissions layers are chunked so that a spatial tile holds all of its time
+    steps in one chunk. Most sectors produce a single estimate which
+    expand_sector_dims repeats across every time step, and the deflate filter
+    can only collapse that duplication when the repeats share a chunk. Chunking
+    across time instead of within it shrinks a month of output by roughly 4x.
+
+    Parameters
+    ----------
+    data_shape
+        Shape of the emissions layer, in COORD_NAMES order.
+
+    Returns
+    -------
+    :
+        Encoding dict suitable for assigning to a DataArray's `encoding`.
+    """
+    time_size, vertical_size, y_size, x_size = data_shape
+
+    return {
+        "zlib": True,
+        # set explicitly: sector data derived from an input file inherits that
+        # file's complevel, and complevel 0 silently disables compression
+        "complevel": DEFLATE_LEVEL,
+        # shuffle lets deflate find the repeated time steps in float data
+        "shuffle": True,
+        # domain variables arrive with contiguous storage, which netCDF cannot
+        # combine with compression
+        "contiguous": False,
+        "chunksizes": (
+            time_size,
+            vertical_size,
+            min(EMISSION_CHUNK_CELLS, y_size),
+            min(EMISSION_CHUNK_CELLS, x_size),
+        ),
+    }
+
 
 def convert_to_timescale(emission, cell_area):
     """Convert a gridded emission dataset in kgs/cell/year to kgs/m2/s"""
@@ -171,7 +218,7 @@ def add_sector(
     sector_data = sector_data.copy(data=raw)
 
     # enable compression for layer data variables
-    sector_data.encoding["zlib"] = True
+    sector_data.encoding.update(emission_encoding(sector_data.shape))
 
     # find the domain variable containing the grid mapping
     grid_mapping_var = list_cf_grid_mappings(prior_ds)[0]
@@ -268,7 +315,9 @@ def add_ch4_total(prior_ds: xr.Dataset):
 
         # enable compression for total layer which may be duplicated
         # across time steps
-        prior_ds[TOTAL_LAYER_NAME].encoding["zlib"] = True
+        prior_ds[TOTAL_LAYER_NAME].encoding.update(
+            emission_encoding(prior_ds[TOTAL_LAYER_NAME].shape)
+        )
 
         # Ensure legacy / deprecated "OCH4_TOTAL" layer is still in the output
         # until downstream consumers can be updated
