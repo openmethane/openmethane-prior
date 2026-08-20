@@ -28,6 +28,9 @@ import openmethane_prior.lib.logger as logger
 logger = logger.get_logger(__name__)
 
 COORD_NAMES = ["time", "vertical", "y", "x"]
+# Dimensions used by sectors which produce a single estimate for the whole
+# period, rather than one estimate per time step.
+TIME_INVARIANT_COORD_NAMES = COORD_NAMES[1:]
 COMMON_ATTRIBUTES = {
     "units": "kg/m2/s",
 }
@@ -49,37 +52,35 @@ def emission_encoding(data_shape: tuple[int, ...]) -> dict:
     """
     Build the netCDF encoding used for every 4-dimensional emissions layer.
 
-    Emissions layers are chunked so that a spatial tile holds all of its time
-    steps in one chunk. Most sectors produce a single estimate which
-    expand_sector_dims repeats across every time step, and the deflate filter
-    can only collapse that duplication when the repeats share a chunk. Chunking
-    across time instead of within it shrinks a month of output by roughly 4x.
+    Emissions layers are chunked so that a spatial tile holds every non-spatial
+    step in one chunk, because the deflate filter can only collapse repeated
+    values when the repeats share a chunk.
 
     Parameters
     ----------
     data_shape
-        Shape of the emissions layer, in COORD_NAMES order.
+        Shape of the emissions layer, in COORD_NAMES or
+        TIME_INVARIANT_COORD_NAMES order.
 
     Returns
     -------
     :
         Encoding dict suitable for assigning to a DataArray's `encoding`.
     """
-    time_size, vertical_size, y_size, x_size = data_shape
+    *step_sizes, y_size, x_size = data_shape
 
     return {
         "zlib": True,
         # set explicitly: sector data derived from an input file inherits that
         # file's complevel, and complevel 0 silently disables compression
         "complevel": DEFLATE_LEVEL,
-        # shuffle lets deflate find the repeated time steps in float data
+        # shuffle lets deflate find the repeated values in float data
         "shuffle": True,
         # domain variables arrive with contiguous storage, which netCDF cannot
         # combine with compression
         "contiguous": False,
         "chunksizes": (
-            time_size,
-            vertical_size,
+            *step_sizes,
             min(EMISSION_CHUNK_CELLS, y_size),
             min(EMISSION_CHUNK_CELLS, x_size),
         ),
@@ -211,21 +212,24 @@ def add_sector(
     """
     logger.info(f"Adding emissions data for {sector_meta.name}")
 
-    # determine the expected shape of a data layer based on the assumed coords
-    expected_shape = tuple([(prior_ds.sizes[coord_name] if coord_name in prior_ds.sizes else 1) for coord_name in COORD_NAMES])
-
-    # if this is a DataArray with the right dimensions, it can be added directly
-    if type(sector_data) == xr.DataArray and sector_data.shape == expected_shape:
+    if isinstance(sector_data, xr.DataArray) and "time" in sector_data.dims:
         # verify that time steps for the sector data match the parent coordinates exactly
         for time_step in sector_data.coords["time"].values:
             if time_step not in prior_ds.coords["time"].values:
                 raise ValueError(f"Layer {sector_meta.name} time step {time_step} not found in dataset")
+
+        sector_data = xr.DataArray(dims=COORD_NAMES[:], data=sector_data.values)
+    elif np.ndim(sector_data) == len(COORD_NAMES):
+        # already resolved per time step, but with no coords to verify against
+        sector_data = xr.DataArray(dims=COORD_NAMES[:], data=np.asarray(sector_data))
     else:
-        # some layers only generate 2 or 3-dimensional data, which needs
-        # to be expanded into the same dimensions as the other layers
+        # Most sectors produce a single estimate covering the whole period.
+        # That estimate is stored once, without a time dimension, rather than
+        # repeated for every time step; consumers broadcast it across time when
+        # combining it with the time-resolved layers.
         sector_data = xr.DataArray(
-            dims=COORD_NAMES[:],
-            data=expand_sector_dims(sector_data, prior_ds.sizes["time"]),
+            dims=TIME_INVARIANT_COORD_NAMES[:],
+            data=expand_sector_dims(sector_data),
         )
 
     # Convert masked arrays and NaN values to zero so sector outputs are clean
@@ -262,26 +266,33 @@ def add_sector(
     return prior_ds
 
 
-def expand_sector_dims(
-    sector_data: xr.DataArray | npt.ArrayLike,
-    time_steps: int | None = 1,
-):
+def expand_sector_dims(sector_data: xr.DataArray | npt.ArrayLike):
     """
-    Expands layer data to use the same dimensions as other spatial layers.
-    Most layers produce 2-dimensional data, which must be expanded to include:
-    - "vertical" dimension with a single value
-    - "time" dimension, which must match the size of the existing time dim
+    Expand layer data to use the spatial dimensions shared by every layer.
 
-    When expanding the time dim, we are working with datasets that produce a
-    single average emission across the entire period, so we just duplicate it
-    across all the periods present in the output.
+    Most layers produce 2-dimensional data, which must be expanded to include a
+    "vertical" dimension with a single value. Such layers hold one estimate for
+    the whole period and are stored without a time dimension, so no time
+    expansion happens here.
 
-    :param sector_data:
-    :param time_steps:
-    :return:
+    Parameters
+    ----------
+    sector_data
+        Layer data with either ("y", "x") or ("vertical", "y", "x") dimensions.
+
+    Returns
+    -------
+    :
+        The data with ("vertical", "y", "x") dimensions.
     """
     if sector_data.ndim < 2:
         raise ValueError("expand_sector_dims supports a minimum of 2 dimensions")
+
+    if sector_data.ndim > len(TIME_INVARIANT_COORD_NAMES):
+        raise ValueError(
+            "expand_sector_dims supports a maximum of "
+            f"{len(TIME_INVARIANT_COORD_NAMES)} dimensions"
+        )
 
     # we're about to alter the input so copy first
     copy = sector_data.copy()
@@ -289,15 +300,6 @@ def expand_sector_dims(
     if copy.ndim == 2:
         # add single-value "vertical" layer
         copy = np.expand_dims(copy, axis=0)
-
-    if copy.ndim == 3:
-        # add single-value "time" layer
-        copy = np.expand_dims(copy, axis=0)
-
-    if copy.ndim == 4 and copy.shape[0] < time_steps:
-        # duplicate the existing data across as many time steps are required
-        # see: https://stackoverflow.com/questions/39463019/how-to-copy-numpy-array-value-into-higher-dimensions/55754233#55754233
-        copy = np.concatenate([copy] * time_steps, axis=0)
 
     return copy
 
@@ -313,18 +315,21 @@ def add_ch4_total(prior_ds: xr.Dataset):
 
     sectors = [var_name for var_name in prior_ds.data_vars.keys() if var_name.startswith(SECTOR_PREFIX)]
 
-    # now check to find largest shape because we'll broadcast everything else to that
-    summed = None
+    # Sectors are stored either with or without a time dimension, so let xarray
+    # broadcast the time-invariant ones across time as they are accumulated.
+    total = None
     for sector_name in sectors:
-        if summed is None:
-            # all sectors should have dims normalised by expand_sector_dims, so
-            # use the shape of the first sector we encounter
-            summed = np.zeros(prior_ds[sector_name].shape)
+        sector_data = prior_ds[sector_name]
+        total = sector_data if total is None else total + sector_data
 
-        # add each layer to the accumulated sum
-        summed += prior_ds[sector_name].values
+    if total is not None:
+        # the total is always reported per time step, even when every
+        # contributing sector was constant across the period
+        if "time" not in total.dims:
+            total = total.expand_dims(time=prior_ds.sizes["time"])
 
-    if summed is not None:
+        summed = total.transpose(*COORD_NAMES).values
+
         prior_ds[TOTAL_LAYER_NAME] = (
             COORD_NAMES[:],
             summed,

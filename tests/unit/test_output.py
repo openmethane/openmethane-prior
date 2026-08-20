@@ -3,6 +3,7 @@ import xarray as xr
 import pytest
 
 from openmethane_prior.lib.outputs import (
+    COORD_NAMES,
     add_ch4_total,
     add_sector,
     create_output_dataset,
@@ -88,56 +89,40 @@ def test_expand_sector_dims_errors():
     assert "minimum of 2 dimensions" in str(e.value)
 
 def test_expand_sector_dims_extra_dims():
-    # adds 1-length time and vertical dimensions if not present
+    # adds a 1-length vertical dimension if not present
     test_xr = xr.DataArray([
         [1, 2, 3],
         [4, 5, 6],
     ])
     expanded = expand_sector_dims(test_xr)
 
-    assert expanded.ndim == 4
-    assert expanded.shape == (1, 1, 2, 3)
-    assert list(expanded[0][0][0]) == [1, 2, 3]
-    assert list(expanded[0][0][1]) == [4, 5, 6]
+    assert expanded.ndim == 3
+    assert expanded.shape == (1, 2, 3)
+    assert list(expanded[0][0]) == [1, 2, 3]
+    assert list(expanded[0][1]) == [4, 5, 6]
 
-def test_expand_sector_dims_add_time_dim():
-    test_xr = xr.DataArray([
+
+def test_expand_sector_dims_keeps_vertical_dim():
+    # data which already has a vertical dimension is left alone
+    test_xr = xr.DataArray([[
         [1, 2],
         [4, 5],
-    ])
-    expanded = expand_sector_dims(test_xr, time_steps=3)
+    ]])
+    expanded = expand_sector_dims(test_xr)
 
-    assert expanded.ndim == 4
-    assert expanded.shape == (3, 1, 2, 2) # first dimension is time
-    # copies the existing data for each time step
-    assert list(expanded[0][0][0]) == [1, 2]
-    assert list(expanded[0][0][1]) == [4, 5]
-    assert list(expanded[1][0][0]) == [1, 2]
-    assert list(expanded[1][0][1]) == [4, 5]
-    assert list(expanded[2][0][0]) == [1, 2]
-    assert list(expanded[2][0][1]) == [4, 5]
+    assert expanded.shape == (1, 2, 2)
 
-def test_expand_sector_dims_add_time_steps():
-    test_xr = xr.DataArray([[[
-        [1, 2],
-        [4, 5],
-    ]]])
-    # already has correct dims, but not enough time steps
-    assert test_xr.ndim == 4
-    assert test_xr.shape == (1, 1, 2, 2)
 
-    expanded = expand_sector_dims(test_xr, time_steps=3)
+def test_expand_sector_dims_rejects_time_dim():
+    """Time expansion is no longer performed here, so 4-dimensional data is an error."""
+    test_xr = xr.DataArray(np.zeros((3, 1, 2, 2)))
 
-    # time dim filled to 3
-    assert expanded.shape == (3, 1, 2, 2)
+    with pytest.raises(ValueError) as e:
+        expand_sector_dims(test_xr)
 
-    # copies the existing data for each time step
-    assert list(expanded[0][0][0]) == [1, 2]
-    assert list(expanded[0][0][1]) == [4, 5]
-    assert list(expanded[1][0][0]) == [1, 2]
-    assert list(expanded[1][0][1]) == [4, 5]
-    assert list(expanded[2][0][0]) == [1, 2]
-    assert list(expanded[2][0][1]) == [4, 5]
+    assert "maximum of 3 dimensions" in str(e.value)
+
+
 
 def test_add_sector_defaults(config, input_files):
     test_ds = create_output_dataset(config)
@@ -219,8 +204,9 @@ def test_add_sector_masked_dataarray(config, input_files):
 
     assert not isinstance(result.values, np.ma.MaskedArray), "output must not be a masked array"
     assert not np.isnan(result.values).any(), "output must not contain NaN values"
-    assert (result.values[:, :, 0, 0] == 0.0).all(), "masked cells must be replaced with zero"
-    assert (result.values[:, :, 0, 1] == 1.0).all(), "unmasked cells must retain their value"
+    assert result.dims == ("vertical", "y", "x"), "a 2-dimensional sector has no time dim"
+    assert (result.values[:, 0, 0] == 0.0).all(), "masked cells must be replaced with zero"
+    assert (result.values[:, 0, 1] == 1.0).all(), "unmasked cells must retain their value"
 
 
 def test_add_sector_nan_values(config, input_files):
@@ -240,8 +226,8 @@ def test_add_sector_nan_values(config, input_files):
     result = test_ds[sector_var]
 
     assert not np.isnan(result.values).any(), "output must not contain NaN values"
-    assert (result.values[:, :, 0, 0] == 0.0).all(), "NaN cells must be replaced with zero"
-    assert (result.values[:, :, 0, 1] == 1.0).all(), "non-NaN cells must retain their value"
+    assert (result.values[:, 0, 0] == 0.0).all(), "NaN cells must be replaced with zero"
+    assert (result.values[:, 0, 1] == 1.0).all(), "non-NaN cells must retain their value"
 
 
 def test_emission_encoding_chunks_all_time_steps_together():
@@ -273,9 +259,10 @@ def test_add_sector_compresses_across_time(config, input_files, tmp_path):
     time_steps = test_ds.sizes["time"]
 
     sector_meta = create_mock_prior_sector()
+    # supply an estimate per time step, so the layer keeps its time dimension
     add_sector(
         prior_ds=test_ds,
-        sector_data=np.zeros((grid_y, grid_x)),
+        sector_data=np.zeros((time_steps, 1, grid_y, grid_x)),
         sector_meta=sector_meta,
     )
     sector_var = f"ch4_sector_{sector_meta.name}"
@@ -309,6 +296,8 @@ def test_add_ch4_total_compresses_across_time(config, input_files):
         sector_meta=create_mock_prior_sector(),
     )
     add_ch4_total(test_ds)
+
+    assert test_ds["ch4_total"].dims == tuple(COORD_NAMES)
 
     assert test_ds["ch4_total"].encoding["zlib"] is True
     assert test_ds["ch4_total"].encoding["chunksizes"] == (

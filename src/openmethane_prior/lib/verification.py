@@ -34,12 +34,45 @@ from .data_manager.manager import DataManager
 from .logger import get_logger
 from .sector.sector import PriorSector
 from .outputs import SECTOR_PREFIX
-from .units import days_in_period
+from .units import SECONDS_PER_DAY, days_in_period
 
 
 logger = get_logger(__name__)
 
 MAX_ABS_DIFF = 0.1
+
+
+def sector_period_total(
+    sector_data: xr.DataArray,
+    cell_area: float,
+    period_days: int,
+) -> float:
+    """
+    Total the emissions a sector layer accounts for over the whole period.
+
+    Sector layers hold a flux in kg/m2/s which applies for one day. Layers
+    which resolve emissions per time step already carry one value per day, but
+    layers which produce a single estimate for the period are stored without a
+    time dimension, so their single day must be scaled up to cover it.
+
+    Parameters
+    ----------
+    sector_data
+        A sector layer, with or without a "time" dimension.
+    cell_area
+        Area of a single grid cell, in m2.
+    period_days
+        Number of days covered by the output.
+
+    Returns
+    -------
+    :
+        Total emissions for the period, in kg.
+    """
+    days_summed = sector_data.sizes["time"] if "time" in sector_data.dims else 1
+    day_count = period_days / days_summed
+
+    return float(sector_data.sum()) * cell_area * SECONDS_PER_DAY * day_count
 
 
 def verify_emis(sectors: list[PriorSector], config: PriorConfig, prior_ds: xr.Dataset, atol: float = MAX_ABS_DIFF):
@@ -57,7 +90,6 @@ def verify_emis(sectors: list[PriorSector], config: PriorConfig, prior_ds: xr.Da
 
     inventory_sectors = [s for s in sectors if s.unfccc_categories is not None]
 
-    m2s_to_kg = domain.grid.cell_area * 24 * 60 * 60
     ds_start_date = pd.to_datetime(prior_ds['time'][0].item()).date()
     ds_end_date = pd.to_datetime(prior_ds['time'][-1].item()).date()
     period_days = days_in_period(ds_start_date, ds_end_date)
@@ -86,7 +118,11 @@ def verify_emis(sectors: list[PriorSector], config: PriorConfig, prior_ds: xr.Da
 
         if ds_var_name in prior_ds:
             # convert emissions in each day in kg/m2/s to kg and sum them
-            prior_total = float(prior_ds[ds_var_name].sum()) * m2s_to_kg
+            prior_total = sector_period_total(
+                sector_data=prior_ds[ds_var_name],
+                cell_area=domain.grid.cell_area,
+                period_days=period_days,
+            )
             total_expected_vs_actual.append((sector.name, inventory_total, prior_total))
 
     passed = []

@@ -29,7 +29,7 @@ def test_009_prior_emissions_ds(prior_emissions_ds):
         },
         'mean': {
             'LANDMASK': 1.0,
-            'OCH4_TOTAL': 4.527375484529345e-10,
+            'OCH4_TOTAL': 4.5273754845293447e-10,
             'ch4_sector_agriculture': 1.0532989458203914e-12,
             'ch4_sector_coal': 3.979529404503474e-10,
             'ch4_sector_electricity': 2.2548354185389268e-13,
@@ -40,10 +40,10 @@ def test_009_prior_emissions_ds(prior_emissions_ds):
             'ch4_sector_oil_gas': 5.671488137556792e-13,
             'ch4_sector_stationary': 1.3345610816621784e-12,
             'ch4_sector_termite': 2.436579367090519e-12,
-            'ch4_sector_transport': 1.27853789328799e-13,
+            'ch4_sector_transport': 1.2785378932879897e-13,
             'ch4_sector_waste': 4.6656960187772004e-14,
             'ch4_sector_wetlands': 8.66815276056264e-14,
-            'ch4_total': 4.527375484529345e-10,
+            'ch4_total': 4.5273754845293447e-10,
             'lambert_conformal': 0.0,
             'land_mask': 1.0,
             'lat': -23.267749786376953,
@@ -54,17 +54,17 @@ def test_009_prior_emissions_ds(prior_emissions_ds):
         'x_band': {
             'LANDMASK': 10.0,
             'OCH4_TOTAL': 3.881333541002702e-09,
-            'ch4_sector_agriculture': 2.4194872992444853e-11,
-            'ch4_sector_coal': 2.8558975726436694e-09,
+            'ch4_sector_agriculture': 1.2097436496222428e-11,
+            'ch4_sector_coal': 1.4279487863218347e-09,
             'ch4_sector_electricity': 0.0,
             'ch4_sector_fire': 0.0,
-            'ch4_sector_industrial': 9.990360612431248e-13,
-            'ch4_sector_livestock': 8.812359129868445e-10,
-            'ch4_sector_lulucf': 4.318257917252425e-11,
+            'ch4_sector_industrial': 4.995180306215624e-13,
+            'ch4_sector_livestock': 4.406179564934222e-10,
+            'ch4_sector_lulucf': 2.1591289586262124e-11,
             'ch4_sector_oil_gas': 0.0,
-            'ch4_sector_stationary': 2.494615421637521e-11,
-            'ch4_sector_termite': 4.7307820855158056e-11,
-            'ch4_sector_transport': 2.389894617466093e-12,
+            'ch4_sector_stationary': 1.2473077108187606e-11,
+            'ch4_sector_termite': 2.3653912162302504e-11,
+            'ch4_sector_transport': 1.1949473087330465e-12,
             'ch4_sector_waste': 0.0,
             'ch4_sector_wetlands': 1.1796965896142583e-12,
             'ch4_total': 3.881333541002702e-09,
@@ -74,21 +74,21 @@ def test_009_prior_emissions_ds(prior_emissions_ds):
         },
         'y_band': {
             'LANDMASK': 10.0,
-            'OCH4_TOTAL': 1.723023891570012e-08,
-            'ch4_sector_agriculture': 2.3428548325447984e-11,
-            'ch4_sector_coal': 1.6145965183918798e-08,
+            'OCH4_TOTAL': 1.7230238915700124e-08,
+            'ch4_sector_agriculture': 1.1714274162723992e-11,
+            'ch4_sector_coal': 8.072982591959399e-09,
             'ch4_sector_electricity': 0.0,
             'ch4_sector_fire': 0.0,
-            'ch4_sector_industrial': 3.7006265826194363e-13,
-            'ch4_sector_livestock': 1.0031707194660715e-09,
+            'ch4_sector_industrial': 1.8503132913097184e-13,
+            'ch4_sector_livestock': 5.015853597330358e-10,
             'ch4_sector_lulucf': 0.0,
             'ch4_sector_oil_gas': 0.0,
-            'ch4_sector_stationary': 9.240547464560038e-12,
-            'ch4_sector_termite': 4.639714307197451e-11,
-            'ch4_sector_transport': 8.852640954771137e-13,
+            'ch4_sector_stationary': 4.620273732280019e-12,
+            'ch4_sector_termite': 2.3198571535987256e-11,
+            'ch4_sector_transport': 4.4263204773855684e-13,
             'ch4_sector_waste': 0.0,
             'ch4_sector_wetlands': 7.814475668897097e-13,
-            'ch4_total': 1.723023891570012e-08,
+            'ch4_total': 1.7230238915700124e-08,
             'land_mask': 10,
             'lat': -232.2213897705078,
             'lon': 1486.336669921875,
@@ -107,6 +107,30 @@ def test_011_output_dims(prior_emissions_ds):
     }
 
     assert prior_emissions_ds.sizes == expected_dimensions
+
+
+def test_011_sector_time_dimensions(prior_emissions_ds):
+    """Sectors carry a time dimension only when they resolve emissions per time step."""
+    sector_names = [key for key in prior_emissions_ds.data_vars if key.startswith("ch4_sector_")]
+    assert len(sector_names) > 0
+
+    for sector_name in sector_names:
+        sector_dims = prior_emissions_ds[sector_name].dims
+
+        # every layer is spatial, and carries a vertical dimension
+        assert sector_dims[-3:] == ("vertical", "y", "x"), sector_name
+        # a time dimension is optional, and nothing else may be present
+        assert sector_dims in [("vertical", "y", "x"), ("time", "vertical", "y", "x")], sector_name
+
+    # fire resolves emissions per day, so it keeps its time dimension
+    assert prior_emissions_ds["ch4_sector_fire"].dims == ("time", "vertical", "y", "x")
+
+    # sectors which produce a single estimate for the period are stored once
+    assert prior_emissions_ds["ch4_sector_livestock"].dims == ("vertical", "y", "x")
+
+    # the totals are always reported per time step
+    for total_name in ["ch4_total", "OCH4_TOTAL"]:
+        assert prior_emissions_ds[total_name].dims == ("time", "vertical", "y", "x")
 
 
 def test_012_output_variable_attributes(prior_emissions_ds):
