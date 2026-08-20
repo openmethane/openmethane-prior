@@ -317,3 +317,27 @@ def test_add_ch4_total_compresses_across_time(config, input_files):
         min(64, grid_y),
         min(64, grid_x),
     )
+
+
+def test_grid_metadata_is_compressed(config, input_files, tmp_path):
+    """Grid metadata copied from the domain should be compressed on write."""
+    test_ds = create_output_dataset(config)
+
+    for var_name in ["lat", "lon", "land_mask", "LANDMASK"]:
+        encoding = test_ds[var_name].encoding
+        assert encoding["zlib"] is True, f"{var_name} should be compressed"
+        # the domain file supplies complevel 0, which compresses nothing
+        assert encoding["complevel"] == 4, f"{var_name} needs an explicit complevel"
+        assert encoding["contiguous"] is False, f"{var_name} cannot stay contiguous"
+
+    # land_mask is a 0/1 mask, so it is narrowed on disk
+    assert test_ds["land_mask"].encoding["dtype"] == "int8"
+
+    # values must survive the narrowing
+    output_file = tmp_path / "metadata.nc"
+    test_ds.to_netcdf(output_file)
+
+    with xr.open_dataset(output_file) as written_ds:
+        assert written_ds["land_mask"].dtype == np.int8
+        assert np.array_equal(written_ds["land_mask"].values, test_ds["land_mask"].values)
+        assert np.array_equal(written_ds["lat"].values, test_ds["lat"].values)

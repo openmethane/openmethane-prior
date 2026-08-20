@@ -165,6 +165,26 @@ def create_output_dataset(config: PriorConfig) -> xr.Dataset:
     # compress cell_names which take a lot of space
     prior_ds.cell_name.encoding["zlib"] = True
 
+    # Grid metadata is copied from the domain file, which stores it
+    # uncompressed. It is fixed in size, but large enough to dominate the
+    # output once the emissions layers are compressed.
+    for var_name in ["lat", "lon", "land_mask", "LANDMASK"]:
+        prior_ds[var_name].encoding.update(
+            {
+                "zlib": True,
+                # the domain file stores these with complevel 0, which would
+                # leave them uncompressed even with zlib enabled
+                "complevel": DEFLATE_LEVEL,
+                "shuffle": True,
+                # domain variables arrive with contiguous storage, which netCDF
+                # cannot combine with compression
+                "contiguous": False,
+            }
+        )
+
+    # land_mask only ever holds 0 or 1, so a full int64 per cell is wasteful.
+    prior_ds.land_mask.encoding["dtype"] = "int8"
+
     # disable _FillValue for variables that shouldn't have empty values
     for var_name in ['time_bounds', 'x', 'y', 'x_bounds', 'y_bounds', 'lat', 'lon']:
         prior_ds[var_name].encoding["_FillValue"] = None
