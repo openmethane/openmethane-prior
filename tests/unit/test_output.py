@@ -2,7 +2,13 @@ import numpy as np
 import xarray as xr
 import pytest
 
-from openmethane_prior.lib.outputs import create_output_dataset, expand_sector_dims, add_sector
+from openmethane_prior.lib.outputs import (
+    add_ch4_total,
+    add_sector,
+    create_output_dataset,
+    emission_encoding,
+    expand_sector_dims,
+)
 from openmethane_prior.lib.sector.sector import PriorSector
 
 
@@ -236,3 +242,102 @@ def test_add_sector_nan_values(config, input_files):
     assert not np.isnan(result.values).any(), "output must not contain NaN values"
     assert (result.values[:, :, 0, 0] == 0.0).all(), "NaN cells must be replaced with zero"
     assert (result.values[:, :, 0, 1] == 1.0).all(), "non-NaN cells must retain their value"
+
+
+def test_emission_encoding_chunks_all_time_steps_together():
+    """Emissions chunks must span the full time extent so repeated steps compress."""
+    encoding = emission_encoding((31, 1, 430, 454))
+
+    assert encoding["zlib"] is True
+    # complevel must be explicit: sector data inheriting complevel 0 from an
+    # input file would be written uncompressed
+    assert encoding["complevel"] == 4
+    assert encoding["shuffle"] is True
+    # domain vars copied from the domain file arrive with contiguous storage,
+    # which cannot be combined with compression
+    assert encoding["contiguous"] is False
+    assert encoding["chunksizes"] == (31, 1, 64, 64)
+
+
+def test_emission_encoding_clamps_chunks_to_small_grids():
+    """netCDF rejects chunks larger than the dimension, so small domains clamp."""
+    encoding = emission_encoding((3, 1, 10, 12))
+
+    assert encoding["chunksizes"] == (3, 1, 10, 12)
+
+
+def test_add_sector_compresses_across_time(config, input_files, tmp_path):
+    """Sector data written to disk should be compressed and chunked across time."""
+    test_ds = create_output_dataset(config)
+    grid_y, grid_x = config.domain().grid.shape
+    time_steps = test_ds.sizes["time"]
+
+    sector_meta = create_mock_prior_sector()
+    add_sector(
+        prior_ds=test_ds,
+        sector_data=np.zeros((grid_y, grid_x)),
+        sector_meta=sector_meta,
+    )
+    sector_var = f"ch4_sector_{sector_meta.name}"
+
+    assert test_ds[sector_var].encoding["zlib"] is True
+    assert test_ds[sector_var].encoding["chunksizes"] == (
+        time_steps,
+        1,
+        min(64, grid_y),
+        min(64, grid_x),
+    )
+
+    # confirm the encoding survives a write, and values are unchanged
+    output_file = tmp_path / "chunked.nc"
+    test_ds.to_netcdf(output_file)
+
+    with xr.open_dataset(output_file) as written_ds:
+        chunks = written_ds[sector_var].encoding["chunksizes"]
+        assert chunks[0] == time_steps, "all time steps should share a chunk"
+        assert np.array_equal(written_ds[sector_var].values, test_ds[sector_var].values)
+
+
+def test_add_ch4_total_compresses_across_time(config, input_files):
+    """The total layer should get the same chunking as the sector layers."""
+    test_ds = create_output_dataset(config)
+    grid_y, grid_x = config.domain().grid.shape
+
+    add_sector(
+        prior_ds=test_ds,
+        sector_data=np.zeros((grid_y, grid_x)),
+        sector_meta=create_mock_prior_sector(),
+    )
+    add_ch4_total(test_ds)
+
+    assert test_ds["ch4_total"].encoding["zlib"] is True
+    assert test_ds["ch4_total"].encoding["chunksizes"] == (
+        test_ds.sizes["time"],
+        1,
+        min(64, grid_y),
+        min(64, grid_x),
+    )
+
+
+def test_grid_metadata_is_compressed(config, input_files, tmp_path):
+    """Grid metadata copied from the domain should be compressed on write."""
+    test_ds = create_output_dataset(config)
+
+    for var_name in ["lat", "lon", "land_mask", "LANDMASK"]:
+        encoding = test_ds[var_name].encoding
+        assert encoding["zlib"] is True, f"{var_name} should be compressed"
+        # the domain file supplies complevel 0, which compresses nothing
+        assert encoding["complevel"] == 4, f"{var_name} needs an explicit complevel"
+        assert encoding["contiguous"] is False, f"{var_name} cannot stay contiguous"
+
+    # land_mask is a 0/1 mask, so it is narrowed on disk
+    assert test_ds["land_mask"].encoding["dtype"] == "int8"
+
+    # values must survive the narrowing
+    output_file = tmp_path / "metadata.nc"
+    test_ds.to_netcdf(output_file)
+
+    with xr.open_dataset(output_file) as written_ds:
+        assert written_ds["land_mask"].dtype == np.int8
+        assert np.array_equal(written_ds["land_mask"].values, test_ds["land_mask"].values)
+        assert np.array_equal(written_ds["lat"].values, test_ds["lat"].values)
