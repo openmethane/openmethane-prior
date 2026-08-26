@@ -23,8 +23,8 @@ from openmethane_prior.data_sources.au_shapes import map_state_name_to_short_nam
 from openmethane_prior.lib import DataAsset
 
 pipeline_type_map = {
-    "Gas pipeline": "pipeline-gas",
-    "Oil pipeline": "pipeline-oil",
+    "Gas Pipeline": "pipeline-gas",
+    "Oil Pipeline": "pipeline-oil",
 }
 
 
@@ -37,7 +37,7 @@ def pipeline_emission_sources(
     sources_df: gpd.GeoDataFrame = gas_pipelines_da.data
 
     # emission sources must use state abbreviations (i.e. "NSW")
-    sources_df["state"] = sources_df["state"].map(map_state_name_to_short_name)
+    # sources_df["state"] = sources_df["state"].map(map_state_name_to_short_name)
 
     # Pipeline dataset may include gas and oil pipelines, as well as proposed
     # pipelines. Filter out proposed pipelines and map to a site_type value.
@@ -48,7 +48,7 @@ def pipeline_emission_sources(
     )
     sources_df = sources_df[~pd.isna(sources_df["site_type"])]
 
-    sources_df = sources_df[sources_df["operational_status"] == "Fully capable of operation."]
+    sources_df = sources_df[sources_df["status"] == "Fully capable of operation"]
 
     # Unfortunately, the pipeline dataset doesn't include dates when a pipeline
     # began or ceased operation
@@ -56,8 +56,8 @@ def pipeline_emission_sources(
     # normalise output to match emission sources format
     sources_df = sources_df.rename(columns={
         "objectid": "data_source_id",
-        "name": "group_id",
-        "length": "weight", # use pipeline length as a weighting
+        "feature_name": "group_id",
+        "length_km": "weight", # use pipeline length as a weighting
         # "start_date": "activity_start",
         # "expiry_date": "activity_end",
     })

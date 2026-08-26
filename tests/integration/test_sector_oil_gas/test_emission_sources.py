@@ -241,7 +241,7 @@ def test_au_pipelines(input_files, data_manager, config):
 
     # no sources which aren't operational gas pipelines
     assert set(df["site_type"].unique()) == {"pipeline-gas"}
-    assert set(df["operational_status"].unique()) == {"Fully capable of operation."}
+    assert set(df["status"].unique()) == {"Fully capable of operation"}
 
 
 def test_all_emission_sources(input_files, data_manager, config):

@@ -20,6 +20,7 @@ import restapi # https://github.com/Bolton-and-Menk-GIS/restapi
 
 from openmethane_prior.lib import ConfiguredDataSource, DataSource
 from openmethane_prior.lib.data_manager.parsers import parse_geo
+from openmethane_prior.sectors.oil_gas.data.esri_types import map_esri_date_to_str
 
 
 def fetch_au_gas_pipelines(data_source: ConfiguredDataSource):
@@ -32,16 +33,22 @@ def fetch_au_gas_pipelines(data_source: ConfiguredDataSource):
         fields=[
             'objectid',
             'feature_type',
-            'name',
-            'length',
-            'state',
-            'operational_status',
-            'source',
-            'license',
+            'feature_name',
+            'status',
+            'operator',
+            'length_km',
+            'licence',
+            'petrosys_comment',
+            'feature_source',
+            'feature_source_date',
         ],
         exceed_limit=True,
     )
     df = gpd.GeoDataFrame.from_features(pipelines_features.features)
+
+    for field_name in df.columns:
+        if field_name.endswith("_date") or field_name.startswith("date_"):
+            df[field_name] = df[field_name].map(map_esri_date_to_str)
 
     with open(data_source.asset_path, "w") as asset_file:
         asset_file.write(df.to_json())
