@@ -18,6 +18,7 @@
 import geopandas as gpd
 import pandas as pd
 
+from openmethane_prior.data_sources.au_shapes import au_shapes_states_data_source
 from openmethane_prior.data_sources.npi import npi_facilities_data_source
 from openmethane_prior.lib import (
     logger,
@@ -156,10 +157,12 @@ def all_emission_sources(
 
     # national oil and gas pipelines dataset
     pipelines_da = data_manager.get_asset(au_gas_pipelines_data_source)
+    au_states_da = data_manager.get_asset(au_shapes_states_data_source)
     pipelines_df = pipeline_emission_sources(
         start_date=start_date,
         end_date=end_date,
         gas_pipelines_da=pipelines_da,
+        au_states_da=au_states_da,
     )
     pipelines_df = normalise_emission_source_df(pipelines_df, prior_config.crs)
     logger.debug(f"found {len(pipelines_df)} pipelines")
