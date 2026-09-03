@@ -19,6 +19,29 @@ of rst and use slightly different categories.
 
 <!-- towncrier release notes start -->
 
+## openmethane-prior v1.7.1 (2026-09-03)
+
+### ⚠️ Breaking Changes
+
+- The `land_mask` variable in the prior emissions output is now stored as an 8-bit integer instead of a 64-bit integer, since it only ever holds the values 0 and 1. The values it reports are unchanged. ([#213](https://github.com/openmethane/openmethane-prior/pull/213))
+- Removed the deprecated `OCH4_TOTAL` and `LANDMASK` variables from the prior emissions output. These were deprecated in favour of `ch4_total` and `land_mask` respectively, which carry the same values. ([#215](https://github.com/openmethane/openmethane-prior/pull/215))
+
+### 🎉 Improvements
+
+- Reduced the size of the prior emissions output substantially by compressing emissions layers across the whole time period rather than within each time step, and by compressing the grid metadata variables copied from the domain. A month of output for the Australian 10km domain shrank from 116MB to 63MB, with no change to the values. ([#213](https://github.com/openmethane/openmethane-prior/pull/213))
+
+### 🐛 Bug Fixes
+
+- Restore the `state` annotation on gas pipeline emission sources, which was
+  removed when the Geoscience Australia pipelines dataset changed format. The
+  state is now derived by intersecting pipeline shapes with state shapes.
+
+  The new dataset no longer splits a pipeline into a separate entity per state,
+  so pipelines which cross a state border are split at the border, with their
+  length divided between the segments in proportion to the length in each state.
+  Offshore pipelines are attributed to the nearest state. ([#218](https://github.com/openmethane/openmethane-prior/pull/218))
+
+
 ## openmethane-prior v1.7.0 (2026-08-18)
 
 ### ⚠️ Breaking Changes
