@@ -1,5 +1,6 @@
 import datetime
 
+from openmethane_prior.data_sources.au_shapes import au_shapes_states_data_source
 from openmethane_prior.data_sources.npi import npi_facilities_data_source
 from openmethane_prior.sectors.oil_gas.data.au_pipelines import au_gas_pipelines_data_source
 from openmethane_prior.sectors.oil_gas.data.nopta import (
@@ -229,10 +230,12 @@ def test_au_pipelines(input_files, data_manager, config):
     start_date = datetime.datetime(2023, 1, 1, 0, 0)
     start_date_end = datetime.datetime(2023, 1, 2, 0, 0)
     pipelines_da = data_manager.get_asset(au_gas_pipelines_data_source)
+    au_states_da = data_manager.get_asset(au_shapes_states_data_source)
     df = pipeline_emission_sources(
         start_date=start_date,
         end_date=start_date_end,
         gas_pipelines_da=pipelines_da,
+        au_states_da=au_states_da,
     )
 
     # original datasets have been filtered down
@@ -241,7 +244,16 @@ def test_au_pipelines(input_files, data_manager, config):
 
     # no sources which aren't operational gas pipelines
     assert set(df["site_type"].unique()) == {"pipeline-gas"}
-    assert set(df["operational_status"].unique()) == {"Fully capable of operation."}
+    assert set(df["status"].unique()) == {"Fully capable of operation"}
+
+    # the source dataset no longer provides a state, so every pipeline should
+    # have had one derived from its geometry
+    assert df["state"].notna().all()
+    assert set(df["state"].unique()).issubset(set(au_states_da.data["short_name"].dropna()))
+
+    # pipelines crossing a state border are split into one segment per state,
+    # so ids are qualified with the state to keep them unique
+    assert df["data_source_id"].is_unique
 
 
 def test_all_emission_sources(input_files, data_manager, config):
