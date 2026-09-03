@@ -131,9 +131,6 @@ def create_output_dataset(config: PriorConfig) -> xr.Dataset:
 
             # data variables
             "land_mask": domain_ds["land_mask"],
-
-            # legacy / deprecated
-            "LANDMASK": domain_ds["LANDMASK"],
         },
         attrs={
             # data attributes
@@ -168,7 +165,7 @@ def create_output_dataset(config: PriorConfig) -> xr.Dataset:
     # Grid metadata is copied from the domain file, which stores it
     # uncompressed. It is fixed in size, but large enough to dominate the
     # output once the emissions layers are compressed.
-    for var_name in ["lat", "lon", "land_mask", "LANDMASK"]:
+    for var_name in ["lat", "lon", "land_mask"]:
         prior_ds[var_name].encoding.update(
             {
                 "zlib": True,
@@ -337,15 +334,4 @@ def add_ch4_total(prior_ds: xr.Dataset):
         # across time steps
         prior_ds[TOTAL_LAYER_NAME].encoding.update(
             emission_encoding(prior_ds[TOTAL_LAYER_NAME].shape)
-        )
-
-        # Ensure legacy / deprecated "OCH4_TOTAL" layer is still in the output
-        # until downstream consumers can be updated
-        prior_ds["OCH4_TOTAL"] = (
-            COORD_NAMES[:],
-            summed,
-            COMMON_ATTRIBUTES | TOTAL_LAYER_ATTRIBUTES | {
-                "deprecated": "This variable is deprecated and will be removed in future versions",
-                "superseded_by": TOTAL_LAYER_NAME
-            }
         )

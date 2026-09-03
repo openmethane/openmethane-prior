@@ -72,7 +72,7 @@ def test_create_output_dataset(config, input_files):
     # ensure georeferenced variables include grid_mapping attribute
     for var_name in output_ds.data_vars.keys():
         # variables that do not need grid_mapping are excluded from this check
-        if var_name in ["lat", "lon", "cell_name", "land_mask", "LANDMASK"]:
+        if var_name in ["lat", "lon", "cell_name", "land_mask"]:
             continue
 
         if "x" in output_ds[var_name].coords and "y"  in output_ds[var_name].coords:
@@ -323,7 +323,7 @@ def test_grid_metadata_is_compressed(config, input_files, tmp_path):
     """Grid metadata copied from the domain should be compressed on write."""
     test_ds = create_output_dataset(config)
 
-    for var_name in ["lat", "lon", "land_mask", "LANDMASK"]:
+    for var_name in ["lat", "lon", "land_mask"]:
         encoding = test_ds[var_name].encoding
         assert encoding["zlib"] is True, f"{var_name} should be compressed"
         # the domain file supplies complevel 0, which compresses nothing

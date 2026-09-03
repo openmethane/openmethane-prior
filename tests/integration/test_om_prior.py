@@ -4,8 +4,6 @@ from testing import dataset_metrics
 def test_009_prior_emissions_ds(prior_emissions_ds):
     assert dataset_metrics(prior_emissions_ds) == {
         'max': {
-            'LANDMASK': 1.0,
-            'OCH4_TOTAL': 8.105908627681788e-09,
             'ch4_sector_agriculture': 1.3196047170278112e-12,
             'ch4_sector_coal': 8.072982591959399e-09,
             'ch4_sector_electricity': 1.2683449229281463e-11,
@@ -28,8 +26,6 @@ def test_009_prior_emissions_ds(prior_emissions_ds):
             'y_bounds': 414369.5,
         },
         'mean': {
-            'LANDMASK': 1.0,
-            'OCH4_TOTAL': 4.527375484529345e-10,
             'ch4_sector_agriculture': 1.0532989458203914e-12,
             'ch4_sector_coal': 3.979529404503474e-10,
             'ch4_sector_electricity': 2.2548354185389268e-13,
@@ -52,8 +48,6 @@ def test_009_prior_emissions_ds(prior_emissions_ds):
             'y_bounds': 364369.5,
         },
         'x_band': {
-            'LANDMASK': 10.0,
-            'OCH4_TOTAL': 3.881333541002702e-09,
             'ch4_sector_agriculture': 2.4194872992444853e-11,
             'ch4_sector_coal': 2.8558975726436694e-09,
             'ch4_sector_electricity': 0.0,
@@ -73,8 +67,6 @@ def test_009_prior_emissions_ds(prior_emissions_ds):
             'lon': 1486.8963623046875,
         },
         'y_band': {
-            'LANDMASK': 10.0,
-            'OCH4_TOTAL': 1.723023891570012e-08,
             'ch4_sector_agriculture': 2.3428548325447984e-11,
             'ch4_sector_coal': 1.6145965183918798e-08,
             'ch4_sector_electricity': 0.0,
@@ -122,7 +114,3 @@ def test_012_output_variable_attributes(prior_emissions_ds):
         assert prior_emissions_ds.variables[layer_name].attrs["long_name"] == f"expected flux of methane caused by sector: {layer_name.replace('ch4_sector_', '')}"
         assert prior_emissions_ds.variables[layer_name].attrs["standard_name"].startswith("surface_upward_mass_flux_of_methane_due_to_emission_from_")
         assert prior_emissions_ds.variables[layer_name].attrs["grid_mapping"] == "lambert_conformal"
-
-    # TODO: remove when OCH4_TOTAL layer is removed
-    assert prior_emissions_ds.variables["OCH4_TOTAL"].attrs["deprecated"] == "This variable is deprecated and will be removed in future versions"
-    assert prior_emissions_ds.variables["OCH4_TOTAL"].attrs["superseded_by"] == "ch4_total"
