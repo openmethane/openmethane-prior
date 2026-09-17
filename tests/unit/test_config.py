@@ -39,6 +39,7 @@ def test_prior_config_defaults(start_date, end_date):
     assert test_config.output_filename == "prior-emissions.nc"
     assert test_config.static_path == test_config.input_path
     assert test_config.input_cache is None
+    assert test_config.handle_existing == "overwrite"
 
     test_config_none = PriorConfig(
         domain_path="domain.nc",
@@ -48,6 +49,7 @@ def test_prior_config_defaults(start_date, end_date):
         output_path=None,
         intermediates_path=None,
         output_filename=None,
+        handle_existing=None,
     )
 
     # defaults
@@ -56,6 +58,18 @@ def test_prior_config_defaults(start_date, end_date):
     assert test_config_none.intermediates_path == pathlib.Path("data/intermediates")
     assert test_config_none.static_path == test_config_none.input_path
     assert test_config_none.output_filename == "prior-emissions.nc"
+    assert test_config_none.handle_existing == "overwrite"
+
+
+def test_prior_config_handle_existing_skip(start_date, end_date):
+    test_config = PriorConfig(
+        domain_path="domain.nc",
+        start_date=start_date,
+        end_date=end_date,
+        handle_existing="skip",
+    )
+
+    assert test_config.handle_existing == "skip"
 
 
 def test_prior_config_full(tmp_path: pathlib.Path, start_date, end_date):
@@ -113,6 +127,7 @@ def test_prior_config_to_yaml(start_date, end_date):
 
     assert test_config.to_yaml() == """domain_path: domain.nc
 end_date: 2022-12-08 00:00:00
+handle_existing: overwrite
 input_cache: null
 input_path: data/input
 intermediates_path: data/inter
@@ -135,6 +150,7 @@ def test_prior_config_from_env(reset_env, start_date, end_date):
     os.environ["STATIC_INPUTS"] = "env/static"
     os.environ["INPUT_CACHE"] = "env/cache"
     os.environ["OUTPUT_FILENAME"] = "env-output.nc"
+    os.environ["EXISTING_OUTPUT"] = "skip"
 
     test_config = PriorConfig.from_env()
 
@@ -148,6 +164,7 @@ def test_prior_config_from_env(reset_env, start_date, end_date):
     assert test_config.static_path == pathlib.Path("env/static")
     assert test_config.input_cache == pathlib.Path("env/cache")
     assert test_config.output_filename == "env-output.nc"
+    assert test_config.handle_existing == "skip"
 
 
 def test_prior_config_input_cache(tmp_path: pathlib.Path, start_date, end_date):

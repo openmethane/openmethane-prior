@@ -9,7 +9,7 @@ from functools import cache
 import os
 import pathlib
 import shutil
-from typing import Self
+from typing import Literal, Self
 import urllib.request
 import yaml
 
@@ -53,6 +53,14 @@ class PriorConfig:
     )
     """Filename to write the prior output to as a NetCDFv4 file in
     `output_path`"""
+
+    handle_existing: Literal["overwrite", "skip"] = field(
+        default=None, converter=default_if_none("overwrite"),
+    )
+    """How to handle existing output at the output location. Allowed values:
+      - "overwrite" (default) - existing output will be overwritten
+      - "skip" - exit early, leaving the existing output unmodified
+    """
 
     static_path: pathlib.Path = None
     """Filesystem path where static input files exist or should be fetched to."""
@@ -168,6 +176,7 @@ class PriorConfig:
             static_path=env.path("STATIC_INPUTS", None),
             input_cache=env.path("INPUT_CACHE", None),
             output_filename=env.str("OUTPUT_FILENAME", None),
+            handle_existing=env.str("EXISTING_OUTPUT", None),
             sectors=sectors if len(sectors) > 0 else None,
         )
 
