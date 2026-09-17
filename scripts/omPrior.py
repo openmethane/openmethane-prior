@@ -18,6 +18,7 @@
 
 """Main entry point for running the openmethane-prior"""
 import logging
+import sys
 import prettyprinter
 
 from openmethane_prior.lib import (
@@ -40,6 +41,12 @@ if __name__ == "__main__":
 
     if logger.level <= logging.DEBUG:
         prettyprinter.cpprint(config)
+
+    if config.output_file.exists():
+        if config.handle_existing == "skip":
+            logger.info(f"Existing output found at '{config.output_file}', skipping prior")
+            sys.exit(0)
+        logger.info(f"Existing output found at '{config.output_file}', overwriting")
 
     # if no sectors were specified, process all sectors
     sectors = list(all_sectors)
