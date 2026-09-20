@@ -19,6 +19,16 @@ of rst and use slightly different categories.
 
 <!-- towncrier release notes start -->
 
+## openmethane-prior v1.7.2 (2026-09-20)
+
+### 🆕 Features
+
+- Adds handle_existing config, with values "overwrite" (default) and "skip".
+  If set to "skip", no processing will be performed when output already exists
+  at the configured output path. Can be controlled via the `EXISTING_OUTPUT`
+  environment variable. ([#219](https://github.com/openmethane/openmethane-prior/pull/219))
+
+
 ## openmethane-prior v1.7.1 (2026-09-03)
 
 ### ⚠️ Breaking Changes
