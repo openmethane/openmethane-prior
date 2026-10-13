@@ -7,5 +7,5 @@ def test_sector_livestock(input_files, config):
     # run the prior and return the result
     prior_livestock_ds = create_prior(config, [sector])
 
-    assert prior_livestock_ds['ch4_sector_livestock'].max().item() == 6.329324205281718e-11
-    assert prior_livestock_ds['ch4_sector_livestock'].mean().item() == 3.998308313755556e-11
+    assert prior_livestock_ds['ch4_sector_livestock'].max().item() == 6.12922849738717e-11
+    assert prior_livestock_ds['ch4_sector_livestock'].mean().item() == 3.8720039264770814e-11
