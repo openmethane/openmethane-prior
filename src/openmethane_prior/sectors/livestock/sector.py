@@ -16,7 +16,6 @@
 # limitations under the License.
 #
 import numpy as np
-import pyproj
 import xarray as xr
 
 from openmethane_prior.data_sources.inventory import (
@@ -25,10 +24,10 @@ from openmethane_prior.data_sources.inventory import (
 )
 from openmethane_prior.lib import (
     DataSource,
-    Grid,
     logger,
     PriorSector,
     PriorSectorConfig,
+    regrid_data_array_conservative,
 )
 from openmethane_prior.lib.units import seconds_in_period
 
@@ -44,24 +43,6 @@ livestock_ch4_data_source = DataSource(
 )
 
 
-def gridded_livestock_emissions(
-    lon: np.ndarray,
-    lat: np.ndarray,
-    emissions: np.ndarray,
-    domain_grid: Grid,
-) -> np.ndarray:
-    """Sum livestock emissions into the domain grid cells containing each point.
-
-    Points outside the domain are discarded.
-    """
-    ix, iy, valid_cells = domain_grid.lonlat_to_cell_index(lon=lon, lat=lat)
-
-    gridded = np.zeros(domain_grid.shape)
-    np.add.at(gridded, (iy[valid_cells], ix[valid_cells]), emissions[valid_cells])
-
-    return gridded
-
-
 def process_emissions(
     sector: PriorSector,
     sector_config: PriorSectorConfig,
@@ -72,24 +53,19 @@ def process_emissions(
 
     livestock_ch4_asset = sector_config.data_manager.get_asset(livestock_ch4_data_source)
     with xr.open_dataset(livestock_ch4_asset.path) as livestock_ch4_ds:
-        livestock_ch4 = livestock_ch4_ds["CH4"].values
-        source_lat = livestock_ch4_ds["lat"].values
-        source_lon = livestock_ch4_ds["lon"].values
+        livestock_ch4_da = livestock_ch4_ds["CH4"].load()
 
-    # most of the 0.01 degree grid is empty, only map cells with emissions
-    iy_source, ix_source = np.nonzero(livestock_ch4 > 0)
-
-    # dataset coords are EPSG:4283 (GDA94), convert to EPSG:4326
-    transformer = pyproj.Transformer.from_crs(4283, 4326)
-    lat, lon = transformer.transform(source_lat[iy_source], source_lon[ix_source])
-
-    logger.debug("Mapping livestock emissions to domain grid")
-    livestock_np = gridded_livestock_emissions(
-        lon=lon,
-        lat=lat,
-        emissions=livestock_ch4[iy_source, ix_source].astype(np.float64),
+    # dataset values are kg/s per 0.01 degree cell, regridded to kg/s/m2
+    livestock_regridded = regrid_data_array_conservative(
+        data_da=livestock_ch4_da,
         domain_grid=domain_grid,
+        cache_path=config.intermediates_path,
+        cache_name=f"{livestock_ch4_asset.name}_{prior_ds.domain_name}",
+        lat_dim="lat",
+        lon_dim="lon",
+        extensive=True,
     )
+    livestock_np = livestock_regridded.values.astype(np.float64) * domain_grid.cell_area
 
     # the dataset is only used for its spatial distribution, the national
     # total comes from the inventory for the requested period
@@ -103,7 +79,7 @@ def process_emissions(
     logger.debug(f"Total emissions from livestock: {total_emissions / 1e6:.2f} kt")
 
     # normalise by the national total so emissions outside the domain are excluded
-    source_total = livestock_ch4[iy_source, ix_source].sum(dtype=np.float64)
+    source_total = livestock_ch4_da.sum(dtype=np.float64).item()
     ch4_np = total_emissions * livestock_np / source_total
 
     # convert CH4 kg to CH4 kg/s/m2
