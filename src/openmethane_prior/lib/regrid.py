@@ -39,7 +39,8 @@ def _compute_cell_edges(centres: np.ndarray) -> np.ndarray:
     edges = np.zeros(len(centres) + 1)
     edges[:-1] = centres + d / 2.0
     edges[-1] = centres[-1] - d / 2.0
-    return np.around(edges, 2)
+    # round away float noise, with enough precision for edges of 0.01 degree cells
+    return np.around(edges, 6)
 
 
 def _compute_from_areas(lat_edges: np.ndarray, lon_edges: np.ndarray) -> np.ndarray:
