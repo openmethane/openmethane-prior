@@ -197,19 +197,21 @@ substances which can act as a proxy for methane emission.
 
 ## Sector: Livestock
 
-Australian national gridded methane emissions from beef cattle, dairy cattle
-and sheep, used as a spatial proxy to distribute ANGA inventory emissions for
-enteric fermentation and manure management for those animals.
+Australian gridded methane emissions dataset from CSIRO, used as a spatial
+proxy to distribute ANGA inventory emissions for enteric fermentation and
+manure management from cattle and sheep.
 
 ### Sources
 
 "Agriculture Emissions Australia.nc" from the CSIRO data collection
 [Methane Emissions in Melbourne, Australia: Prior Estimates using Global and National Data][5]
 (Shahrokhishahraki et al., 2026, v2), licensed
-[CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). The dataset was
-derived from the Australian livestock distribution dataset developed by
-Navarro and Marcos Martinez (2021; updated 2025) using fixed per-head methane
-emission factors for each animal type.
+[CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). CSIRO describe the
+dataset as follows:
+
+> This dataset was derived using the Australian livestock distribution dataset
+> developed by Navarro and Marcos Martinez (2021; subsequently updated by the
+> authors in 2025), together with sector-specific methane emission factors.
 
 - Dataset: [Agriculture Emissions Australia.nc][6]
 - Resolution: 0.01 degree
@@ -218,13 +220,13 @@ emission factors for each animal type.
 
 ### Considerations
 
-- Despite the file name, the dataset only includes beef cattle, dairy cattle
-  and sheep. Swine and other livestock are allocated by the agriculture sector.
-- Emissions for all three animal types are combined, so the inventory totals
-  for each animal type can't be distributed separately. The relative weighting
-  between animal types is fixed by the dataset's emission factors.
-- Only the spatial distribution is used, national totals come from the ANGA
+- In every grid cell, the dataset is proportional to a fixed weighted sum of
+  beef cattle, dairy cattle and sheep headcounts from an unpublished CSIRO
+  livestock headcounts dataset, which we verified against a copy shared with
+  us. We use only its spatial distribution; national totals come from the ANGA
   inventory for the requested period.
+- Because the animal types are combined with fixed weights, inventory totals
+  for beef, dairy and sheep can't be distributed separately.
 - Real spatial distribution likely to be highly variable during the year as
   grazing herds move through available pastures.
 
