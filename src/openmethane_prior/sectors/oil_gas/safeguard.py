@@ -68,3 +68,37 @@ def gas_supply_emissions(
         gridded_emission += total_emission * state_nightlights
 
     return gridded_emission
+
+
+def safeguard_operating_periods(
+    facility_locations_df: pd.DataFrame,
+    oil_gas_sites_df: pd.DataFrame,
+    sites_data_source_name: str,
+) -> pd.DataFrame:
+    """Determine the period each Safeguard facility was in operation, based on
+    the operation dates of its sites in the oil and gas sites dataset.
+
+    A facility's location can refer to a single site by its "Site" name, or
+    to all sites in a group by its "Facility name". A facility is in operation
+    while any of its sites are, so the period runs from the earliest site start
+    to the latest site end. A missing date on any site leaves that side of the
+    period open.
+
+    Only the oil and gas sites dataset is used, since operation dates in other
+    sources (like petroleum title dates for wells) are only rough bounds.
+
+    :return: DataFrame with columns facility_name, operation_start and
+      operation_end, with one row for each facility which has sites.
+    """
+    site_locations_df = facility_locations_df[facility_locations_df["data_source_name"] == sites_data_source_name]
+
+    site_matches_df = site_locations_df.merge(oil_gas_sites_df, left_on="data_source_id", right_on="Site")
+    group_matches_df = site_locations_df.merge(oil_gas_sites_df, left_on="data_source_id", right_on="Facility name")
+    facility_sites_df = pd.concat([site_matches_df, group_matches_df])
+
+    operating_periods_df = facility_sites_df.groupby("safeguard_facility_name").agg(
+        operation_start=("Operation start", lambda dates: pd.NaT if dates.isna().any() else dates.min()),
+        operation_end=("Operation end", lambda dates: pd.NaT if dates.isna().any() else dates.max()),
+    )
+
+    return operating_periods_df.reset_index(names="facility_name")
