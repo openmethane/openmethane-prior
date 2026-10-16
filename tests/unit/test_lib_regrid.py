@@ -143,3 +143,13 @@ def test_nan_source_cells_not_propagated(domain_grid, source_da, tmp_path):
     result_clean = regrid_data_array_conservative(da_with_zero, domain_grid, tmp_path, "tnan_clean")
 
     np.testing.assert_array_equal(result, result_clean)
+
+
+def test_cell_edges_hundredth_degree_grid():
+    # edges of 0.01 degree cells fall on the third decimal place, and must not
+    # be rounded onto the cell centres
+    centres = np.array([113.40, 113.41, 113.42])
+
+    result = _compute_cell_edges(centres)
+
+    np.testing.assert_allclose(result, [113.395, 113.405, 113.415, 113.425])
