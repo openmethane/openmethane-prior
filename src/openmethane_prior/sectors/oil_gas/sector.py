@@ -38,9 +38,10 @@ from openmethane_prior.data_sources.safeguard import (
 from openmethane_prior.lib.grid.geometry import grid_weights_from_linestring
 from openmethane_prior.lib.sector.au_sector import AustraliaPriorSector
 
+from .data.oil_gas_sites import oil_gas_sites_data_source
 from .emission_source import allocate_emissions_to_sources
 from .emission_sources.all_sources import all_emission_sources
-from .safeguard import gas_supply_emissions
+from .safeguard import gas_supply_emissions, safeguard_operating_periods
 
 logger = logger.get_logger(__name__)
 
@@ -77,6 +78,18 @@ def process_emissions(sector: AustraliaPriorSector, sector_config: PriorSectorCo
     # "not yet allocated" instead of "no emission"
     emission_sources_df["emissions_quantity"] = np.nan
 
+    # Safeguard locations dataset tells us where we can find locations of
+    # wells and sites that correspond to a Safeguard facility
+    facility_locations_df = sector_config.data_manager.get_asset(safeguard_locations_data_source).data
+
+    # some facilities only operated for part of the Safeguard reporting period
+    oil_gas_sites_da = sector_config.data_manager.get_asset(oil_gas_sites_data_source)
+    operating_periods_df = safeguard_operating_periods(
+        facility_locations_df=facility_locations_df,
+        oil_gas_sites_df=oil_gas_sites_da.data,
+        sites_data_source_name=oil_gas_sites_da.name,
+    )
+
     # identify Safeguard Mechanism facilities in this sector which reported
     # emissions during the period of interest
     safeguard_facilities_da = sector_config.data_manager.get_asset(safeguard_mechanism_data_source)
@@ -84,6 +97,7 @@ def process_emissions(sector: AustraliaPriorSector, sector_config: PriorSectorCo
         safeguard_facilities_df=safeguard_facilities_da.data,
         anzsic_codes=sector.anzsic_codes,
         period=(config.start_date.date(), config.end_date.date()),
+        operating_periods=operating_periods_df,
     )
     if len(sector_facilities_df) == 0:
         logger.info(f"No Safeguard facilities found for the period")
@@ -113,9 +127,6 @@ def process_emissions(sector: AustraliaPriorSector, sector_config: PriorSectorCo
     # Remove gas supply facilities since they've been spatialised
     sector_facilities_df = sector_facilities_df[~gas_supply_facilities_mask]
 
-    # Safeguard locations dataset tells us where we can find locations of
-    # wells and sites that correspond to a Safeguard facility
-    facility_locations_df = sector_config.data_manager.get_asset(safeguard_locations_data_source).data
     located_facilities_df = sector_facilities_df.merge(
         facility_locations_df,
         left_on="facility_name",
@@ -123,6 +134,10 @@ def process_emissions(sector: AustraliaPriorSector, sector_config: PriorSectorCo
     )
 
     for idx_fac, facility in sector_facilities_df.iterrows():
+        # facility was not in operation during the period
+        if facility["ch4_kg"] == 0:
+            continue
+
         locations = located_facilities_df[located_facilities_df["facility_name"] == facility.facility_name]
 
         # build a list of emission sources related to this SGM facility
