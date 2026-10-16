@@ -6,6 +6,7 @@ import pytest
 from openmethane_prior.data_sources.safeguard.facility import (
     create_facilities_from_safeguard_rows,
     filter_facilities,
+    get_sector_safeguard_facilities,
     parse_anzsic_code,
 )
 
@@ -126,3 +127,95 @@ def test_safeguard_filter_facilities(facility_rows_df):
         period=(datetime.date(2023, 1, 1), datetime.date(2023, 1, 31)),
     )
     assert len(test_multiple_filters_outside_period) == 0
+
+
+def test_safeguard_get_sector_safeguard_facilities_scales_to_period(facility_rows_df):
+    facilities_df = create_facilities_from_safeguard_rows(
+        safeguard_rows_df=facility_rows_df,
+        reporting_period=(2023, 2024), # 2023-07-01 to 2024-06-30, 366 days
+        ch4_gwp=28,
+    )
+
+    result_df = get_sector_safeguard_facilities(
+        safeguard_facilities_df=facilities_df,
+        anzsic_codes=["08"],
+        period=(datetime.date(2023, 10, 1), datetime.date(2023, 10, 30)),
+    )
+
+    assert len(result_df) == 1
+    assert result_df.iloc[0].ch4_kg == pytest.approx(1111.0 * 1000 / 28 * 30 / 366)
+
+
+def test_safeguard_get_sector_safeguard_facilities_operating_period(facility_rows_df):
+    facilities_df = create_facilities_from_safeguard_rows(
+        safeguard_rows_df=facility_rows_df,
+        reporting_period=(2023, 2024), # 2023-07-01 to 2024-06-30, 366 days
+        ch4_gwp=28,
+    )
+    operating_periods = pd.DataFrame({
+        "facility_name": ["Ironic", "Iron Giant"],
+        # closed partway through the reporting period, after 134 days
+        "operation_start": pd.to_datetime([pd.NaT, "2006-01-01"]),
+        "operation_end": pd.to_datetime(["2023-11-11", "2023-11-11"]),
+    })
+
+    result_df = get_sector_safeguard_facilities(
+        safeguard_facilities_df=facilities_df,
+        anzsic_codes=["21"],
+        period=(datetime.date(2023, 10, 1), datetime.date(2023, 10, 30)),
+        operating_periods=operating_periods,
+    )
+
+    ch4_kg = result_df.set_index("facility_name")["ch4_kg"]
+    # annual emissions are spread over the 134 days of operation
+    assert ch4_kg["Ironic"] == pytest.approx(123.0 * 1000 / 28 * 30 / 134)
+    assert ch4_kg["Iron Giant"] == pytest.approx(456.0 * 1000 / 28 * 30 / 134)
+    # facilities without an operating period use the whole reporting period
+    assert ch4_kg["Al to Zn"] == pytest.approx(789.0 * 1000 / 28 * 30 / 366)
+
+
+def test_safeguard_get_sector_safeguard_facilities_after_operating_period(facility_rows_df):
+    facilities_df = create_facilities_from_safeguard_rows(
+        safeguard_rows_df=facility_rows_df,
+        reporting_period=(2023, 2024),
+        ch4_gwp=28,
+    )
+    operating_periods = pd.DataFrame({
+        "facility_name": ["Ironic"],
+        "operation_start": pd.to_datetime([pd.NaT]),
+        "operation_end": pd.to_datetime(["2023-11-11"]),
+    })
+
+    result_df = get_sector_safeguard_facilities(
+        safeguard_facilities_df=facilities_df,
+        anzsic_codes=["211"],
+        period=(datetime.date(2023, 12, 1), datetime.date(2023, 12, 31)),
+        operating_periods=operating_periods,
+    )
+
+    assert len(result_df) == 1
+    assert result_df.iloc[0].ch4_kg == 0
+
+
+def test_safeguard_get_sector_safeguard_facilities_operating_period_outside_reporting(facility_rows_df):
+    facilities_df = create_facilities_from_safeguard_rows(
+        safeguard_rows_df=facility_rows_df,
+        reporting_period=(2023, 2024),
+        ch4_gwp=28,
+    )
+    # inconsistent with the facility reporting emissions in 2023-2024
+    operating_periods = pd.DataFrame({
+        "facility_name": ["Ironic"],
+        "operation_start": pd.to_datetime([pd.NaT]),
+        "operation_end": pd.to_datetime(["2020-01-01"]),
+    })
+
+    result_df = get_sector_safeguard_facilities(
+        safeguard_facilities_df=facilities_df,
+        anzsic_codes=["211"],
+        period=(datetime.date(2023, 12, 1), datetime.date(2023, 12, 31)),
+        operating_periods=operating_periods,
+    )
+
+    # falls back to spreading emissions over the whole reporting period
+    assert result_df.iloc[0].ch4_kg == pytest.approx(123.0 * 1000 / 28 * 31 / 366)
