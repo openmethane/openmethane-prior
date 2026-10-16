@@ -21,9 +21,12 @@ import numpy as np
 import pandas as pd
 import re
 
-from openmethane_prior.lib.units import days_in_period
+from openmethane_prior.lib import logger
+from openmethane_prior.lib.units import days_in_overlap, days_in_period
 
 from .anzsic import filter_by_anzsic_code_family
+
+logger = logger.get_logger(__name__)
 
 
 @attrs.define()
@@ -128,11 +131,17 @@ def get_sector_safeguard_facilities(
     safeguard_facilities_df: pd.DataFrame,
     anzsic_codes: list[str] = None,
     period: tuple[datetime.date, datetime.date] = None,
+    operating_periods: pd.DataFrame = None,
 ):
     """Find Safeguard Mechanism facilities in the provided sector with reported
     emissions in the period of interest. Scale the annual Safeguard emissions
     to the length of the period.
 
+    :param operating_periods: Optional DataFrame with columns facility_name,
+      operation_start and operation_end. A facility listed here is assumed to
+      emit only between its start and end dates (a missing date leaves that
+      side open), so its annual emissions are spread over the days it operated
+      in the reporting period, rather than the whole reporting period.
     :return: DataFrame of facilities with the total CH4 emissions expected
       over the period.
     """
@@ -149,10 +158,41 @@ def get_sector_safeguard_facilities(
 
     # scale annual safeguard emissions to the total amount for the period (kg),
     # the same unit output from get_sector_emissions_by_code
-    safeguard_period_start = sector_facilities_df.iloc[0]["reporting_start"]
-    safeguard_period_end = sector_facilities_df.iloc[0]["reporting_end"]
-    year_days = days_in_period(safeguard_period_start, safeguard_period_end)
-    period_days = days_in_period(period[0], period[1])
-    sector_facilities_df["ch4_kg"] *= period_days / year_days
+    sector_facilities_df = sector_facilities_df.copy()
+    if operating_periods is None:
+        operating_periods = pd.DataFrame(
+            columns=["facility_name", "operation_start", "operation_end"],
+        )
+
+    facilities_operating_df = sector_facilities_df.merge(
+        operating_periods[["facility_name", "operation_start", "operation_end"]],
+        on="facility_name",
+        how="left",
+    )
+    facilities_operating_df.index = sector_facilities_df.index
+
+    for idx, facility in facilities_operating_df.iterrows():
+        operation_start = _optional_date(facility["operation_start"])
+        operation_end = _optional_date(facility["operation_end"])
+        year_days = days_in_overlap(
+            facility["reporting_start"], facility["reporting_end"], operation_start, operation_end,
+        )
+        if year_days == 0:
+            # the facility reported emissions, so it must have operated at
+            # some point in the reporting period
+            logger.warning(
+                f"Facility '{facility['facility_name']}' reported emissions but did not operate "
+                f"in the reporting period, spreading emissions over the whole reporting period"
+            )
+            operation_start, operation_end = None, None
+            year_days = days_in_period(facility["reporting_start"], facility["reporting_end"])
+
+        period_days = days_in_overlap(period[0], period[1], operation_start, operation_end)
+        sector_facilities_df.loc[idx, "ch4_kg"] *= period_days / year_days
 
     return sector_facilities_df
+
+
+def _optional_date(value) -> datetime.date | None:
+    """Convert a date-like value to a datetime.date, or None if missing."""
+    return None if pd.isna(value) else pd.Timestamp(value).date()
