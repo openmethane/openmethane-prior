@@ -35,6 +35,21 @@ def days_in_period(
     return (end_date - start_date).days + (1 if inclusive else 0)
 
 
+def days_in_overlap(
+    period_start: datetime.date,
+    period_end: datetime.date,
+    window_start: datetime.date | None,
+    window_end: datetime.date | None,
+) -> int:
+    """Returns the number of days in the period from period_start to
+    period_end (inclusive) which also fall within the window from window_start
+    to window_end (inclusive). A window_start or window_end of None leaves
+    that side of the window unbounded. Returns 0 if they don't overlap."""
+    overlap_start = period_start if window_start is None else max(period_start, window_start)
+    overlap_end = period_end if window_end is None else min(period_end, window_end)
+    return max(0, days_in_period(overlap_start, overlap_end))
+
+
 SECONDS_PER_DAY = 24 * 60 * 60
 def seconds_in_period(start_date: datetime.date, end_date: datetime.date) -> int:
     """Returns the number of seconds in the period of days starting at midnight
