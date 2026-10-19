@@ -23,11 +23,6 @@ import zipfile
 from openmethane_prior.lib import ConfiguredDataSource, DataSource
 from openmethane_prior.lib.data_manager.parsers import parse_csv
 
-alum_sector_mapping_data_source = DataSource(
-    name="alum-sector-mapping",
-    url="https://openmethane.s3.amazonaws.com/prior/inputs/landuse-sector-map.csv",
-    parse=parse_csv,
-)
 
 # filename of the GeoTIFF file inside the official zip file source
 NLUM_GEOTIFF_FILENAME="NLUM_v7_250_ALUMV8_2020_21_alb.tif"

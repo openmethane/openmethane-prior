@@ -64,7 +64,21 @@ Copy `.env.example` to `.env`. Key variables:
 
 ## Testing
 
-Tests live in `tests/unit/` and `tests/integration/`. Integration tests exercise the full pipeline with real (cached) data. Use `--cache` pytest fixtures to control data caching behaviour.
+Tests live in `tests/unit/` and `tests/integration/`. Tests follow pytest
+conventions and use pytest libraries.
+
+Integration tests exercise the full pipeline with real (cached) data. Use
+`input_files` pytest fixture to use cached data. For integration tests which
+should download DataSource assets from the internet, `input_files` should be
+omitted.
+
+Unit tests should avoid calling methods which read from the filesystem, and
+should construct example data to pass to methods.
+
+Every test should call the unit under test directly in the test body, so it's
+clear what the test exercises. Fixtures and helpers may set up test conditions
+(grids, DataFrames, config), but must not wrap the call to the unit under test.
+Prefer repeating a few lines of arguments over hiding the call in a helper.
 
 ## Code Style
 
