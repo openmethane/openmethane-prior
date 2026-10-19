@@ -142,7 +142,12 @@ def main(domain_file: str | None, output_file: pathlib.Path):
 
     logger.info(f"Writing domain to {output_file}")
     output_file.parent.mkdir(parents=True, exist_ok=True)
-    domain_ds.to_netcdf(output_file)
+    # xarray doesn't carry over compression for variable-length strings, so
+    # cell_name would be written uncompressed and add about 3 MB to aust10km
+    encoding = {}
+    if "cell_name" in domain_ds:
+        encoding["cell_name"] = {"zlib": True, "complevel": 4, "shuffle": True}
+    domain_ds.to_netcdf(output_file, encoding=encoding)
 
 
 if __name__ == "__main__":
