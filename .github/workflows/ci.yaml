@@ -125,7 +125,7 @@ jobs:
       - name: Run tests
         timeout-minutes: ${{ steps.test-data.outputs.cache-hit == 'true' && 15 || 35 }}
         run: |
-          uv run python -m pytest -r a -v tests -k "not test_cdsapi_connection"
+          uv run python -m pytest -r a -v tests -k "not test_cdsapi_connection" -m "not long_running"
         env:
           INPUT_CACHE: data/.cache
       # Run tests which require GitHub Actions secrets only on internal PRs and merges
