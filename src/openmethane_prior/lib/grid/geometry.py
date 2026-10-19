@@ -43,6 +43,46 @@ def grid_mask_from_polygon(
     return shapely.contains_xy(polygon, xx.ravel(), yy.ravel()).reshape(grid.shape)
 
 
+def grid_mask_from_polygon_overlap(
+    grid: Grid,
+    polygon: MultiPolygon | Polygon,
+):
+    """Returns a boolean grid mask indicating which grid cells overlap the
+    provided polygon by any area, however small. Cells which only touch the
+    polygon along an edge or at a corner are not included.
+
+    The polygon must be in the same coordinate system as the grid.
+
+    :param grid: Grid to construct the mask for
+    :param polygon: Polygon shape in the grid's coordinate system
+    :return: Gridded mask with True in cells which share any area with the
+        polygon.
+    """
+    bx = grid.cell_bounds_x()  # (nx+1,)
+    by = grid.cell_bounds_y()  # (ny+1,)
+
+    cell_ix, cell_iy = np.meshgrid(
+        np.arange(grid.dimensions[0]),
+        np.arange(grid.dimensions[1]),
+    )  # both (ny, nx)
+
+    # vectorised cell boxes, flattened to (ny*nx,)
+    boxes: np.ndarray = np.asarray(shapely.box(
+        bx[cell_ix].ravel(), by[cell_iy].ravel(),
+        bx[cell_ix + 1].ravel(), by[cell_iy + 1].ravel(),
+    ))
+
+    shapely.prepare(polygon)
+    mask = shapely.intersects(boxes, polygon)
+
+    # cells on the polygon boundary may intersect it only along an edge or at
+    # a corner, which shares no area
+    boundary = mask & ~shapely.within(boxes, polygon)
+    mask[boundary] = ~shapely.touches(boxes[boundary], polygon)
+
+    return mask.reshape(grid.shape)
+
+
 def grid_weights_from_linestring(
     grid: Grid,
     linestring: MultiLineString | LineString,
