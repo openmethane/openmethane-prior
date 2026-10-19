@@ -73,8 +73,11 @@ This domain input file should contain the following:
   * `land_mask` - binary land/sea mask
   * `lambert_conformal` - projection details
   * `cell_name` - unique name for each grid cell based on grid.x.y format
-  * (Optionally) `inventory_mask` - binary mask denoting the area covered by
-    the inventory figures present in the input files
+  * (Optionally) `inventory_mask` - binary mask denoting the land area used to
+    allocate the inventory figures present in the input files
+  * (Optionally) `inventory_political_mask` - binary mask denoting the
+    jurisdiction covered by the inventory, including offshore areas. See
+    [docs/inventory-political-mask.md](docs/inventory-political-mask.md)
 * Attributes
   * `DX`/`XCELL` - size of each grid cell in grid projection coordinates
   * `DY`/`YCELL` - size of each grid cell in grid projection coordinates

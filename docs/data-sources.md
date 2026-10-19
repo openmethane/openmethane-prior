@@ -58,7 +58,12 @@ anthropogenic sectors.
 Alongside the inventory data is an inventory domain, which describes the
 geographic extent where inventory emissions occur. This uses the Open Methane
 [`aust10km` domain](https://openmethane.s3.amazonaws.com/domains/aust10km/v1/domain.aust10km.nc)
-`inventory_mask` which was developed for this purpose.
+`inventory_mask` which was developed for this purpose. `inventory_mask` is
+derived from the National Land Use Map, so it only covers land: it describes
+where land-based proxies may place emissions, not the full jurisdiction of the
+inventory. The `inventory_political_mask` variable describes that jurisdiction,
+including offshore petroleum areas; see
+[inventory-political-mask.md](inventory-political-mask.md).
 
 
 ## UNFCCC CRT categories 
