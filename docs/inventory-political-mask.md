@@ -122,7 +122,8 @@ to 2026 were included, and 2023–24 Safeguard facility links were recorded.
 `tests/integration/test_inventory_political_mask.py` repeats this check for
 the 2023–24 Safeguard year. It fails if any well or facility falls outside
 the mask, or if any pipeline other than Bayu-Undan to Darwin places length
-outside it.
+outside it. It's marked `long_running`, so CI skips it; run it locally with
+`uv run python -m pytest tests/integration/test_inventory_political_mask.py`.
 
 ## Regenerating
 

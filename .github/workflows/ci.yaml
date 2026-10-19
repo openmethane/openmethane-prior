@@ -36,7 +36,7 @@ jobs:
           curl -L -o data/.cache/inputs/gfas_2022-12-07_2022-12-08.nc "https://openmethane.s3.amazonaws.com/tests/gfas/gfas_2022-12-07_2022-12-08.nc"
       - name: Run tests
         run: |
-          uv run python -m pytest -r a -v tests -k "not test_cdsapi_connection"
+          uv run python -m pytest -r a -v tests -k "not test_cdsapi_connection" -m "not long_running"
         env:
           INPUT_CACHE: data/.cache
       # Run tests which require GitHub Actions secrets only on internal PRs and merges

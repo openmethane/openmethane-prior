@@ -14,6 +14,9 @@ from openmethane_prior.lib.grid.geometry import grid_weights_from_linestring
 from openmethane_prior.sectors import all_sectors
 from openmethane_prior.sectors.oil_gas.emission_sources.all_sources import all_emission_sources
 
+# building the aust10km mask takes minutes, which pushes CI past its timeout
+pytestmark = pytest.mark.long_running
+
 # Pipelines which run partly outside Australian jurisdiction, and the most of
 # their length expected in cells outside the mask. See
 # docs/inventory-political-mask.md.
