@@ -1,5 +1,5 @@
 from datetime import date
-from openmethane_prior.lib.units import kg_to_kg_m2_s, kg_to_period_cell_flux, seconds_in_period, days_in_period
+from openmethane_prior.lib.units import kg_to_kg_m2_s, kg_to_period_cell_flux, seconds_in_period, days_in_period, days_in_overlap
 
 
 def test_units_days_in_period():
@@ -12,6 +12,29 @@ def test_units_days_in_period():
     assert days_in_period(date(2020, 2, 28), date(2020, 3, 1)) == 3
     # non-leap year
     assert days_in_period(date(2021, 2, 28), date(2021, 3, 1)) == 2
+
+def test_units_days_in_overlap_unbounded_window():
+    assert days_in_overlap(date(2023, 7, 1), date(2024, 6, 30), None, None) == 366
+
+
+def test_units_days_in_overlap_partial_window():
+    # window ends partway through the period
+    assert days_in_overlap(date(2023, 7, 1), date(2024, 6, 30), None, date(2023, 11, 11)) == 134
+    # window starts partway through the period
+    assert days_in_overlap(date(2023, 7, 1), date(2024, 6, 30), date(2024, 6, 1), None) == 30
+    # window contained within the period
+    assert days_in_overlap(date(2023, 7, 1), date(2024, 6, 30), date(2023, 7, 10), date(2023, 7, 19)) == 10
+    # period contained within the window
+    assert days_in_overlap(date(2023, 10, 1), date(2023, 10, 30), date(2006, 1, 1), date(2023, 11, 11)) == 30
+    # overlapping by a single day
+    assert days_in_overlap(date(2023, 11, 11), date(2023, 11, 30), None, date(2023, 11, 11)) == 1
+
+
+def test_units_days_in_overlap_no_overlap():
+    assert days_in_overlap(date(2023, 12, 1), date(2023, 12, 31), None, date(2023, 11, 11)) == 0
+    assert days_in_overlap(date(2023, 12, 1), date(2023, 12, 31), date(2024, 1, 1), None) == 0
+    assert days_in_overlap(date(2023, 12, 1), date(2023, 12, 31), date(2020, 1, 1), date(2020, 12, 31)) == 0
+
 
 def test_units_seconds_in_period():
     seconds_in_day = 24 * 60 * 60
