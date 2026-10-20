@@ -18,13 +18,16 @@
 
 import xarray as xr
 
-from openmethane_prior.data_sources.inventory import get_sector_emissions_by_code, inventory_data_source
+from openmethane_prior.data_sources.inventory import (
+    get_sector_emissions_by_code,
+    inventory_data_source,
+)
 from openmethane_prior.data_sources.nightlights import night_lights_data_source
 from openmethane_prior.lib import (
-    kg_to_period_cell_flux,
-    logger,
     PriorSector,
     PriorSectorConfig,
+    kg_to_period_cell_flux,
+    logger,
 )
 
 logger = logger.get_logger(__name__)
@@ -58,7 +61,7 @@ def process_emissions(
 sector = PriorSector(
     name="transport",
     emission_category="anthropogenic",
-    unfccc_categories=["1.A.3"], # Transport
+    unfccc_categories=["1.A.3"],  # Transport
     cf_standard_name="land_transport",
     create_estimate=process_emissions,
 )

@@ -28,12 +28,12 @@ from openmethane_prior.data_sources.inventory import (
 )
 from openmethane_prior.data_sources.landuse import landuse_map_data_source
 from openmethane_prior.lib import (
+    PriorSector,
+    PriorSectorConfig,
     kg_to_period_cell_flux,
     logger,
     regrid_data,
     remap_raster,
-    PriorSectorConfig,
-    PriorSector,
 )
 
 logger = logger.get_logger(__name__)
@@ -41,19 +41,20 @@ logger = logger.get_logger(__name__)
 # ALUM Classification Version 8
 # Source: https://www.agriculture.gov.au/abares/aclump/land-use/alum-classification
 alum_codes_agriculture = [
-    520, # Intensive animal production
-    523, # Poultry farms
-    524, # Piggeries
-    525, # Aquaculture
-    526, # Horse studs
-    527, # Saleyards/stockyards
-    542, # Rural residential with agriculture
+    520,  # Intensive animal production
+    523,  # Poultry farms
+    524,  # Piggeries
+    525,  # Aquaculture
+    526,  # Horse studs
+    527,  # Saleyards/stockyards
+    542,  # Rural residential with agriculture
 ]
 
+
 def process_emissions(
-        sector: PriorSector,
-        sector_config: PriorSectorConfig,
-        prior_ds: xr.Dataset,
+    sector: PriorSector,
+    sector_config: PriorSectorConfig,
+    prior_ds: xr.Dataset,
 ):
     config = sector_config.prior_config
 
@@ -71,19 +72,19 @@ def process_emissions(
     lu_crs = landUseData.rio.crs
     landUseData.close()
 
-    dataBand = rasterio.open(landuse_asset.path, engine='rasterio').read()
+    dataBand = rasterio.open(landuse_asset.path, engine="rasterio").read()
     dataBand = dataBand.squeeze()
 
     inventory_domain = sector_config.data_manager.get_asset(inventory_domain_data_source).data
     inventory_mask_regridded = regrid_data(
-        inventory_domain.dataset['inventory_mask'],
+        inventory_domain.dataset["inventory_mask"],
         from_grid=inventory_domain.grid,
         to_grid=config.domain().grid,
     )
 
     # create a mask of pixels which match the sector code
     sector_mask = np.isin(dataBand, alum_codes_agriculture)
-    sector_xr = xr.DataArray(sector_mask, coords={ 'y': lu_y, 'x': lu_x  })
+    sector_xr = xr.DataArray(sector_mask, coords={"y": lu_y, "x": lu_x})
 
     # now aggregate to coarser resolution of the domain grid
     sector_gridded = remap_raster(sector_xr, config.domain().grid, input_crs=lu_crs)
@@ -93,10 +94,10 @@ def process_emissions(
 
     inventory_gridded = remap_raster(sector_xr, inventory_domain.grid, input_crs=lu_crs)
     # now mask to region of inventory
-    inventory_gridded *= inventory_domain.dataset['inventory_mask']
+    inventory_gridded *= inventory_domain.dataset["inventory_mask"]
 
     # calculate the proportion of inventory emissions in each grid cell
-    sector_gridded /=  inventory_gridded.sum().item()
+    sector_gridded /= inventory_gridded.sum().item()
 
     sector_total_emissions = get_sector_emissions_by_code(
         emissions_inventory=emissions_inventory,
@@ -113,18 +114,18 @@ def process_emissions(
 sector = PriorSector(
     name="agriculture",
     emission_category="anthropogenic",
-    unfccc_categories=[ # All Agriculture, except cattle and sheep
-        "3.A.3", # Enteric Fermentation - Swine
-        "3.A.4", # Enteric Fermentation - Other Livestock
-        "3.B.3", # Manure Management - Swine
-        "3.B.4", # Manure Management - Other Livestock
-        "3.C", # Rice Cultivation
-        "3.D", # Agricultural Soils
-        "3.E", # Prescribed Burning of Savannas
-        "3.F", # Field Burning of Agricultural Residues
-        "3.G", # Liming
-        "3.H", # Urea Application
-        "3.I", # Other Carbon-containing Fertilisers
+    unfccc_categories=[  # All Agriculture, except cattle and sheep
+        "3.A.3",  # Enteric Fermentation - Swine
+        "3.A.4",  # Enteric Fermentation - Other Livestock
+        "3.B.3",  # Manure Management - Swine
+        "3.B.4",  # Manure Management - Other Livestock
+        "3.C",  # Rice Cultivation
+        "3.D",  # Agricultural Soils
+        "3.E",  # Prescribed Burning of Savannas
+        "3.F",  # Field Burning of Agricultural Residues
+        "3.G",  # Liming
+        "3.H",  # Urea Application
+        "3.I",  # Other Carbon-containing Fertilisers
     ],
     cf_standard_name="agricultural_production",
     create_estimate=process_emissions,

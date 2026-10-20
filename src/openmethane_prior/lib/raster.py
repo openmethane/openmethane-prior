@@ -8,7 +8,7 @@ from openmethane_prior.lib.grid.grid import Grid
 def remap_raster(
     input_xr: xr.DataArray,
     target_grid: Grid,
-    input_crs: pyproj.crs.CRS = 4326, # EPSG:4362
+    input_crs: pyproj.crs.CRS = 4326,  # EPSG:4362
 ) -> np.ndarray:
     """
     Maps a rasterio dataset onto the domain grid defined by config.
@@ -19,7 +19,9 @@ def remap_raster(
     Returns an np.array in the shape of the domain grid, each cell containing
     the aggregate of raster values who's center point fell within the cell.
     """
-    projection_transformer = pyproj.Transformer.from_crs(crs_from=input_crs, crs_to=target_grid.projection.crs, always_xy=True)
+    projection_transformer = pyproj.Transformer.from_crs(
+        crs_from=input_crs, crs_to=target_grid.projection.crs, always_xy=True
+    )
 
     # construct a bounding box for the target grid, over the input grid
     # this will limit our search space for mapping input values to target cells
@@ -34,20 +36,20 @@ def remap_raster(
     )
 
     # rioxarray makes this easy with clip_box
-    if 'rio' in input_xr:
+    if "rio" in input_xr:
         input_search_space = input_xr.rio.clip_box(
             minx=target_bbox_input_x.min(),
             maxx=target_bbox_input_x.max(),
             miny=target_bbox_input_y.min(),
-            maxy=target_bbox_input_y.max()
+            maxy=target_bbox_input_y.max(),
         )
-    else: # support native xarray.DataArray as well
+    else:  # support native xarray.DataArray as well
         input_search_space = input_xr.where(
-            (target_bbox_input_x.min() <= input_xr.x) &
-            (input_xr.x <= target_bbox_input_x.max()) &
-            (target_bbox_input_y.min() <= input_xr.y) &
-            (input_xr.y <= target_bbox_input_y.max()),
-            drop=True
+            (target_bbox_input_x.min() <= input_xr.x)
+            & (input_xr.x <= target_bbox_input_x.max())
+            & (target_bbox_input_y.min() <= input_xr.y)
+            & (input_xr.y <= target_bbox_input_y.max()),
+            drop=True,
         )
     input_search_space_np = input_search_space.to_numpy()
 

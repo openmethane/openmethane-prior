@@ -69,6 +69,11 @@ line-length = 100
 
 [tool.ruff.format]
 docstring-code-format = true
+# TODO: remove once https://github.com/openmethane/openmethane-prior/pull/232 is merged
+exclude = [
+    "src/openmethane_prior/lib/grid/regrid.py",
+    "tests/unit/test_grid/test_regrid.py",
+]
 
 [tool.ruff.lint]
 select = [

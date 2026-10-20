@@ -18,7 +18,6 @@
 
 """General utilities"""
 
-import cftime
 import datetime
 import gzip
 import importlib
@@ -27,13 +26,14 @@ import pathlib
 import pickle
 import sys
 import typing
+from urllib.parse import urlparse
 
+import cftime
+import geopandas as gpd
 import numpy as np
 import pandas as pd
-import geopandas as gpd
-from numpy.typing import ArrayLike
-from urllib.parse import urlparse
 import xarray as xr
+from numpy.typing import ArrayLike
 
 T = typing.TypeVar("T", bound=ArrayLike | float)
 
@@ -91,17 +91,16 @@ def get_command():
 
 
 def get_timestamped_command():
-    now_utc = datetime.datetime.now(datetime.timezone.utc)
+    now_utc = datetime.datetime.now(datetime.UTC)
     return f"{now_utc.isoformat(sep=' ', timespec='seconds')}: {get_command()}"
 
 
 def get_version():
-    return os.getenv('OPENMETHANE_PRIOR_VERSION', importlib.metadata.version('openmethane_prior'))
+    return os.getenv("OPENMETHANE_PRIOR_VERSION", importlib.metadata.version("openmethane_prior"))
 
 
 def time_bounds(
-    dates: xr.CFTimeIndex,
-    interval: datetime.timedelta = datetime.timedelta(days=1)
+    dates: xr.CFTimeIndex, interval: datetime.timedelta = datetime.timedelta(days=1)
 ) -> list[list[cftime.datetime]]:
     bounds = []
     for period_start in dates:
@@ -151,6 +150,8 @@ def is_url(maybe_url: str) -> bool:
 
 
 DF = typing.TypeVar("DF", bound=pd.DataFrame | gpd.GeoDataFrame)
+
+
 def rows_in_period(
     df: DF,
     start_date: datetime.date,
@@ -159,10 +160,13 @@ def rows_in_period(
     end_field: str = "end_date",
 ) -> DF:
     """Return the rows of the DataFrame df where the period between df[start_field]
-    and df[end_field] overlaps with the period between start_date and end_date."""
+    and df[end_field] overlaps with the period between start_date and end_date.
+    """
     midnight = datetime.time(0, 0)
     period_start = datetime.datetime.combine(date=start_date, time=midnight)
-    period_end = datetime.datetime.combine(date=end_date + datetime.timedelta(days=1), time=midnight)
+    period_end = datetime.datetime.combine(
+        date=end_date + datetime.timedelta(days=1), time=midnight
+    )
 
     return df[
         ((np.isnat(df[start_field])) | (df[start_field] <= np.datetime64(period_end)))

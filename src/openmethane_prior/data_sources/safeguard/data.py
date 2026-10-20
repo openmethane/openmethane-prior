@@ -15,9 +15,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-import pandas as pd
 import pathlib
 import unicodedata
+
+import pandas as pd
 
 from openmethane_prior.lib import ConfiguredDataSource, DataSource
 from openmethane_prior.lib.data_manager.fetchers import fetch_google_sheet_by_name_csv
@@ -33,61 +34,71 @@ ar5_ch4_gwp = 28
 
 # hashable column names for the source data, most are not used
 safeguard_mechanism_csv_columns = [
-    "facility_name", # Facility name
-    "business_name", # Responsible emitter
-    "state", # State/Territory of operation
-    "anzsic", # ANZSIC
-    "erc", # ERC
-    "baseline_emissions_number", # Baseline emissions number
-    "covered_emissions", # Covered emissions
-    "borrowing_adjustment_amount", # Borrowing adjustment amount
-    "accus_issued", # ACCUs issued
-    "accus_deemed_surrendered", # ACCUs deemed surrendered
-    "accus_surrendered", # ACCUs surrendered
-    "smcs_surrendered", # SMCs surrendered
-    "units_relinquished", # Units relinquished
-    "net_emissions", # Net emissions number
-    "net_position", # Net position number
-    "smcs_issued", # SMCs Issued
-    "mymp_net_emissions", # Cumulative MYMP net emissions number
-    "mymp_net_position", # Cumulative MYMP net position number
-    "co2e_co2", # GHG Carbon Dioxide
-    "co2e_ch4", # GHG Methane
-    "co2e_n2o", # GHG Nitrous oxide
-    "co2e_other", # GHG Other
-    "notes", # Notes
+    "facility_name",  # Facility name
+    "business_name",  # Responsible emitter
+    "state",  # State/Territory of operation
+    "anzsic",  # ANZSIC
+    "erc",  # ERC
+    "baseline_emissions_number",  # Baseline emissions number
+    "covered_emissions",  # Covered emissions
+    "borrowing_adjustment_amount",  # Borrowing adjustment amount
+    "accus_issued",  # ACCUs issued
+    "accus_deemed_surrendered",  # ACCUs deemed surrendered
+    "accus_surrendered",  # ACCUs surrendered
+    "smcs_surrendered",  # SMCs surrendered
+    "units_relinquished",  # Units relinquished
+    "net_emissions",  # Net emissions number
+    "net_position",  # Net position number
+    "smcs_issued",  # SMCs Issued
+    "mymp_net_emissions",  # Cumulative MYMP net emissions number
+    "mymp_net_position",  # Cumulative MYMP net position number
+    "co2e_co2",  # GHG Carbon Dioxide
+    "co2e_ch4",  # GHG Methane
+    "co2e_n2o",  # GHG Nitrous oxide
+    "co2e_other",  # GHG Other
+    "notes",  # Notes
 ]
 
 safeguard_locations_csv_columns = [
-    "safeguard_facility_name", # exact facility_name from Safeguard Mechanism
-    "data_source_name", # DataSource name with facility details
-    "data_source_id", # identifier in reference DataSource
-    "notes", # notes about how this location is related to the facility
+    "safeguard_facility_name",  # exact facility_name from Safeguard Mechanism
+    "data_source_name",  # DataSource name with facility details
+    "data_source_id",  # identifier in reference DataSource
+    "notes",  # notes about how this location is related to the facility
 ]
 
 
 def parse_csv_numeric(csv_value: str) -> float | None:
     """Convert messy input values like " 124,138 " to float. Values of "-" are
-    interpreted as None."""
+    interpreted as None.
+    """
     raw = csv_value.strip()
     if raw == "-":
         return None
     return float(raw.replace(",", ""))
 
+
 def parse_csv_text(csv_value: str) -> str | None:
     """Convert messy input values like " 124,138 " to float. Values of "-" are
-    interpreted as None."""
+    interpreted as None.
+    """
     raw = csv_value.strip()
     return unicodedata.normalize("NFKC", csv_value)
 
+
 def parse_safeguard_csv(data_source: ConfiguredDataSource):
     """Read the Safeguard Mechanism Baselines and Emissions Table CSV,
-    returning only the data columns useful for methane estimation."""
+    returning only the data columns useful for methane estimation.
+    """
     safeguard_rows_df = pd.read_csv(
         filepath_or_buffer=data_source.asset_path,
         header=0,
         names=safeguard_mechanism_csv_columns,
-        usecols=["facility_name", "state", "anzsic", "co2e_ch4"],  # from safeguard_mechanism_csv_columns
+        usecols=[
+            "facility_name",
+            "state",
+            "anzsic",
+            "co2e_ch4",
+        ],  # from safeguard_mechanism_csv_columns
         converters={
             "co2e_ch4": parse_csv_numeric,
             "facility_name": parse_csv_text,
@@ -95,14 +106,16 @@ def parse_safeguard_csv(data_source: ConfiguredDataSource):
             "anzsic": parse_csv_text,
         },
         # CER appears to publish this file in windows-1252 encoding
-        encoding='cp1252',
+        encoding="cp1252",
     )
 
     return create_facilities_from_safeguard_rows(
         safeguard_rows_df=safeguard_rows_df,
         reporting_period=(2023, 2024),
-        ch4_gwp=ar5_ch4_gwp, co2_gwp=ar5_co2_gwp,
+        ch4_gwp=ar5_ch4_gwp,
+        co2_gwp=ar5_co2_gwp,
     )
+
 
 # Facility-level emissions reported under the Safeguard Mechanism.
 # Source: https://cer.gov.au/markets/reports-and-data/safeguard-data/2023-24-baselines-and-emissions-data
@@ -116,29 +129,35 @@ safeguard_mechanism_data_source = DataSource(
 
 def fetch_location_csv(data_source: ConfiguredDataSource) -> pathlib.Path:
     # Primary source of external locations
-    external_locations_df = fetch_google_sheet_by_name_csv(data_source.url, "External facility locations")
+    external_locations_df = fetch_google_sheet_by_name_csv(
+        data_source.url, "External facility locations"
+    )
 
     # Petroleum titles sheet has some extra details, but contains columns for
     # Facility name, Data source, and Production license which can be converted
     # into external location references.
     petroleum_titles_df = fetch_google_sheet_by_name_csv(data_source.url, "Petroleum titles")
-    petroleum_locations_df = petroleum_titles_df \
-        .drop(columns=["Responsible emitter", "State"]) \
-        .rename(columns={
+    petroleum_locations_df = petroleum_titles_df.drop(
+        columns=["Responsible emitter", "State"]
+    ).rename(
+        columns={
             "Data source": "Supporting data source",
             "Production license": "Supporting data id",
-        })
+        }
+    )
 
     # Oil and gas sites, which are used as an independent DataSource in the
     # oil_gas sector, already include the Facility name. Create a row for each
     # facility in this with the facility name as both the name and the id.
     oil_gas_sites = fetch_google_sheet_by_name_csv(data_source.url, "Oil and gas sites")
     oil_gas_facilities = oil_gas_sites["Facility name"].unique()
-    oil_gas_locations_df = pd.DataFrame({
-        "Facility name": oil_gas_facilities,
-        "Supporting data id": oil_gas_facilities,
-        "Supporting data source": "oil-gas-sites",
-    })
+    oil_gas_locations_df = pd.DataFrame(
+        {
+            "Facility name": oil_gas_facilities,
+            "Supporting data id": oil_gas_facilities,
+            "Supporting data source": "oil-gas-sites",
+        }
+    )
 
     # Combine the sources of facility locations and write them to a CSV file
     df = pd.concat([external_locations_df, oil_gas_locations_df, petroleum_locations_df])

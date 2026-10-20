@@ -23,9 +23,9 @@ import zipfile
 from openmethane_prior.lib import ConfiguredDataSource, DataSource
 from openmethane_prior.lib.data_manager.parsers import parse_csv
 
-
 # filename of the GeoTIFF file inside the official zip file source
-NLUM_GEOTIFF_FILENAME="NLUM_v7_250_ALUMV8_2020_21_alb.tif"
+NLUM_GEOTIFF_FILENAME = "NLUM_v7_250_ALUMV8_2020_21_alb.tif"
+
 
 def landuse_fetch(data_source: ConfiguredDataSource) -> pathlib.Path:
     """
@@ -38,13 +38,14 @@ def landuse_fetch(data_source: ConfiguredDataSource) -> pathlib.Path:
         filename=data_source.data_path / os.path.basename(data_source.url),
     )
 
-    with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+    with zipfile.ZipFile(zip_path, "r") as zip_ref:
         zip_ref.extract(NLUM_GEOTIFF_FILENAME, data_source.data_path)
 
     # clean up the zip once we've extracted the geotiff
     os.remove(zip_path)
 
     return data_source.asset_path
+
 
 # source: https://www.agriculture.gov.au/abares/aclump/land-use/land-use-of-australia-2010-11-to-2020-21
 landuse_map_data_source = DataSource(

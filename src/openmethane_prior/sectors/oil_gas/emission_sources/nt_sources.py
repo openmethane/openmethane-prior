@@ -16,6 +16,7 @@
 # limitations under the License.
 #
 import datetime
+
 import geopandas as gpd
 import numpy as np
 
@@ -31,7 +32,8 @@ def nt_emission_sources(
 ) -> gpd.GeoDataFrame:
     """Create normalised emission source DataFrame by combining NT petroleum
     wells dataset for locations, with petroleum title dataset for production
-    start/end dates."""
+    start/end dates.
+    """
     nt_wells_df: gpd.GeoDataFrame = nt_wells_da.data
     nt_titles_df: gpd.GeoDataFrame = nt_titles_da.data
 
@@ -63,19 +65,23 @@ def nt_emission_sources(
 
     # exclude any emission sources that would not have been emitting during
     # the period between start_date and end_date
-    sources_df = rows_in_period(sources_df, start_date=start_date, end_date=end_date, end_field="DT_EXPIRY")
+    sources_df = rows_in_period(
+        sources_df, start_date=start_date, end_date=end_date, end_field="DT_EXPIRY"
+    )
 
     # after the join with titles, there may be multiple rows for each well.
     # drop duplicates so there is only one entry for each location.
     sources_df = sources_df.drop_duplicates(["WELLNAME"])
 
     # normalise output to match emission sources format
-    sources_df = sources_df.rename(columns={
-        "WELLNAME": "data_source_id",
-        "TITLEID": "group_id",
-        "start_date": "activity_start",
-        "DT_EXPIRY": "activity_end",
-    })
+    sources_df = sources_df.rename(
+        columns={
+            "WELLNAME": "data_source_id",
+            "TITLEID": "group_id",
+            "start_date": "activity_start",
+            "DT_EXPIRY": "activity_end",
+        }
+    )
     sources_df["data_source"] = nt_wells_da.name
     sources_df["site_type"] = "drillhole-unknown"
 

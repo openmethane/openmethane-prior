@@ -1,4 +1,5 @@
 import os
+
 import pytest
 
 from openmethane_prior.lib import create_prior
@@ -8,7 +9,10 @@ from openmethane_prior.sectors.fire import gfas_data_source, sector
 def test_cdsapi_connection(tmp_path, data_manager, start_date, end_date):
     """Test fetching GFAS data from the authenticated Copernicus ADS service.
     Note that this requires valid ADS credentials to be present."""
-    expected_path = data_manager.data_path / f"gfas_{start_date.strftime('%Y-%m-%d')}_{end_date.strftime('%Y-%m-%d')}.nc"
+    expected_path = (
+        data_manager.data_path
+        / f"gfas_{start_date.strftime('%Y-%m-%d')}_{end_date.strftime('%Y-%m-%d')}.nc"
+    )
     assert not os.path.exists(expected_path)
 
     gfas_asset = data_manager.get_asset(gfas_data_source)
@@ -21,5 +25,5 @@ def test_sector_fire(input_files, config):
     """Run the full fire sector over the au-test domain."""
     prior_fire_ds = create_prior(config, [sector])
 
-    assert prior_fire_ds['ch4_sector_fire'].max().item() == 5.498670963000052e-11
-    assert prior_fire_ds['ch4_sector_fire'].mean().item() == 3.6974516872713414e-13
+    assert prior_fire_ds["ch4_sector_fire"].max().item() == 5.498670963000052e-11
+    assert prior_fire_ds["ch4_sector_fire"].mean().item() == 3.6974516872713414e-13

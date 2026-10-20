@@ -1,5 +1,5 @@
-import xarray as xr
 import numpy as np
+import xarray as xr
 from helpers.plot import plot_map, plot_timestep_maps
 
 output_file = "../data/outputs/prior-emissions.nc"
@@ -17,6 +17,3 @@ numeric_keys = [key for key in ds.keys() if np.issubdtype(ds[key].dtype, np.numb
 longest_key = len(max(numeric_keys, key=len))
 for var in numeric_keys:
     print(f"{var: >{longest_key}}: {ds[var].min():.2e} - {ds[var].max():.2e}")
-
-
-

@@ -1,8 +1,10 @@
 import datetime
+
 import pytest
 
-from openmethane_prior.lib import create_prior, PriorConfig
+from openmethane_prior.lib import PriorConfig, create_prior
 from openmethane_prior.sectors.waste import sector
+
 
 @pytest.fixture()
 def waste_config_params(cache_dir, config_params, tmp_path):
@@ -29,8 +31,8 @@ def test_sector_waste_pre_sgm(input_files, waste_config_params):
     # run the prior and return the result
     prior_waste_ds = create_prior(config, [sector])
 
-    assert prior_waste_ds['ch4_sector_waste'].max().item() == 2.8293600388956136e-12
-    assert prior_waste_ds['ch4_sector_waste'].mean().item() == 4.686126621702409e-14
+    assert prior_waste_ds["ch4_sector_waste"].max().item() == 2.8293600388956136e-12
+    assert prior_waste_ds["ch4_sector_waste"].mean().item() == 4.686126621702409e-14
 
 
 def test_waste_sector_post_sgm(input_files, waste_config_params):
@@ -48,5 +50,5 @@ def test_waste_sector_post_sgm(input_files, waste_config_params):
     # run the prior and return the result
     prior_waste_ds = create_prior(config, [sector])
 
-    assert prior_waste_ds['ch4_sector_waste'].max().item() == 2.8041191766048482e-12
-    assert prior_waste_ds['ch4_sector_waste'].mean().item() == 4.644321472144062e-14
+    assert prior_waste_ds["ch4_sector_waste"].max().item() == 2.8041191766048482e-12
+    assert prior_waste_ds["ch4_sector_waste"].mean().item() == 4.644321472144062e-14

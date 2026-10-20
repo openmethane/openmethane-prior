@@ -3,7 +3,11 @@ import pytest
 import xarray as xr
 
 from openmethane_prior.lib.grid.grid import Grid
-from openmethane_prior.lib.regrid import _compute_cell_edges, _compute_from_areas, regrid_data_array_conservative
+from openmethane_prior.lib.regrid import (
+    _compute_cell_edges,
+    _compute_from_areas,
+    regrid_data_array_conservative,
+)
 
 
 # 2×2 domain: 2° cells covering lon 138–142, lat –38 to –34 (eastern Australia)
@@ -79,7 +83,9 @@ def test_nonoverlapping_source_all_zero(domain_grid, tmp_path):
 
 def test_extensive_differs_from_density(domain_grid, source_da, tmp_path):
     r_density = regrid_data_array_conservative(source_da, domain_grid, tmp_path, "text_d")
-    r_extensive = regrid_data_array_conservative(source_da, domain_grid, tmp_path, "text_e", extensive=True)
+    r_extensive = regrid_data_array_conservative(
+        source_da, domain_grid, tmp_path, "text_e", extensive=True
+    )
 
     # source cell areas are ~1e10 m², so extensive normalises values down by that factor
     assert not np.allclose(r_density.values, r_extensive.values)
@@ -100,7 +106,9 @@ def test_extensive_normalises_by_source_cell_area(domain_grid, source_da, tmp_pa
         coords=source_da.coords,
     )
     r_manual = regrid_data_array_conservative(density_da, domain_grid, tmp_path, "tnorm_m")
-    r_extensive = regrid_data_array_conservative(source_da, domain_grid, tmp_path, "tnorm_e", extensive=True)
+    r_extensive = regrid_data_array_conservative(
+        source_da, domain_grid, tmp_path, "tnorm_e", extensive=True
+    )
 
     np.testing.assert_allclose(r_extensive.values, r_manual.values, rtol=1e-5)
 

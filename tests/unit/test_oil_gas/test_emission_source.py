@@ -1,27 +1,31 @@
 import datetime
+
 import geopandas as gpd
 import numpy as np
 import pandas as pd
 import shapely
 
 from openmethane_prior.sectors.oil_gas.emission_source import (
-    normalise_emission_source_df,
     allocate_emissions_to_sources,
+    normalise_emission_source_df,
 )
 
 
 def test_normalise_emission_source():
-    test_df = gpd.GeoDataFrame({
-        "geometry": [shapely.Point(1.0, 2.0)],
-        "site_type": ["drillhole-csg"],
-        "activity_start": [np.datetime64(datetime.datetime(2022, 1, 1, 0, 0))],
-        "activity_end": [np.datetime64(datetime.datetime(2024, 1, 1, 0, 0))],
-        "data_source": ["nsw-drillholes"],
-        "data_source_id": ["012345"],
-        "group_id": ["xyz"],
-        "state": ["VIC"],
-        "extra_column": [0],
-    }, crs="EPSG:7844")
+    test_df = gpd.GeoDataFrame(
+        {
+            "geometry": [shapely.Point(1.0, 2.0)],
+            "site_type": ["drillhole-csg"],
+            "activity_start": [np.datetime64(datetime.datetime(2022, 1, 1, 0, 0))],
+            "activity_end": [np.datetime64(datetime.datetime(2024, 1, 1, 0, 0))],
+            "data_source": ["nsw-drillholes"],
+            "data_source_id": ["012345"],
+            "group_id": ["xyz"],
+            "state": ["VIC"],
+            "extra_column": [0],
+        },
+        crs="EPSG:7844",
+    )
 
     result_df = normalise_emission_source_df(test_df, "EPSG:4326")
 
@@ -106,7 +110,7 @@ def test_allocate_emissions_to_sources_facilities():
     drillholes_mask = df["site_type"] == "drillhole-csg"
     np.testing.assert_approx_equal(
         df[drillholes_mask]["emissions_quantity"].sum(),
-        df[~drillholes_mask]["emissions_quantity"].sum()
+        df[~drillholes_mask]["emissions_quantity"].sum(),
     )
 
 
@@ -133,7 +137,7 @@ def test_allocate_emissions_to_sources_pipelines():
     drillholes_mask = df["site_type"] == "drillhole-csg"
     np.testing.assert_approx_equal(
         df[drillholes_mask]["emissions_quantity"].sum(),
-        df[~drillholes_mask]["emissions_quantity"].sum()
+        df[~drillholes_mask]["emissions_quantity"].sum(),
     )
 
 
@@ -166,11 +170,11 @@ def test_allocate_emissions_to_sources_multiple():
     facilities_mask = df["site_type"] == "facility-unknown"
     np.testing.assert_approx_equal(
         df[drillholes_mask]["emissions_quantity"].sum(),
-        df[pipelines_mask]["emissions_quantity"].sum()
+        df[pipelines_mask]["emissions_quantity"].sum(),
     )
     np.testing.assert_approx_equal(
         df[drillholes_mask]["emissions_quantity"].sum(),
-        df[facilities_mask]["emissions_quantity"].sum()
+        df[facilities_mask]["emissions_quantity"].sum(),
     )
 
 
@@ -204,9 +208,9 @@ def test_allocate_emissions_to_sources_weights():
     facilities_mask = df["site_type"] == "facility-unknown"
     np.testing.assert_approx_equal(
         df[drillholes_mask]["emissions_quantity"].sum(),
-        df[pipelines_mask]["emissions_quantity"].sum()
+        df[pipelines_mask]["emissions_quantity"].sum(),
     )
     np.testing.assert_approx_equal(
         df[drillholes_mask]["emissions_quantity"].sum(),
-        df[facilities_mask]["emissions_quantity"].sum()
+        df[facilities_mask]["emissions_quantity"].sum(),
     )

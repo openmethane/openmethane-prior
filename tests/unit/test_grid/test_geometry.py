@@ -19,12 +19,15 @@ def test_polygon_covers_inner_cells(small_grid):
     mask = grid_mask_from_polygon(small_grid, polygon)
 
     assert mask.shape == small_grid.shape
-    np.testing.assert_array_equal(mask, [
-        [False, False, False, False],
-        [False, True,  True,  False],
-        [False, True,  True,  False],
-        [False, False, False, False],
-    ])
+    np.testing.assert_array_equal(
+        mask,
+        [
+            [False, False, False, False],
+            [False, True, True, False],
+            [False, True, True, False],
+            [False, False, False, False],
+        ],
+    )
 
 
 def test_polygon_covers_full_grid(small_grid):
@@ -49,12 +52,15 @@ def test_multipolygon_covers_two_separate_regions(small_grid):
 
     mask = grid_mask_from_polygon(small_grid, multi)
 
-    np.testing.assert_array_equal(mask, [
-        [True,  False, False, False],
-        [False, False, False, False],
-        [False, False, False, False],
-        [False, False, False, True ],
-    ])
+    np.testing.assert_array_equal(
+        mask,
+        [
+            [True, False, False, False],
+            [False, False, False, False],
+            [False, False, False, False],
+            [False, False, False, True],
+        ],
+    )
 
 
 def test_mask_shape_matches_grid_shape():
@@ -88,12 +94,15 @@ def test_linestring_horizontal_full_row(small_grid):
     line = LineString([(0, 0.5), (4, 0.5)])
     weights = grid_weights_from_linestring(small_grid, line)
 
-    np.testing.assert_allclose(weights, [
-        [0.25, 0.25, 0.25, 0.25],
-        [0.0,  0.0,  0.0,  0.0 ],
-        [0.0,  0.0,  0.0,  0.0 ],
-        [0.0,  0.0,  0.0,  0.0 ],
-    ])
+    np.testing.assert_allclose(
+        weights,
+        [
+            [0.25, 0.25, 0.25, 0.25],
+            [0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0],
+        ],
+    )
 
 
 def test_linestring_vertical_full_column(small_grid):
@@ -101,12 +110,15 @@ def test_linestring_vertical_full_column(small_grid):
     line = LineString([(0.5, 0), (0.5, 4)])
     weights = grid_weights_from_linestring(small_grid, line)
 
-    np.testing.assert_allclose(weights, [
-        [0.25, 0.0, 0.0, 0.0],
-        [0.25, 0.0, 0.0, 0.0],
-        [0.25, 0.0, 0.0, 0.0],
-        [0.25, 0.0, 0.0, 0.0],
-    ])
+    np.testing.assert_allclose(
+        weights,
+        [
+            [0.25, 0.0, 0.0, 0.0],
+            [0.25, 0.0, 0.0, 0.0],
+            [0.25, 0.0, 0.0, 0.0],
+            [0.25, 0.0, 0.0, 0.0],
+        ],
+    )
 
 
 def test_linestring_diagonal(small_grid):
@@ -115,12 +127,15 @@ def test_linestring_diagonal(small_grid):
     line = LineString([(0, 0), (4, 4)])
     weights = grid_weights_from_linestring(small_grid, line)
 
-    np.testing.assert_allclose(weights, [
-        [0.25, 0.0,  0.0,  0.0 ],
-        [0.0,  0.25, 0.0,  0.0 ],
-        [0.0,  0.0,  0.25, 0.0 ],
-        [0.0,  0.0,  0.0,  0.25],
-    ])
+    np.testing.assert_allclose(
+        weights,
+        [
+            [0.25, 0.0, 0.0, 0.0],
+            [0.0, 0.25, 0.0, 0.0],
+            [0.0, 0.0, 0.25, 0.0],
+            [0.0, 0.0, 0.0, 0.25],
+        ],
+    )
 
 
 def test_linestring_unequal_cell_lengths(small_grid):
@@ -173,10 +188,12 @@ def test_multilinestring_two_segments(small_grid):
     # Segment A: (0,0.5)→(1,0.5), length 1 in cell (0,0)
     # Segment B: (2,0.5)→(3,0.5), length 1 in cell (2,0)
     # Total length 2 → weight 0.5 per segment, 0.5 per cell.
-    multi = MultiLineString([
-        [(0, 0.5), (1, 0.5)],
-        [(2, 0.5), (3, 0.5)],
-    ])
+    multi = MultiLineString(
+        [
+            [(0, 0.5), (1, 0.5)],
+            [(2, 0.5), (3, 0.5)],
+        ]
+    )
     weights = grid_weights_from_linestring(small_grid, multi)
 
     np.testing.assert_allclose(weights[0], [0.5, 0.0, 0.5, 0.0])
@@ -184,10 +201,12 @@ def test_multilinestring_two_segments(small_grid):
 
 
 def test_multilinestring_weights_sum_to_one_when_inside(small_grid):
-    multi = MultiLineString([
-        [(0.1, 0.5), (1.9, 0.5)],
-        [(0.5, 1.5), (0.5, 3.5)],
-    ])
+    multi = MultiLineString(
+        [
+            [(0.1, 0.5), (1.9, 0.5)],
+            [(0.5, 1.5), (0.5, 3.5)],
+        ]
+    )
     weights = grid_weights_from_linestring(small_grid, multi)
 
     np.testing.assert_allclose(weights.sum(), 1.0)

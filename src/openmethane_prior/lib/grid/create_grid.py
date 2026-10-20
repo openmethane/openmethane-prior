@@ -19,13 +19,11 @@
 import pyproj
 import xarray as xr
 
-from .grid import Grid
 from ..utils import list_cf_grid_mappings
+from .grid import Grid
 
 
-def create_grid_from_domain(
-    domain_ds: xr.Dataset
-) -> Grid:
+def create_grid_from_domain(domain_ds: xr.Dataset) -> Grid:
     """
     Make a Grid object from a prior domain dataset.
     """
@@ -100,7 +98,8 @@ def create_grid_from_mcip(
 
 def create_grid_from_dataset(ds: xr.Dataset) -> Grid:
     """Determine the type of NetCDF input and build a Grid from its data and
-    attributes."""
+    attributes.
+    """
     if "Conventions" in ds.attrs:
         return create_grid_from_domain(ds)
     else:

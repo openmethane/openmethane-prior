@@ -30,14 +30,17 @@ def parse_csv(data_source: ConfiguredDataSource) -> pd.DataFrame:
 def parse_geo(data_source: ConfiguredDataSource, source_crs: pyproj.CRS = None):
     """Read and parse a file containing a collection of geometry vector data
     into a geopandas GeoDataFrame. Asset file type can be anything supported by
-    pyogrio, which includes GeoJSON, GeoPackage, Shapefiles, etc."""
+    pyogrio, which includes GeoJSON, GeoPackage, Shapefiles, etc.
+    """
     geo_df = gpd.read_file(data_source.asset_path)
 
     if geo_df.crs is None:
         if source_crs is not None:
             geo_df = geo_df.set_crs(source_crs)
         else:
-            raise ValueError("parse_geo could not determine CRS, must be called manually with source_crs parameter")
+            raise ValueError(
+                "parse_geo could not determine CRS, must be called manually with source_crs parameter"
+            )
 
     # convert the geometries into the prior projection to ensure downstream
     # comparisons are done using the same coordinate system
@@ -66,6 +69,7 @@ def parse_geo_xlsx(
         parse=parse_geo_xlsx("x_col", "y_col", "EPSG:7844")
       )
     """
+
     def _parser(data_source: ConfiguredDataSource):
         df = parse_xlsx(data_source)
 

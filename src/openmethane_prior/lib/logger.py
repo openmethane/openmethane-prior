@@ -17,6 +17,7 @@ import logging
 import os
 import pathlib
 
+
 def _parse_logger_env():
     """
     Parses environment variables and sets up logging based on their values.
@@ -39,7 +40,7 @@ def _parse_logger_env():
         if LOG_LEVEL in log_levels.keys():
             log_level = log_levels[LOG_LEVEL]
         else:
-            valid_levels = ', '.join(log_levels.keys())
+            valid_levels = ", ".join(log_levels.keys())
             logging.warning(
                 f"LOG_LEVEL={LOG_LEVEL} is not a valid log level, must be one of: {valid_levels}"
             )
@@ -60,9 +61,11 @@ def _parse_logger_env():
 
     return log_level, log_file
 
+
 # configure logging automatically when this module is invoked
 log_level, log_file = _parse_logger_env()
 logging.basicConfig(level=log_level)
+
 
 def get_logger(package_name: str) -> logging.Logger:
     logger = logging.getLogger(package_name)
@@ -74,9 +77,11 @@ def get_logger(package_name: str) -> logging.Logger:
 
     return logger
 
+
 # see: https://stackoverflow.com/a/44692178
 class DuplicateFilter(logging.Filter):
     """Logging filter that prevents duplicate log lines. Use with caution!"""
+
     def filter(self, record):
         current_log = (record.module, record.levelno, record.msg)
         if current_log != getattr(self, "last_log", None):

@@ -30,7 +30,7 @@ def gas_supply_emissions(
     domain_grid: Grid,
     facilities_df: pd.DataFrame,
     au_states: gpd.GeoDataFrame,
-    nightlights: np.ndarray[tuple[int, int], np.dtype[np.float64]]
+    nightlights: np.ndarray[tuple[int, int], np.dtype[np.float64]],
 ) -> np.ndarray[tuple[int, int], np.dtype[np.float64]]:
     """Allocates emissions from gas supply networks based on nighttime lights
     in their state. This function aggregates emissions from all facilities in
@@ -44,7 +44,9 @@ def gas_supply_emissions(
     """
     gridded_emission = np.zeros(domain_grid.shape)
 
-    logger.debug(f"Found {len(facilities_df)} gas supply facilities totalling {facilities_df['ch4_kg'].sum() / 1e6:.2f} kt CH4 in the period")
+    logger.debug(
+        f"Found {len(facilities_df)} gas supply facilities totalling {facilities_df['ch4_kg'].sum() / 1e6:.2f} kt CH4 in the period"
+    )
     for state in facilities_df["state"].unique():
         # combine all gas supply facility emissions in the state
         state_facilities = facilities_df[facilities_df["state"] == state]

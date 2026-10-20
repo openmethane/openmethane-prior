@@ -17,7 +17,7 @@
 #
 from .config import PriorConfig
 from .data_manager.manager import DataManager
-from .outputs import create_output_dataset, add_ch4_total, add_sector
+from .outputs import add_ch4_total, add_sector, create_output_dataset
 from .sector.config import PriorSectorConfig
 from .sector.sector import PriorSector
 

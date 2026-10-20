@@ -17,8 +17,9 @@ def test_gas_supply(aust10km_config):
     au_states_df = data_manager.get_asset(au_shapes_states_data_source).data
     nightlights_da = data_manager.get_asset(night_lights_data_source)
     safeguard_facilities_df = data_manager.get_asset(safeguard_mechanism_data_source).data
-    gas_supply_facilities_mask = safeguard_facilities_df["anzsic_code"].str.startswith("27") \
-                                 & safeguard_facilities_df["state"].isin(au_states_df["short_name"])
+    gas_supply_facilities_mask = safeguard_facilities_df["anzsic_code"].str.startswith(
+        "27"
+    ) & safeguard_facilities_df["state"].isin(au_states_df["short_name"])
     gas_supply_facilities_df = safeguard_facilities_df[gas_supply_facilities_mask]
 
     result = gas_supply_emissions(

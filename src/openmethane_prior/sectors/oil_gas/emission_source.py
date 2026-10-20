@@ -15,10 +15,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-import numpy as np
-import geopandas as gpd
-import pandas as pd
 from typing import Any
+
+import geopandas as gpd
+import numpy as np
+import pandas as pd
 
 from openmethane_prior.lib import logger
 
@@ -35,32 +36,24 @@ emission_source_dtypes = {
     # The location of the site (typically a POINT or POLYGON). This column
     # is typically provided by GeoDataFrame.
     "geometry": "geometry",
-
     # A string which can be used to determine what type of site/facility is at
     # this location. Valid values are documented in emission_source_site_types.
     "site_type": str,
-
     # The earliest date emissions may have occurred at this site.
     "activity_start": np.datetime64,
-
     # The latest date emissions may have occurred at this site.
     "activity_end": np.datetime64,
-
     # (Optional) the "name" value of the data source where this site was
     # included.
     "data_source": str,
-
     # (Optional) a unique id for this site in the specified data source.
     "data_source_id": str,
-
     # (Optional) a string identifying a group of locations this site is part
     # of. A group could be a title/license area, a field, etc.
     "group_id": str,
-
     # (Optional) the state/region the emission source is in the jurisdiction
     # of. Can be useful for attributing inventory emissions, for example.
     "state": str,
-
     # (Optional) a weighting which can be used to scale emissions from this
     # source relative to others of the same site_type. I.e. for a pipeline,
     # this might be the pipeline length.
@@ -70,7 +63,7 @@ emission_source_dtypes = {
 
 def normalise_emission_source_df(
     df: gpd.GeoDataFrame,
-    crs: Any, # anything supported by GeoDataFrame.to_crs
+    crs: Any,  # anything supported by GeoDataFrame.to_crs
 ) -> gpd.GeoDataFrame:
     normalised_df = df.copy()
 
@@ -94,19 +87,24 @@ def allocate_emissions_to_sources(
     emission_mass: float,
 ):
     """Distribute a single total emission across all emission sources in
-    sources_df which match sources_mask."""
+    sources_df which match sources_mask.
+    """
     # since we will use addition to allocate emission to each source, ensure
     # nans are replaced with zeros prior to addition
     is_nan = pd.isna(sources_df["emissions_quantity"])
     sources_df.loc[sources_mask & is_nan, "emissions_quantity"] = 0
 
     # divide the selected sources into drillholes and other facilities
-    drillholes_mask = sources_mask \
-                      & ~pd.isna(sources_df["site_type"]) \
-                      & sources_df["site_type"].str.startswith("drillhole")
-    pipelines_mask = sources_mask \
-                      & ~pd.isna(sources_df["site_type"]) \
-                      & sources_df["site_type"].str.startswith("pipeline")
+    drillholes_mask = (
+        sources_mask
+        & ~pd.isna(sources_df["site_type"])
+        & sources_df["site_type"].str.startswith("drillhole")
+    )
+    pipelines_mask = (
+        sources_mask
+        & ~pd.isna(sources_df["site_type"])
+        & sources_df["site_type"].str.startswith("pipeline")
+    )
     facilities_mask = sources_mask & ~drillholes_mask & ~pipelines_mask
 
     # each source in the set may already have a weight based on the source type
@@ -127,10 +125,14 @@ def allocate_emissions_to_sources(
         # turn pipeline weights into a proportion of total length
         sources_weight[pipelines_mask] *= drillhole_dividend / sources_weight[pipelines_mask].sum()
     if facility_count > 0:
-        sources_weight[facilities_mask] *= drillhole_dividend / sources_weight[facilities_mask].sum()
+        sources_weight[facilities_mask] *= (
+            drillhole_dividend / sources_weight[facilities_mask].sum()
+        )
 
     # turn all weights into a proportion of the total
     sources_weight[sources_mask] /= sources_weight[sources_mask].sum()
 
     # naively allocate the emissions across each emission source equally
-    sources_df.loc[sources_mask, "emissions_quantity"] += sources_weight[sources_mask] * emission_mass
+    sources_df.loc[sources_mask, "emissions_quantity"] += (
+        sources_weight[sources_mask] * emission_mass
+    )

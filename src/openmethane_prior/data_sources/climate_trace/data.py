@@ -22,6 +22,7 @@ import zipfile
 
 from openmethane_prior.lib import ConfiguredDataSource, DataSource
 
+
 def zip_fetch_extractall(data_source: ConfiguredDataSource) -> pathlib.Path:
     """
     Download a zip file specified by DataSource.url, and extract the contents
@@ -33,7 +34,7 @@ def zip_fetch_extractall(data_source: ConfiguredDataSource) -> pathlib.Path:
         filename=data_source.data_path / os.path.basename(data_source.url),
     )
 
-    with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+    with zipfile.ZipFile(zip_path, "r") as zip_ref:
         # WARNING: this is dangerous for untrusted zip files
         zip_ref.extractall(data_source.asset_path)
 
@@ -42,10 +43,11 @@ def zip_fetch_extractall(data_source: ConfiguredDataSource) -> pathlib.Path:
 
     return data_source.asset_path
 
+
 # source: https://climatetrace.org/data - by: Country - Australia, emission type: CH4
 climate_trace_data_source = DataSource(
     name="climate-trace-aus",
     url="https://downloads.climatetrace.org/v5.0.0/country_packages/ch4/AUS.zip",
-    file_path='climate-trace-AUS',
+    file_path="climate-trace-AUS",
     fetch=zip_fetch_extractall,
 )

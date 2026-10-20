@@ -17,6 +17,7 @@
 #
 import calendar
 import datetime
+
 import geopandas as gpd
 import pandas as pd
 
@@ -43,7 +44,8 @@ def parse_emissions_sources(data_source: ConfiguredDataSource) -> pd.DataFrame:
 
 def parse_emissions_sources_geo(data_source: ConfiguredDataSource) -> gpd.GeoDataFrame:
     """Read and parse a Climate TRACE emissions sources CSV file into
-    a GeoDataFrame with Point geometry in the domain CRS."""
+    a GeoDataFrame with Point geometry in the domain CRS.
+    """
     df = parse_emissions_sources(data_source)
 
     gdf = gpd.GeoDataFrame(
@@ -68,7 +70,9 @@ def filter_emissions_sources(
     """
     # periods in the dataset always end on the last day of the month
     period_end_month_days = calendar.monthrange(period_end.year, period_end.month)[1]
-    period_end_month_end = datetime.datetime(period_end.year, period_end.month, period_end_month_days, 0, 0, 0)
+    period_end_month_end = datetime.datetime(
+        period_end.year, period_end.month, period_end_month_days, 0, 0, 0
+    )
 
     if period_start.year != period_end.year or period_start.month != period_end.month:
         # if we want to run a prior across multiple months, we will have to
@@ -80,6 +84,8 @@ def filter_emissions_sources(
     data_period_latest = emissions_sources_df["end_time"].max()
     target_period = data_period_latest if period_end >= data_period_latest else period_end_month_end
 
-    emissions_sources_filtered_df = emissions_sources_df[emissions_sources_df["end_time"] == target_period]
+    emissions_sources_filtered_df = emissions_sources_df[
+        emissions_sources_df["end_time"] == target_period
+    ]
 
     return emissions_sources_filtered_df

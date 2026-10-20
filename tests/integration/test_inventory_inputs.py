@@ -1,13 +1,14 @@
 import datetime
 import json
+
 import numpy as np
 import pandas as pd
 import pytest
 
 from openmethane_prior.data_sources.inventory import (
+    get_sector_emissions_by_code,
     inventory_data_source,
     unfccc_codes_data_source,
-    get_sector_emissions_by_code,
 )
 from openmethane_prior.sectors import all_sectors
 
@@ -15,6 +16,7 @@ from openmethane_prior.sectors import all_sectors
 @pytest.fixture()
 def inventory_df(input_files, data_manager):
     return data_manager.get_asset(inventory_data_source).data
+
 
 @pytest.fixture()
 def all_sector_meta():
@@ -73,7 +75,10 @@ def test_inventory_unfccc_codes(input_files, data_manager):
             inventory_json["value"],
             columns=[
                 "InventoryYear_ID",
-                "UNFCCC_Level_1", "UNFCCC_Level_2", "UNFCCC_Level_3", "UNFCCC_Level_4",
+                "UNFCCC_Level_1",
+                "UNFCCC_Level_2",
+                "UNFCCC_Level_3",
+                "UNFCCC_Level_4",
                 "Gas_Level_0",
                 "Gg",
             ],

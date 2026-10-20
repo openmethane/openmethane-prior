@@ -16,16 +16,18 @@
 # limitations under the License.
 #
 import datetime
+
 import pandas as pd
 
-from openmethane_prior.lib.units import days_in_period
 from openmethane_prior.lib.logger import get_logger
+from openmethane_prior.lib.units import days_in_period
 
 from .unfccc import is_code_in_code_family
 
 logger = get_logger(__name__)
 
 _LEVEL_COLUMNS = ["UNFCCC_Level_1", "UNFCCC_Level_2", "UNFCCC_Level_3", "UNFCCC_Level_4"]
+
 
 def kt_to_kg(kilotonnes):
     """Convert measures in kilotonnes to kilograms."""
@@ -36,13 +38,17 @@ def kt_to_kg(kilotonnes):
 1st - June 30th of the following year. In their API, ANGA specifies a single
 year indicating the end year of the financial year for that data. I.e. "2023"
 references the "2022/2023" financial year."""
+
+
 def financial_year_start(year: int) -> datetime.datetime:
     """Return the start date of an ANGA inventory financial year."""
     return datetime.datetime(year - 1, 7, 1)
 
+
 def financial_year_end(year: int) -> datetime.datetime:
     """Return the end date of an ANGA inventory financial year."""
     return datetime.datetime(year, 6, 30) + datetime.timedelta(hours=24)
+
 
 def financial_year_from_date(date: datetime.date) -> int:
     """Return the ANGA inventory financial year a date falls in."""
@@ -54,7 +60,10 @@ def create_inventory_df(anga_inventory_records, unfccc_df: pd.DataFrame) -> pd.D
         anga_inventory_records,
         columns=[
             "InventoryYear_ID",
-            "UNFCCC_Level_1", "UNFCCC_Level_2", "UNFCCC_Level_3", "UNFCCC_Level_4",
+            "UNFCCC_Level_1",
+            "UNFCCC_Level_2",
+            "UNFCCC_Level_3",
+            "UNFCCC_Level_4",
             "Gas_Level_0",
             "Gg",
         ],
@@ -117,9 +126,7 @@ def get_sector_emissions_by_code(
 
     if inventory_year not in year_periods:
         inventory_year = year_periods[-1] if inventory_year > year_periods[-1] else year_periods[0]
-        logger.warning(
-            f"inventory does not cover {start_date}, using {inventory_year} inventory"
-        )
+        logger.warning(f"inventory does not cover {start_date}, using {inventory_year} inventory")
 
     year_days = (financial_year_end(inventory_year) - financial_year_start(inventory_year)).days
     period_annual_fraction = days_in_period(start_date, end_date) / year_days

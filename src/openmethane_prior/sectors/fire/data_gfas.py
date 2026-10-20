@@ -16,8 +16,9 @@
 # limitations under the License.
 #
 
-import cdsapi
 import pathlib
+
+import cdsapi
 
 from openmethane_prior.lib import (
     ConfiguredDataSource,
@@ -25,16 +26,18 @@ from openmethane_prior.lib import (
     PriorConfig,
 )
 
+
 def gfas_file_name(data_source: DataSource, prior_config: PriorConfig) -> str:
     return f"gfas_{prior_config.start_date.strftime('%Y-%m-%d')}_{prior_config.end_date.strftime('%Y-%m-%d')}.nc"
+
 
 def gfas_fetch(data_source: ConfiguredDataSource) -> pathlib.Path:
     """
     Download GFAS methane between start and end date, returning the filename
     of the retrieved data.
     """
-    start_date_fmt = data_source.prior_config.start_date.strftime('%Y-%m-%d')
-    end_date_fmt = data_source.prior_config.end_date.strftime('%Y-%m-%d')
+    start_date_fmt = data_source.prior_config.start_date.strftime("%Y-%m-%d")
+    end_date_fmt = data_source.prior_config.end_date.strftime("%Y-%m-%d")
 
     c = cdsapi.Client(progress=False)
     c.retrieve(
@@ -50,6 +53,7 @@ def gfas_fetch(data_source: ConfiguredDataSource) -> pathlib.Path:
     )
 
     return data_source.asset_path
+
 
 gfas_data_source = DataSource(
     name="gfas",

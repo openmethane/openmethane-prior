@@ -16,13 +16,14 @@
 # limitations under the License.
 #
 import json
-import pandas as pd
 import urllib.request
 
+import pandas as pd
+
 from openmethane_prior.lib import (
+    ConfiguredDataSource,
     DataSource,
     Domain,
-    ConfiguredDataSource,
     logger,
 )
 from openmethane_prior.lib.data_manager.parsers import parse_csv
@@ -31,9 +32,10 @@ from .inventory import create_inventory_df
 
 logger = logger.get_logger(__name__)
 
-def rows_from_children(tree, parents = None) -> list:
+
+def rows_from_children(tree, parents=None) -> list:
     rows = []
-    if tree["level"] > 5: # 5 levels is enough detail for us
+    if tree["level"] > 5:  # 5 levels is enough detail for us
         return rows
 
     levels = [*parents] if parents is not None else []
@@ -49,14 +51,22 @@ def rows_from_children(tree, parents = None) -> list:
 def fetch_unfccc_codes(data_source: ConfiguredDataSource):
     """Fetch the heirarchy of UNFCCC codes used on the ANGA website, where
     the UNFCCC codes are displayed along with the same category names used
-    in the API."""
+    in the API.
+    """
     with urllib.request.urlopen(data_source.url) as anga_api_defaults:
         response = json.loads(anga_api_defaults.read().decode())
         unfccc_tree = response["sectortreeParis"]["Nodes"]
     unfccc_rows = rows_from_children(unfccc_tree[0])
     df = pd.DataFrame(
         data=unfccc_rows,
-        columns=["UNFCCC_Code", "UNFCCC_Level_1", "UNFCCC_Level_2", "UNFCCC_Level_3", "UNFCCC_Level_4", "UNFCCC_Level_5"],
+        columns=[
+            "UNFCCC_Code",
+            "UNFCCC_Level_1",
+            "UNFCCC_Level_2",
+            "UNFCCC_Level_3",
+            "UNFCCC_Level_4",
+            "UNFCCC_Level_5",
+        ],
     )
     # Levels > 5 are stripped, resulting in duplicates with the same code
     df.drop_duplicates(subset=["UNFCCC_Code"], keep="first", inplace=True)
@@ -87,6 +97,7 @@ def parse_inventory(data_source: ConfiguredDataSource) -> pd.DataFrame:
     with open(data_source.asset_path) as anga_file:
         anga_json = json.load(anga_file)
         return create_inventory_df(anga_json["value"], unfccc_df)
+
 
 # Australia's National Greenhouse Accounts emission inventory, broken down by
 # economic sector using UNFCCC sector categories.

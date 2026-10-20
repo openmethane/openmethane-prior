@@ -16,19 +16,22 @@
 # limitations under the License.
 #
 import datetime
+
 import numpy as np
 
 
 def map_esri_date_to_date(esri_date_milliseconds) -> datetime.date | None:
     """Convert an esriFieldTypeDate value to UTC datetime.date."""
-    if esri_date_milliseconds is None \
-            or np.isnan(esri_date_milliseconds) \
-            or esri_date_milliseconds <= 0:
+    if (
+        esri_date_milliseconds is None
+        or np.isnan(esri_date_milliseconds)
+        or esri_date_milliseconds <= 0
+    ):
         return None
 
     date_value = datetime.datetime.fromtimestamp(
         esri_date_milliseconds / 1000,
-        tz=datetime.timezone.utc,
+        tz=datetime.UTC,
     )
     return date_value.date()
 
