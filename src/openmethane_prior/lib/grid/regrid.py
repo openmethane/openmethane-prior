@@ -74,7 +74,11 @@ def regrid_aligned(
     # transform to_grid coordinates into from_grid coordinates to
     # efficiently bin them
     grid_transform = pyproj.Transformer.from_crs(crs_from=to_grid.projection.crs, crs_to=from_grid.projection.crs)
-    to_grid_x_transformed, to_grid_y_transformed = grid_transform.transform(xx=to_grid.cell_coords_x(), yy=to_grid.cell_coords_y())
+    # aligned grids differ only by a constant x/y offset (false easting/northing),
+    # so find the offset from a single point and apply it to each axis
+    offset_x, offset_y = grid_transform.transform(xx=0.0, yy=0.0)
+    to_grid_x_transformed = to_grid.cell_coords_x() + offset_x
+    to_grid_y_transformed = to_grid.cell_coords_y() + offset_y
 
     data_np = data if type(data) is np.ndarray else data.to_numpy()
 
