@@ -4,32 +4,44 @@ from openmethane_prior.data_sources.au_shapes import au_shapes_states_data_sourc
 from openmethane_prior.data_sources.npi import npi_facilities_data_source
 from openmethane_prior.sectors.oil_gas.data.au_pipelines import au_gas_pipelines_data_source
 from openmethane_prior.sectors.oil_gas.data.nopta import (
-    nopta_titles_data_source, nopta_wells_data_source,
+    nopta_titles_data_source,
+    nopta_wells_data_source,
 )
 from openmethane_prior.sectors.oil_gas.data.nsw_geo import (
-    nsw_drillholes_data_source, nsw_titles_data_source,
+    nsw_drillholes_data_source,
+    nsw_titles_data_source,
 )
 from openmethane_prior.sectors.oil_gas.data.nt_geo import (
-    nt_titles_data_source, nt_wells_data_source,
+    nt_titles_data_source,
+    nt_wells_data_source,
 )
 from openmethane_prior.sectors.oil_gas.data.oil_gas_sites import oil_gas_sites_data_source
 from openmethane_prior.sectors.oil_gas.data.qld_gis import (
-    qld_boreholes_data_source, qld_leases_data_source,
+    qld_boreholes_data_source,
+    qld_leases_data_source,
 )
 from openmethane_prior.sectors.oil_gas.data.sa_wells import (
-    sa_wells_data_source, sa_wells_production_data_source,
+    sa_wells_data_source,
+    sa_wells_production_data_source,
 )
 from openmethane_prior.sectors.oil_gas.data.wa_gis import (
-    wa_titles_data_source, wa_wells_data_source,
+    wa_titles_data_source,
+    wa_wells_data_source,
 )
 from openmethane_prior.sectors.oil_gas.emission_sources.all_sources import all_emission_sources
 from openmethane_prior.sectors.oil_gas.emission_sources.nsw_sources import nsw_emission_sources
 from openmethane_prior.sectors.oil_gas.emission_sources.nt_sources import nt_emission_sources
-from openmethane_prior.sectors.oil_gas.emission_sources.offshore_sources import offshore_emission_sources
-from openmethane_prior.sectors.oil_gas.emission_sources.pipeline_sources import pipeline_emission_sources
+from openmethane_prior.sectors.oil_gas.emission_sources.offshore_sources import (
+    offshore_emission_sources,
+)
+from openmethane_prior.sectors.oil_gas.emission_sources.pipeline_sources import (
+    pipeline_emission_sources,
+)
 from openmethane_prior.sectors.oil_gas.emission_sources.qld_sources import qld_emission_sources
 from openmethane_prior.sectors.oil_gas.emission_sources.sa_sources import sa_emission_sources
-from openmethane_prior.sectors.oil_gas.emission_sources.site_sources import oil_gas_site_emission_sources
+from openmethane_prior.sectors.oil_gas.emission_sources.site_sources import (
+    oil_gas_site_emission_sources,
+)
 from openmethane_prior.sectors.oil_gas.emission_sources.wa_sources import wa_emission_sources
 
 
@@ -107,21 +119,34 @@ def test_qld_emission_sources(input_files, data_manager):
     assert set(df["bore_type"].unique()) - allowed_bore_types == set()
 
     allowed_bore_subtypes = {
-        "DEVELOPMENT WELL", "COAL SEAM GAS INJECTION WELL", "PETROLEUM INJECTION WELL",
+        "DEVELOPMENT WELL",
+        "COAL SEAM GAS INJECTION WELL",
+        "PETROLEUM INJECTION WELL",
     }
     assert set(df["bore_subtype"].unique()) - allowed_bore_subtypes == set()
 
     allowed_results = {
-        "COAL SEAM GAS", "COAL",
-        "DRY PLUS GAS SHOW", "DRY PLUS OIL AND GAS SHOW", "DRY PLUS OIL SHOW",
-        "GAS", "GAS AND CONDENSATE", "GAS PLUS CONDENSATE SHOW", "GAS PLUS OIL SHOW",
-        "OIL", "OIL AND GAS", "OIL PLUS GAS SHOW",
+        "COAL SEAM GAS",
+        "COAL",
+        "DRY PLUS GAS SHOW",
+        "DRY PLUS OIL AND GAS SHOW",
+        "DRY PLUS OIL SHOW",
+        "GAS",
+        "GAS AND CONDENSATE",
+        "GAS PLUS CONDENSATE SHOW",
+        "GAS PLUS OIL SHOW",
+        "OIL",
+        "OIL AND GAS",
+        "OIL PLUS GAS SHOW",
         "UNKNOWN",
     }
     assert set(df["result"].unique()) - allowed_results == set()
 
     allowed_status = {
-        "PLUGGED AND ABANDONED", "PRODUCING", "COMPLETED", "SUSPENDED",
+        "PLUGGED AND ABANDONED",
+        "PRODUCING",
+        "COMPLETED",
+        "SUSPENDED",
     }
     assert set(df["status"].unique()) - allowed_status == set()
 
@@ -223,7 +248,7 @@ def test_sites_emission_sources(input_files, data_manager):
     assert len(df[(df["activity_end"] < start_date) & (df["activity_start"] > start_date_end)]) == 0
 
     # no sources which aren't related to 07 / 17 / 27 ANZSIC codes
-    assert set(df["anzsic_code"].unique()) == {'070', '0700', '170', '1701', '1709', '2700'}
+    assert set(df["anzsic_code"].unique()) == {"070", "0700", "170", "1701", "1709", "2700"}
 
 
 def test_au_pipelines(input_files, data_manager, config):
@@ -267,4 +292,7 @@ def test_all_emission_sources(input_files, data_manager, config):
     assert len(df) > 0
 
     # no sources where activity period doesn't intersect config period
-    assert len(df[(df["activity_end"] < config.start_date) & (df["activity_start"] > end_date_end)]) == 0
+    assert (
+        len(df[(df["activity_end"] < config.start_date) & (df["activity_start"] > end_date_end)])
+        == 0
+    )

@@ -16,7 +16,7 @@
 # limitations under the License.
 #
 import geopandas as gpd
-import restapi # https://github.com/Bolton-and-Menk-GIS/restapi
+import restapi  # https://github.com/Bolton-and-Menk-GIS/restapi
 
 from openmethane_prior.lib import ConfiguredDataSource, DataSource
 from openmethane_prior.lib.data_manager.parsers import parse_geo
@@ -31,16 +31,16 @@ def fetch_au_gas_pipelines(data_source: ConfiguredDataSource):
     pipelines_layer = au_spatial_pipelines.layer("Gas_Pipelines")
     pipelines_features = pipelines_layer.query(
         fields=[
-            'objectid',
-            'feature_type',
-            'feature_name',
-            'status',
-            'operator',
-            'length_km',
-            'licence',
-            'petrosys_comment',
-            'feature_source',
-            'feature_source_date',
+            "objectid",
+            "feature_type",
+            "feature_name",
+            "status",
+            "operator",
+            "length_km",
+            "licence",
+            "petrosys_comment",
+            "feature_source",
+            "feature_source_date",
         ],
         exceed_limit=True,
     )

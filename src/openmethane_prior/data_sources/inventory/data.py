@@ -31,9 +31,10 @@ from .inventory import create_inventory_df
 
 logger = logger.get_logger(__name__)
 
-def rows_from_children(tree, parents = None) -> list:
+
+def rows_from_children(tree, parents=None) -> list:
     rows = []
-    if tree["level"] > 5: # 5 levels is enough detail for us
+    if tree["level"] > 5:  # 5 levels is enough detail for us
         return rows
 
     levels = [*parents] if parents is not None else []
@@ -56,7 +57,14 @@ def fetch_unfccc_codes(data_source: ConfiguredDataSource):
     unfccc_rows = rows_from_children(unfccc_tree[0])
     df = pd.DataFrame(
         data=unfccc_rows,
-        columns=["UNFCCC_Code", "UNFCCC_Level_1", "UNFCCC_Level_2", "UNFCCC_Level_3", "UNFCCC_Level_4", "UNFCCC_Level_5"],
+        columns=[
+            "UNFCCC_Code",
+            "UNFCCC_Level_1",
+            "UNFCCC_Level_2",
+            "UNFCCC_Level_3",
+            "UNFCCC_Level_4",
+            "UNFCCC_Level_5",
+        ],
     )
     # Levels > 5 are stripped, resulting in duplicates with the same code
     df.drop_duplicates(subset=["UNFCCC_Code"], keep="first", inplace=True)
@@ -87,6 +95,7 @@ def parse_inventory(data_source: ConfiguredDataSource) -> pd.DataFrame:
     with open(data_source.asset_path) as anga_file:
         anga_json = json.load(anga_file)
         return create_inventory_df(anga_json["value"], unfccc_df)
+
 
 # Australia's National Greenhouse Accounts emission inventory, broken down by
 # economic sector using UNFCCC sector categories.

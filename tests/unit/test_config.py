@@ -125,7 +125,9 @@ def test_prior_config_to_yaml(start_date, end_date):
         static_path=pathlib.Path("data/in"),
     )
 
-    assert test_config.to_yaml() == """domain_path: domain.nc
+    assert (
+        test_config.to_yaml()
+        == """domain_path: domain.nc
 end_date: 2022-12-08 00:00:00
 handle_existing: overwrite
 input_cache: null
@@ -137,6 +139,7 @@ sectors: null
 start_date: 2022-12-07 00:00:00
 static_path: data/in
 """
+    )
 
 
 def test_prior_config_from_env(reset_env, start_date, end_date):
@@ -225,6 +228,7 @@ def test_prior_config_input_cache(tmp_path: pathlib.Path, start_date, end_date):
 # ---------------------------------------------------------------------------
 # fetch_domain tests
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture()
 def input_path(tmp_path):

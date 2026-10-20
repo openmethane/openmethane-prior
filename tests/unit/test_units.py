@@ -1,5 +1,10 @@
 from datetime import date
-from openmethane_prior.lib.units import kg_to_kg_m2_s, kg_to_period_cell_flux, seconds_in_period, days_in_period
+from openmethane_prior.lib.units import (
+    kg_to_kg_m2_s,
+    kg_to_period_cell_flux,
+    seconds_in_period,
+    days_in_period,
+)
 
 
 def test_units_days_in_period():
@@ -12,6 +17,7 @@ def test_units_days_in_period():
     assert days_in_period(date(2020, 2, 28), date(2020, 3, 1)) == 3
     # non-leap year
     assert days_in_period(date(2021, 2, 28), date(2021, 3, 1)) == 2
+
 
 def test_units_seconds_in_period():
     seconds_in_day = 24 * 60 * 60
@@ -26,11 +32,13 @@ def test_units_seconds_in_period():
     # non-leap year
     assert seconds_in_period(date(2021, 2, 28), date(2021, 3, 1)) == seconds_in_day * 2
 
+
 def test_units_kg_to_kg_m2_s():
     assert kg_to_kg_m2_s(60000, 1000, 20) == 3.0
     assert kg_to_kg_m2_s(60000, 100, 20) == 30.0
     assert kg_to_kg_m2_s(60000, 1000, 30) == 2.0
-    assert kg_to_kg_m2_s(60000, 100000000.0, 2 *  24 * 60 * 60) == 3.4722222222222217e-09
+    assert kg_to_kg_m2_s(60000, 100000000.0, 2 * 24 * 60 * 60) == 3.4722222222222217e-09
+
 
 def test_units_kg_to_period_cell_flux(config, input_files):
     # inputs to kg_to_period_cell_flux
@@ -38,4 +46,3 @@ def test_units_kg_to_period_cell_flux(config, input_files):
     assert (config.end_date - config.start_date).days + 1 == 2
 
     assert kg_to_period_cell_flux(60000, config) == 3.4722222222222217e-09
-

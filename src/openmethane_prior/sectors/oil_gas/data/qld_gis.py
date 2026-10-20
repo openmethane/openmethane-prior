@@ -18,14 +18,15 @@
 import geopandas as gpd
 import numpy as np
 import pandas as pd
-import restapi # https://github.com/Bolton-and-Menk-GIS/restapi
+import restapi  # https://github.com/Bolton-and-Menk-GIS/restapi
 
 from openmethane_prior.lib import DataSource
 from openmethane_prior.lib.data_manager.parsers import parse_geo
 from openmethane_prior.lib.data_manager.source import ConfiguredDataSource
 from openmethane_prior.sectors.oil_gas.data.esri_types import map_esri_date_to_str
 
-QLD_SPATIAL_ARCGIS_URL="https://spatial-gis.information.qld.gov.au/arcgis/rest/services"
+QLD_SPATIAL_ARCGIS_URL = "https://spatial-gis.information.qld.gov.au/arcgis/rest/services"
+
 
 # Queensland borehole series - REST Service (ArcGIS)
 # https://www.data.qld.gov.au/dataset/queensland-borehole-series/resource/c206a53a-59de-48c2-9544-b7b7323ed5dd
@@ -35,7 +36,12 @@ def fetch_qld_boreholes(data_source: ConfiguredDataSource):
     )
 
     boreholes_features = None
-    oil_gas_layers = ["Boreholes CSG", "Boreholes Gas or Gas Show", "Boreholes Oil or Oil Show", "Boreholes Petroleum"]
+    oil_gas_layers = [
+        "Boreholes CSG",
+        "Boreholes Gas or Gas Show",
+        "Boreholes Oil or Oil Show",
+        "Boreholes Petroleum",
+    ]
     for layer_name in oil_gas_layers:
         boreholes_layer = qld_spatial_boreholes.layer(layer_name)
         # print(boreholes_layer.list_fields())
@@ -130,10 +136,12 @@ def fetch_qld_leases(data_source: ConfiguredDataSource):
         exceed_limit=True,
     )
 
-    df = pd.concat([
-        gpd.GeoDataFrame.from_features(leases_features.features),
-        gpd.GeoDataFrame.from_features(historic_features.features),
-    ])
+    df = pd.concat(
+        [
+            gpd.GeoDataFrame.from_features(leases_features.features),
+            gpd.GeoDataFrame.from_features(historic_features.features),
+        ]
+    )
 
     df["approvedate"] = df["approvedate"].map(map_esri_date_to_str)
     df["expirydate"] = df["expirydate"].map(map_esri_date_to_str)

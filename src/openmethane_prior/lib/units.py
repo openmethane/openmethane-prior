@@ -36,6 +36,8 @@ def days_in_period(
 
 
 SECONDS_PER_DAY = 24 * 60 * 60
+
+
 def seconds_in_period(start_date: datetime.date, end_date: datetime.date) -> int:
     """Returns the number of seconds in the period of days starting at midnight
     at the start of start_date, until midnight at the end of end_date."""
@@ -53,6 +55,5 @@ def kg_to_period_cell_flux(mass_kg: T, config: PriorConfig) -> float:
     return kg_to_kg_m2_s(
         mass_kg=mass_kg,
         area_m2=config.domain().grid.cell_area,
-        time_s=seconds_in_period(config.start_date, config.end_date)
+        time_s=seconds_in_period(config.start_date, config.end_date),
     )
-

@@ -96,12 +96,11 @@ def get_timestamped_command():
 
 
 def get_version():
-    return os.getenv('OPENMETHANE_PRIOR_VERSION', importlib.metadata.version('openmethane_prior'))
+    return os.getenv("OPENMETHANE_PRIOR_VERSION", importlib.metadata.version("openmethane_prior"))
 
 
 def time_bounds(
-    dates: xr.CFTimeIndex,
-    interval: datetime.timedelta = datetime.timedelta(days=1)
+    dates: xr.CFTimeIndex, interval: datetime.timedelta = datetime.timedelta(days=1)
 ) -> list[list[cftime.datetime]]:
     bounds = []
     for period_start in dates:
@@ -151,6 +150,8 @@ def is_url(maybe_url: str) -> bool:
 
 
 DF = typing.TypeVar("DF", bound=pd.DataFrame | gpd.GeoDataFrame)
+
+
 def rows_in_period(
     df: DF,
     start_date: datetime.date,
@@ -162,7 +163,9 @@ def rows_in_period(
     and df[end_field] overlaps with the period between start_date and end_date."""
     midnight = datetime.time(0, 0)
     period_start = datetime.datetime.combine(date=start_date, time=midnight)
-    period_end = datetime.datetime.combine(date=end_date + datetime.timedelta(days=1), time=midnight)
+    period_end = datetime.datetime.combine(
+        date=end_date + datetime.timedelta(days=1), time=midnight
+    )
 
     return df[
         ((np.isnat(df[start_field])) | (df[start_field] <= np.datetime64(period_end)))

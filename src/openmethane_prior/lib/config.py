@@ -36,26 +36,31 @@ class PriorConfig:
     # workaround for from_env having to specify None values for missing paths
     # is to set the value using default_if_none
     input_path: pathlib.Path = field(
-        default=None, converter=default_if_none(pathlib.Path("data/inputs")),
+        default=None,
+        converter=default_if_none(pathlib.Path("data/inputs")),
     )
     """Filesystem path where input files exist or should be fetched to."""
     output_path: pathlib.Path = field(
-        default=None, converter=default_if_none(pathlib.Path("data/outputs")),
+        default=None,
+        converter=default_if_none(pathlib.Path("data/outputs")),
     )
     """Filesystem path where outputs should be created."""
     intermediates_path: pathlib.Path = field(
-        default=None, converter=default_if_none(pathlib.Path("data/intermediates")),
+        default=None,
+        converter=default_if_none(pathlib.Path("data/intermediates")),
     )
     """Filesystem path where intermediate artifacts should be stored."""
 
     output_filename: str = field(
-        default=None, converter=default_if_none("prior-emissions.nc"),
+        default=None,
+        converter=default_if_none("prior-emissions.nc"),
     )
     """Filename to write the prior output to as a NetCDFv4 file in
     `output_path`"""
 
     handle_existing: Literal["overwrite", "skip"] = field(
-        default=None, converter=default_if_none("overwrite"),
+        default=None,
+        converter=default_if_none("overwrite"),
     )
     """How to handle existing output at the output location. Allowed values:
       - "overwrite" (default) - existing output will be overwritten
@@ -162,13 +167,13 @@ class PriorConfig:
 
         # split a string like "agriculture,coal,waste" into a list
         sectors = env.str("SECTORS", "").split(",")
-        sectors = tuple([s for s in sectors if s != ""]) # filter out empty strings
+        sectors = tuple([s for s in sectors if s != ""])  # filter out empty strings
 
         return cls(
             # required
             domain_path=env.str("DOMAIN_FILE"),
             start_date=start_date,
-            end_date =end_date,
+            end_date=end_date,
             # use defaults
             input_path=env.path("INPUTS", None),
             output_path=env.path("OUTPUTS", None),
@@ -222,6 +227,7 @@ def parse_cli_args():
     )
 
     return parser.parse_args()
+
 
 def parse_cli_to_env():
     """

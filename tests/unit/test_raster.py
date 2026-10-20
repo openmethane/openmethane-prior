@@ -7,18 +7,21 @@ from openmethane_prior.data_sources.nightlights import night_lights_data_source
 from openmethane_prior.lib.grid.grid import Grid
 from openmethane_prior.lib.raster import remap_raster
 
+
 def test_remap_raster(config, input_files, data_manager, data_manager_fetch_only):
-    test_coord = (2500, 3000) # let's read this in later
-    distance_tolerance = 1e4 # allowed mismatch between initial and final coords in metres
-    epsilon = 1e-5 # small number
-    def maxloc(a): return np.unravel_index(a.argmax(), a.shape)
+    test_coord = (2500, 3000)  # let's read this in later
+    distance_tolerance = 1e4  # allowed mismatch between initial and final coords in metres
+    epsilon = 1e-5  # small number
+
+    def maxloc(a):
+        return np.unravel_index(a.argmax(), a.shape)
 
     inventory_domain = data_manager.get_asset(inventory_domain_data_source).data
     domain_dataset = inventory_domain.dataset
     domain_grid = inventory_domain.grid
 
-    lat = domain_dataset['lat']
-    lon = domain_dataset['lon']
+    lat = domain_dataset["lat"]
+    lon = domain_dataset["lon"]
 
     # avoid calling night_lights parse() since we won't use parsed data
     night_lights_asset = data_manager_fetch_only.get_asset(night_lights_data_source)
@@ -28,35 +31,31 @@ def test_remap_raster(config, input_files, data_manager, data_manager_fetch_only
     np.nan_to_num(ntl_raw, copy=False)
     ntl = ntl_raw.sum(axis=0)
     # now reconstruct with one nonzero point
-    ntl *= 0.
-    ntl[test_coord] = 1.
+    ntl *= 0.0
+    ntl[test_coord] = 1.0
     # now clip to remove offshore lights
     om_ntl = remap_raster(ntl, domain_grid)
 
     # now a few tests on outputs
     # only one nonzero point in output
-    assert (om_ntl > epsilon).sum() == 1, f"{(om_ntl > epsilon).sum()} nonzero output points, should be 1"
+    assert (
+        om_ntl > epsilon
+    ).sum() == 1, f"{(om_ntl > epsilon).sum()} nonzero output points, should be 1"
 
-    input_loc = np.array([
-        float(ntl_raw.y[test_coord[0]]),
-        float(ntl_raw.x[test_coord[1]])
-    ])
-    output_loc = np.array([
-        lat[maxloc(om_ntl)],
-        lon[maxloc(om_ntl)]
-    ])
+    input_loc = np.array([float(ntl_raw.y[test_coord[0]]), float(ntl_raw.x[test_coord[1]])])
+    output_loc = np.array([lat[maxloc(om_ntl)], lon[maxloc(om_ntl)]])
 
     np.testing.assert_allclose(output_loc, input_loc, atol=distance_tolerance)
 
 
 def test_remap_raster_input_projection():
-    test_point = (144.9631, -37.8136) # Melbourne, Australia
+    test_point = (144.9631, -37.8136)  # Melbourne, Australia
 
     target_grid = Grid(
         dimensions=(20, 20),
         origin_xy=(130.5, -45.5),
-        cell_size=(1, 1), # cell size of 1 degrees (roughly 100km)
-        proj_params="EPSG:7843", # GDA2020 in lon/lat
+        cell_size=(1, 1),  # cell size of 1 degrees (roughly 100km)
+        proj_params="EPSG:7843",  # GDA2020 in lon/lat
     )
     target_x, target_y, _ = target_grid.lonlat_to_cell_index(test_point[0], test_point[1])
 
@@ -64,11 +63,11 @@ def test_remap_raster_input_projection():
     source_grid = Grid(
         dimensions=(900, 600),
         origin_xy=(-4564775.59, -7428980.66),
-        cell_size=(10000, 10000), # cell size of 10km
-        proj_params="EPSG:7845", # GDA2020 in meters
+        cell_size=(10000, 10000),  # cell size of 10km
+        proj_params="EPSG:7845",  # GDA2020 in meters
     )
     test_input = xr.DataArray(
-        coords={ "y": source_grid.cell_coords_y(), "x": source_grid.cell_coords_x() },
+        coords={"y": source_grid.cell_coords_y(), "x": source_grid.cell_coords_x()},
         data=np.zeros(source_grid.shape),
     )
     source_x, source_y, _ = source_grid.lonlat_to_cell_index(test_point[0], test_point[1])

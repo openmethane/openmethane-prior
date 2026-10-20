@@ -145,7 +145,9 @@ def input_domain(config, input_files) -> Generator[xr.Dataset, None, None]:
 
 
 @pytest.fixture(scope="session")
-def prior_emissions_ds(tmp_path_factory, cache_dir, config_params) -> Generator[xr.Dataset, None, None]:
+def prior_emissions_ds(
+    tmp_path_factory, cache_dir, config_params
+) -> Generator[xr.Dataset, None, None]:
     """Run the full prior over the au-test domain."""
     data_dir = tmp_path_factory.mktemp("data")
     config = PriorConfig(

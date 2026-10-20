@@ -42,7 +42,12 @@ logger = get_logger(__name__)
 MAX_ABS_DIFF = 0.1
 
 
-def verify_emis(sectors: list[PriorSector], config: PriorConfig, prior_ds: xr.Dataset, atol: float = MAX_ABS_DIFF):
+def verify_emis(
+    sectors: list[PriorSector],
+    config: PriorConfig,
+    prior_ds: xr.Dataset,
+    atol: float = MAX_ABS_DIFF,
+):
     """Check output sector emissions to make sure they tally up to the input emissions"""
     data_manager = DataManager.from_config(config)
     domain = config.domain()
@@ -50,7 +55,9 @@ def verify_emis(sectors: list[PriorSector], config: PriorConfig, prior_ds: xr.Da
 
     if domain.grid != inventory_domain.grid:
         # TODO: is there a sense check we can do on smaller domains?
-        logger.info("SKIPPING verify_emis: only supported when domain and inventory domain are identical")
+        logger.info(
+            "SKIPPING verify_emis: only supported when domain and inventory domain are identical"
+        )
         return
 
     emissions_inventory = data_manager.get_asset(inventory_data_source).data
@@ -58,8 +65,8 @@ def verify_emis(sectors: list[PriorSector], config: PriorConfig, prior_ds: xr.Da
     inventory_sectors = [s for s in sectors if s.unfccc_categories is not None]
 
     m2s_to_kg = domain.grid.cell_area * 24 * 60 * 60
-    ds_start_date = pd.to_datetime(prior_ds['time'][0].item()).date()
-    ds_end_date = pd.to_datetime(prior_ds['time'][-1].item()).date()
+    ds_start_date = pd.to_datetime(prior_ds["time"][0].item()).date()
+    ds_end_date = pd.to_datetime(prior_ds["time"][-1].item()).date()
     period_days = days_in_period(ds_start_date, ds_end_date)
 
     total_expected_vs_actual = []
@@ -72,7 +79,6 @@ def verify_emis(sectors: list[PriorSector], config: PriorConfig, prior_ds: xr.Da
     #     livestock_inventory_total = round(np.sum(ls["CH4_total"].values)) * (period_days / 365)
     #     livestock_prior_total = float(prior_ds[f"{SECTOR_PREFIX}_livestock"].sum()) * m2s_to_kg
     #     total_expected_vs_actual.append(("livestock", livestock_inventory_total, livestock_prior_total))
-
 
     # Check each layer in the output sums up to the input
     for sector in inventory_sectors:

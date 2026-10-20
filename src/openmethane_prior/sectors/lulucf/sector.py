@@ -41,23 +41,24 @@ logger = logger.get_logger(__name__)
 # ALUM Classification Version 8
 # Source: https://www.agriculture.gov.au/abares/aclump/land-use/alum-classification
 alum_codes_lulucf = [
-    220, # Production native forests
-    310, # Plantation forests
-    311, # Hardwood plantation forestry
-    312, # Softwood plantation forestry
-    313, # Other forest plantation
-    314, # Environmental forest plantation
-    410, # Irrigated plantation forests
-    411, # Irrigated hardwood plantation forestry
-    412, # Irrigated softwood plantation forestry
-    413, # Irrigated other forest plantation
-    414, # Irrigated environmental forest plantation
+    220,  # Production native forests
+    310,  # Plantation forests
+    311,  # Hardwood plantation forestry
+    312,  # Softwood plantation forestry
+    313,  # Other forest plantation
+    314,  # Environmental forest plantation
+    410,  # Irrigated plantation forests
+    411,  # Irrigated hardwood plantation forestry
+    412,  # Irrigated softwood plantation forestry
+    413,  # Irrigated other forest plantation
+    414,  # Irrigated environmental forest plantation
 ]
 
+
 def process_emissions(
-        sector: PriorSector,
-        sector_config: PriorSectorConfig,
-        prior_ds: xr.Dataset,
+    sector: PriorSector,
+    sector_config: PriorSectorConfig,
+    prior_ds: xr.Dataset,
 ):
     config = sector_config.prior_config
 
@@ -75,19 +76,19 @@ def process_emissions(
     lu_crs = landUseData.rio.crs
     landUseData.close()
 
-    dataBand = rasterio.open(landuse_asset.path, engine='rasterio').read()
+    dataBand = rasterio.open(landuse_asset.path, engine="rasterio").read()
     dataBand = dataBand.squeeze()
 
     inventory_domain = sector_config.data_manager.get_asset(inventory_domain_data_source).data
     inventory_mask_regridded = regrid_data(
-        inventory_domain.dataset['inventory_mask'],
+        inventory_domain.dataset["inventory_mask"],
         from_grid=inventory_domain.grid,
         to_grid=config.domain().grid,
     )
 
     # create a mask of pixels which match the sector code
     sector_mask = np.isin(dataBand, alum_codes_lulucf)
-    sector_xr = xr.DataArray(sector_mask, coords={ 'y': lu_y, 'x': lu_x  })
+    sector_xr = xr.DataArray(sector_mask, coords={"y": lu_y, "x": lu_x})
 
     # now aggregate to coarser resolution of the domain grid
     sector_gridded = remap_raster(sector_xr, config.domain().grid, input_crs=lu_crs)
@@ -97,10 +98,10 @@ def process_emissions(
 
     inventory_gridded = remap_raster(sector_xr, inventory_domain.grid, input_crs=lu_crs)
     # now mask to region of inventory
-    inventory_gridded *= inventory_domain.dataset['inventory_mask']
+    inventory_gridded *= inventory_domain.dataset["inventory_mask"]
 
     # calculate the proportion of inventory emissions in each grid cell
-    sector_gridded /=  inventory_gridded.sum().item()
+    sector_gridded /= inventory_gridded.sum().item()
 
     sector_total_emissions = get_sector_emissions_by_code(
         emissions_inventory=emissions_inventory,
@@ -117,7 +118,7 @@ def process_emissions(
 sector = PriorSector(
     name="lulucf",
     emission_category="anthropogenic",
-    unfccc_categories=["4"], # Land Use, Land-Use Change and Forestry
+    unfccc_categories=["4"],  # Land Use, Land-Use Change and Forestry
     cf_standard_name="anthropogenic_land_use_change",
     create_estimate=process_emissions,
 )

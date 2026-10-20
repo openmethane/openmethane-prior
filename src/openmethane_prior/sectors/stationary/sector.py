@@ -18,7 +18,10 @@
 
 import xarray as xr
 
-from openmethane_prior.data_sources.inventory import get_sector_emissions_by_code, inventory_data_source
+from openmethane_prior.data_sources.inventory import (
+    get_sector_emissions_by_code,
+    inventory_data_source,
+)
 from openmethane_prior.data_sources.nightlights import night_lights_data_source
 from openmethane_prior.lib import (
     kg_to_period_cell_flux,
@@ -57,13 +60,13 @@ def process_emissions(
 sector = PriorSector(
     name="stationary",
     emission_category="anthropogenic",
-    unfccc_categories=[ # all Energy sectors not in industrial/transport
-        "1.A.1.b", # Petroleum refining
-        "1.A.1.c", # Manufacture of solid fuels and other energy industries
-        "1.A.2", # Manufacturing industries and construction
-        "1.A.4", # Other sectors
-        "1.A.5", # Other (as specified in table 1.A(a) sheet 4)
-        "1.C", # Transport and storage
+    unfccc_categories=[  # all Energy sectors not in industrial/transport
+        "1.A.1.b",  # Petroleum refining
+        "1.A.1.c",  # Manufacture of solid fuels and other energy industries
+        "1.A.2",  # Manufacturing industries and construction
+        "1.A.4",  # Other sectors
+        "1.A.5",  # Other (as specified in table 1.A(a) sheet 4)
+        "1.C",  # Transport and storage
     ],
     cf_standard_name="industrial_energy_production",
     create_estimate=process_emissions,

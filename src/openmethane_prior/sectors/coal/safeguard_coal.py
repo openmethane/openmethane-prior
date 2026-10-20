@@ -34,6 +34,7 @@ from openmethane_prior.lib import (
 
 logger = logger.get_logger(__name__)
 
+
 def allocate_safeguard_facility_emissions(
     config: PriorConfig,
     anzsic_codes: list[str],
@@ -68,9 +69,13 @@ def allocate_safeguard_facility_emissions(
     gridded_annual_emissions = np.zeros(domain_grid.shape)
 
     for _, facility in coal_facilities.iterrows():
-        facility_locations = filter_locations(coal_facilities_locations, facility_id=facility["facility_name"])
+        facility_locations = filter_locations(
+            coal_facilities_locations, facility_id=facility["facility_name"]
+        )
         for _, location in facility_locations.iterrows():
-            cell_x, cell_y, cell_valid = domain_grid.lonlat_to_cell_index(location["lon"], location["lat"])
+            cell_x, cell_y, cell_valid = domain_grid.lonlat_to_cell_index(
+                location["lon"], location["lat"]
+            )
 
             if cell_valid:
                 # naively distribute reported emissions evenly to location

@@ -54,7 +54,9 @@ def test_create_output_dataset(config, input_files):
     assert output_ds["lambert_conformal"].attrs == domain_ds["lambert_conformal"].attrs
 
     # bounds
-    assert output_ds["time"].size == (config.end_date - config.start_date).days + 1 # one time step per day, end inclusive
+    assert (
+        output_ds["time"].size == (config.end_date - config.start_date).days + 1
+    )  # one time step per day, end inclusive
     assert output_ds["time"].values[0] == np.datetime64(config.start_date)
     assert output_ds["time"].values[-1] == np.datetime64(config.end_date)
 
@@ -75,24 +77,29 @@ def test_create_output_dataset(config, input_files):
         if var_name in ["lat", "lon", "cell_name", "land_mask"]:
             continue
 
-        if "x" in output_ds[var_name].coords and "y"  in output_ds[var_name].coords:
-            assert "grid_mapping" in output_ds[var_name].attrs, f"Georeferenced variable '{var_name}' is missing grid_mapping"
+        if "x" in output_ds[var_name].coords and "y" in output_ds[var_name].coords:
+            assert (
+                "grid_mapping" in output_ds[var_name].attrs
+            ), f"Georeferenced variable '{var_name}' is missing grid_mapping"
 
 
 def test_expand_sector_dims_errors():
-    test_xr = xr.DataArray([1, 2, 3]) # 1-dimensional array
+    test_xr = xr.DataArray([1, 2, 3])  # 1-dimensional array
 
     with pytest.raises(ValueError) as e:
         expand_sector_dims(test_xr)
 
     assert "minimum of 2 dimensions" in str(e.value)
 
+
 def test_expand_sector_dims_extra_dims():
     # adds 1-length time and vertical dimensions if not present
-    test_xr = xr.DataArray([
-        [1, 2, 3],
-        [4, 5, 6],
-    ])
+    test_xr = xr.DataArray(
+        [
+            [1, 2, 3],
+            [4, 5, 6],
+        ]
+    )
     expanded = expand_sector_dims(test_xr)
 
     assert expanded.ndim == 4
@@ -100,15 +107,18 @@ def test_expand_sector_dims_extra_dims():
     assert list(expanded[0][0][0]) == [1, 2, 3]
     assert list(expanded[0][0][1]) == [4, 5, 6]
 
+
 def test_expand_sector_dims_add_time_dim():
-    test_xr = xr.DataArray([
-        [1, 2],
-        [4, 5],
-    ])
+    test_xr = xr.DataArray(
+        [
+            [1, 2],
+            [4, 5],
+        ]
+    )
     expanded = expand_sector_dims(test_xr, time_steps=3)
 
     assert expanded.ndim == 4
-    assert expanded.shape == (3, 1, 2, 2) # first dimension is time
+    assert expanded.shape == (3, 1, 2, 2)  # first dimension is time
     # copies the existing data for each time step
     assert list(expanded[0][0][0]) == [1, 2]
     assert list(expanded[0][0][1]) == [4, 5]
@@ -117,11 +127,18 @@ def test_expand_sector_dims_add_time_dim():
     assert list(expanded[2][0][0]) == [1, 2]
     assert list(expanded[2][0][1]) == [4, 5]
 
+
 def test_expand_sector_dims_add_time_steps():
-    test_xr = xr.DataArray([[[
-        [1, 2],
-        [4, 5],
-    ]]])
+    test_xr = xr.DataArray(
+        [
+            [
+                [
+                    [1, 2],
+                    [4, 5],
+                ]
+            ]
+        ]
+    )
     # already has correct dims, but not enough time steps
     assert test_xr.ndim == 4
     assert test_xr.shape == (1, 1, 2, 2)
@@ -139,11 +156,17 @@ def test_expand_sector_dims_add_time_steps():
     assert list(expanded[2][0][0]) == [1, 2]
     assert list(expanded[2][0][1]) == [4, 5]
 
+
 def test_add_sector_defaults(config, input_files):
     test_ds = create_output_dataset(config)
 
     sector_meta = create_mock_prior_sector()
-    sector_shape = (test_ds.sizes["time"], 1, config.domain().grid.shape[0], config.domain().grid.shape[1])
+    sector_shape = (
+        test_ds.sizes["time"],
+        1,
+        config.domain().grid.shape[0],
+        config.domain().grid.shape[1],
+    )
     sector_data = np.zeros(sector_shape)
 
     assert sector_meta.name not in test_ds
@@ -160,7 +183,10 @@ def test_add_sector_defaults(config, input_files):
     assert test_ds[sector_var].shape == sector_shape
 
     assert test_ds[sector_var].attrs["standard_name"] == "surface_upward_mass_flux_of_methane"
-    assert test_ds[sector_var].attrs["long_name"] == "expected flux of methane caused by sector: test_sector"
+    assert (
+        test_ds[sector_var].attrs["long_name"]
+        == "expected flux of methane caused by sector: test_sector"
+    )
     assert test_ds[sector_var].attrs["emission_category"] == "natural"
     assert test_ds[sector_var].attrs["units"] == "kg/m2/s"
     assert test_ds[sector_var].attrs["grid_mapping"] == test_ds["land_mask"].attrs["grid_mapping"]
@@ -175,7 +201,12 @@ def test_add_sector_meta(config, input_files):
         cf_standard_name="standard_name_suffix",
         cf_long_name="test long name",
     )
-    sector_shape = (test_ds.sizes["time"], 1, config.domain().grid.shape[0], config.domain().grid.shape[1])
+    sector_shape = (
+        test_ds.sizes["time"],
+        1,
+        config.domain().grid.shape[0],
+        config.domain().grid.shape[1],
+    )
     sector_data = np.zeros(sector_shape)
 
     assert sector_meta.name not in test_ds
@@ -191,8 +222,10 @@ def test_add_sector_meta(config, input_files):
     assert sector_var in test_ds
     assert test_ds[sector_var].shape == sector_shape
 
-    assert test_ds[sector_var].attrs["standard_name"] == \
-           "surface_upward_mass_flux_of_methane_due_to_emission_from_standard_name_suffix"
+    assert (
+        test_ds[sector_var].attrs["standard_name"]
+        == "surface_upward_mass_flux_of_methane_due_to_emission_from_standard_name_suffix"
+    )
     assert test_ds[sector_var].attrs["long_name"] == "test long name"
     assert test_ds[sector_var].attrs["emission_category"] == "anthropogenic"
     assert test_ds[sector_var].attrs["units"] == "kg/m2/s"

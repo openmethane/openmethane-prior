@@ -1,4 +1,3 @@
-
 from .data import (
     safeguard_locations_data_source,
     safeguard_mechanism_data_source,

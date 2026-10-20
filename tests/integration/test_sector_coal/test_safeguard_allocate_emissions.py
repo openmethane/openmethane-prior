@@ -17,7 +17,7 @@ def test_safeguard_allocate_emissions(config, input_files, data_manager):
     del config_params["end_date"]
 
     # period within safeguard period will yield results
-    config_2023 =  PriorConfig(
+    config_2023 = PriorConfig(
         **config_params,
         start_date=datetime.datetime(2023, 7, 1),
         end_date=datetime.datetime(2023, 7, 2),
@@ -29,16 +29,22 @@ def test_safeguard_allocate_emissions(config, input_files, data_manager):
     coal_facilities_asset = data_manager.get_asset(coal_facilities_data_source)
 
     # verify facility emissions in safeguard data
-    sgm_capcoal_facility = safeguard_facilities_asset.data[safeguard_facilities_asset.data["facility_name"] == "Capcoal Mine"]
+    sgm_capcoal_facility = safeguard_facilities_asset.data[
+        safeguard_facilities_asset.data["facility_name"] == "Capcoal Mine"
+    ]
     assert len(sgm_capcoal_facility) == 1
     assert sgm_capcoal_facility.iloc[0]["ch4_kg"] == 30736428.57142857
 
     # verify facility lon/lat sits inside domain
-    mines_capcoal_lonlat = coal_facilities_asset.data[coal_facilities_asset.data["source_name"] == "CapCoal Mine Complex"][["lon","lat"]].drop_duplicates()
+    mines_capcoal_lonlat = coal_facilities_asset.data[
+        coal_facilities_asset.data["source_name"] == "CapCoal Mine Complex"
+    ][["lon", "lat"]].drop_duplicates()
     assert len(mines_capcoal_lonlat) == 1
     capcoal_lonlat = mines_capcoal_lonlat.iloc[0]
     assert (capcoal_lonlat["lon"], capcoal_lonlat["lat"]) == (148.580506, -22.990997)
-    assert config.domain().grid.lonlat_to_cell_index(capcoal_lonlat["lon"], capcoal_lonlat["lat"]) == (4, 8, True)
+    assert config.domain().grid.lonlat_to_cell_index(
+        capcoal_lonlat["lon"], capcoal_lonlat["lat"]
+    ) == (4, 8, True)
 
     # run the test
     facilities, locations, gridded_emissions = allocate_safeguard_facility_emissions(
@@ -50,9 +56,11 @@ def test_safeguard_allocate_emissions(config, input_files, data_manager):
     )
 
     # convert facility annual emissions to kg/m2/s
-    expected_emissions = (sgm_capcoal_facility.iloc[0]["ch4_kg"]
-                          / config.domain().grid.cell_area
-                          / (365 * 24 * 60 * 60))
+    expected_emissions = (
+        sgm_capcoal_facility.iloc[0]["ch4_kg"]
+        / config.domain().grid.cell_area
+        / (365 * 24 * 60 * 60)
+    )
 
     # check the emissions are allocated to the right grid cell
     assert float(gridded_emissions[8, 4]) == expected_emissions
@@ -64,7 +72,9 @@ def test_safeguard_allocate_emissions(config, input_files, data_manager):
     assert len(facilities) == 69
     # Some facilities have multiple locations
     assert len(locations) == 72
-    assert len(locations[locations["safeguard_facility_name"] == "Hunter Valley Operations mine"]) == 2
+    assert (
+        len(locations[locations["safeguard_facility_name"] == "Hunter Valley Operations mine"]) == 2
+    )
     assert len(locations[locations["safeguard_facility_name"] == "Mt Owen Glendell Complex"]) == 2
 
     # period outside safeguard period will allocate no emissions
@@ -88,4 +98,3 @@ def test_safeguard_allocate_emissions(config, input_files, data_manager):
     # outside the available Safeguard reporting period
     assert float(gridded_emissions.sum()) == 0
     assert len(gridded_emissions[gridded_emissions > 0]) == 0
-
