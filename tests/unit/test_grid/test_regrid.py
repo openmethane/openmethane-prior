@@ -109,3 +109,25 @@ def test_regrid_data_different_projections_sizes():
     assert result.shape == target_grid.shape
     assert result.sum() == 4 # cells are the 1:4, so 1 value appears 4 times
     assert result[3:5, 4:6].sum() == 4 # result is spread from 3,4 to 4,5
+
+
+def test_regrid_data_aligned_offset_non_square():
+    lcc_params = dict(proj="lcc", lat_1=-15.0, lat_2=-40.0, lat_0=-27.5, lon_0=132)
+    source_grid = Grid(
+        dimensions=(6, 4),
+        origin_xy=(-3000, -2000),
+        cell_size=(1000, 1000),
+        proj_params=lcc_params,
+    )
+    target_grid = Grid(
+        dimensions=(4, 2), # different x and y dimensions
+        origin_xy=(-1000, -2000), # (-2000, -2000) in source grid coords
+        cell_size=(1000, 1000),
+        proj_params=dict(**lcc_params, x_0=1000, y_0=0), # aligned, but offset
+    )
+    data = np.arange(24, dtype=np.float64).reshape(source_grid.shape)
+
+    result = regrid_data(data, from_grid=source_grid, to_grid=target_grid)
+
+    assert result.shape == target_grid.shape
+    np.testing.assert_array_equal(result, data[0:2, 1:5])
