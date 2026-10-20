@@ -15,20 +15,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import pathlib
 from typing import Self
 
 import attrs
-import pathlib
 
+from openmethane_prior.lib import logger
 from openmethane_prior.lib.config import PriorConfig
 from openmethane_prior.lib.data_manager.asset import DataAsset
 from openmethane_prior.lib.data_manager.source import (
-    configure_data_source,
     ConfiguredDataSource,
     DataSource,
+    configure_data_source,
 )
-
-import openmethane_prior.lib.logger as logger
 
 logger = logger.get_logger(__name__)
 
@@ -88,7 +87,8 @@ class DataManager:
 
     def prepare_asset(self, source: ConfiguredDataSource) -> DataAsset:
         """Fetch and process data sources, turning them into data assets that
-        are ready to be used."""
+        are ready to be used.
+        """
         # if the file is already present on the filesystem, do not attempt to
         # re-fetch it
         if source.asset_path.exists():

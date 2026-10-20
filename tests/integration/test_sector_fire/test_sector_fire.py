@@ -1,4 +1,5 @@
 import os
+
 import pytest
 
 from openmethane_prior.lib import create_prior

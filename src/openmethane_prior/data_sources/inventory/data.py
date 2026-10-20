@@ -16,13 +16,14 @@
 # limitations under the License.
 #
 import json
-import pandas as pd
 import urllib.request
 
+import pandas as pd
+
 from openmethane_prior.lib import (
+    ConfiguredDataSource,
     DataSource,
     Domain,
-    ConfiguredDataSource,
     logger,
 )
 from openmethane_prior.lib.data_manager.parsers import parse_csv
@@ -50,7 +51,8 @@ def rows_from_children(tree, parents=None) -> list:
 def fetch_unfccc_codes(data_source: ConfiguredDataSource):
     """Fetch the heirarchy of UNFCCC codes used on the ANGA website, where
     the UNFCCC codes are displayed along with the same category names used
-    in the API."""
+    in the API.
+    """
     with urllib.request.urlopen(data_source.url) as anga_api_defaults:
         response = json.loads(anga_api_defaults.read().decode())
         unfccc_tree = response["sectortreeParis"]["Nodes"]

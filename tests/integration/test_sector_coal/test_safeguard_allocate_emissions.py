@@ -1,5 +1,6 @@
-import attrs
 import datetime
+
+import attrs
 
 from openmethane_prior.data_sources.safeguard import (
     safeguard_locations_data_source,

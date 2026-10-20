@@ -16,6 +16,7 @@
 # limitations under the License.
 #
 import datetime
+
 import geopandas as gpd
 import numpy as np
 
@@ -31,7 +32,8 @@ def nt_emission_sources(
 ) -> gpd.GeoDataFrame:
     """Create normalised emission source DataFrame by combining NT petroleum
     wells dataset for locations, with petroleum title dataset for production
-    start/end dates."""
+    start/end dates.
+    """
     nt_wells_df: gpd.GeoDataFrame = nt_wells_da.data
     nt_titles_df: gpd.GeoDataFrame = nt_titles_da.data
 

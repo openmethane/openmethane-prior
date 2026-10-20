@@ -16,6 +16,7 @@
 # limitations under the License.
 #
 import datetime
+
 import pandas as pd
 
 from openmethane_prior.data_sources.safeguard.anzsic import filter_by_anzsic_code_family
@@ -40,7 +41,6 @@ def filter_npi_facilities(
       start_date and end_date, and in one of the specified ANZSIC sectors if
       provided.
     """
-
     # filter out facilities which didn't report during the period of interest
     facilities_df = rows_in_period(
         df=facilities_df,

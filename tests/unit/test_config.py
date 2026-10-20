@@ -1,6 +1,7 @@
 import datetime
 import os
 import pathlib
+
 import pytest
 
 from openmethane_prior.lib.config import PriorConfig, fetch_domain

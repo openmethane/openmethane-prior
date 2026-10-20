@@ -28,12 +28,12 @@ from openmethane_prior.data_sources.inventory import (
 )
 from openmethane_prior.data_sources.landuse import landuse_map_data_source
 from openmethane_prior.lib import (
+    PriorSector,
+    PriorSectorConfig,
     kg_to_period_cell_flux,
     logger,
     regrid_data,
     remap_raster,
-    PriorSectorConfig,
-    PriorSector,
 )
 
 logger = logger.get_logger(__name__)

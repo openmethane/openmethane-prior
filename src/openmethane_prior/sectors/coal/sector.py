@@ -19,19 +19,19 @@
 import numpy as np
 import xarray as xr
 
+from openmethane_prior.data_sources.climate_trace import filter_emissions_sources
+from openmethane_prior.data_sources.inventory import (
+    get_sector_emissions_by_code,
+    inventory_data_source,
+)
 from openmethane_prior.data_sources.safeguard import (
     safeguard_locations_data_source,
     safeguard_mechanism_data_source,
 )
 from openmethane_prior.lib import (
-    logger,
     PriorSectorConfig,
     kg_to_period_cell_flux,
-)
-from openmethane_prior.data_sources.climate_trace import filter_emissions_sources
-from openmethane_prior.data_sources.inventory import (
-    get_sector_emissions_by_code,
-    inventory_data_source,
+    logger,
 )
 from openmethane_prior.lib.sector.au_sector import AustraliaPriorSector
 from openmethane_prior.lib.units import days_in_period

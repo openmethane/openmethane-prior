@@ -16,6 +16,7 @@
 # limitations under the License.
 #
 import datetime
+
 import geopandas as gpd
 import numpy as np
 import pandas as pd
@@ -25,7 +26,6 @@ from openmethane_prior.data_sources.safeguard.anzsic import filter_by_anzsic_cod
 from openmethane_prior.data_sources.safeguard.facility import parse_anzsic_code
 from openmethane_prior.lib import DataAsset
 from openmethane_prior.lib.utils import rows_in_period
-
 
 site_type_map = {
     "Compressor station": "gas-compressor",
@@ -55,7 +55,8 @@ def oil_gas_site_emission_sources(
     anzsic_codes: list[str],
 ) -> gpd.GeoDataFrame:
     """Create normalised emission source GeoDataFrame for known oil and gas
-    sector sites and facilities, not including oil and gas wells."""
+    sector sites and facilities, not including oil and gas wells.
+    """
     sites_df: gpd.GeoDataFrame = oil_gas_sites_da.data
 
     # Sites are roughly classified in the input dataset, map those to emission

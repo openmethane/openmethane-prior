@@ -16,10 +16,11 @@
 # limitations under the License.
 #
 import datetime
-import numpy as np
 import pathlib
 
-from openmethane_prior.lib import DataSource, ConfiguredDataSource
+import numpy as np
+
+from openmethane_prior.lib import ConfiguredDataSource, DataSource
 from openmethane_prior.lib.data_manager.fetchers import fetch_zipped_shp_to_gdf
 from openmethane_prior.lib.data_manager.parsers import parse_geo
 

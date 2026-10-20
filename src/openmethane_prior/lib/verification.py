@@ -32,10 +32,9 @@ from openmethane_prior.data_sources.inventory import (
 from .config import PriorConfig
 from .data_manager.manager import DataManager
 from .logger import get_logger
-from .sector.sector import PriorSector
 from .outputs import SECTOR_PREFIX
+from .sector.sector import PriorSector
 from .units import days_in_period
-
 
 logger = get_logger(__name__)
 

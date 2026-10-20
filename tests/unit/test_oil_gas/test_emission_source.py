@@ -1,12 +1,13 @@
 import datetime
+
 import geopandas as gpd
 import numpy as np
 import pandas as pd
 import shapely
 
 from openmethane_prior.sectors.oil_gas.emission_source import (
-    normalise_emission_source_df,
     allocate_emissions_to_sources,
+    normalise_emission_source_df,
 )
 
 

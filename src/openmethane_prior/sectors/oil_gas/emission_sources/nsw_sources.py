@@ -16,6 +16,7 @@
 # limitations under the License.
 #
 import datetime
+
 import geopandas as gpd
 
 from openmethane_prior.lib.data_manager.asset import DataAsset
@@ -35,7 +36,8 @@ def nsw_emission_sources(
 ) -> gpd.GeoDataFrame:
     """Create normalised emission source DataFrame by combining NSW petroleum
     drillhole dataset for locations, with land title dataset for production
-    start/end dates."""
+    start/end dates.
+    """
     nsw_drillholes_df: gpd.GeoDataFrame = nsw_drillholes_da.data
     nsw_titles_df: gpd.GeoDataFrame = nsw_titles_da.data
 

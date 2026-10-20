@@ -20,13 +20,14 @@
 
 import logging
 import sys
+
 import prettyprinter
 
 from openmethane_prior.lib import (
-    logger,
-    parse_cli_to_env,
     PriorConfig,
     create_prior,
+    logger,
+    parse_cli_to_env,
 )
 from openmethane_prior.lib.verification import verify_emis
 from openmethane_prior.sectors import all_sectors

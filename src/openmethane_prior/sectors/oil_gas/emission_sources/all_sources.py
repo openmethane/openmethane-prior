@@ -21,11 +21,19 @@ import pandas as pd
 from openmethane_prior.data_sources.au_shapes import au_shapes_states_data_source
 from openmethane_prior.data_sources.npi import npi_facilities_data_source
 from openmethane_prior.lib import (
-    logger,
     DataManager,
     PriorConfig,
+    logger,
 )
 
+from ..data.au_pipelines import au_gas_pipelines_data_source
+from ..data.nopta import nopta_titles_data_source, nopta_wells_data_source
+from ..data.nsw_geo import nsw_drillholes_data_source, nsw_titles_data_source
+from ..data.nt_geo import nt_titles_data_source, nt_wells_data_source
+from ..data.oil_gas_sites import oil_gas_sites_data_source
+from ..data.qld_gis import qld_boreholes_data_source, qld_leases_data_source
+from ..data.sa_wells import sa_wells_data_source, sa_wells_production_data_source
+from ..data.wa_gis import wa_titles_data_source, wa_wells_data_source
 from ..emission_source import normalise_emission_source_df
 from .nsw_sources import nsw_emission_sources
 from .nt_sources import nt_emission_sources
@@ -35,14 +43,6 @@ from .qld_sources import qld_emission_sources
 from .sa_sources import sa_emission_sources
 from .site_sources import oil_gas_site_emission_sources
 from .wa_sources import wa_emission_sources
-from ..data.au_pipelines import au_gas_pipelines_data_source
-from ..data.nopta import nopta_titles_data_source, nopta_wells_data_source
-from ..data.nsw_geo import nsw_drillholes_data_source, nsw_titles_data_source
-from ..data.nt_geo import nt_titles_data_source, nt_wells_data_source
-from ..data.oil_gas_sites import oil_gas_sites_data_source
-from ..data.qld_gis import qld_boreholes_data_source, qld_leases_data_source
-from ..data.sa_wells import sa_wells_data_source, sa_wells_production_data_source
-from ..data.wa_gis import wa_titles_data_source, wa_wells_data_source
 
 logger = logger.get_logger(__name__)
 
@@ -53,7 +53,8 @@ def all_emission_sources(
     anzsic_codes: list[str],
 ) -> gpd.GeoDataFrame:
     """Assemble a single DataFrame from multiple data sources, where each row
-    represents a possible location of emissions in the oil and gas sector."""
+    represents a possible location of emissions in the oil and gas sector.
+    """
     start_date = prior_config.start_date.date()
     end_date = prior_config.end_date.date()
 

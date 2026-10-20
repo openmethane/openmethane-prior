@@ -16,20 +16,22 @@
 # limitations under the License.
 #
 
+from openmethane_prior.lib import logger
+
 from .config import PriorConfig, parse_cli_to_env
+from .create_prior import create_prior
 from .data_manager.manager import (
     ConfiguredDataSource,
     DataAsset,
     DataManager,
     DataSource,
 )
-from .grid.grid import Grid
 from .grid.domain import Domain
+from .grid.grid import Grid
 from .grid.regrid import regrid_data
-from .regrid import regrid_data_array_conservative
 from .outputs import add_sector, convert_to_timescale
-from .create_prior import create_prior
 from .raster import remap_raster
+from .regrid import regrid_data_array_conservative
 from .sector.config import PriorSectorConfig
 from .sector.sector import PriorSector
 from .units import kg_to_period_cell_flux
@@ -39,8 +41,6 @@ from .utils import (
     get_version,
     list_cf_grid_mappings,
     load_zipped_pickle,
-    save_zipped_pickle,
     rows_in_period,
+    save_zipped_pickle,
 )
-
-import openmethane_prior.lib.logger as logger

@@ -22,8 +22,8 @@ import restapi  # https://github.com/Bolton-and-Menk-GIS/restapi
 from openmethane_prior.lib import DataSource
 from openmethane_prior.lib.data_manager.parsers import parse_geo
 from openmethane_prior.lib.data_manager.source import ConfiguredDataSource
-from .esri_types import map_esri_date_to_str
 
+from .esri_types import map_esri_date_to_str
 
 WA_ARCGIS_URL = "https://public-services.slip.wa.gov.au/public/rest/services"
 

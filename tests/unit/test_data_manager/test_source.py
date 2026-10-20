@@ -1,6 +1,7 @@
 import pathlib
-import pytest
 from urllib.error import URLError
+
+import pytest
 
 from openmethane_prior.lib.config import PriorConfig
 from openmethane_prior.lib.data_manager.source import DataSource, configure_data_source

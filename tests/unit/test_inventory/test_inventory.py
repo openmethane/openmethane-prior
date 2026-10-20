@@ -1,14 +1,15 @@
 import datetime
-import pytest
+
 import pandas as pd
+import pytest
 
 from openmethane_prior.data_sources.inventory.inventory import (
     _find_unfccc_code,
     create_inventory_df,
     financial_year_end,
+    financial_year_from_date,
     financial_year_start,
     get_sector_emissions_by_code,
-    financial_year_from_date,
 )
 
 

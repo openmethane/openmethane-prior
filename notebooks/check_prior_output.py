@@ -1,5 +1,5 @@
-import xarray as xr
 import numpy as np
+import xarray as xr
 from helpers.plot import plot_map, plot_timestep_maps
 
 output_file = "../data/outputs/prior-emissions.nc"

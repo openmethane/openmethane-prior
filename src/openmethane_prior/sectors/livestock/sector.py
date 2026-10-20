@@ -19,14 +19,14 @@ import numpy as np
 import xarray as xr
 
 from openmethane_prior.data_sources.inventory import (
-    inventory_data_source,
     get_sector_emissions_by_code,
+    inventory_data_source,
 )
 from openmethane_prior.lib import (
     DataSource,
-    logger,
     PriorSector,
     PriorSectorConfig,
+    logger,
     regrid_data_array_conservative,
 )
 from openmethane_prior.lib.units import seconds_in_period

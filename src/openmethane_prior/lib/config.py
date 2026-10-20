@@ -1,17 +1,17 @@
 import argparse
-
-import attrs
-from attrs import field, frozen
-from attrs.converters import default_if_none
 import datetime
-from environs import Env
-from functools import cache
 import os
 import pathlib
 import shutil
-from typing import Literal, Self
 import urllib.request
+from functools import cache
+from typing import Literal, Self
+
+import attrs
 import yaml
+from attrs import field, frozen
+from attrs.converters import default_if_none
+from environs import Env
 
 from .grid.domain import Domain
 
@@ -137,7 +137,8 @@ class PriorConfig:
     @cache
     def domain(self) -> Domain:
         """Fetch and parse the domain file to return a readable Dataset and
-        Grid definition."""
+        Grid definition.
+        """
         domain_path = fetch_domain(self.domain_path, self.input_path)
         return Domain.from_file(domain_path)
 

@@ -26,7 +26,8 @@ from openmethane_prior.lib.data_manager.source import ConfiguredDataSource
 
 def parse_oil_gas_sites_csv(data_source: ConfiguredDataSource) -> gpd.GeoDataFrame:
     """Read and parse the oil-gas-processing CSV asset, and convert to a
-    GeoDataFrame using the latitude/longitude columns."""
+    GeoDataFrame using the latitude/longitude columns.
+    """
     df = pd.read_csv(
         data_source.asset_path,
         converters={

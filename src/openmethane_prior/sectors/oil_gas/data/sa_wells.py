@@ -16,11 +16,12 @@
 # limitations under the License.
 #
 import os.path
-import pandas as pd
 import urllib
 
+import pandas as pd
+
 from openmethane_prior.lib import DataSource
-from openmethane_prior.lib.data_manager.parsers import parse_geo_xlsx, parse_csv
+from openmethane_prior.lib.data_manager.parsers import parse_csv, parse_geo_xlsx
 from openmethane_prior.lib.data_manager.source import ConfiguredDataSource
 
 # Locations of all petroleum wells in the Australian state of South Australia

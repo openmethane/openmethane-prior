@@ -1,9 +1,10 @@
 import pathlib
 import shutil
+from collections.abc import Generator
 from datetime import datetime
 from pathlib import Path
+
 import pytest
-from typing import Generator
 import xarray as xr
 
 from openmethane_prior.lib import create_prior

@@ -1,6 +1,8 @@
 import datetime
-import geopandas as gpd
 import pathlib
+
+import geopandas as gpd
+
 from openmethane_prior.lib import PriorConfig
 from openmethane_prior.lib.data_manager.manager import DataManager
 from openmethane_prior.sectors.oil_gas.emission_sources.all_sources import all_emission_sources

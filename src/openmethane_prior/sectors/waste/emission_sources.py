@@ -30,9 +30,9 @@ from openmethane_prior.lib import (
 )
 
 from .data import (
+    ct_solid_waste_data_source,
     ct_wastewaster_domestic_data_source,
     ct_wastewaster_industrial_data_source,
-    ct_solid_waste_data_source,
 )
 
 

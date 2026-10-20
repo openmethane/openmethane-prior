@@ -15,15 +15,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-import geopandas as gpd
 import json
+
+import geopandas as gpd
 import pandas as pd
 from owslib.wfs import WebFeatureService
 
 from openmethane_prior.lib import DataSource
 from openmethane_prior.lib.data_manager.parsers import parse_geo
 from openmethane_prior.lib.data_manager.source import ConfiguredDataSource
-
 
 NSW_GEOSCIENCE_WFS_URL = "https://public-gs.geoscience.nsw.gov.au/geoserver/wfs"
 

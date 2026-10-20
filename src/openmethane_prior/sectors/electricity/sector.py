@@ -21,18 +21,18 @@
 import numpy as np
 import xarray as xr
 
-from openmethane_prior.lib.data_manager.parsers import parse_csv
-from openmethane_prior.lib import (
-    DataSource,
-    kg_to_period_cell_flux,
-    logger,
-    PriorSectorConfig,
-    PriorSector,
-)
 from openmethane_prior.data_sources.inventory import (
     get_sector_emissions_by_code,
     inventory_data_source,
 )
+from openmethane_prior.lib import (
+    DataSource,
+    PriorSector,
+    PriorSectorConfig,
+    kg_to_period_cell_flux,
+    logger,
+)
+from openmethane_prior.lib.data_manager.parsers import parse_csv
 
 logger = logger.get_logger(__name__)
 

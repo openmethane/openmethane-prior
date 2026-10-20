@@ -16,9 +16,10 @@
 # limitations under the License.
 #
 import json
+
 import restapi  # https://github.com/Bolton-and-Menk-GIS/restapi
 
-from openmethane_prior.lib import DataSource, ConfiguredDataSource
+from openmethane_prior.lib import ConfiguredDataSource, DataSource
 from openmethane_prior.lib.data_manager.parsers import parse_geo
 
 from .esri_types import map_esri_date_to_str

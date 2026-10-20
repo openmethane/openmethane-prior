@@ -15,10 +15,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-import numpy as np
-import geopandas as gpd
-import pandas as pd
 from typing import Any
+
+import geopandas as gpd
+import numpy as np
+import pandas as pd
 
 from openmethane_prior.lib import logger
 
@@ -86,7 +87,8 @@ def allocate_emissions_to_sources(
     emission_mass: float,
 ):
     """Distribute a single total emission across all emission sources in
-    sources_df which match sources_mask."""
+    sources_df which match sources_mask.
+    """
     # since we will use addition to allocate emission to each source, ensure
     # nans are replaced with zeros prior to addition
     is_nan = pd.isna(sources_df["emissions_quantity"])

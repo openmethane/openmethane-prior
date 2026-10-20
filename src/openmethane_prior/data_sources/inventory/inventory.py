@@ -16,10 +16,11 @@
 # limitations under the License.
 #
 import datetime
+
 import pandas as pd
 
-from openmethane_prior.lib.units import days_in_period
 from openmethane_prior.lib.logger import get_logger
+from openmethane_prior.lib.units import days_in_period
 
 from .unfccc import is_code_in_code_family
 

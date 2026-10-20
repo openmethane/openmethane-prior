@@ -16,6 +16,7 @@
 # limitations under the License.
 #
 import datetime
+
 import geopandas as gpd
 import numpy as np
 
@@ -31,7 +32,8 @@ def offshore_emission_sources(
 ) -> gpd.GeoDataFrame:
     """Create normalised emission source DataFrame by combining WA petroleum
     wells dataset for locations, with land title dataset for production
-    start/end dates."""
+    start/end dates.
+    """
     offshore_wells_df: gpd.GeoDataFrame = offshore_wells_da.data
     offshore_titles_df: gpd.GeoDataFrame = offshore_titles_da.data
 

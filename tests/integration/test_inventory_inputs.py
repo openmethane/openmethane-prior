@@ -1,13 +1,14 @@
 import datetime
 import json
+
 import numpy as np
 import pandas as pd
 import pytest
 
 from openmethane_prior.data_sources.inventory import (
+    get_sector_emissions_by_code,
     inventory_data_source,
     unfccc_codes_data_source,
-    get_sector_emissions_by_code,
 )
 from openmethane_prior.sectors import all_sectors
 

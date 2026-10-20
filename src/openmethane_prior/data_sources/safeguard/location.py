@@ -45,7 +45,8 @@ def get_safeguard_facility_locations(
     data_source_name: str,
 ):
     """Return facility locations referenced in a specific data source, and a
-    filtered list of the Safeguard Mechanism facilities they relate to."""
+    filtered list of the Safeguard Mechanism facilities they relate to.
+    """
     source_locations = filter_locations(
         locations_df=locations_df,
         data_source_name=data_source_name,
