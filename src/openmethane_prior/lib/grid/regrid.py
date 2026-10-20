@@ -41,7 +41,7 @@ def regrid_data(
     # if grids are exactly the same, no regridding is necessary
     if from_grid == to_grid:
         logger.debug("identical grids, skip regridding")
-        return data
+        return np.asarray(data)
 
     # if grids share the same base projection, we can apply an efficient
     # regridding method using np.digitize
