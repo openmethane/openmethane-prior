@@ -43,6 +43,9 @@ def gas_supply_emissions(
     :return: Emissions from facilities gridded to the domain of interest
     """
     gridded_emission = np.zeros(domain_grid.shape)
+    # the night lights data source returns an xarray.DataArray when the domain
+    # matches the inventory domain, and a plain numpy array when it does not
+    nightlights_values = np.asarray(nightlights)
 
     logger.debug(f"Found {len(facilities_df)} gas supply facilities totalling {facilities_df['ch4_kg'].sum() / 1e6:.2f} kt CH4 in the period")
     for state in facilities_df["state"].unique():
@@ -61,7 +64,7 @@ def gas_supply_emissions(
         if state_mask.sum() == 0:
             # no overlap between the state and the domain
             continue
-        state_nightlights = nightlights.values * state_mask
+        state_nightlights = nightlights_values * state_mask
         state_nightlights /= state_nightlights.sum()
 
         # distribute the state emission to grid cells based on night lights
