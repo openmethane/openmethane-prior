@@ -19,6 +19,18 @@ of rst and use slightly different categories.
 
 <!-- towncrier release notes start -->
 
+## openmethane-prior v1.7.3 (2026-10-28)
+
+### 🎉 Improvements
+
+- Updated livestock sector to distribute inventory emissions for cattle and sheep using CSIRO gridded livestock emissions, and moved swine and other livestock into the agriculture sector. ([#223](https://github.com/openmethane/openmethane-prior/pull/223))
+
+### 🐛 Bug Fixes
+
+- Safeguard Mechanism emissions for oil and gas facilities are now allocated only over the days the facility was operating, for facilities which started or stopped operating partway through a reporting year. ([#226](https://github.com/openmethane/openmethane-prior/pull/226))
+- Updated certifi to 2026.10.23 so the container no longer trusts the root CAs affected by the October 2026 eMudhra intermediate key compromise. ([#234](https://github.com/openmethane/openmethane-prior/pull/234))
+
+
 ## openmethane-prior v1.7.2 (2026-09-20)
 
 ### 🆕 Features
