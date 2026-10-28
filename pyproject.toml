@@ -61,6 +61,10 @@ default-groups = [
 requires = ["uv_build>=0.9.15,<0.10.0"]
 build-backend = "uv_build"
 
+[tool.pytest.ini_options]
+markers = [
+    "long_running: takes several minutes, deselected in CI with -m 'not long_running'",
+]
 
 [tool.ruff]
 src = ["src"]

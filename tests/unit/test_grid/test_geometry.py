@@ -2,7 +2,11 @@ import numpy as np
 import pytest
 from shapely.geometry import LineString, MultiLineString, MultiPolygon, Polygon
 
-from openmethane_prior.lib.grid.geometry import grid_mask_from_polygon, grid_weights_from_linestring
+from openmethane_prior.lib.grid.geometry import (
+    grid_mask_from_polygon,
+    grid_mask_from_polygon_overlap,
+    grid_weights_from_linestring,
+)
 from openmethane_prior.lib.grid.grid import Grid
 
 
@@ -64,6 +68,78 @@ def test_mask_shape_matches_grid_shape():
 
     assert mask.shape == grid.shape  # (ny=5, nx=10)
     assert mask.dtype == bool
+
+
+# ---------------------------------------------------------------------------
+# grid_mask_from_polygon_overlap
+# ---------------------------------------------------------------------------
+
+
+def test_overlap_includes_partially_covered_cells(small_grid):
+    # covers x 0..1.1, y 0..0.1: a thin strip along the bottom of cell (0,0)
+    # and a small corner of cell (1,0)
+    polygon = Polygon([(0, 0), (1.1, 0), (1.1, 0.1), (0, 0.1)])
+    mask = grid_mask_from_polygon_overlap(small_grid, polygon)
+
+    assert mask.shape == small_grid.shape
+    assert mask.dtype == bool
+    np.testing.assert_array_equal(mask, [
+        [True,  True,  False, False],
+        [False, False, False, False],
+        [False, False, False, False],
+        [False, False, False, False],
+    ])
+
+
+def test_overlap_excludes_cells_touching_only_an_edge(small_grid):
+    # exactly cell (1,1), which shares edges with cells around it
+    polygon = Polygon([(1, 1), (2, 1), (2, 2), (1, 2)])
+    mask = grid_mask_from_polygon_overlap(small_grid, polygon)
+
+    np.testing.assert_array_equal(mask, [
+        [False, False, False, False],
+        [False, True,  False, False],
+        [False, False, False, False],
+        [False, False, False, False],
+    ])
+
+
+def test_overlap_excludes_cells_touching_only_a_corner(small_grid):
+    # a diamond inside cell (1,1) whose points touch the cell edges, plus a
+    # triangle whose corner touches the corner shared by cells (2,2) and (3,3)
+    diamond = Polygon([(1.5, 1), (2, 1.5), (1.5, 2), (1, 1.5)])
+    triangle = Polygon([(3, 3), (4, 3), (4, 4)])
+    mask = grid_mask_from_polygon_overlap(small_grid, MultiPolygon([diamond, triangle]))
+
+    np.testing.assert_array_equal(mask, [
+        [False, False, False, False],
+        [False, True,  False, False],
+        [False, False, False, False],
+        [False, False, False, True ],
+    ])
+
+
+def test_overlap_polygon_outside_grid(small_grid):
+    polygon = Polygon([(10, 10), (20, 10), (20, 20), (10, 20)])
+    mask = grid_mask_from_polygon_overlap(small_grid, polygon)
+
+    np.testing.assert_array_equal(mask, np.zeros(small_grid.shape, dtype=bool))
+
+
+def test_overlap_excludes_cells_inside_a_hole(small_grid):
+    # whole grid except a hole covering cell (1,1) exactly and half of cell (2,1)
+    polygon = Polygon(
+        [(-1, -1), (5, -1), (5, 5), (-1, 5)],
+        holes=[[(1, 1), (2.5, 1), (2.5, 2), (1, 2)]],
+    )
+    mask = grid_mask_from_polygon_overlap(small_grid, polygon)
+
+    np.testing.assert_array_equal(mask, [
+        [True, True,  True, True],
+        [True, False, True, True],
+        [True, True,  True, True],
+        [True, True,  True, True],
+    ])
 
 
 # ---------------------------------------------------------------------------
