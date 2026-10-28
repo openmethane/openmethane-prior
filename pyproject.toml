@@ -29,6 +29,7 @@ dependencies = [
     "bmi-arcgis-restapi>=2.4.15",
     "owslib>=0.35.0",
     "openpyxl>=3.1.5",
+    "certifi>=2026.10.18",
 ]
 
 [dependency-groups]
