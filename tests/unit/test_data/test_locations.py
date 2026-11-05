@@ -1,7 +1,9 @@
+import io
+
 import pandas as pd
 import pytest
 
-from openmethane_prior.data_sources.safeguard.data import safeguard_locations_csv_columns
+from openmethane_prior.data_sources.safeguard.data import read_location_csv
 from openmethane_prior.data_sources.safeguard.location import (
     filter_locations,
     get_safeguard_facility_locations,
@@ -36,7 +38,7 @@ def location_rows_df():
             ("Facility Name C", "test-ds", "id-003"),
             ("Facility Name E", "alternate-ds", "id-005"),
         ],
-        columns=safeguard_locations_csv_columns[:3], # ignore "notes"
+        columns=["safeguard_facility_name", "data_source_name", "data_source_id"],
     )
 
 def test_locations_filter_locations(location_rows_df):
@@ -95,3 +97,44 @@ def test_locations_get_safeguard_facility_locations(safeguard_facilities_df, loc
     assert len(test_locations) == 5
     assert set(test_locations.safeguard_facility_name) == {"Facility Name A", "Facility Name B", "Facility Name C"}
     assert set(test_locations.data_source_id) == {"id-001a", "id-001b", "id-001c", "id-002", "id-003"}
+
+
+def test_read_location_csv():
+    csv = (
+        "Facility name,Supporting data source,Supporting data id,"
+        "First financial year,Last financial year,Notes\n"
+        "Facility Name A,test-ds,id-001,,,a note\n"
+        "Facility Name B,test-ds,533928,2024-25,,\n"
+        "Facility Name C,test-ds,,,,deliberately unlocated\n"
+    )
+
+    result = read_location_csv(io.StringIO(csv))
+
+    expected = pd.DataFrame({
+        "safeguard_facility_name": ["Facility Name A", "Facility Name B"],
+        "data_source_name": ["test-ds", "test-ds"],
+        "data_source_id": ["id-001", "533928"],
+    })
+    pd.testing.assert_frame_equal(result, expected)
+
+
+def test_read_location_csv_reordered_columns():
+    csv = (
+        "Notes,Supporting data id,Facility name,Supporting data source\n"
+        ",id-001,Facility Name A,test-ds\n"
+    )
+
+    result = read_location_csv(io.StringIO(csv))
+
+    assert result.to_dict(orient="records") == [{
+        "safeguard_facility_name": "Facility Name A",
+        "data_source_name": "test-ds",
+        "data_source_id": "id-001",
+    }]
+
+
+def test_read_location_csv_missing_column():
+    csv = "Facility name,Supporting data source\nFacility Name A,test-ds\n"
+
+    with pytest.raises(KeyError):
+        read_location_csv(io.StringIO(csv))
