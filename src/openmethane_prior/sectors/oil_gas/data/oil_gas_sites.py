@@ -24,6 +24,19 @@ from openmethane_prior.lib.data_manager.fetchers import fetch_google_sheet_csv
 from openmethane_prior.lib.data_manager.source import ConfiguredDataSource
 
 
+# columns of the "Oil and gas sites" sheet used by the prior
+oil_gas_sites_columns = [
+    "Facility name",
+    "ANZSIC",
+    "Site",
+    "Type",
+    "Latitude",
+    "Longitude",
+    "Operation start",
+    "Operation end",
+]
+
+
 def parse_oil_gas_sites_csv(data_source: ConfiguredDataSource) -> gpd.GeoDataFrame:
     """Read and parse the oil-gas-processing CSV asset, and convert to a
     GeoDataFrame using the latitude/longitude columns."""
@@ -59,6 +72,6 @@ oil_gas_sites_data_source = DataSource(
     name="oil-gas-sites",
     file_path="oil-gas-sites.csv",
     url="https://docs.google.com/spreadsheets/d/1vET6DVXo3K9MeMYJj9sksSTmQjV3v9JmIPSlR6HS4NA",
-    fetch=fetch_google_sheet_csv("Oil and gas sites"),
+    fetch=fetch_google_sheet_csv("Oil and gas sites", required_columns=oil_gas_sites_columns),
     parse=parse_oil_gas_sites_csv,
 )

@@ -26,12 +26,9 @@ import zipfile
 
 from .source import ConfiguredDataSource
 
-def fetch_google_sheet_by_name_csv(
-    sheet_id_or_url: str,
-    sheet_name: str,
-) -> pd.DataFrame:
-    """Fetch a single sheet from a publicly viewable Google Sheet and return
-    the contents as a pandas DataFrame."""
+def google_sheet_csv_url(sheet_id_or_url: str, sheet_name: str) -> str:
+    """Return the URL of the CSV export of a single sheet in a publicly
+    viewable Google Sheet."""
     if "://docs.google.com" in sheet_id_or_url:
         # if a url is provided, extract the sheet_id
         sheet_url = urllib.parse.urlparse(sheet_id_or_url)
@@ -42,19 +39,50 @@ def fetch_google_sheet_by_name_csv(
     # make the sheet name url-safe
     sheet_name_param = urllib.parse.quote(sheet_name)
 
-    # Google Sheets provides a CSV endpoint for downloading
-    url = f"https://docs.google.com/spreadsheets/d/{sheet_id}/gviz/tq?tqx=out:csv&sheet={sheet_name_param}"
-    df = pd.read_csv(url)
+    # Without headers=1, Google guesses how many rows make up the header. A
+    # column that is mostly blank can make it treat most of the sheet as the
+    # header, joining every value into one column name.
+    return (
+        f"https://docs.google.com/spreadsheets/d/{sheet_id}/gviz/tq"
+        f"?tqx=out:csv&headers=1&sheet={sheet_name_param}"
+    )
+
+
+def check_required_columns(df: pd.DataFrame, required_columns: list[str], sheet_name: str):
+    """Raise a ValueError if any of required_columns are missing from df."""
+    missing_columns = [column for column in required_columns if column not in df.columns]
+    if missing_columns:
+        raise ValueError(
+            f"Google Sheet '{sheet_name}' is missing columns {missing_columns}, "
+            f"found {list(df.columns)}"
+        )
+
+
+def fetch_google_sheet_by_name_csv(
+    sheet_id_or_url: str,
+    sheet_name: str,
+    required_columns: list[str] | None = None,
+) -> pd.DataFrame:
+    """Fetch a single sheet from a publicly viewable Google Sheet and return
+    the contents as a pandas DataFrame.
+
+    :param required_columns: Column names the sheet must have. A ValueError is
+      raised if any are missing. This also catches a renamed sheet, since
+      Google returns the first sheet when the named sheet doesn't exist.
+    """
+    df = pd.read_csv(google_sheet_csv_url(sheet_id_or_url, sheet_name))
 
     # remove empty columns with no name or data
     for column_name in df.columns:
         if "Unnamed: " in column_name and df[column_name].isnull().all():
             del df[column_name]
 
+    check_required_columns(df, required_columns or [], sheet_name)
+
     return df
 
 
-def fetch_google_sheet_csv(sheet_name: str):
+def fetch_google_sheet_csv(sheet_name: str, required_columns: list[str] | None = None):
     """Return a DataSource fetch-compatible method for a DataSource where a
     Google Sheet is specified by the url parameter and only a single sheet
     should be fetched.
@@ -67,7 +95,7 @@ def fetch_google_sheet_csv(sheet_name: str):
         )
     """
     def _data_source_fetch(data_source: ConfiguredDataSource) -> pathlib.Path:
-        df = fetch_google_sheet_by_name_csv(data_source.url, sheet_name)
+        df = fetch_google_sheet_by_name_csv(data_source.url, sheet_name, required_columns)
         df.to_csv(data_source.asset_path, index=False)
         return data_source.asset_path
 

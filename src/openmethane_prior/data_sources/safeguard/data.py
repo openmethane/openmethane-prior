@@ -58,12 +58,16 @@ safeguard_mechanism_csv_columns = [
     "notes", # Notes
 ]
 
-safeguard_locations_csv_columns = [
-    "safeguard_facility_name", # exact facility_name from Safeguard Mechanism
-    "data_source_name", # DataSource name with facility details
-    "data_source_id", # identifier in reference DataSource
-    "notes", # notes about how this location is related to the facility
-]
+# columns of the Safeguard locations sheet used by the prior, and the names
+# they're given. Other columns (like notes) are ignored, wherever they appear.
+safeguard_locations_columns = {
+    "Facility name": "safeguard_facility_name", # exact facility_name from Safeguard Mechanism
+    "Supporting data source": "data_source_name", # DataSource name with facility details
+    "Supporting data id": "data_source_id", # identifier in reference DataSource
+}
+
+# columns of the "Petroleum titles" sheet used to create location rows
+petroleum_titles_columns = ["Facility name", "Data source", "Production license"]
 
 
 def parse_csv_numeric(csv_value: str) -> float | None:
@@ -116,14 +120,17 @@ safeguard_mechanism_data_source = DataSource(
 
 def fetch_location_csv(data_source: ConfiguredDataSource) -> pathlib.Path:
     # Primary source of external locations
-    external_locations_df = fetch_google_sheet_by_name_csv(data_source.url, "External facility locations")
+    external_locations_df = fetch_google_sheet_by_name_csv(
+        data_source.url, "External facility locations", list(safeguard_locations_columns),
+    )
 
     # Petroleum titles sheet has some extra details, but contains columns for
     # Facility name, Data source, and Production license which can be converted
     # into external location references.
-    petroleum_titles_df = fetch_google_sheet_by_name_csv(data_source.url, "Petroleum titles")
-    petroleum_locations_df = petroleum_titles_df \
-        .drop(columns=["Responsible emitter", "State"]) \
+    petroleum_titles_df = fetch_google_sheet_by_name_csv(
+        data_source.url, "Petroleum titles", petroleum_titles_columns,
+    )
+    petroleum_locations_df = petroleum_titles_df[petroleum_titles_columns] \
         .rename(columns={
             "Data source": "Supporting data source",
             "Production license": "Supporting data id",
@@ -132,7 +139,9 @@ def fetch_location_csv(data_source: ConfiguredDataSource) -> pathlib.Path:
     # Oil and gas sites, which are used as an independent DataSource in the
     # oil_gas sector, already include the Facility name. Create a row for each
     # facility in this with the facility name as both the name and the id.
-    oil_gas_sites = fetch_google_sheet_by_name_csv(data_source.url, "Oil and gas sites")
+    oil_gas_sites = fetch_google_sheet_by_name_csv(
+        data_source.url, "Oil and gas sites", ["Facility name"],
+    )
     oil_gas_facilities = oil_gas_sites["Facility name"].unique()
     oil_gas_locations_df = pd.DataFrame({
         "Facility name": oil_gas_facilities,
@@ -146,16 +155,19 @@ def fetch_location_csv(data_source: ConfiguredDataSource) -> pathlib.Path:
     return data_source.asset_path
 
 
-def parse_location_csv(data_source: ConfiguredDataSource):
-    locations_rows_df = pd.read_csv(
-        filepath_or_buffer=data_source.asset_path,
-        header=0,
-        names=safeguard_locations_csv_columns,
-        usecols=["safeguard_facility_name", "data_source_name", "data_source_id"],
-    )
+def read_location_csv(filepath_or_buffer) -> pd.DataFrame:
+    """Read Safeguard facility location rows, selecting columns by header
+    name so that extra or reordered columns in the sheet don't matter."""
+    locations_csv_df = pd.read_csv(filepath_or_buffer, dtype=str)
+    locations_rows_df = locations_csv_df[list(safeguard_locations_columns)] \
+        .rename(columns=safeguard_locations_columns)
 
     # filter out any rows with incomplete information
     return locations_rows_df.dropna()
+
+
+def parse_location_csv(data_source: ConfiguredDataSource) -> pd.DataFrame:
+    return read_location_csv(data_source.asset_path)
 
 
 # Locations of Safeguard Mechanism facilities which are found in other data
