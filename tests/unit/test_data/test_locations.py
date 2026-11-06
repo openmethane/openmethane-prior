@@ -3,9 +3,14 @@ import io
 import pandas as pd
 import pytest
 
-from openmethane_prior.data_sources.safeguard.data import read_location_csv
+from openmethane_prior.data_sources.financial_year import FinancialYear
+from openmethane_prior.data_sources.safeguard.data import (
+    check_location_year_columns,
+    read_location_csv,
+)
 from openmethane_prior.data_sources.safeguard.location import (
     filter_locations,
+    filter_locations_for_financial_year,
     get_safeguard_facility_locations,
 )
 from openmethane_prior.data_sources.safeguard.facility import create_facilities_from_safeguard_rows
@@ -25,7 +30,7 @@ def safeguard_facilities_df():
             ("Facility Name F", "NSW", "Basic ferrous product manufacturing (212)", 456.0),
         ],
         columns=["facility_name", "state", "anzsic", "co2e_ch4"],
-    ), (2023, 2024), 28)
+    ), FinancialYear(2023), 28)
 
 @pytest.fixture()
 def location_rows_df():
@@ -99,16 +104,74 @@ def test_locations_get_safeguard_facility_locations(safeguard_facilities_df, loc
     assert set(test_locations.data_source_id) == {"id-001a", "id-001b", "id-001c", "id-002", "id-003"}
 
 
-def test_read_location_csv():
-    csv = (
-        "Facility name,Supporting data source,Supporting data id,"
-        "First financial year,Last financial year,Notes\n"
-        "Facility Name A,test-ds,id-001,,,a note\n"
-        "Facility Name B,test-ds,533928,2024-25,,\n"
-        "Facility Name C,test-ds,,,,deliberately unlocated\n"
+@pytest.fixture()
+def year_limited_location_rows_df():
+    # Facility B absorbed another facility's mine (id-002b) from FY 2024-25,
+    # and Facility C's original site (id-003a) closed after FY 2023-24
+    return pd.DataFrame(
+        data=[
+            ("Facility Name A", "test-ds", "id-001", None, None),
+            ("Facility Name B", "test-ds", "id-002a", None, None),
+            ("Facility Name B", "test-ds", "id-002b", "2024-25", None),
+            ("Facility Name C", "test-ds", "id-003a", None, "2023-24"),
+            ("Facility Name C", "test-ds", "id-003b", "2024-25", ""),
+        ],
+        columns=[
+            "safeguard_facility_name", "data_source_name", "data_source_id",
+            "first_financial_year", "last_financial_year",
+        ],
     )
 
-    result = read_location_csv(io.StringIO(csv))
+
+def test_filter_locations_for_financial_year_before_change(year_limited_location_rows_df):
+    result = filter_locations_for_financial_year(
+        year_limited_location_rows_df, FinancialYear(2023),
+    )
+
+    assert list(result["data_source_id"]) == ["id-001", "id-002a", "id-003a"]
+
+
+def test_filter_locations_for_financial_year_after_change(year_limited_location_rows_df):
+    result = filter_locations_for_financial_year(
+        year_limited_location_rows_df, FinancialYear(2024),
+    )
+
+    assert list(result["data_source_id"]) == ["id-001", "id-002a", "id-002b", "id-003b"]
+
+
+def test_filter_locations_for_financial_year_no_year_columns(location_rows_df):
+    result = filter_locations_for_financial_year(location_rows_df, FinancialYear(2024))
+
+    pd.testing.assert_frame_equal(result, location_rows_df)
+
+
+def test_filter_locations_for_financial_year_invalid_label(year_limited_location_rows_df):
+    year_limited_location_rows_df.loc[0, "first_financial_year"] = "2024-2025"
+
+    with pytest.raises(ValueError, match="invalid financial year '2024-2025'"):
+        filter_locations_for_financial_year(year_limited_location_rows_df, FinancialYear(2024))
+
+
+def test_filter_locations_for_financial_year_reversed_range(year_limited_location_rows_df):
+    year_limited_location_rows_df.loc[0, "first_financial_year"] = "2024-25"
+    year_limited_location_rows_df.loc[0, "last_financial_year"] = "2023-24"
+
+    match = r"first financial year after their last: \['Facility Name A'\]"
+    with pytest.raises(ValueError, match=match):
+        filter_locations_for_financial_year(year_limited_location_rows_df, FinancialYear(2024))
+
+
+location_csv = (
+    "Facility name,Supporting data source,Supporting data id,"
+    "First financial year,Last financial year,Notes\n"
+    "Facility Name A,test-ds,id-001,,,a note\n"
+    "Facility Name B,test-ds,533928,2024-25,,\n"
+    "Facility Name C,test-ds,,,,deliberately unlocated\n"
+)
+
+
+def test_read_location_csv():
+    result = read_location_csv(io.StringIO(location_csv))
 
     expected = pd.DataFrame({
         "safeguard_facility_name": ["Facility Name A", "Facility Name B"],
@@ -116,6 +179,18 @@ def test_read_location_csv():
         "data_source_id": ["id-001", "533928"],
     })
     pd.testing.assert_frame_equal(result, expected)
+
+
+def test_read_location_csv_financial_year():
+    result_2023 = read_location_csv(
+        io.StringIO(location_csv), financial_year=FinancialYear(2023),
+    )
+    result_2024 = read_location_csv(
+        io.StringIO(location_csv), financial_year=FinancialYear(2024),
+    )
+
+    assert list(result_2023["data_source_id"]) == ["id-001"]
+    assert list(result_2024["data_source_id"]) == ["id-001", "533928"]
 
 
 def test_read_location_csv_reordered_columns():
@@ -133,8 +208,36 @@ def test_read_location_csv_reordered_columns():
     }]
 
 
+def test_read_location_csv_header_whitespace():
+    csv = (
+        "Facility name ,Supporting data source,Supporting data id, First financial year\n"
+        "Facility Name A,test-ds,id-001,2024-25\n"
+    )
+
+    result = read_location_csv(io.StringIO(csv), financial_year=FinancialYear(2023))
+
+    assert len(result) == 0
+
+
 def test_read_location_csv_missing_column():
     csv = "Facility name,Supporting data source\nFacility Name A,test-ds\n"
 
     with pytest.raises(KeyError):
         read_location_csv(io.StringIO(csv))
+
+
+def test_check_location_year_columns():
+    # no exception: expected year columns, or none at all
+    check_location_year_columns(["Facility name", "First financial year", "Last financial year"])
+    check_location_year_columns(["Facility name", "Notes"])
+
+
+@pytest.mark.parametrize("column", [
+    "First Financial Year",
+    "First financial years",
+    "Last year",
+    "First FY",
+])
+def test_check_location_year_columns_unexpected(column):
+    with pytest.raises(ValueError, match="look like financial year columns"):
+        check_location_year_columns(["Facility name", column])
