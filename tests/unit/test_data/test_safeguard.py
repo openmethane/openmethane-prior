@@ -3,6 +3,8 @@ import datetime
 import pandas as pd
 import pytest
 
+from openmethane_prior.data_sources.financial_year import FinancialYear
+from openmethane_prior.data_sources.safeguard.data import safeguard_facility_columns
 from openmethane_prior.data_sources.safeguard.facility import (
     create_facilities_from_safeguard_rows,
     filter_facilities,
@@ -31,6 +33,17 @@ def test_parse_anzsic_code():
     assert parse_anzsic_code("Waste treatment, disposal and remediation services (292)") == "292"
 
 
+def test_safeguard_facility_columns():
+    facility_rows_df = pd.DataFrame(
+        data=[("Ironic", "NSW", "Basic ferrous metal manufacturing (211)", 123.0)],
+        columns=["facility_name", "state", "anzsic", "co2e_ch4"],
+    )
+
+    facilities_df = create_facilities_from_safeguard_rows(facility_rows_df, FinancialYear(2024), 28)
+
+    assert list(facilities_df.columns) == safeguard_facility_columns
+
+
 def test_safeguard_create_facilities_from_safeguard_rows():
     facility_rows_df = pd.DataFrame(
         data=[
@@ -43,7 +56,7 @@ def test_safeguard_create_facilities_from_safeguard_rows():
         columns=["facility_name", "state", "anzsic", "co2e_ch4"],
     )
 
-    facilities_df = create_facilities_from_safeguard_rows(facility_rows_df, (2024, 2025), 28)
+    facilities_df = create_facilities_from_safeguard_rows(facility_rows_df, FinancialYear(2024), 28)
 
     assert len(facilities_df) == 4 # 5 rows, 2 duplicates
 
@@ -65,7 +78,7 @@ def test_safeguard_create_facilities_from_safeguard_rows():
 def test_safeguard_filter_facilities(facility_rows_df):
     facilities_df = create_facilities_from_safeguard_rows(
         safeguard_rows_df=facility_rows_df,
-        reporting_period=(2023, 2024), # 2023-07-01 to 2024-06-30
+        financial_year=FinancialYear(2023), # 2023-07-01 to 2024-06-30
         ch4_gwp=28,
     )
 
@@ -132,7 +145,7 @@ def test_safeguard_filter_facilities(facility_rows_df):
 def test_safeguard_get_sector_safeguard_facilities_scales_to_period(facility_rows_df):
     facilities_df = create_facilities_from_safeguard_rows(
         safeguard_rows_df=facility_rows_df,
-        reporting_period=(2023, 2024), # 2023-07-01 to 2024-06-30, 366 days
+        financial_year=FinancialYear(2023), # 2023-07-01 to 2024-06-30, 366 days
         ch4_gwp=28,
     )
 
@@ -149,7 +162,7 @@ def test_safeguard_get_sector_safeguard_facilities_scales_to_period(facility_row
 def test_safeguard_get_sector_safeguard_facilities_operating_period(facility_rows_df):
     facilities_df = create_facilities_from_safeguard_rows(
         safeguard_rows_df=facility_rows_df,
-        reporting_period=(2023, 2024), # 2023-07-01 to 2024-06-30, 366 days
+        financial_year=FinancialYear(2023), # 2023-07-01 to 2024-06-30, 366 days
         ch4_gwp=28,
     )
     operating_periods = pd.DataFrame({
@@ -177,7 +190,7 @@ def test_safeguard_get_sector_safeguard_facilities_operating_period(facility_row
 def test_safeguard_get_sector_safeguard_facilities_after_operating_period(facility_rows_df):
     facilities_df = create_facilities_from_safeguard_rows(
         safeguard_rows_df=facility_rows_df,
-        reporting_period=(2023, 2024),
+        financial_year=FinancialYear(2023),
         ch4_gwp=28,
     )
     operating_periods = pd.DataFrame({
@@ -200,7 +213,7 @@ def test_safeguard_get_sector_safeguard_facilities_after_operating_period(facili
 def test_safeguard_get_sector_safeguard_facilities_operating_period_outside_reporting(facility_rows_df):
     facilities_df = create_facilities_from_safeguard_rows(
         safeguard_rows_df=facility_rows_df,
-        reporting_period=(2023, 2024),
+        financial_year=FinancialYear(2023),
         ch4_gwp=28,
     )
     # inconsistent with the facility reporting emissions in 2023-2024
