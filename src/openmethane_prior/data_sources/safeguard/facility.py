@@ -15,7 +15,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-import attrs
 import datetime
 import numpy as np
 import pandas as pd
@@ -24,44 +23,11 @@ import re
 from openmethane_prior.lib import logger
 from openmethane_prior.lib.units import days_in_overlap, days_in_period
 
+from ..financial_year import FinancialYear
 from .anzsic import filter_by_anzsic_code_family
 
 logger = logger.get_logger(__name__)
 
-
-@attrs.define()
-class SafeguardFacility:
-    name: str
-    """Facility name as present in the Safeguard Mechanism Baselines and Emissions Table"""
-
-    state: str
-    """State or territory where the facility operates"""
-
-    anzsic: str
-    """Full ANZSIC description as present in the Safeguard Mechanism, like:
-      - Coal mining (060)
-      - Oil and gas extraction (070)
-    """
-
-    anzsic_code: str
-    """ANZSIC code, like 060 or 070"""
-
-    ch4_emissions: dict[str, float]
-    """Emissions reported for the facility in kg CH4 per annum.
-    
-    The dictionary key is an Australian financial year like "2023-2024", which
-    represents the period from July 1st in the starting year to June 30th the
-    following year."""
-
-
-@attrs.define()
-class SafeguardFacilityRecord:
-    """A single row read from the Safeguard Mechanism Emissions Table"""
-    facility_name: str
-    business_name: str
-    state: str
-    anzsic: str
-    co2e_ch4: float
 
 # regex to capture numeric code between (), ie "060" from "sector (060)"
 anzsic_code_pattern = re.compile(r"\((?P<code>\d+)\)$")
@@ -76,12 +42,13 @@ def parse_anzsic_code(anzsic_full: str) -> str:
 
 def create_facilities_from_safeguard_rows(
     safeguard_rows_df: pd.DataFrame,
-    reporting_period: tuple[int, int],
+    financial_year: FinancialYear,
     ch4_gwp: float,
     co2_gwp: float = 1,
 ) -> pd.DataFrame:
-    """Create a SafeguardFacility object from a single row of the Baselines and
-    Emissions Table. CH4 must be converted from CO2-equivalent kg to CH4 kg."""
+    """Create a facilities DataFrame from rows of the Baselines and Emissions
+    Table reported for financial_year. CH4 must be converted from
+    CO2-equivalent kg to CH4 kg."""
     safeguard_df = safeguard_rows_df.copy()
 
     # rows with the same facility name but different business name are the same
@@ -95,11 +62,8 @@ def create_facilities_from_safeguard_rows(
     # extract the ANZSIC code from the provided format
     safeguard_df["anzsic_code"] = safeguard_df["anzsic"].map(parse_anzsic_code)
 
-    # SGM reporting follows Australian financial year, from
-    # July 1st to June 30 the following year
-    reporting_start_year, reporting_end_year = reporting_period
-    safeguard_df["reporting_start"] = datetime.date(reporting_start_year, 7, 1)
-    safeguard_df["reporting_end"] = datetime.date(reporting_end_year, 6, 30)
+    safeguard_df["reporting_start"] = financial_year.start
+    safeguard_df["reporting_end"] = financial_year.end
 
     return safeguard_df
 
