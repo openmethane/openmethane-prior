@@ -20,6 +20,7 @@ import numpy as np
 import xarray as xr
 
 from openmethane_prior.data_sources.safeguard import (
+    get_sector_safeguard_facilities,
     safeguard_locations_data_source,
     safeguard_mechanism_data_source,
 )
@@ -31,7 +32,6 @@ from openmethane_prior.lib import (
 from openmethane_prior.data_sources.climate_trace import filter_emissions_sources
 from openmethane_prior.data_sources.inventory import get_sector_emissions_by_code, inventory_data_source
 from openmethane_prior.lib.sector.au_sector import AustraliaPriorSector
-from openmethane_prior.lib.units import days_in_period
 
 from .data import coal_facilities_data_source
 from .safeguard_coal import allocate_safeguard_facility_emissions
@@ -42,24 +42,45 @@ logger = logger.get_logger(__name__)
 def process_emissions(sector: AustraliaPriorSector, sector_config: PriorSectorConfig, prior_ds: xr.Dataset):
     config = sector_config.prior_config
 
-    # prepare a grid to allocate emissions
+    # prepare a grid to allocate emissions (kg over the period)
     domain_grid = config.domain().grid
-    methane = np.zeros(domain_grid.shape)
+    methane_kg = np.zeros(domain_grid.shape)
 
-    safeguard_mechanism_asset = sector_config.data_manager.get_asset(safeguard_mechanism_data_source)
     facility_locations_asset = sector_config.data_manager.get_asset(safeguard_locations_data_source)
     coal_facilities_asset = sector_config.data_manager.get_asset(coal_facilities_data_source)
 
+    # identify Safeguard Mechanism facilities in this sector which reported
+    # emissions during the period of interest
+    safeguard_facilities_asset = sector_config.data_manager.get_asset(
+        safeguard_mechanism_data_source
+    )
+    sector_facilities_df = get_sector_safeguard_facilities(
+        safeguard_facilities_df=safeguard_facilities_asset.data,
+        anzsic_codes=sector.anzsic_codes,
+        period=(config.start_date.date(), config.end_date.date()),
+    )
+    if len(sector_facilities_df) == 0:
+        logger.info("No Safeguard facilities found for the period")
+    else:
+        logger.info(
+            f"Found {len(sector_facilities_df)} Safeguard facilities in the period "
+            f"in sectors: {','.join(sector.anzsic_codes)}"
+        )
+        logger.info(
+            f"{sector_facilities_df['ch4_kg'].sum() / 1e6:.2f} kt total Safeguard emissions "
+            f"in the period"
+        )
+
     safeguard_facilities, safeguard_locations, safeguard_gridded_ch4 = allocate_safeguard_facility_emissions(
-        config=config,
-        anzsic_codes=["060"],
-        safeguard_facilities_asset=safeguard_mechanism_asset,
-        facility_locations_asset=facility_locations_asset,
-        reference_data_asset=coal_facilities_asset,
+        domain_grid=domain_grid,
+        safeguard_facilities_df=sector_facilities_df,
+        facility_locations_df=facility_locations_asset.data,
+        coal_facilities_df=coal_facilities_asset.data,
+        coal_data_source_name=coal_facilities_asset.name,
     )
 
     # add safeguard emissions to our gridded sector emissions
-    methane += safeguard_gridded_ch4
+    methane_kg += safeguard_gridded_ch4
 
     # read the total emissions over the sector (in kg)
     emissions_inventory = sector_config.data_manager.get_asset(inventory_data_source).data
@@ -71,7 +92,7 @@ def process_emissions(sector: AustraliaPriorSector, sector_config: PriorSectorCo
     )
 
     # SGM emissions have been allocated, find the remaining inventory
-    safeguard_allocated_emissions = safeguard_facilities["ch4_kg"].sum() * (days_in_period(config.start_date, config.end_date) / 365)
+    safeguard_allocated_emissions = safeguard_facilities["ch4_kg"].sum()
     sector_unallocated_emissions = sector_total_emissions - safeguard_allocated_emissions
 
     # select the emissions source data from the requested period
@@ -89,16 +110,13 @@ def process_emissions(sector: AustraliaPriorSector, sector_config: PriorSectorCo
         sector_unallocated_emissions / coal_unallocated["emissions_quantity"].sum()
     )
 
-    unallocated_facilities_gridded = np.zeros(domain_grid.shape)
     for _, facility in coal_unallocated.iterrows():
         cell_x, cell_y, cell_valid = domain_grid.lonlat_to_cell_index(facility["lon"], facility["lat"])
 
         if cell_valid:
-            unallocated_facilities_gridded[cell_y, cell_x] += facility["emissions_quantity"]
+            methane_kg[cell_y, cell_x] += facility["emissions_quantity"]
 
-    methane += kg_to_period_cell_flux(unallocated_facilities_gridded, config)
-
-    return methane
+    return kg_to_period_cell_flux(methane_kg, config)
 
 
 sector = AustraliaPriorSector(

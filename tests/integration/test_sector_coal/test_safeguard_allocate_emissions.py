@@ -1,7 +1,9 @@
 import attrs
 import datetime
+import pytest
 
 from openmethane_prior.data_sources.safeguard import (
+    get_sector_safeguard_facilities,
     safeguard_locations_data_source,
     safeguard_mechanism_data_source,
 )
@@ -40,28 +42,35 @@ def test_safeguard_allocate_emissions(config, input_files, data_manager):
     assert (capcoal_lonlat["lon"], capcoal_lonlat["lat"]) == (148.580506, -22.990997)
     assert config.domain().grid.lonlat_to_cell_index(capcoal_lonlat["lon"], capcoal_lonlat["lat"]) == (4, 8, True)
 
-    # run the test
-    facilities, locations, gridded_emissions = allocate_safeguard_facility_emissions(
-        config=config_2023,
-        anzsic_codes=["060"],
-        safeguard_facilities_asset=safeguard_facilities_asset,
-        facility_locations_asset=facility_locations_asset,
-        reference_data_asset=coal_facilities_asset,
+    sector_facilities_2023 = get_sector_safeguard_facilities(
+        safeguard_facilities_df=safeguard_facilities_asset.data,
+        anzsic_codes=["06"],
+        period=(config_2023.start_date.date(), config_2023.end_date.date()),
     )
 
-    # convert facility annual emissions to kg/m2/s
-    expected_emissions = (sgm_capcoal_facility.iloc[0]["ch4_kg"]
-                          / config.domain().grid.cell_area
-                          / (365 * 24 * 60 * 60))
+    # run the test
+    facilities, locations, gridded_emissions = allocate_safeguard_facility_emissions(
+        domain_grid=config_2023.domain().grid,
+        safeguard_facilities_df=sector_facilities_2023,
+        facility_locations_df=facility_locations_asset.data,
+        coal_facilities_df=coal_facilities_asset.data,
+        coal_data_source_name=coal_facilities_asset.name,
+    )
+
+    # annual emissions scaled to the 2 day period, in a 366 day reporting year
+    expected_emissions = sgm_capcoal_facility.iloc[0]["ch4_kg"] * 2 / 366
 
     # check the emissions are allocated to the right grid cell
-    assert float(gridded_emissions[8, 4]) == expected_emissions
+    assert float(gridded_emissions[8, 4]) == pytest.approx(expected_emissions)
 
     # 11 Safeguard facilities are represented in au-test
     assert len(gridded_emissions[gridded_emissions > 0]) == 11
 
-    # 69 facilities with locations, including ones located outside the domain
+    # 69 facilities with locations, including ones located outside the domain.
+    # Norwich Park Mine has no coal mine location, so isn't allocated.
     assert len(facilities) == 69
+    assert "Norwich Park Mine" in set(sector_facilities_2023["facility_name"])
+    assert "Norwich Park Mine" not in set(facilities["facility_name"])
     # Some facilities have multiple locations
     assert len(locations) == 72
     assert len(locations[locations["safeguard_facility_name"] == "Hunter Valley Operations mine"]) == 2
@@ -75,13 +84,19 @@ def test_safeguard_allocate_emissions(config, input_files, data_manager):
     )
     config_2022.prepare_paths()
 
+    sector_facilities_2022 = get_sector_safeguard_facilities(
+        safeguard_facilities_df=safeguard_facilities_asset.data,
+        anzsic_codes=["06"],
+        period=(config_2022.start_date.date(), config_2022.end_date.date()),
+    )
+
     # run the test
     facilities, locations, gridded_emissions = allocate_safeguard_facility_emissions(
-        config=config_2022,
-        anzsic_codes=["060"],
-        safeguard_facilities_asset=safeguard_facilities_asset,
-        facility_locations_asset=facility_locations_asset,
-        reference_data_asset=coal_facilities_asset,
+        domain_grid=config_2022.domain().grid,
+        safeguard_facilities_df=sector_facilities_2022,
+        facility_locations_df=facility_locations_asset.data,
+        coal_facilities_df=coal_facilities_asset.data,
+        coal_data_source_name=coal_facilities_asset.name,
     )
 
     # zero emissions have been allocated, as the time period in the config is
