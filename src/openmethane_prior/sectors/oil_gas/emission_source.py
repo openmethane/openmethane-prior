@@ -74,11 +74,21 @@ def normalise_emission_source_df(
 ) -> gpd.GeoDataFrame:
     normalised_df = df.copy()
 
-    # use a default weight of 1 for each source if no weight is present
-    if "weight" not in normalised_df.columns:
+    # weights are only meaningful relative to other rows from the same data
+    # source, so a data source without weights gives each row an equal weight
+    if "weight" not in normalised_df.columns or normalised_df["weight"].isna().all():
         normalised_df["weight"] = 1.0
-    else:
-        normalised_df["weight"].fillna(1.0)
+    elif normalised_df["weight"].isna().any():
+        # when some rows have a weight, there's no way to know what a missing
+        # one should be relative to them
+        missing_mask = normalised_df["weight"].isna()
+        data_sources = ", ".join(
+            normalised_df.loc[missing_mask, "data_source"].astype(str).unique()
+        )
+        raise ValueError(
+            f"{missing_mask.sum()} of {len(normalised_df)} emission sources from "
+            f"{data_sources} have no weight, while others do"
+        )
 
     # select only columns which are present in emission_source_dtypes
     normalised_df = normalised_df[list(emission_source_dtypes.keys())].set_crs(df.crs)
@@ -134,3 +144,4 @@ def allocate_emissions_to_sources(
 
     # naively allocate the emissions across each emission source equally
     sources_df.loc[sources_mask, "emissions_quantity"] += sources_weight[sources_mask] * emission_mass
+

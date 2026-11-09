@@ -2,12 +2,28 @@ import datetime
 import geopandas as gpd
 import numpy as np
 import pandas as pd
+import pytest
 import shapely
 
 from openmethane_prior.sectors.oil_gas.emission_source import (
     normalise_emission_source_df,
     allocate_emissions_to_sources,
 )
+
+
+def pipelines_gdf(weights: list[float]) -> gpd.GeoDataFrame:
+    """Build a GeoDataFrame of pipeline emission sources with the given weights."""
+    return gpd.GeoDataFrame({
+        "geometry": [shapely.LineString([(i, 0.0), (i, 1.0)]) for i in range(len(weights))],
+        "site_type": ["pipeline-gas"] * len(weights),
+        "activity_start": [pd.NaT] * len(weights),
+        "activity_end": [pd.NaT] * len(weights),
+        "data_source": ["AU-gas-pipelines"] * len(weights),
+        "data_source_id": [str(i) for i in range(len(weights))],
+        "group_id": ["xyz"] * len(weights),
+        "state": ["VIC"] * len(weights),
+        "weight": weights,
+    }, crs="EPSG:7844")
 
 
 def test_normalise_emission_source():
@@ -41,6 +57,32 @@ def test_normalise_emission_source():
 
     assert result_df.crs == "EPSG:4326"
 
+
+
+def test_normalise_emission_source_weights():
+    test_df = pipelines_gdf([2.5, 0.5, 10.0])
+
+    result_df = normalise_emission_source_df(test_df, "EPSG:4326")
+
+    assert list(result_df["weight"]) == [2.5, 0.5, 10.0]
+
+
+def test_normalise_emission_source_all_weights_missing():
+    test_df = pipelines_gdf([np.nan, np.nan, np.nan])
+
+    result_df = normalise_emission_source_df(test_df, "EPSG:4326")
+
+    assert list(result_df["weight"]) == [1.0, 1.0, 1.0]
+
+
+def test_normalise_emission_source_some_weights_missing():
+    test_df = pipelines_gdf([2.5, np.nan, 10.0])
+
+    with pytest.raises(
+        ValueError,
+        match="1 of 3 emission sources from AU-gas-pipelines have no weight",
+    ):
+        normalise_emission_source_df(test_df, "EPSG:4326")
 
 def test_allocate_emissions_to_sources_only_masked():
     df = pd.DataFrame(
@@ -210,3 +252,4 @@ def test_allocate_emissions_to_sources_weights():
         df[drillholes_mask]["emissions_quantity"].sum(),
         df[facilities_mask]["emissions_quantity"].sum()
     )
+
