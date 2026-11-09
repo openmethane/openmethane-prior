@@ -145,3 +145,18 @@ def allocate_emissions_to_sources(
     # naively allocate the emissions across each emission source equally
     sources_df.loc[sources_mask, "emissions_quantity"] += sources_weight[sources_mask] * emission_mass
 
+
+def check_emissions_allocated(sources_df: pd.DataFrame):
+    """Raise an error if any emission source has no emissions allocated.
+
+    A single NaN emission spreads to every cell of the gridded sector, since
+    line sources are gridded with weights covering the whole domain, so a
+    sector with NaN emissions must not be gridded.
+    """
+    missing_mask = pd.isna(sources_df["emissions_quantity"])
+    if missing_mask.any():
+        data_sources = ", ".join(sources_df.loc[missing_mask, "data_source"].astype(str).unique())
+        raise ValueError(
+            f"{missing_mask.sum()} of {len(sources_df)} emission sources from "
+            f"{data_sources} have no emissions allocated"
+        )

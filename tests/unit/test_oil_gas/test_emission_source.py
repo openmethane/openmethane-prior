@@ -8,6 +8,7 @@ import shapely
 from openmethane_prior.sectors.oil_gas.emission_source import (
     normalise_emission_source_df,
     allocate_emissions_to_sources,
+    check_emissions_allocated,
 )
 
 
@@ -253,3 +254,32 @@ def test_allocate_emissions_to_sources_weights():
         df[facilities_mask]["emissions_quantity"].sum()
     )
 
+
+def test_check_emissions_allocated():
+    sources_df = pd.DataFrame(
+        data=[
+            (0.0, "AU-gas-pipelines"),
+            (2.5, "AU-gas-pipelines"),
+            (1.0, "nsw-drillholes"),
+        ],
+        columns=["emissions_quantity", "data_source"],
+    )
+
+    check_emissions_allocated(sources_df)  # raises no error
+
+
+def test_check_emissions_allocated_missing():
+    sources_df = pd.DataFrame(
+        data=[
+            (np.nan, "AU-gas-pipelines"),
+            (2.5, "AU-gas-pipelines"),
+            (np.nan, "nsw-drillholes"),
+        ],
+        columns=["emissions_quantity", "data_source"],
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="2 of 3 emission sources from AU-gas-pipelines, nsw-drillholes have no emissions",
+    ):
+        check_emissions_allocated(sources_df)
