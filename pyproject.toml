@@ -34,7 +34,7 @@ dependencies = [
 
 [dependency-groups]
 tests = [
-    "pytest>=8.2.1,<9",
+    "pytest>=9.0.3,<10",
     "pytest-mock>=3.15.1,<4",
 ]
 dev = [

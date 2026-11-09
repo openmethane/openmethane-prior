@@ -84,6 +84,6 @@ Prefer repeating a few lines of arguments over hiding the call in a helper.
 
 - Ruff linting and formatting, line length 100
 - NumPy-style docstrings
-- Python 3.11 only (`>=3.11,<3.12`)
+- Python 3.12 only (`>=3.12,<3.13`)
 - Apache 2.0 license headers required on all source files (`make update-licenseheaders`)
 - Changelog entries managed via `towncrier` (fragments in `changelog/`)
