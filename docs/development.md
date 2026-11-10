@@ -3,9 +3,11 @@
 
 ## Code review
 
-Not every pull request benefits from a human review. The author of a pull
-request decides whether it needs one, and says so on the first line of the
-description, where it shows up in email notifications:
+Review isn't only for catching bugs. It keeps the team aware of how the
+project is changing and builds agreement on decisions. Not every pull request
+benefits from that. The author of a pull request decides whether it needs a
+human review, and says so on the first line of the description, where it
+shows up in email notifications:
 
 ```markdown
 **Review:** needed — changes science outputs: Safeguard data now follows the run's financial year
@@ -17,6 +19,10 @@ description, where it shows up in email notifications:
 
 Always give a reason. The reason lets everyone else check the decision at a
 glance, and shows over time whether these categories need adjusting.
+
+The lists below are a guide, not rules, and some judgement is still needed.
+When a change doesn't clearly fit, ask: would the rest of the team want to
+know about this, or have a say in it? If so, it needs review.
 
 ### Review needed
 
