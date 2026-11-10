@@ -14,11 +14,38 @@ env:
   IMAGE: openmethane/openmethane-prior
 
 jobs:
+  # a job skipped by its `if` reports success, so required checks still pass
+  changes:
+    name: Detect changes needing checks
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read # pull requests list their files through the API
+    outputs:
+      # anything other than a pull request or a push to main (tags, manual
+      # runs) skips the filter, and so always runs everything
+      checks: ${{ steps.filter.outputs.checks || 'true' }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+      - id: filter
+        if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        with:
+          # pushes to main compare against the previous push; pull requests
+          # ignore this and use their files from the API
+          base: main
+          predicate-quantifier: every
+          filters: .github/ci-paths.yml
+
   build:
     runs-on: ubuntu-latest
+    needs: changes
     # prevent workflow running on external PRs, but build on any push or PR
-    # to the official repo.
-    if: '!github.event.push.repository.fork && !github.event.pull_request.head.repo.fork'
+    # to the official repo, unless it only changes documentation.
+    if: >-
+      !github.event.push.repository.fork && !github.event.pull_request.head.repo.fork
+      && needs.changes.outputs.checks == 'true'
     strategy:
       matrix:
         platform:

@@ -4,10 +4,20 @@
 ## Docker images
 
 A docker image will be built and made available through the GitHub Container
-Registry for every push to `main` branch, as well as each PR.
+Registry for every push to `main` branch, as well as each PR that changes
+more than documentation.
 
 See https://github.com/orgs/openmethane/packages for a list of available
 packages.
+
+## Continuous integration
+
+The `CI` and `Build docker image` workflows skip their tests, package build and
+image build when a pull request (or push to `main`) touches only documentation,
+agent instructions or other markdown, including changelog fragments. The jobs
+are skipped rather than the workflow, so the required `tests` and `check-build`
+checks still report success. `.github/ci-paths.yml` lists the paths that need
+checks. Tags and manual runs always run everything.
 
 ## Preparing a release
 

@@ -1,0 +1,9 @@
+# Paths read by dorny/paths-filter in the workflows' `changes` job. `checks` is
+# true when a change touches anything a test, package or image can depend on:
+# every path except documentation, agent instructions and markdown (including
+# changelog fragments), which nothing imports.
+checks:
+  - '**'
+  - '!docs/**'
+  - '!.claude/**'
+  - '!**/*.md'
