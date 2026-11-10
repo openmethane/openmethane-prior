@@ -25,7 +25,9 @@ glance, and shows over time whether these categories need adjusting.
 - **Refactors that change structure or behaviour across more than one file.**
 - **New concepts or features**, including new data sources, variables and
   methodology decisions.
-- **Documentation changes.**
+- **Documentation changes.** If something is worth documenting, it's worth
+  the rest of the team knowing about it and agreeing with it. This doesn't
+  include fixes to typos, grammar or formatting, which are mechanical changes.
 - **Changes that make a production run fail, or stop failing, where it didn't
   before.** Make sure whoever looks after production runs knows about these.
 
@@ -34,8 +36,9 @@ glance, and shows over time whether these categories need adjusting.
 - **Infrastructure changes** made by the person who looks after the
   infrastructure.
 - **Mechanical changes**, such as small corrections and bug fixes whose
-  correctness is established by tests, and tool-generated changes such as
-  running a formatter. Being mechanical is what matters here, not size: a
+  correctness is established by tests, tool-generated changes such as
+  running a formatter, and fixes to typos, grammar or formatting in
+  documentation. Being mechanical is what matters here, not size: a
   formatter run that touches every file is still mechanical.
 - **Minor or patch dependency updates.** Major version updates need review.
 - **Small changes to logging, warnings, types and project settings.**
