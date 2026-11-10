@@ -58,9 +58,19 @@ default-groups = [
 ]
 
 [build-system]
-requires = ["uv_build>=0.9.15,<0.10.0"]
+requires = ["uv_build>=0.9.15,<0.14.0"]
 build-backend = "uv_build"
 
+
+[tool.pytest.ini_options]
+# anyio is installed for the notebooks group, but no tests use its pytest
+# plugin, which imports a pytest internal that will be removed in pytest 10.
+addopts = "-p no:anyio"
+filterwarnings = [
+    # numpy ignores this harmless Cython ABI check itself, so it doesn't appear
+    # in normal runs, but pytest's per-test warning capture brings it back.
+    "ignore:numpy.ndarray size changed:RuntimeWarning",
+]
 
 [tool.ruff]
 src = ["src"]

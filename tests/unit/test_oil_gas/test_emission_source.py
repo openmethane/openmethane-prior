@@ -46,8 +46,8 @@ def test_allocate_emissions_to_sources_only_masked():
     df = pd.DataFrame(
         data=[
             (None, "drillhole-csg", 1.0),
-            (0, "drillhole-csg", 1.0),
-            (0, "drillhole-unknown", 1.0),
+            (0.0, "drillhole-csg", 1.0),
+            (0.0, "drillhole-unknown", 1.0),
             (None, None, 1.0),
         ],
         columns=["emissions_quantity", "site_type", "weight"],
@@ -67,7 +67,7 @@ def test_allocate_emissions_to_sources_additive():
     df = pd.DataFrame(
         data=[
             (2.1, "drillhole-csg", 1.0),
-            (0, "drillhole-csg", 1.0),
+            (0.0, "drillhole-csg", 1.0),
             (None, "drillhole-csg", 1.0),
         ],
         columns=["emissions_quantity", "site_type", "weight"],
@@ -84,13 +84,13 @@ def test_allocate_emissions_to_sources_additive():
 def test_allocate_emissions_to_sources_facilities():
     df = pd.DataFrame(
         data=[
-            (0, "drillhole-csg", True, 1.0),
-            (0, "drillhole-csg", True, 1.0),
-            (0, "drillhole-csg", True, 1.0),
-            (0, "facility-unknown", True, 1.0),
-            (0, None, True, 1.0),
-            (0, "drillhole-csg", False, 1.0),
-            (0, "facility-unknown", False, 1.0),
+            (0.0, "drillhole-csg", True, 1.0),
+            (0.0, "drillhole-csg", True, 1.0),
+            (0.0, "drillhole-csg", True, 1.0),
+            (0.0, "facility-unknown", True, 1.0),
+            (0.0, None, True, 1.0),
+            (0.0, "drillhole-csg", False, 1.0),
+            (0.0, "facility-unknown", False, 1.0),
         ],
         columns=["emissions_quantity", "site_type", "masked", "weight"],
     )
@@ -113,11 +113,11 @@ def test_allocate_emissions_to_sources_facilities():
 def test_allocate_emissions_to_sources_pipelines():
     df = pd.DataFrame(
         data=[
-            (0, "drillhole-csg", True, 1.0),
-            (0, "drillhole-csg", True, 1.0),
-            (0, "pipeline-gas", True, 1.0),
-            (0, "drillhole-csg", False, 1.0),
-            (0, "pipeline-gas", False, 1.0),
+            (0.0, "drillhole-csg", True, 1.0),
+            (0.0, "drillhole-csg", True, 1.0),
+            (0.0, "pipeline-gas", True, 1.0),
+            (0.0, "drillhole-csg", False, 1.0),
+            (0.0, "pipeline-gas", False, 1.0),
         ],
         columns=["emissions_quantity", "site_type", "masked", "weight"],
     )
@@ -140,15 +140,15 @@ def test_allocate_emissions_to_sources_pipelines():
 def test_allocate_emissions_to_sources_multiple():
     df = pd.DataFrame(
         data=[
-            (0, "drillhole-csg", True, 1.0),
-            (0, "drillhole-csg", True, 1.0),
-            (0, "drillhole-csg", True, 1.0),
-            (0, "drillhole-csg", True, 1.0),
-            (0, "pipeline-gas", True, 1.0),
-            (0, "pipeline-gas", True, 1.0),
-            (0, "facility-unknown", True, 1.0),
-            (0, "drillhole-csg", False, 1.0),
-            (0, "pipeline-gas", False, 1.0),
+            (0.0, "drillhole-csg", True, 1.0),
+            (0.0, "drillhole-csg", True, 1.0),
+            (0.0, "drillhole-csg", True, 1.0),
+            (0.0, "drillhole-csg", True, 1.0),
+            (0.0, "pipeline-gas", True, 1.0),
+            (0.0, "pipeline-gas", True, 1.0),
+            (0.0, "facility-unknown", True, 1.0),
+            (0.0, "drillhole-csg", False, 1.0),
+            (0.0, "pipeline-gas", False, 1.0),
         ],
         columns=["emissions_quantity", "site_type", "masked", "weight"],
     )
@@ -177,16 +177,16 @@ def test_allocate_emissions_to_sources_multiple():
 def test_allocate_emissions_to_sources_weights():
     df = pd.DataFrame(
         data=[
-            (0, "drillhole-csg", True, 1.0),
-            (0, "drillhole-csg", True, 1.0),
-            (0, "drillhole-csg", True, 1.0),
-            (0, "drillhole-csg", True, 1.0),
-            (0, "pipeline-gas", True, 2.0),
-            (0, "pipeline-gas", True, 6.0),
-            (0, "facility-unknown", True, 0.5),
-            (0, "facility-unknown", True, 3.5),
-            (0, "drillhole-csg", False, 1.0),
-            (0, "pipeline-gas", False, 1.0),
+            (0.0, "drillhole-csg", True, 1.0),
+            (0.0, "drillhole-csg", True, 1.0),
+            (0.0, "drillhole-csg", True, 1.0),
+            (0.0, "drillhole-csg", True, 1.0),
+            (0.0, "pipeline-gas", True, 2.0),
+            (0.0, "pipeline-gas", True, 6.0),
+            (0.0, "facility-unknown", True, 0.5),
+            (0.0, "facility-unknown", True, 3.5),
+            (0.0, "drillhole-csg", False, 1.0),
+            (0.0, "pipeline-gas", False, 1.0),
         ],
         columns=["emissions_quantity", "site_type", "masked", "weight"],
     )
