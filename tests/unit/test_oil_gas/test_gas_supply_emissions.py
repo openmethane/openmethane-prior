@@ -4,6 +4,7 @@ import pandas as pd
 import shapely
 
 from openmethane_prior.lib.grid.grid import Grid
+from openmethane_prior.lib.proxy import GriddedProxy
 from openmethane_prior.sectors.oil_gas.safeguard import gas_supply_emissions
 
 
@@ -16,10 +17,15 @@ def test_gas_supply_emissions():
         crs="EPSG:4326",
     )
     facilities_df = pd.DataFrame({"state": ["NSW", "NSW"], "ch4_kg": [100.0, 50.0]})
-    nightlights = np.arange(1, 17, dtype=np.float64).reshape(4, 4)
+    nightlights_values = np.arange(1, 17, dtype=np.float64).reshape(4, 4)
+    nightlights = GriddedProxy(
+        domain_grid=domain_grid,
+        domain_values=nightlights_values,
+        inventory_grid=domain_grid,
+        inventory_values=nightlights_values,
+    )
 
     result = gas_supply_emissions(
-        domain_grid=domain_grid,
         facilities_df=facilities_df,
         au_states=au_states,
         nightlights=nightlights,
@@ -33,5 +39,35 @@ def test_gas_supply_emissions():
     assert result[3, :].sum() == 0
     assert result[:, 3].sum() == 0
     # inner cells are allocated in proportion to their night lights
-    inner = nightlights[1:3, 1:3]
+    inner = nightlights_values[1:3, 1:3]
     np.testing.assert_allclose(result[1:3, 1:3], 150.0 * inner / inner.sum())
+
+
+def test_gas_supply_emissions_partial_state():
+    inventory_grid = Grid(dimensions=(4, 4), origin_xy=(0, 0), cell_size=(1, 1))
+    # the domain covers the left half of the inventory grid
+    domain_grid = Grid(dimensions=(2, 4), origin_xy=(0, 0), cell_size=(1, 1))
+    # one state covering the whole inventory grid
+    au_states = gpd.GeoDataFrame(
+        {"short_name": ["QLD"]},
+        geometry=[shapely.box(0, 0, 4, 4)],
+        crs="EPSG:4326",
+    )
+    facilities_df = pd.DataFrame({"state": ["QLD"], "ch4_kg": [160.0]})
+    nightlights = GriddedProxy(
+        domain_grid=domain_grid,
+        domain_values=np.ones(domain_grid.shape),
+        inventory_grid=inventory_grid,
+        inventory_values=np.ones(inventory_grid.shape),
+    )
+
+    result = gas_supply_emissions(
+        facilities_df=facilities_df,
+        au_states=au_states,
+        nightlights=nightlights,
+    )
+
+    # half the state's night lights fall in the domain, so it receives half
+    # the state's emissions, not all of them
+    np.testing.assert_approx_equal(result.sum(), 80.0)
+    np.testing.assert_allclose(result, 10.0)

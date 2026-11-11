@@ -37,8 +37,7 @@ def process_emissions(
 ):
     config = sector_config.prior_config
 
-    # we want proportions of total for scaling emissions
-    om_ntlt_proportion = sector_config.data_manager.get_asset(night_lights_data_source)
+    night_lights = sector_config.data_manager.get_asset(night_lights_data_source).data
 
     # load the national inventory data, ready to calculate sectoral totals
     emissions_inventory = sector_config.data_manager.get_asset(inventory_data_source).data
@@ -49,8 +48,8 @@ def process_emissions(
         category_codes=sector.unfccc_categories,
     )
 
-    # allocate the proportion of the total to each grid cell
-    sector_emissions = om_ntlt_proportion.data * sector_total_emissions
+    # distribute the national total in proportion to night lights
+    sector_emissions = night_lights.distribute(sector_total_emissions)
 
     return kg_to_period_cell_flux(sector_emissions, config)
 
