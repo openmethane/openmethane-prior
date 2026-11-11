@@ -36,14 +36,14 @@ def config_params(start_date, end_date):
 
 
 @pytest.fixture()
-def config(tmp_path_factory, config_params, cache_dir) -> Generator[PriorConfig, None, None]:
+def config(tmp_path, config_params, cache_dir) -> PriorConfig:
     """Default configuration
 
-    Uses a new temporary directory for each test, but a shared input_cache to
-    prevent refetching input files in each test. Cached inputs are symlinked
-    rather than copied, and the temporary directory is removed afterwards.
+    Uses the test's tmp_path, but a shared input_cache to prevent refetching
+    input files in each test. Cached inputs are symlinked rather than copied.
+    pytest removes tmp_path after passing tests and keeps it after failures.
     """
-    data_dir = tmp_path_factory.mktemp("data")
+    data_dir = tmp_path / "config_data"
     config = PriorConfig(
         **config_params,
         input_path=data_dir / "inputs",
@@ -53,19 +53,14 @@ def config(tmp_path_factory, config_params, cache_dir) -> Generator[PriorConfig,
         link_cached_inputs=True,
     )
     config.prepare_paths()
-
-    yield config
-
-    shutil.rmtree(data_dir)
+    return config
 
 
 @pytest.fixture()
-def aust10km_config(
-    tmp_path_factory, start_date, end_date, cache_dir
-) -> Generator[PriorConfig, None, None]:
+def aust10km_config(tmp_path, start_date, end_date, cache_dir) -> PriorConfig:
     """Full domain configuration, for tests or sectors where the small
     au-test domain isn't sufficient to test data or behaviour."""
-    data_dir = tmp_path_factory.mktemp("data")
+    data_dir = tmp_path / "aust10km_config_data"
     config = PriorConfig(
         start_date=start_date,
         end_date=end_date,
@@ -78,10 +73,7 @@ def aust10km_config(
     )
     config.prepare_paths()
     config.load_cached_inputs()
-
-    yield config
-
-    shutil.rmtree(data_dir)
+    return config
 
 
 @pytest.fixture()
