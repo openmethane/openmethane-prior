@@ -19,30 +19,32 @@ import geopandas as gpd
 import numpy as np
 import pandas as pd
 
-from openmethane_prior.lib.grid.geometry import grid_mask_from_polygon
-from openmethane_prior.lib.grid.grid import Grid
 from openmethane_prior.lib.logger import get_logger
+from openmethane_prior.lib.proxy import GriddedProxy
 
 logger = get_logger(__name__)
 
 
 def gas_supply_emissions(
-    domain_grid: Grid,
     facilities_df: pd.DataFrame,
     au_states: gpd.GeoDataFrame,
-    nightlights: np.ndarray[tuple[int, int], np.dtype[np.float64]]
+    nightlights: GriddedProxy,
 ) -> np.ndarray[tuple[int, int], np.dtype[np.float64]]:
     """Allocates emissions from gas supply networks based on nighttime lights
     in their state. This function aggregates emissions from all facilities in
     each state, since we lack specific polygon extents of individual networks.
 
-    :param domain_grid: Grid representing the Domain
+    Each state's emissions are distributed over the whole state, so a domain
+    which covers only part of a state receives only its share.
+
     :param facilities_df: List of facilities with a state and emission quantity
-    :param au_states: GeoDataFrame with the shape of each state
-    :param nightlights: Night lights gridded to the domain of interest
+    :param au_states: GeoDataFrame with the shape of each state, in the
+        coordinate system of the nightlights domain grid
+    :param nightlights: Night lights gridded to the domain of interest and the
+        inventory domain
     :return: Emissions from facilities gridded to the domain of interest
     """
-    gridded_emission = np.zeros(domain_grid.shape)
+    gridded_emission = np.zeros(nightlights.domain_grid.shape)
 
     logger.debug(f"Found {len(facilities_df)} gas supply facilities totalling {facilities_df['ch4_kg'].sum() / 1e6:.2f} kt CH4 in the period")
     for state in facilities_df["state"].unique():
@@ -51,21 +53,9 @@ def gas_supply_emissions(
         total_emission = state_facilities["ch4_kg"].sum()
 
         state_shape = au_states[au_states["short_name"] == state]
-        if len(state_shape) != 1:
-            pass
-
-        # mask the nightlights to only the state, and rescale their values
-        # so each cell value is its proportion of the whole
-        state_geometry = state_shape.iloc[0]["geometry"]
-        state_mask = grid_mask_from_polygon(domain_grid, state_geometry)
-        if state_mask.sum() == 0:
-            # no overlap between the state and the domain
-            continue
-        state_nightlights = nightlights * state_mask
-        state_nightlights /= state_nightlights.sum()
-
-        # distribute the state emission to grid cells based on night lights
-        gridded_emission += total_emission * state_nightlights
+        gridded_emission += nightlights.distribute(
+            total_emission, region=state_shape.iloc[0]["geometry"]
+        )
 
     return gridded_emission
 
