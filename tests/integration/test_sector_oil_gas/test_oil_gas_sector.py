@@ -14,10 +14,11 @@ def oil_gas_config_params(cache_dir, config_params, tmp_path):
         intermediates_path=data_dir / "intermediates",
         output_path=data_dir / "outputs",
         input_cache=cache_dir,
+        link_cached_inputs=True,
     )
 
 
-def test_oil_gas_sector_pre_sgm(input_files, oil_gas_config_params, start_date, end_date):
+def test_oil_gas_sector_pre_sgm(oil_gas_config_params, start_date, end_date):
     """Run the full oil and gas sector over the au-test domain, for a period
     prior to per-facility methane emissions being published in the Safeguard
     Mechanism."""
@@ -26,13 +27,9 @@ def test_oil_gas_sector_pre_sgm(input_files, oil_gas_config_params, start_date, 
         start_date=start_date,
         end_date=end_date,
     )
-    config.prepare_paths()
-    config.load_cached_inputs()
 
     # run the prior and return the result
     prior_oil_gas_ds = create_prior(config, [sector])
-
-    # config.cache_inputs()
 
     assert prior_oil_gas_ds['ch4_total'].max().item() == 5.6714881375567926e-11
     assert prior_oil_gas_ds['ch4_sector_oil_gas'].max().item() == 5.6714881375567926e-11
@@ -41,7 +38,7 @@ def test_oil_gas_sector_pre_sgm(input_files, oil_gas_config_params, start_date, 
     assert prior_oil_gas_ds['ch4_sector_oil_gas'].mean().item() == 5.671488137556792e-13
 
 
-def test_oil_gas_sector_post_sgm(input_files, oil_gas_config_params):
+def test_oil_gas_sector_post_sgm(oil_gas_config_params):
     """Run the full oil and gas sector over the au-test domain, for a period
     where per-facility methane emissions are being published in the Safeguard
     Mechanism."""
@@ -52,13 +49,9 @@ def test_oil_gas_sector_post_sgm(input_files, oil_gas_config_params):
         start_date=start_date,
         end_date=end_date,
     )
-    config.prepare_paths()
-    config.load_cached_inputs()
 
     # run the prior and return the result
     prior_oil_gas_ds = create_prior(config, [sector])
-
-    # config.cache_inputs()
 
     assert prior_oil_gas_ds['ch4_total'].max().item() == 6.013014334290761e-11
     assert prior_oil_gas_ds['ch4_sector_oil_gas'].max().item() == 6.013014334290761e-11

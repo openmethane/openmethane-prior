@@ -131,6 +131,7 @@ handle_existing: overwrite
 input_cache: null
 input_path: data/input
 intermediates_path: data/inter
+link_cached_inputs: false
 output_filename: prior-emissions.nc
 output_path: data/out
 sectors: null
@@ -220,6 +221,95 @@ def test_prior_config_input_cache(tmp_path: pathlib.Path, start_date, end_date):
 
     # the file from the cache is NOT copied
     assert not (test_config.input_path / "cache-test.txt").exists()
+
+
+@pytest.fixture()
+def fake_input_cache(tmp_path) -> pathlib.Path:
+    """A small input cache with a top-level file and a file in a subfolder."""
+    cache_path = tmp_path / "cache"
+    (cache_path / "inputs/subfolder").mkdir(parents=True)
+    (cache_path / "inputs/cached.txt").write_text("cached")
+    (cache_path / "inputs/subfolder/nested.txt").write_text("nested")
+    return cache_path
+
+
+def test_prior_config_load_cached_inputs_link(tmp_path, fake_input_cache, start_date):
+    test_config = PriorConfig(
+        domain_path="domain.nc",
+        start_date=start_date,
+        input_path=tmp_path / "data/inputs",
+        input_cache=fake_input_cache,
+        link_cached_inputs=True,
+    )
+
+    test_config.load_cached_inputs()
+
+    linked = test_config.input_path / "cached.txt"
+    assert linked.is_symlink()
+    assert linked.resolve() == (fake_input_cache / "inputs/cached.txt").resolve()
+    assert linked.read_text() == "cached"
+
+    nested = test_config.input_path / "subfolder/nested.txt"
+    assert not nested.parent.is_symlink()
+    assert nested.is_symlink()
+    assert nested.read_text() == "nested"
+
+
+def test_prior_config_load_cached_inputs_link_keeps_existing(
+    tmp_path, fake_input_cache, start_date
+):
+    test_config = PriorConfig(
+        domain_path="domain.nc",
+        start_date=start_date,
+        input_path=tmp_path / "data/inputs",
+        input_cache=fake_input_cache,
+        link_cached_inputs=True,
+    )
+    test_config.input_path.mkdir(parents=True)
+    (test_config.input_path / "cached.txt").write_text("local")
+
+    test_config.load_cached_inputs()
+
+    existing = test_config.input_path / "cached.txt"
+    assert not existing.is_symlink()
+    assert existing.read_text() == "local"
+    assert (fake_input_cache / "inputs/cached.txt").read_text() == "cached"
+
+
+def test_prior_config_load_cached_inputs_copy(tmp_path, fake_input_cache, start_date):
+    test_config = PriorConfig(
+        domain_path="domain.nc",
+        start_date=start_date,
+        input_path=tmp_path / "data/inputs",
+        input_cache=fake_input_cache,
+    )
+
+    test_config.load_cached_inputs()
+
+    copied = test_config.input_path / "subfolder/nested.txt"
+    assert not copied.is_symlink()
+    assert copied.read_text() == "nested"
+
+
+def test_prior_config_cache_inputs_skips_links(tmp_path, fake_input_cache, start_date):
+    test_config = PriorConfig(
+        domain_path="domain.nc",
+        start_date=start_date,
+        input_path=tmp_path / "data/inputs",
+        input_cache=fake_input_cache,
+        link_cached_inputs=True,
+    )
+    test_config.load_cached_inputs()
+    (test_config.input_path / "subfolder/fetched.txt").write_text("fetched")
+
+    test_config.cache_inputs()
+
+    # linked files are left as they are, not copied onto themselves
+    assert not (fake_input_cache / "inputs/cached.txt").is_symlink()
+    assert (fake_input_cache / "inputs/cached.txt").read_text() == "cached"
+    assert (fake_input_cache / "inputs/subfolder/nested.txt").read_text() == "nested"
+    # newly fetched files are cached
+    assert (fake_input_cache / "inputs/subfolder/fetched.txt").read_text() == "fetched"
 
 
 # ---------------------------------------------------------------------------

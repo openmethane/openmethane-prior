@@ -36,11 +36,12 @@ def config_params(start_date, end_date):
 
 
 @pytest.fixture()
-def config(tmp_path_factory, config_params, cache_dir) -> PriorConfig:
+def config(tmp_path_factory, config_params, cache_dir) -> Generator[PriorConfig, None, None]:
     """Default configuration
 
     Uses a new temporary directory for each test, but a shared input_cache to
-    prevent refetching input files in each test.
+    prevent refetching input files in each test. Cached inputs are symlinked
+    rather than copied, and the temporary directory is removed afterwards.
     """
     data_dir = tmp_path_factory.mktemp("data")
     config = PriorConfig(
@@ -49,13 +50,19 @@ def config(tmp_path_factory, config_params, cache_dir) -> PriorConfig:
         intermediates_path=data_dir / "intermediates",
         output_path=data_dir / "outputs",
         input_cache=cache_dir,
+        link_cached_inputs=True,
     )
     config.prepare_paths()
-    return config
+
+    yield config
+
+    shutil.rmtree(data_dir)
 
 
 @pytest.fixture()
-def aust10km_config(tmp_path_factory, start_date, end_date, cache_dir) -> PriorConfig:
+def aust10km_config(
+    tmp_path_factory, start_date, end_date, cache_dir
+) -> Generator[PriorConfig, None, None]:
     """Full domain configuration, for tests or sectors where the small
     au-test domain isn't sufficient to test data or behaviour."""
     data_dir = tmp_path_factory.mktemp("data")
@@ -67,10 +74,14 @@ def aust10km_config(tmp_path_factory, start_date, end_date, cache_dir) -> PriorC
         intermediates_path=data_dir / "intermediates",
         output_path=data_dir / "outputs",
         input_cache=cache_dir,
+        link_cached_inputs=True,
     )
     config.prepare_paths()
     config.load_cached_inputs()
-    return config
+
+    yield config
+
+    shutil.rmtree(data_dir)
 
 
 @pytest.fixture()
@@ -89,11 +100,8 @@ def input_files(config):
 
     yield
 
+    # cached inputs are symlinked, so only newly fetched files are copied back
     config.cache_inputs()
-
-    # remove input files once test completes, as each copy of the input folder
-    # is ~1GB, and many copies will be made during a full test suite run.
-    shutil.rmtree(config.input_path)
 
 
 @pytest.fixture()
@@ -154,10 +162,13 @@ def prior_emissions_ds(tmp_path_factory, cache_dir, config_params) -> Generator[
         intermediates_path=data_dir / "intermediates",
         output_path=data_dir / "outputs",
         input_cache=cache_dir,
+        link_cached_inputs=True,
     )
 
     # run the prior and return the result
-    return create_prior(config, all_sectors)
+    yield create_prior(config, all_sectors)
+
+    shutil.rmtree(data_dir)
 
 
 @pytest.fixture()
