@@ -142,7 +142,9 @@ class GriddedProxy:
             logger.warning(f"Proxy has no values in the region, unable to distribute {total}")
             return np.zeros(self.domain_grid.shape)
 
-        return total * domain_values / region_total
+        # normalise before scaling, so results match the earlier calculation
+        # of proportions exactly
+        return domain_values / region_total * total
 
     def _to_inventory_crs(self, region: Polygon | MultiPolygon) -> Polygon | MultiPolygon:
         domain_crs = self.domain_grid.projection.crs
