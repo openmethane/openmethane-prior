@@ -1,18 +1,15 @@
 import pathlib
-import shutil
 from datetime import datetime
 from pathlib import Path
 import pytest
 from typing import Generator
 import xarray as xr
 
-from openmethane_prior.lib import create_prior
 from openmethane_prior.lib.config import PriorConfig
 from openmethane_prior.lib.data_manager.manager import DataManager
 from openmethane_prior.lib.grid.create_grid import create_grid_from_mcip
 from openmethane_prior.lib.grid.grid import Grid
 from openmethane_prior.lib.sector.config import PriorSectorConfig
-from openmethane_prior.sectors import all_sectors
 
 
 @pytest.fixture(scope="session")
@@ -160,25 +157,6 @@ def input_domain(config, input_files) -> Generator[xr.Dataset, None, None]:
         The input domain as an xarray dataset
     """
     yield config.domain().dataset
-
-
-@pytest.fixture(scope="session")
-def prior_emissions_ds(tmp_path_factory, cache_dir, config_params) -> Generator[xr.Dataset, None, None]:
-    """Run the full prior over the au-test domain."""
-    data_dir = tmp_path_factory.mktemp("data")
-    config = PriorConfig(
-        **config_params,
-        input_path=data_dir / "inputs",
-        intermediates_path=data_dir / "intermediates",
-        output_path=data_dir / "outputs",
-        input_cache=cache_dir,
-        link_cached_inputs=True,
-    )
-
-    # run the prior and return the result
-    yield create_prior(config, all_sectors)
-
-    shutil.rmtree(data_dir)
 
 
 @pytest.fixture()

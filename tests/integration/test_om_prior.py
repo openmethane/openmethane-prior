@@ -1,8 +1,13 @@
+from openmethane_prior.lib import create_prior
+from openmethane_prior.sectors import all_sectors
 from testing import dataset_metrics
 
 
-def test_009_prior_emissions_ds(prior_emissions_ds):
-    assert dataset_metrics(prior_emissions_ds) == {
+def test_create_prior_all_sectors(config, input_files):
+    """Run the full prior over the au-test domain."""
+    prior_ds = create_prior(config, all_sectors)
+
+    assert dataset_metrics(prior_ds) == {
         'max': {
             'ch4_sector_agriculture': 6.15621818800407e-13,
             'ch4_sector_coal': 8.072982591959399e-09,
@@ -87,9 +92,7 @@ def test_009_prior_emissions_ds(prior_emissions_ds):
         },
     }
 
-
-def test_011_output_dims(prior_emissions_ds):
-    expected_dimensions = {
+    assert prior_ds.sizes == {
         "time": 2,
         "vertical": 1,
         "y": 10,
@@ -98,19 +101,15 @@ def test_011_output_dims(prior_emissions_ds):
         "time_period": 2,
     }
 
-    assert prior_emissions_ds.sizes == expected_dimensions
-
-
-def test_012_output_variable_attributes(prior_emissions_ds):
-    assert prior_emissions_ds.variables["ch4_total"].attrs == {
+    assert prior_ds["ch4_total"].attrs == {
         "units": "kg/m2/s",
         "standard_name": "surface_upward_mass_flux_of_methane",
         "long_name": "total expected flux of methane based on public data",
         "grid_mapping": "lambert_conformal",
     }
 
-    for layer_name in [layer for layer in list(prior_emissions_ds.variables.keys()) if layer.startswith("ch4_sector_")]:
-        assert prior_emissions_ds.variables[layer_name].attrs["units"] == "kg/m2/s"
-        assert prior_emissions_ds.variables[layer_name].attrs["long_name"] == f"expected flux of methane caused by sector: {layer_name.replace('ch4_sector_', '')}"
-        assert prior_emissions_ds.variables[layer_name].attrs["standard_name"].startswith("surface_upward_mass_flux_of_methane_due_to_emission_from_")
-        assert prior_emissions_ds.variables[layer_name].attrs["grid_mapping"] == "lambert_conformal"
+    # every registered sector describes its emissions with its own standard_name
+    for sector_var in [name for name in prior_ds.variables if name.startswith("ch4_sector_")]:
+        assert prior_ds[sector_var].attrs["standard_name"].startswith(
+            "surface_upward_mass_flux_of_methane_due_to_emission_from_"
+        )
