@@ -16,6 +16,18 @@ import yaml
 from .grid.domain import Domain
 
 
+def _link_if_missing(src: str, dst: str):
+    """`shutil.copytree` copy_function that symlinks `dst` to `src`, unless
+    `dst` already exists."""
+    if not os.path.lexists(dst):
+        os.symlink(os.path.abspath(src), dst)
+
+
+def _ignore_symlinks(directory: str, names: list[str]) -> list[str]:
+    """`shutil.copytree` ignore function that skips symlinks."""
+    return [name for name in names if os.path.islink(os.path.join(directory, name))]
+
+
 @frozen
 class PriorConfig:
     """Configuration used to describe the prior data sources and the output directories."""
@@ -68,6 +80,10 @@ class PriorConfig:
     input_cache: pathlib.Path = None
     """If provided, a local path where remote inputs can be cached."""
 
+    link_cached_inputs: bool = False
+    """If True, load_cached_inputs symlinks files from input_cache instead of
+    copying them. Meant for tests, where many runs share one large cache."""
+
     # __attrs_post_init__ is called automatically after the __init__ generated
     # by attrs has run.
     # @see: https://www.attrs.org/en/stable/init.html
@@ -106,20 +122,39 @@ class PriorConfig:
         return cache_paths
 
     def load_cached_inputs(self):
-        """Copy the contents of the cache into the corresponding data paths."""
+        """Copy the contents of the cache into the corresponding data paths.
+
+        If `link_cached_inputs` is set, files are symlinked instead of copied,
+        and files already present in the data paths are left untouched.
+        """
         if self.input_cache is None or self._cache_paths is None:
             return
+        copy_function = _link_if_missing if self.link_cached_inputs else shutil.copy2
         for i, (data_path, cache_path) in enumerate(self._cache_paths.items()):
             if cache_path.exists():
-                shutil.copytree(src=cache_path, dst=data_path, dirs_exist_ok=True)
+                shutil.copytree(
+                    src=cache_path,
+                    dst=data_path,
+                    copy_function=copy_function,
+                    dirs_exist_ok=True,
+                )
 
     def cache_inputs(self):
-        """Cache inputs and intermediates for re-use on subsequent runs."""
+        """Cache inputs and intermediates for re-use on subsequent runs.
+
+        Symlinks are skipped, since files linked by `load_cached_inputs`
+        already live in the cache.
+        """
         if self.input_cache is None or self._cache_paths is None:
             return
         for i, (data_path, cache_path) in enumerate(self._cache_paths.items()):
             if data_path.exists():
-                shutil.copytree(src=data_path, dst=cache_path, dirs_exist_ok=True)
+                shutil.copytree(
+                    src=data_path,
+                    dst=cache_path,
+                    ignore=_ignore_symlinks,
+                    dirs_exist_ok=True,
+                )
 
     def to_yaml(self):
         attrs_dict = attrs.asdict(self)

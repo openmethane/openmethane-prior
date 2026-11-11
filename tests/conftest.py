@@ -1,18 +1,15 @@
 import pathlib
-import shutil
 from datetime import datetime
 from pathlib import Path
 import pytest
 from typing import Generator
 import xarray as xr
 
-from openmethane_prior.lib import create_prior
 from openmethane_prior.lib.config import PriorConfig
 from openmethane_prior.lib.data_manager.manager import DataManager
 from openmethane_prior.lib.grid.create_grid import create_grid_from_mcip
 from openmethane_prior.lib.grid.grid import Grid
 from openmethane_prior.lib.sector.config import PriorSectorConfig
-from openmethane_prior.sectors import all_sectors
 
 
 @pytest.fixture(scope="session")
@@ -23,6 +20,24 @@ def root_dir() -> pathlib.Path:
 @pytest.fixture(scope="session")
 def cache_dir(root_dir) -> pathlib.Path:
     return root_dir / "data/.cache"
+
+
+@pytest.fixture(autouse=True)
+def close_xarray_files():
+    """Close files xarray keeps open between tests.
+
+    Tests symlink the same cached input files, and netCDF/HDF5 can't safely
+    open one file twice at once in a process. That happens when a file opened
+    in an earlier test is still held open in xarray's file cache.
+    """
+    yield
+
+    # xarray has no public API to clear its file cache
+    from xarray.backends.file_manager import FILE_CACHE
+
+    for open_file in list(FILE_CACHE.values()):
+        open_file.close()
+    FILE_CACHE.clear()
 
 
 @pytest.fixture(scope="session")
@@ -36,29 +51,31 @@ def config_params(start_date, end_date):
 
 
 @pytest.fixture()
-def config(tmp_path_factory, config_params, cache_dir) -> PriorConfig:
+def config(tmp_path, config_params, cache_dir) -> PriorConfig:
     """Default configuration
 
-    Uses a new temporary directory for each test, but a shared input_cache to
-    prevent refetching input files in each test.
+    Uses the test's tmp_path, but a shared input_cache to prevent refetching
+    input files in each test. Cached inputs are symlinked rather than copied.
+    pytest removes tmp_path after passing tests and keeps it after failures.
     """
-    data_dir = tmp_path_factory.mktemp("data")
+    data_dir = tmp_path / "config_data"
     config = PriorConfig(
         **config_params,
         input_path=data_dir / "inputs",
         intermediates_path=data_dir / "intermediates",
         output_path=data_dir / "outputs",
         input_cache=cache_dir,
+        link_cached_inputs=True,
     )
     config.prepare_paths()
     return config
 
 
 @pytest.fixture()
-def aust10km_config(tmp_path_factory, start_date, end_date, cache_dir) -> PriorConfig:
+def aust10km_config(tmp_path, start_date, end_date, cache_dir) -> PriorConfig:
     """Full domain configuration, for tests or sectors where the small
     au-test domain isn't sufficient to test data or behaviour."""
-    data_dir = tmp_path_factory.mktemp("data")
+    data_dir = tmp_path / "aust10km_config_data"
     config = PriorConfig(
         start_date=start_date,
         end_date=end_date,
@@ -67,6 +84,7 @@ def aust10km_config(tmp_path_factory, start_date, end_date, cache_dir) -> PriorC
         intermediates_path=data_dir / "intermediates",
         output_path=data_dir / "outputs",
         input_cache=cache_dir,
+        link_cached_inputs=True,
     )
     config.prepare_paths()
     config.load_cached_inputs()
@@ -89,11 +107,8 @@ def input_files(config):
 
     yield
 
+    # cached inputs are symlinked, so only newly fetched files are copied back
     config.cache_inputs()
-
-    # remove input files once test completes, as each copy of the input folder
-    # is ~1GB, and many copies will be made during a full test suite run.
-    shutil.rmtree(config.input_path)
 
 
 @pytest.fixture()
@@ -142,22 +157,6 @@ def input_domain(config, input_files) -> Generator[xr.Dataset, None, None]:
         The input domain as an xarray dataset
     """
     yield config.domain().dataset
-
-
-@pytest.fixture(scope="session")
-def prior_emissions_ds(tmp_path_factory, cache_dir, config_params) -> Generator[xr.Dataset, None, None]:
-    """Run the full prior over the au-test domain."""
-    data_dir = tmp_path_factory.mktemp("data")
-    config = PriorConfig(
-        **config_params,
-        input_path=data_dir / "inputs",
-        intermediates_path=data_dir / "intermediates",
-        output_path=data_dir / "outputs",
-        input_cache=cache_dir,
-    )
-
-    # run the prior and return the result
-    return create_prior(config, all_sectors)
 
 
 @pytest.fixture()

@@ -13,18 +13,17 @@ def waste_config_params(cache_dir, config_params, tmp_path):
         intermediates_path=data_dir / "intermediates",
         output_path=data_dir / "outputs",
         input_cache=cache_dir,
+        link_cached_inputs=True,
     )
 
 
-def test_sector_waste_pre_sgm(input_files, waste_config_params):
+def test_sector_waste_pre_sgm(waste_config_params):
     """Run the full waste sector over the au-test domain."""
     config = PriorConfig(
         **waste_config_params,
         start_date=datetime.datetime(2022, 7, 1, 0, 0),
         end_date=datetime.datetime(2022, 7, 31, 0, 0),
     )
-    config.prepare_paths()
-    config.load_cached_inputs()
 
     # run the prior and return the result
     prior_waste_ds = create_prior(config, [sector])
@@ -33,7 +32,7 @@ def test_sector_waste_pre_sgm(input_files, waste_config_params):
     assert prior_waste_ds['ch4_sector_waste'].mean().item() == 4.686126621702409e-14
 
 
-def test_waste_sector_post_sgm(input_files, waste_config_params):
+def test_waste_sector_post_sgm(waste_config_params):
     """Run the full oil and gas sector over the au-test domain, for a period
     where per-facility methane emissions are being published in the Safeguard
     Mechanism."""
@@ -42,8 +41,6 @@ def test_waste_sector_post_sgm(input_files, waste_config_params):
         start_date=datetime.datetime(2023, 7, 1, 0, 0),
         end_date=datetime.datetime(2023, 7, 31, 0, 0),
     )
-    config.prepare_paths()
-    config.load_cached_inputs()
 
     # run the prior and return the result
     prior_waste_ds = create_prior(config, [sector])
