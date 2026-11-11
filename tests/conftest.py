@@ -25,6 +25,24 @@ def cache_dir(root_dir) -> pathlib.Path:
     return root_dir / "data/.cache"
 
 
+@pytest.fixture(autouse=True)
+def close_xarray_files():
+    """Close files xarray keeps open between tests.
+
+    Tests symlink the same cached input files, and netCDF/HDF5 can't safely
+    open one file twice at once in a process. That happens when a file opened
+    in an earlier test is still held open in xarray's file cache.
+    """
+    yield
+
+    # xarray has no public API to clear its file cache
+    from xarray.backends.file_manager import FILE_CACHE
+
+    for open_file in list(FILE_CACHE.values()):
+        open_file.close()
+    FILE_CACHE.clear()
+
+
 @pytest.fixture(scope="session")
 def config_params(start_date, end_date):
     """Default config parameters that most tests should use."""
