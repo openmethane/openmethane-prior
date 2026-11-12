@@ -19,6 +19,29 @@ of rst and use slightly different categories.
 
 <!-- towncrier release notes start -->
 
+## openmethane-prior v1.7.4 (2026-11-12)
+
+### 🎉 Improvements
+
+- The coal sector now logs a warning for each Safeguard Mechanism facility that can't be matched to a coal mine. That facility's emissions stay in the sector total and are distributed with the remaining inventory, as in the oil and gas and waste sectors. ([#235](https://github.com/openmethane/openmethane-prior/pull/235))
+
+### 🐛 Bug Fixes
+
+- Fix nearest-neighbour regridding between aligned grids with a different number of cells in x and y ([#232](https://github.com/openmethane/openmethane-prior/pull/232))
+- Fixed the coal sector scaling Safeguard Mechanism emissions to the run period using a 365-day year, which overstated them by 1/366 in FY 2023-24. Coal now uses the same period scaling as the oil and gas and waste sectors. ([#235](https://github.com/openmethane/openmethane-prior/pull/235))
+- Fixed reading the Safeguard facility locations Google Sheet when it has extra or mostly empty columns, which could return almost no locations or fail the oil and gas sector. ([#238](https://github.com/openmethane/openmethane-prior/pull/238))
+- Upgraded dependencies with known security vulnerabilities, including pillow, tornado, urllib3, requests and python-dotenv. ([#241](https://github.com/openmethane/openmethane-prior/pull/241))
+- Oil and gas emission sources with only some weights missing now raise an error, instead of producing a sector estimate which is entirely NaN. ([#246](https://github.com/openmethane/openmethane-prior/pull/246))
+
+### 📚 Improved Documentation
+
+- Added guidance on deciding whether a pull request needs review, and a review line at the top of the pull request template. ([#247](https://github.com/openmethane/openmethane-prior/pull/247))
+
+### 🔧 Trivial/Internal Changes
+
+- [#245](https://github.com/openmethane/openmethane-prior/pull/245), [#248](https://github.com/openmethane/openmethane-prior/pull/248), [#251](https://github.com/openmethane/openmethane-prior/pull/251)
+
+
 ## openmethane-prior v1.7.3 (2026-10-28)
 
 ### 🎉 Improvements

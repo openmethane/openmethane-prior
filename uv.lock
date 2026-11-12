@@ -1211,7 +1211,7 @@ wheels = [
 
 [[package]]
 name = "openmethane-prior"
-version = "1.7.4.dev1"
+version = "1.7.4"
 source = { editable = "." }
 default-groups = ["dev", "notebooks", "tests"]
 dependencies = [
