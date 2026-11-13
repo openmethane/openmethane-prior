@@ -22,7 +22,6 @@ def test_gas_supply(aust10km_config):
     gas_supply_facilities_df = safeguard_facilities_df[gas_supply_facilities_mask]
 
     result = gas_supply_emissions(
-        domain_grid=aust10km_config.domain().grid,
         au_states=au_states_df,
         nightlights=nightlights_da.data,
         facilities_df=gas_supply_facilities_df,
