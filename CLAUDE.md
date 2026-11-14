@@ -72,6 +72,10 @@ Integration tests exercise the full pipeline with real (cached) data. Use
 should download DataSource assets from the internet, `input_files` should be
 omitted.
 
+Mark tests which take several minutes with `@pytest.mark.long_running`. CI
+deselects them to stay within its timeout; run them locally with
+`uv run python -m pytest -m long_running`.
+
 Unit tests should avoid calling methods which read from the filesystem, and
 should construct example data to pass to methods.
 
