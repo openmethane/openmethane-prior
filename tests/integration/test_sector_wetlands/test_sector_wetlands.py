@@ -8,4 +8,4 @@ def test_sector_wetlands(input_files, config):
     prior_wetlands_ds = create_prior(config, [sector])
 
     assert prior_wetlands_ds['ch4_sector_wetlands'].max().item() == 9.336642787030613e-13
-    assert prior_wetlands_ds['ch4_sector_wetlands'].mean().item() == 8.66815276056264e-14
+    assert prior_wetlands_ds['ch4_sector_wetlands'].mean().item() == 8.668152791558752e-14

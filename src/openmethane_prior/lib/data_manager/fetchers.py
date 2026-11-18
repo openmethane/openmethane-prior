@@ -16,15 +16,23 @@
 # limitations under the License.
 #
 import geopandas as gpd
+import http.client
+from http import HTTPStatus
 import os
 import pandas as pd
 import pathlib
 import tempfile
+import time
+import urllib.error
 import urllib.request
 import urllib.parse
 import zipfile
 
 from .source import ConfiguredDataSource
+from openmethane_prior.lib import logger
+
+logger = logger.get_logger(__name__)
+
 
 def google_sheet_csv_url(sheet_id_or_url: str, sheet_name: str) -> str:
     """Return the URL of the CSV export of a single sheet in a publicly
@@ -94,12 +102,14 @@ def fetch_google_sheet_csv(sheet_name: str, required_columns: list[str] | None =
             ...
         )
     """
+
     def _data_source_fetch(data_source: ConfiguredDataSource) -> pathlib.Path:
         df = fetch_google_sheet_by_name_csv(data_source.url, sheet_name, required_columns)
         df.to_csv(data_source.asset_path, index=False)
         return data_source.asset_path
 
     return _data_source_fetch
+
 
 def fetch_zipped_shp_to_gdf(
     url: str,
@@ -124,3 +134,103 @@ def fetch_zipped_shp_to_gdf(
 
         # read the extracted Shapefile with geopandas
         return gpd.read_file(tmp_path / shp_file)
+
+
+def _content_total(response, offset: int) -> int | None:
+    """Return the full size of the resource being downloaded, if known."""
+    content_range = response.headers.get("Content-Range")
+    if content_range and "/" in content_range:
+        total = content_range.rpartition("/")[2]
+        return int(total) if total.isdigit() else None
+    content_length = response.headers.get("Content-Length")
+    if content_length is not None and content_length.isdigit():
+        return offset + int(content_length)
+    return None
+
+
+def download_resumable(
+    url: str,
+    path: pathlib.Path,
+    timeout: float = 60,
+    max_attempts: int = 10,
+    retry_delay: float = 5,
+    block_size: int = 1024 * 1024,
+    urlopen=urllib.request.urlopen,
+) -> pathlib.Path:
+    """Download a large file, resuming after stalls and dropped connections.
+
+    urllib.request.urlretrieve has no read timeout, so a connection that
+    stops sending data hangs forever, and a failure restarts from zero. Here a
+    stalled read raises after `timeout` seconds, and each retry requests only
+    the bytes not yet downloaded using an HTTP Range header.
+
+    Parameters
+    ----------
+    url
+        URL of the file to download
+    path
+        Where to save the file. If it exists, it's treated as a partial
+        download and resumed.
+    timeout
+        Seconds to wait for the connection or for each read before retrying
+    max_attempts
+        Consecutive failed attempts allowed. Attempts that download some
+        data reset the count, so a long download can survive many stalls.
+    retry_delay
+        Seconds to wait before the first retry, doubling for each
+        consecutive failure up to 5 minutes
+    block_size
+        Bytes to read and write at a time
+    urlopen
+        Replaceable for tests
+
+    Returns
+    -------
+    pathlib.Path
+        The path the file was saved to
+    """
+    failures = 0
+    total = None
+    while True:
+        offset = path.stat().st_size if path.exists() else 0
+        if total is not None and offset >= total:
+            return path
+
+        headers = {"Range": f"bytes={offset}-"} if offset else {}
+        received = 0
+        try:
+            with urlopen(urllib.request.Request(url, headers=headers), timeout=timeout) as response:
+                # a server which ignores Range sends the whole file again
+                if offset and response.status != HTTPStatus.PARTIAL_CONTENT:
+                    logger.warning(f"{url} doesn't support resuming, restarting download")
+                    offset = 0
+                total = _content_total(response, offset)
+                with open(path, "ab" if offset else "wb") as f:
+                    while block := response.read(block_size):
+                        f.write(block)
+                        received += len(block)
+
+            if total is None or path.stat().st_size >= total:
+                return path
+            raise http.client.IncompleteRead(b"", total - path.stat().st_size)
+
+        except urllib.error.HTTPError as e:
+            # a range starting at the end of the file means it's complete
+            if e.code == HTTPStatus.REQUESTED_RANGE_NOT_SATISFIABLE and offset:
+                return path
+            # client errors won't be fixed by retrying, except rate limiting
+            if e.code < HTTPStatus.INTERNAL_SERVER_ERROR and e.code != HTTPStatus.TOO_MANY_REQUESTS:
+                raise
+            error = e
+        except (OSError, http.client.HTTPException) as e:
+            error = e
+
+        failures = 0 if received else failures + 1
+        if failures >= max_attempts:
+            raise error
+        delay = min(retry_delay * 2 ** max(failures - 1, 0), 300)
+        logger.warning(
+            f"Download of {url} interrupted at {path.stat().st_size if path.exists() else 0} "
+            f"bytes ({error!r}), retrying in {delay:.0f}s"
+        )
+        time.sleep(delay)
