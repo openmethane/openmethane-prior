@@ -80,6 +80,48 @@ clear what the test exercises. Fixtures and helpers may set up test conditions
 (grids, DataFrames, config), but must not wrap the call to the unit under test.
 Prefer repeating a few lines of arguments over hiding the call in a helper.
 
+## Before opening a pull request
+
+For any change that isn't mechanical (see "Code review" in
+`docs/development.md`), review it from a fresh context before opening the pull
+request, and again after reworking it substantially. Skip this for formatter
+runs, dependency bumps and experiments not for merge, or if the operator asks
+you to.
+
+Launch the `reviewer` subagent (`.claude/agents/reviewer.md`). Give it:
+
+- the goal of the change and the diff range (e.g. `main...HEAD`)
+- the numbers of any issues the change addresses
+- any constraints the operator set during the task, such as an approach to use
+  or avoid, or something to leave unchanged
+
+Don't give it your reasoning or your view of whether the change is correct,
+because it will tend to confirm what it's told.
+
+Independent reviews of the same change find different problems. When a change
+both alters the prior's emissions or what production runs do, and touches
+error handling, input downloads and readers (including Google Sheets), or
+several modules, offer the operator a second review, run in parallel with the
+same brief. Each review costs tens of thousands of tokens, so run the second
+only if the operator agrees. Merge the two reports, counting a finding both
+raised once, before dealing with them.
+
+Deal with each item it reports:
+
+- **Wrong, with a clear fix:** fix it, if the fix stays within the scope of the
+  task and doesn't go against the operator's instructions or the project's
+  guidance.
+- **Needs the operator's decision:** ask the operator, with the options and
+  your recommendation. This includes items with an obvious fix that would
+  change the prior's emissions or methodology, widen the change beyond what
+  was asked, or make the pull request need human review when it otherwise
+  wouldn't.
+- **Not a problem:** dismiss it, but list it in one line to the operator with
+  your reason, because you're judging criticism of your own work.
+
+This review is part of preparing the change. Don't mention it or its findings
+in the pull request description or comments.
+
 ## Code Style
 
 - Ruff linting and formatting, line length 100
