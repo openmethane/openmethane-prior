@@ -3,6 +3,7 @@ import pytest
 import xarray as xr
 
 from openmethane_prior.lib.grid.grid import Grid
+from openmethane_prior.lib.utils import load_zipped_pickle
 from openmethane_prior.lib.regrid import (
     _compute_cell_edges,
     _compute_from_areas,
@@ -177,6 +178,25 @@ def test_source_beyond_domain_gives_same_result(domain_grid, source_da, tmp_path
     r_small = regrid_data_array_conservative(source_da, domain_grid, tmp_path, "tsmall")
 
     np.testing.assert_allclose(r_large.values, r_small.values, rtol=1e-6)
+
+
+def test_weights_cover_only_cropped_source(domain_grid, tmp_path):
+    # 1° source over lon 100 to 160, lat -50 to 0, much larger than the domain
+    lats = np.arange(-49.5, 0.0, 1.0)
+    lons = np.arange(100.5, 160.0, 1.0)
+    large_da = xr.DataArray(
+        np.ones((len(lats), len(lons)), dtype=np.float32),
+        dims=["latitude", "longitude"],
+        coords={"latitude": lats, "longitude": lons},
+    )
+
+    regrid_data_array_conservative(large_da, domain_grid, tmp_path, "tcrop")
+
+    (weights_file,) = tmp_path.glob("tcrop_*_weights.p.gz")
+    weights = load_zipped_pickle(weights_file)
+    # the 4x4 cells under the domain, the cells starting on its upper edges,
+    # and one cell of padding either side: 7x7 of the source's 50x60 cells
+    assert weights.shape == (4, 7 * 7)
 
 
 def test_weights_not_reused_for_different_source_grid(domain_grid, source_da, tmp_path):
