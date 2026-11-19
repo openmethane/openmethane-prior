@@ -110,8 +110,10 @@ checks. Tags and manual runs always run everything.
 ### Input data cache
 
 To keep runs fast, the `tests` job restores downloaded inputs from a shared
-cache, `test-data-cache`, instead of fetching them every time. The cache is
-only refreshed when a pull request labelled `input-updates` is merged.
+cache, `test-data-cache`, instead of fetching them every time. Once saved, the
+cache isn't updated. It's only replaced when a pull request labelled
+`input-updates` is merged, or when GitHub evicts it for being unused or over
+the repository's cache limit.
 
 Add the `input-updates` label to a pull request that changes inputs or how
 they're fetched, such as:
@@ -123,9 +125,10 @@ they're fetched, such as:
 
 On a labelled pull request, CI skips the cache and fetches every input, so the
 tests run against the live data, even if the pull request only changes
-markdown. Adding the label re-runs CI, but removing it doesn't. When the pull
+markdown. Adding any label re-runs CI, but removing one doesn't. When the pull
 request is merged with the label still on, the CI run on `main` deletes the
-cache, fetches every input and saves a fresh cache.
+cache, fetches every input and saves a fresh cache. If that run fails, no cache
+is saved, and every run fetches every input until a run on `main` passes.
 
 Without the label, CI keeps testing against the inputs as they were when the
 cache was saved, so a change to input fetching may never run in CI, and a
