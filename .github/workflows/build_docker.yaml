@@ -9,6 +9,15 @@ on:
       - 'v*'
   pull_request:
 
+# a newer push to a pull request cancels the older run, so the older run can't
+# tag `pr-<number>` last, or race the newer one in `tag-image-ghcr`, where one
+# run's cleanup can delete images the other's is still reading. Pushes to main,
+# tags and manual runs each get their own group and are never cancelled, so
+# they, and runs on different pull requests, can still race there
+concurrency:
+  group: docker-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
 env:
   REGISTRY: ghcr.io
   IMAGE: openmethane/openmethane-prior
@@ -195,7 +204,12 @@ jobs:
             docker tag "${{ needs.build.outputs.registry-image-id }}" "$tag"
             docker push "$tag"
           done
+      # the action reads every image in the package, so it can fail with a 404
+      # when another run's cleanup deletes an image at the same time, such as
+      # the main and tag runs of a release. The image is already tagged by
+      # now, so a failure only leaves this run's `build-<number>` tag behind
       - name: Remove build tag from published image
+        continue-on-error: true
         uses: dataaxiom/ghcr-cleanup-action@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
