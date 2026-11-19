@@ -8,7 +8,6 @@ from openmethane_prior.lib.regrid import (
     _compute_cell_edges,
     _compute_from_areas,
     _domain_crop_slices,
-    _padded_cell_range,
     regrid_data_array_conservative,
 )
 
@@ -217,55 +216,30 @@ def test_weights_not_reused_for_different_source_grid(domain_grid, source_da, tm
     assert len(list(tmp_path.glob("tshared_*_weights.p.gz"))) == 2
 
 
-def test_padded_cell_range_pads_one_cell():
-    edges = np.arange(0.0, 11.0)  # 10 cells of width 1
-
-    result = _padded_cell_range(edges, 3.5, 5.5)
-
-    # cells 3 to 5 contain the range, padded to 2 to 6
-    assert result == slice(2, 7)
-
-
-def test_padded_cell_range_clamped_to_grid():
-    edges = np.arange(0.0, 11.0)
-
-    result = _padded_cell_range(edges, -5.0, 20.0)
-
-    assert result == slice(0, 10)
-
-
-def test_padded_cell_range_outside_grid_not_empty():
-    edges = np.arange(0.0, 11.0)
-
-    result = _padded_cell_range(edges, 20.0, 25.0)
-
-    assert result == slice(9, 10)
-
-
-def test_domain_crop_slices_lambert_domain():
+def test_lambert_domain_fully_covered(tmp_path):
     # Lambert conformal domain over south-east Australia; its edges curve in
-    # lon/lat, so the crop must cover the corners of every cell
+    # lon/lat, so a crop to the domain's corners alone would cut off cells.
+    # The southern edge bows about 0.55° south of the corners, more than the
+    # one 0.25° cell of padding.
     domain_grid = Grid(
-        dimensions=(10, 10),
-        origin_xy=(-500000.0, -500000.0),
+        dimensions=(20, 20),
+        origin_xy=(-1000000.0, -1000000.0),
         cell_size=(100000.0, 100000.0),
         proj_params="+proj=lcc +lat_1=-30 +lat_2=-40 +lat_0=-35 +lon_0=145 +ellps=WGS84",
     )
-    lat_edges = np.arange(-60.0, 0.5, 0.5)
-    lon_edges = np.arange(100.0, 180.5, 0.5)
-    cell_bounds_lon, cell_bounds_lat = domain_grid.cell_bounds_lonlat()
+    lats = np.arange(-49.875, -20.0, 0.25)
+    lons = np.arange(120.125, 170.0, 0.25)
+    uniform_da = xr.DataArray(
+        np.ones((len(lats), len(lons)), dtype=np.float32),
+        dims=["latitude", "longitude"],
+        coords={"latitude": lats, "longitude": lons},
+    )
 
-    lat_slice, lon_slice = _domain_crop_slices(domain_grid, lat_edges, lon_edges)
+    result = regrid_data_array_conservative(uniform_da, domain_grid, tmp_path, "tlambert")
 
-    # every domain cell corner lies inside the cropped region, at least one
-    # padding cell from its edge
-    assert lat_edges[lat_slice.start + 1] <= cell_bounds_lat.min()
-    assert lat_edges[lat_slice.stop - 1] >= cell_bounds_lat.max()
-    assert lon_edges[lon_slice.start + 1] <= cell_bounds_lon.min()
-    assert lon_edges[lon_slice.stop - 1] >= cell_bounds_lon.max()
-    # and the region is much smaller than the source grid
-    assert lat_slice.stop - lat_slice.start < 30
-    assert lon_slice.stop - lon_slice.start < 40
+    # a uniform density stays close to uniform, apart from projection
+    # distortion; a domain cell missing source cells would come out low
+    np.testing.assert_allclose(result.values, 1.0, rtol=0.03)
 
 
 def test_domain_crop_slices_antimeridian_not_cropped():
