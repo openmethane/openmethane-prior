@@ -3,7 +3,8 @@ import pytest
 import xarray as xr
 
 from openmethane_prior.lib.grid.grid import Grid
-from openmethane_prior.lib.regrid import _compute_cell_edges, _compute_from_areas, regrid_data_array_conservative
+from openmethane_prior.lib.regrid import regrid_data_array_conservative
+from openmethane_prior.lib.utils import area_of_rectangle_m2, load_zipped_pickle
 
 
 # 2×2 domain: 2° cells covering lon 138–142, lat –38 to –34 (eastern Australia)
@@ -51,9 +52,9 @@ def test_3d_time_coord_preserved(domain_grid, source_da, tmp_path):
 
 
 def test_cache_file_created(domain_grid, source_da, tmp_path):
-    assert not (tmp_path / "tcache_weights.p.gz").exists()
+    assert list(tmp_path.glob("tcache_*_weights.p.gz")) == []
     regrid_data_array_conservative(source_da, domain_grid, tmp_path, "tcache")
-    assert (tmp_path / "tcache_weights.p.gz").exists()
+    assert len(list(tmp_path.glob("tcache_*_weights.p.gz"))) == 1
 
 
 def test_cache_hit_gives_identical_result(domain_grid, source_da, tmp_path):
@@ -88,11 +89,11 @@ def test_extensive_differs_from_density(domain_grid, source_da, tmp_path):
 def test_extensive_normalises_by_source_cell_area(domain_grid, source_da, tmp_path):
     # extensive=True divides by from_areas before regridding; the result should
     # equal the density result divided by the uniform source cell area
-    lat_edges = _compute_cell_edges(source_da["latitude"].values)
-    lon_edges = _compute_cell_edges(source_da["longitude"].values)
-    from_areas = _compute_from_areas(lat_edges, lon_edges)  # (4, 4) array in m²
+    # areas of the 1° source cells, in m²
+    lats = source_da["latitude"].values[:, np.newaxis]
+    lons = source_da["longitude"].values[np.newaxis, :]
+    from_areas = area_of_rectangle_m2(lats - 0.5, lats + 0.5, lons - 0.5, lons + 0.5)
 
-    r_density = regrid_data_array_conservative(source_da, domain_grid, tmp_path, "tnorm_d")
     # divide each source cell by its area, then regrid
     density_da = source_da / xr.DataArray(
         from_areas,
@@ -107,9 +108,10 @@ def test_extensive_normalises_by_source_cell_area(domain_grid, source_da, tmp_pa
 
 def test_mass_conservation(domain_grid, source_da, tmp_path):
     # total weighted mass in (source × from_area) ≈ total weighted mass out (result × domain_area)
-    lat_edges = _compute_cell_edges(source_da["latitude"].values)
-    lon_edges = _compute_cell_edges(source_da["longitude"].values)
-    from_areas = _compute_from_areas(lat_edges, lon_edges)
+    # areas of the 1° source cells, in m²
+    lats = source_da["latitude"].values[:, np.newaxis]
+    lons = source_da["longitude"].values[np.newaxis, :]
+    from_areas = area_of_rectangle_m2(lats - 0.5, lats + 0.5, lons - 0.5, lons + 0.5)
     total_in = float((source_da.values * from_areas).sum())
 
     result = regrid_data_array_conservative(source_da, domain_grid, tmp_path, "tmass")
@@ -145,11 +147,210 @@ def test_nan_source_cells_not_propagated(domain_grid, source_da, tmp_path):
     np.testing.assert_array_equal(result, result_clean)
 
 
-def test_cell_edges_hundredth_degree_grid():
-    # edges of 0.01 degree cells fall on the third decimal place, and must not
-    # be rounded onto the cell centres
-    centres = np.array([113.40, 113.41, 113.42])
+def test_hundredth_degree_source_cells_keep_their_edges(tmp_path):
+    # edges of 0.01 degree cells fall on the third decimal place; rounding them
+    # onto the cell centres would mix neighbouring cells' values together
+    domain_grid = Grid(dimensions=(3, 1), origin_xy=(113.395, -20.015), cell_size=(0.01, 0.02))
+    hundredth_da = xr.DataArray(
+        np.array([[1.0, 2.0, 3.0], [1.0, 2.0, 3.0]], dtype=np.float32),
+        dims=["latitude", "longitude"],
+        coords={"latitude": [-20.01, -20.00], "longitude": [113.40, 113.41, 113.42]},
+    )
 
-    result = _compute_cell_edges(centres)
+    result = regrid_data_array_conservative(hundredth_da, domain_grid, tmp_path, "thundredth")
 
-    np.testing.assert_allclose(result, [113.395, 113.405, 113.415, 113.425])
+    # each domain cell covers exactly one column of source cells
+    np.testing.assert_allclose(result.values[0] / result.values[0, 0], [1.0, 2.0, 3.0], rtol=1e-6)
+
+
+def test_source_beyond_domain_gives_same_result(domain_grid, source_da, tmp_path):
+    # 1° source over lon 130 to 150, lat -45 to -25, matching source_da inside the
+    # domain and with large values outside it
+    lats = np.arange(-44.5, -25.0, 1.0)
+    lons = np.arange(130.5, 150.0, 1.0)
+    large_da = xr.DataArray(
+        np.full((len(lats), len(lons)), 1000.0, dtype=np.float32),
+        dims=["latitude", "longitude"],
+        coords={"latitude": lats, "longitude": lons},
+    )
+    large_da.loc[{"latitude": slice(-38, -34), "longitude": slice(138, 142)}] = 1.0
+
+    r_large = regrid_data_array_conservative(large_da, domain_grid, tmp_path, "tlarge")
+    r_small = regrid_data_array_conservative(source_da, domain_grid, tmp_path, "tsmall")
+
+    np.testing.assert_allclose(r_large.values, r_small.values, rtol=1e-6)
+
+
+def test_weights_cover_only_cropped_source(domain_grid, tmp_path):
+    # 1° source over lon 100 to 160, lat -50 to 0, much larger than the domain
+    lats = np.arange(-49.5, 0.0, 1.0)
+    lons = np.arange(100.5, 160.0, 1.0)
+    large_da = xr.DataArray(
+        np.ones((len(lats), len(lons)), dtype=np.float32),
+        dims=["latitude", "longitude"],
+        coords={"latitude": lats, "longitude": lons},
+    )
+
+    regrid_data_array_conservative(large_da, domain_grid, tmp_path, "tcrop")
+
+    (weights_file,) = tmp_path.glob("tcrop_*_weights.p.gz")
+    weights = load_zipped_pickle(weights_file)
+    # the 4x4 cells under the domain, the cells starting on its upper edges,
+    # and one cell of padding either side: 7x7 of the source's 50x60 cells
+    assert weights.shape == (4, 7 * 7)
+
+
+def test_weights_not_reused_for_different_source_grid(domain_grid, source_da, tmp_path):
+    # same cache_name, but a 0.5° source grid instead of 1°
+    lats = np.arange(-37.75, -34.0, 0.5)
+    lons = np.arange(138.25, 142.0, 0.5)
+    fine_da = xr.DataArray(
+        np.ones((len(lats), len(lons)), dtype=np.float32),
+        dims=["latitude", "longitude"],
+        coords={"latitude": lats, "longitude": lons},
+    )
+    regrid_data_array_conservative(source_da, domain_grid, tmp_path, "tshared")
+
+    r_shared = regrid_data_array_conservative(fine_da, domain_grid, tmp_path, "tshared")
+    r_fresh = regrid_data_array_conservative(fine_da, domain_grid, tmp_path, "tfresh")
+
+    np.testing.assert_array_equal(r_shared.values, r_fresh.values)
+    assert len(list(tmp_path.glob("tshared_*_weights.p.gz"))) == 2
+
+
+def test_lambert_domain_fully_covered(tmp_path):
+    # Lambert conformal domain over south-east Australia; its edges curve in
+    # lon/lat, so a crop to the domain's corners alone would cut off cells.
+    # The southern edge bows about 0.55° south of the corners, more than the
+    # one 0.25° cell of padding.
+    domain_grid = Grid(
+        dimensions=(20, 20),
+        origin_xy=(-1000000.0, -1000000.0),
+        cell_size=(100000.0, 100000.0),
+        proj_params="+proj=lcc +lat_1=-30 +lat_2=-40 +lat_0=-35 +lon_0=145 +ellps=WGS84",
+    )
+    lats = np.arange(-49.875, -20.0, 0.25)
+    lons = np.arange(120.125, 170.0, 0.25)
+    uniform_da = xr.DataArray(
+        np.ones((len(lats), len(lons)), dtype=np.float32),
+        dims=["latitude", "longitude"],
+        coords={"latitude": lats, "longitude": lons},
+    )
+
+    result = regrid_data_array_conservative(uniform_da, domain_grid, tmp_path, "tlambert")
+
+    # a uniform density stays close to uniform, apart from projection
+    # distortion; a domain cell missing source cells would come out low
+    np.testing.assert_allclose(result.values, 1.0, rtol=0.03)
+
+
+def test_lambert_domain_across_antimeridian_fully_covered(tmp_path):
+    # Lambert conformal domain centred on the antimeridian, over a global 1°
+    # source with longitudes from -180 to 180
+    domain_grid = Grid(
+        dimensions=(10, 10),
+        origin_xy=(-500000.0, -500000.0),
+        cell_size=(100000.0, 100000.0),
+        proj_params="+proj=lcc +lat_1=-37 +lat_2=-43 +lat_0=-40 +lon_0=180 +ellps=WGS84",
+    )
+    lats = np.arange(-89.5, 90.0, 1.0)
+    lons = np.arange(-179.5, 180.0, 1.0)
+    uniform_da = xr.DataArray(
+        np.ones((len(lats), len(lons)), dtype=np.float32),
+        dims=["latitude", "longitude"],
+        coords={"latitude": lats, "longitude": lons},
+    )
+
+    result = regrid_data_array_conservative(uniform_da, domain_grid, tmp_path, "tantimeridian")
+
+    # a domain cell missing the source cells on either side of the
+    # antimeridian would come out low
+    np.testing.assert_allclose(result.values, 1.0, rtol=0.03)
+    (weights_file,) = tmp_path.glob("tantimeridian_*_weights.p.gz")
+    # only the source cells around the domain, not the whole globe
+    assert load_zipped_pickle(weights_file).shape[1] < 1000
+
+
+def test_domain_across_antimeridian_reads_both_sides(tmp_path):
+    # four 1° columns from 178°E to 178°W, over a global source with longitudes
+    # from -180 to 180: 1 in the eastern hemisphere, 2 in the western
+    domain_grid = Grid(dimensions=(4, 2), origin_xy=(178.0, -38.0), cell_size=(1.0, 1.0))
+    lats = np.arange(-89.5, 90.0, 1.0)
+    lons = np.arange(-179.5, 180.0, 1.0)
+    hemispheres_da = xr.DataArray(
+        np.where(lons > 0, 1.0, 2.0)[np.newaxis, :].repeat(len(lats), axis=0),
+        dims=["latitude", "longitude"],
+        coords={"latitude": lats, "longitude": lons},
+    )
+
+    result = regrid_data_array_conservative(hemispheres_da, domain_grid, tmp_path, "tsides")
+
+    np.testing.assert_allclose(
+        result.values / result.values[:, :1], [[1.0, 1.0, 2.0, 2.0]] * 2, rtol=1e-6
+    )
+
+
+def test_domain_across_greenwich_with_0_to_360_source(tmp_path):
+    # four 1° columns from 2°W to 2°E, over a global source with longitudes
+    # from 0 to 360, like GFAS: 1 east of Greenwich, 2 west of it
+    domain_grid = Grid(dimensions=(4, 2), origin_xy=(-2.0, 50.0), cell_size=(1.0, 1.0))
+    lats = np.arange(-89.5, 90.0, 1.0)
+    lons = np.arange(0.5, 360.0, 1.0)
+    sides_da = xr.DataArray(
+        np.where(lons < 180, 1.0, 2.0)[np.newaxis, :].repeat(len(lats), axis=0),
+        dims=["latitude", "longitude"],
+        coords={"latitude": lats, "longitude": lons},
+    )
+
+    result = regrid_data_array_conservative(sides_da, domain_grid, tmp_path, "tgreenwich")
+
+    np.testing.assert_allclose(
+        result.values / result.values[:, :1], [[1.0, 1.0, 0.5, 0.5]] * 2, rtol=1e-6
+    )
+
+
+def test_domain_west_of_greenwich_with_0_to_360_source(tmp_path):
+    # a domain over 10°W to 6°W, which a 0 to 360 source holds as 350° to 354°
+    domain_grid = Grid(dimensions=(4, 2), origin_xy=(-10.0, 50.0), cell_size=(1.0, 1.0))
+    lats = np.arange(-89.5, 90.0, 1.0)
+    lons = np.arange(0.5, 360.0, 1.0)
+    uniform_da = xr.DataArray(
+        np.ones((len(lats), len(lons)), dtype=np.float32),
+        dims=["latitude", "longitude"],
+        coords={"latitude": lats, "longitude": lons},
+    )
+
+    result = regrid_data_array_conservative(uniform_da, domain_grid, tmp_path, "twest")
+
+    # every domain cell is fully covered, so each row has a single value
+    assert (result.values > 0).all()
+    np.testing.assert_allclose(result.values, result.values[:, :1].repeat(4, axis=1), rtol=1e-6)
+
+
+def test_descending_longitudes_give_same_result(domain_grid, source_da, tmp_path):
+    descending_da = source_da.copy(deep=True)
+    descending_da.values[:, 0] = 2.0  # lon 138.5
+    descending_da = descending_da.isel(longitude=slice(None, None, -1))
+
+    r_descending = regrid_data_array_conservative(descending_da, domain_grid, tmp_path, "tdesc")
+    r_ascending = regrid_data_array_conservative(
+        descending_da.sortby("longitude"), domain_grid, tmp_path, "tasc"
+    )
+
+    np.testing.assert_array_equal(r_descending.values, r_ascending.values)
+
+
+def test_domain_too_wide_for_global_source_raises(tmp_path):
+    # 1° columns from 0° to 359°, over a global source with longitudes from
+    # -180 to 180: the ranges either side of the antimeridian would overlap
+    domain_grid = Grid(dimensions=(359, 1), origin_xy=(0.0, -38.0), cell_size=(1.0, 1.0))
+    lats = np.arange(-89.5, 90.0, 1.0)
+    lons = np.arange(-179.5, 180.0, 1.0)
+    uniform_da = xr.DataArray(
+        np.ones((len(lats), len(lons)), dtype=np.float32),
+        dims=["latitude", "longitude"],
+        coords={"latitude": lats, "longitude": lons},
+    )
+
+    with pytest.raises(ValueError, match="too much longitude"):
+        regrid_data_array_conservative(uniform_da, domain_grid, tmp_path, "twide")
