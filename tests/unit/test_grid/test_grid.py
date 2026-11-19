@@ -60,19 +60,30 @@ def test_grid_bounds():
 def test_grid_lonlat_bounds(aust10km_grid):
     cell_bounds_lons, cell_bounds_lats = aust10km_grid.cell_bounds_lonlat()
 
-    # spot check some cells
-    assert list(zip(cell_bounds_lons[0, 0], cell_bounds_lats[0, 0])) == [
-        (104.96293860625516, -44.766629033148384),
-        (105.08344259589477, -44.78663508563181),
-        (105.11154247745316, -44.70106585755431),
-        (104.9911499141127, -44.68106935695354),
-    ]
-    assert list(zip(cell_bounds_lons[42, 89], cell_bounds_lats[42, 89])) == [
-        (116.59521757719003, -42.544987516315324),
-        (116.71481560699907, -42.55697659818492),
-        (116.73101739397438, -42.46884830052819),
-        (116.61153331444048, -42.456865603153744),
-    ]
+    # spot check some cells. Projection results can differ in the last few
+    # bits between platforms, so compare to within 1e-9 degrees (~0.1 mm).
+    np.testing.assert_allclose(
+        np.stack([cell_bounds_lons[0, 0], cell_bounds_lats[0, 0]], axis=-1),
+        [
+            (104.96293860625516, -44.766629033148384),
+            (105.08344259589477, -44.78663508563181),
+            (105.11154247745316, -44.70106585755431),
+            (104.9911499141127, -44.68106935695354),
+        ],
+        rtol=0,
+        atol=1e-9,
+    )
+    np.testing.assert_allclose(
+        np.stack([cell_bounds_lons[42, 89], cell_bounds_lats[42, 89]], axis=-1),
+        [
+            (116.59521757719003, -42.544987516315324),
+            (116.71481560699907, -42.55697659818492),
+            (116.73101739397438, -42.46884830052819),
+            (116.61153331444048, -42.456865603153744),
+        ],
+        rtol=0,
+        atol=1e-9,
+    )
 
 def test_grid_xy_to_lonlat():
     test_grid = Grid(
