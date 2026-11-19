@@ -17,7 +17,7 @@ jobs:
   # a job skipped by its `if` reports success, so required checks still pass
   changes:
     name: Detect changes needing checks
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     permissions:
       contents: read
       pull-requests: read # pull requests list their files through the API
@@ -39,7 +39,7 @@ jobs:
           filters: .github/ci-paths.yml
 
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     needs: changes
     # prevent workflow running on external PRs, but build on any push or PR
     # to the official repo, unless it only changes documentation.
@@ -139,7 +139,7 @@ jobs:
 
   # Determine additional tags to apply to the image
   image-tags:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     needs: [ build ]
     outputs:
       tags: ${{ steps.meta.outputs.tags }}
@@ -168,7 +168,7 @@ jobs:
             type=raw,value=stable,enable=${{ steps.check-stable.outputs.STABLE_RELEASE == 'true' }}
 
   tag-image-ghcr:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     needs: [ build, image-tags ]
     if: ${{ needs.image-tags.outputs.tags }}
     permissions:
@@ -203,7 +203,7 @@ jobs:
 
   # Push the image to ECR as well
   push-ecr:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     strategy:
       matrix:
         account_id:
