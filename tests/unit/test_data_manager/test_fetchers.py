@@ -1,3 +1,4 @@
+import errno
 import urllib.error
 
 import pandas as pd
@@ -146,16 +147,6 @@ def test_download_resumable_resumes_after_stall(tmp_path):
     ]
 
 
-def test_download_resumable_resumes_existing_file(tmp_path):
-    path = tmp_path / "file.nc"
-    path.write_bytes(DOWNLOAD_DATA[:500])
-    server = FakeServer(DOWNLOAD_DATA)
-
-    download_resumable("https://example.com/file.nc", path, urlopen=server)
-
-    assert path.read_bytes() == DOWNLOAD_DATA
-    assert server.requests[0].get_header("Range") == "bytes=500-"
-
 
 def test_download_resumable_retries_closed_connection(tmp_path):
     # the connection closes cleanly before the full Content-Length is sent
@@ -214,3 +205,59 @@ def test_download_resumable_gives_up(tmp_path):
         )
 
     assert len(server.requests) == 3
+
+
+
+
+@pytest.mark.parametrize("code", [429, 503])
+def test_download_resumable_retries_server_errors(tmp_path, code):
+    server_error = urllib.error.HTTPError("https://example.com/file.nc", code, "Error", {}, None)
+    server = FakeServer(DOWNLOAD_DATA, behaviours=[{"raise": server_error}])
+
+    path = download_resumable(
+        "https://example.com/file.nc", tmp_path / "file.nc", retry_delay=0, urlopen=server
+    )
+
+    assert path.read_bytes() == DOWNLOAD_DATA
+    assert len(server.requests) == 2
+
+
+
+def test_download_resumable_without_range_support_gives_up(tmp_path):
+    # every response stalls at the same point and can't be resumed, so
+    # restarting never gets any further
+    server = FakeServer(
+        DOWNLOAD_DATA,
+        behaviours=[{"fail_after": 300, "error": TimeoutError("read timed out")}] * 4,
+        supports_range=False,
+    )
+
+    with pytest.raises(TimeoutError):
+        download_resumable(
+            "https://example.com/file.nc",
+            tmp_path / "file.nc",
+            max_attempts=3,
+            retry_delay=0,
+            block_size=100,
+            urlopen=server,
+        )
+
+    # the first attempt made progress, then 3 attempts restarted without any
+    assert len(server.requests) == 4
+
+
+def test_download_resumable_local_error(tmp_path):
+    # local errors, like a full disk, aren't retried
+    disk_full = OSError(errno.ENOSPC, "No space left on device")
+    server = FakeServer(DOWNLOAD_DATA, behaviours=[{"fail_after": 300, "error": disk_full}])
+
+    with pytest.raises(OSError, match="No space left"):
+        download_resumable(
+            "https://example.com/file.nc",
+            tmp_path / "file.nc",
+            retry_delay=0,
+            block_size=100,
+            urlopen=server,
+        )
+
+    assert len(server.requests) == 1

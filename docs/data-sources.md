@@ -303,7 +303,7 @@ of the ongoing
   slow to download. We average the ensemble into a much smaller file
   (~170 MB) which the prior uses directly, fetched from the Open Methane data
   store. This file must be regenerated when a new version of the dataset is
-  published.
+  published, see `src/openmethane_prior/sectors/wetland/data.py`.
 - Months outside the dataset period use the mean of the same calendar month
   across all years.
 - The paper describing v2.0 has been submitted but not yet published.

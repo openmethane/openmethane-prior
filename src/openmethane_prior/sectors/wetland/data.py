@@ -32,6 +32,8 @@ from openmethane_prior.lib.data_manager.fetchers import download_resumable
 
 logger = logger.get_logger(__name__)
 
+SATWET_VERSION = "2.0"
+
 SATWET_DOI = "10.5281/zenodo.23965325"
 """Concept DOI, which always resolves to the latest version of the dataset"""
 
@@ -146,7 +148,7 @@ def write_satwet_ensemble_mean(source_path: pathlib.Path, dest_path: pathlib.Pat
 
             dest.setncatts(
                 {
-                    "title": "SatWetCH4 v2.0 ensemble mean",
+                    "title": f"SatWetCH4 v{SATWET_VERSION} ensemble mean",
                     "source": SATWET_URL,
                     "doi": SATWET_DOI,
                     "license": "CC-BY-4.0",
@@ -201,10 +203,10 @@ def fetch_satwet_ensemble_mean(data_source: ConfiguredDataSource) -> pathlib.Pat
     return data_source.asset_path
 
 
-SATWET_MEAN_FILE = "SatWetCH4_GIEMS_MC_v2.0_mean.nc"
+SATWET_MEAN_FILE = f"SatWetCH4_GIEMS_MC_v{SATWET_VERSION}_mean.nc"
 
 satwet_zenodo_data_source = DataSource(
-    name="SatWetCH4-v2.0-mean-zenodo",
+    name=f"SatWetCH4-v{SATWET_VERSION}-mean-zenodo",
     url=SATWET_URL,
     file_path=SATWET_MEAN_FILE,
     fetch=fetch_satwet_ensemble_mean,
@@ -215,8 +217,11 @@ because downloading 9 GB from Zenodo takes ~2 hours.
 
 To regenerate the mean when a new version is published:
 
-1. Update SATWET_URL, SATWET_MD5 and the version in SATWET_MEAN_FILE
-2. Fetch this source, which needs ~9 GB of free space next to the asset:
+1. Update SATWET_VERSION, SATWET_URL and SATWET_MD5, and the dataset
+   version in docs/data-sources.md
+2. Fetch this source, which needs ~9 GB of free space next to the asset.
+   If the fetch is killed, delete the .satwet-* folder it leaves behind,
+   so it isn't copied into an input cache:
 
    >>> import datetime, pathlib
    >>> from openmethane_prior.lib.config import PriorConfig
@@ -231,7 +236,7 @@ To regenerate the mean when a new version is published:
 """
 
 satwet_data_source = DataSource(
-    name="SatWetCH4-v2.0-mean",
+    name=f"SatWetCH4-v{SATWET_VERSION}-mean",
     url=f"https://openmethane.s3.amazonaws.com/prior/inputs/{SATWET_MEAN_FILE}",
 )
 """The ensemble mean created by satwet_zenodo_data_source, published to the
