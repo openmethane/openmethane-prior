@@ -216,6 +216,8 @@ pyrightconfig.json
 # Default data paths
 data/*
 
-.claude/
+# Local Claude settings stay untracked; shared subagents are checked in
+.claude/*
+!.claude/agents/
 
 !src/openmethane_prior/lib
