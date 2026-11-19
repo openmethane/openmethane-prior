@@ -200,3 +200,32 @@ def test_remap_raster_x_y_dimension_order():
 
     assert result[target_y, target_x] == 3.0
     assert result.sum() == 3.0
+
+
+def test_remap_raster_includes_input_beyond_target_corners():
+    # in a southern-hemisphere Lambert conformal grid, the middle of the
+    # bottom edge lies further south than the bottom corners
+    target_grid = Grid(
+        dimensions=(40, 10),
+        origin_xy=(-1000000.0, -1500000.0),
+        cell_size=(50000, 50000),
+        proj_params="+proj=lcc +lat_1=-15 +lat_2=-40 +lat_0=-25 +lon_0=133 +ellps=WGS84",
+    )
+    test_input = xr.DataArray(
+        coords={"y": np.arange(-10.05, -50.0, -0.1), "x": np.arange(110.05, 160.0, 0.1)},
+        data=np.zeros((400, 500)),
+    )
+    # an input cell under the bottom-centre target cell, south of every corner
+    bottom_centre_lon, bottom_centre_lat = target_grid.xy_to_lonlat(0.0, -1475000.0)
+    _, corner_lats = target_grid.xy_to_lonlat(
+        np.array([-1000000.0, 1000000.0]), np.array([-1500000.0, -1500000.0])
+    )
+    input_cell = test_input.sel(x=bottom_centre_lon, y=bottom_centre_lat, method="nearest")
+    assert input_cell.y < corner_lats.min()
+    test_input.loc[{"x": input_cell.x, "y": input_cell.y}] = 1.0
+    target_x, target_y, _ = target_grid.lonlat_to_cell_index(input_cell.x, input_cell.y)
+
+    result = remap_raster(test_input, target_grid)
+
+    assert target_y == 0
+    assert result[target_y, target_x] == 1.0

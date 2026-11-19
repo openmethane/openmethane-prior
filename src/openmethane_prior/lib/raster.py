@@ -7,6 +7,10 @@ from openmethane_prior.lib.grid.grid import Grid
 # number of input cells to reproject at a time
 _BLOCK_CELLS = 2**20
 
+# points transformed along each edge of the target grid to find its extent
+# in the input projection
+_BBOX_EDGE_POINTS = 100
+
 
 def remap_raster(
     input_xr: xr.DataArray,
@@ -25,14 +29,17 @@ def remap_raster(
     projection_transformer = pyproj.Transformer.from_crs(crs_from=input_crs, crs_to=target_grid.projection.crs, always_xy=True)
 
     # construct a bounding box for the target grid, over the input grid
-    # this will limit our search space for mapping input values to target cells
+    # this will limit our search space for mapping input values to target cells.
+    # the grid's edges curve in the input projection, so points along each
+    # edge are transformed, not just the corners
     target_grid_bounds_x = target_grid.cell_bounds_x()
     target_grid_bounds_y = target_grid.cell_bounds_y()
-    target_grid_x_min, target_grid_x_max = target_grid_bounds_x.min(), target_grid_bounds_x.max()
-    target_grid_y_min, target_grid_y_max = target_grid_bounds_y.min(), target_grid_bounds_y.max()
-    target_bbox_input_x, target_bbox_input_y = projection_transformer.transform(
-        xx=np.array([target_grid_x_min, target_grid_x_max, target_grid_x_max, target_grid_x_min]),
-        yy=np.array([target_grid_y_min, target_grid_y_min, target_grid_y_max, target_grid_y_max]),
+    input_x_min, input_y_min, input_x_max, input_y_max = projection_transformer.transform_bounds(
+        target_grid_bounds_x.min(),
+        target_grid_bounds_y.min(),
+        target_grid_bounds_x.max(),
+        target_grid_bounds_y.max(),
+        densify_pts=_BBOX_EDGE_POINTS,
         direction=pyproj.enums.TransformDirection.INVERSE,
     )
 
@@ -40,12 +47,12 @@ def remap_raster(
     # input as float64 to hold NaNs. raster coordinates are monotonic, so the
     # coordinates inside the box are a contiguous run of indices
     x_inside = np.flatnonzero(
-        (target_bbox_input_x.min() <= input_xr.x.values) &
-        (input_xr.x.values <= target_bbox_input_x.max())
+        (input_x_min <= input_xr.x.values) &
+        (input_xr.x.values <= input_x_max)
     )
     y_inside = np.flatnonzero(
-        (target_bbox_input_y.min() <= input_xr.y.values) &
-        (input_xr.y.values <= target_bbox_input_y.max())
+        (input_y_min <= input_xr.y.values) &
+        (input_xr.y.values <= input_y_max)
     )
     if x_inside.size == 0 or y_inside.size == 0:
         return np.zeros(target_grid.shape)
