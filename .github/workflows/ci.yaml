@@ -2,11 +2,64 @@ name: CI
 
 on:
   pull_request:
+    # `labeled` re-runs CI when `input-updates` is added, so the tests run
+    # against fresh inputs without needing a new commit
+    types: [opened, synchronize, reopened, labeled]
   push:
     branches: [main]
     tags: ['v*']
 
+# adding labels re-runs CI, so a newer run on the same pull request cancels the
+# older one; pushes each get their own group and are never cancelled
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
 jobs:
+  # A pull request labelled `input-updates` changes inputs or how they're
+  # fetched, so its tests skip the shared test data cache and fetch every input.
+  # When one is merged, the push to main deletes the cache before the tests
+  # restore it, so that run fetches every input and saves a fresh cache.
+  input-updates:
+    name: Detect input updates
+    runs-on: ubuntu-26.04
+    permissions:
+      actions: write # deleting the test data cache
+      pull-requests: read # finding the pull request a push to main merged
+    outputs:
+      labelled: ${{ steps.label.outputs.labelled }}
+    steps:
+      - name: Check for the input-updates label
+        id: label
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PR_LABELLED: ${{ contains(github.event.pull_request.labels.*.name, 'input-updates') }}
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = pull_request ]; then
+            labelled=$PR_LABELLED
+          elif [ "$GITHUB_REF" = refs/heads/main ]; then
+            labelled=$(gh api "repos/$GH_REPO/commits/$GITHUB_SHA/pulls" \
+              --jq 'any(.[]; .merged_at != null and any(.labels[]; .name == "input-updates"))')
+          else
+            labelled=false
+          fi
+          echo "labelled=$labelled" >> "$GITHUB_OUTPUT"
+      - name: Delete the test data cache
+        if: github.event_name == 'push' && steps.label.outputs.labelled == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          # `--key` matches a prefix, so select the exact key
+          count=$(gh cache list --key test-data-cache --limit 100 --json key \
+            --jq '[.[] | select(.key == "test-data-cache")] | length')
+          if [ "$count" -eq 0 ]; then
+            echo "No test-data-cache to delete"
+          else
+            gh cache delete test-data-cache
+          fi
+
   # a job skipped by its `if` reports success, so required checks still pass
   changes:
     name: Detect changes needing checks
@@ -32,9 +85,13 @@ jobs:
           filters: .github/ci-paths.yml
 
   tests:
-    needs: changes
-    if: needs.changes.outputs.checks == 'true'
-    timeout-minutes: 20
+    needs: [changes, input-updates]
+    # input updates run the tests even when only markdown changed, such as a
+    # pull request for an edited Google Sheet
+    if: needs.changes.outputs.checks == 'true' || needs.input-updates.outputs.labelled == 'true'
+    # fetching every input takes up to about 20 minutes; "Run tests" has a
+    # shorter limit when the cache is restored
+    timeout-minutes: 40
     runs-on: ubuntu-26.04
     steps:
       - name: Check out repository
@@ -50,7 +107,12 @@ jobs:
       - name: Install the project
         run: |
           uv sync --locked --all-extras --dev
+      # labelled pull requests test against fresh inputs and save no cache. On
+      # main, `input-updates` has already deleted the cache, so this restores
+      # nothing and saves a fresh cache once the tests pass
       - name: Cache test data
+        id: test-data
+        if: github.event_name != 'pull_request' || needs.input-updates.outputs.labelled != 'true'
         uses: actions/cache@v4
         with:
           path: data/.cache
@@ -61,6 +123,7 @@ jobs:
           mkdir -p data/.cache/inputs
           curl -L -o data/.cache/inputs/gfas_2022-12-07_2022-12-08.nc "https://openmethane.s3.amazonaws.com/tests/gfas/gfas_2022-12-07_2022-12-08.nc"
       - name: Run tests
+        timeout-minutes: ${{ steps.test-data.outputs.cache-hit == 'true' && 15 || 35 }}
         run: |
           uv run python -m pytest -r a -v tests -k "not test_cdsapi_connection"
         env:

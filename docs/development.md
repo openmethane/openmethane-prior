@@ -107,6 +107,30 @@ are skipped rather than the workflow, so the required `tests` and `check-build`
 checks still report success. `.github/ci-paths.yml` lists the paths that need
 checks. Tags and manual runs always run everything.
 
+### Input data cache
+
+To keep runs fast, the `tests` job restores downloaded inputs from a shared
+cache, `test-data-cache`, instead of fetching them every time. The cache is
+only refreshed when a pull request labelled `input-updates` is merged.
+
+Add the `input-updates` label to a pull request that changes inputs or how
+they're fetched, such as:
+
+- adding a data source, or changing a source's URL or version
+- changing how an input is downloaded or parsed
+- editing a Google Sheet the prior reads, when the pull request depends on the
+  edit
+
+On a labelled pull request, CI skips the cache and fetches every input, so the
+tests run against the live data, even if the pull request only changes
+markdown. Adding the label re-runs CI, but removing it doesn't. When the pull
+request is merged with the label still on, the CI run on `main` deletes the
+cache, fetches every input and saves a fresh cache.
+
+Without the label, CI keeps testing against the inputs as they were when the
+cache was saved, so a change to input fetching may never run in CI, and a
+change to the data itself can go unnoticed.
+
 ## Preparing a release
 
 When changes have been merged into `main` which should be used in prod or
