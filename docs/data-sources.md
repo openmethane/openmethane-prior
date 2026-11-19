@@ -84,8 +84,25 @@ generated UNFCCC codes CSV available via our public data store.
 Starting in the 2023-24 financial year, Safeguard Mechanism reporting includes
 per-facility CO2-equivalent emissions estimates for multiple greenhouse gases,
 including methane. These estimates are provided by the operating entity to the
-Clean Energy Regulator, and made public in the
-[Safeguard Mechanism Baselines and Emissions Table](https://cer.gov.au/markets/reports-and-data/safeguard-data/2023-24-baselines-and-emissions-data#baselines-and-emissions-table).
+Clean Energy Regulator, and made public each year in the Safeguard Mechanism
+Baselines and Emissions Table:
+
+- [2023-24](https://cer.gov.au/markets/reports-and-data/safeguard-data/2023-24-baselines-and-emissions-data#baselines-and-emissions-table)
+- [2024-25](https://cer.gov.au/markets/reports-and-data/safeguard-data/2024-25-baselines-and-emissions-data)
+
+The prior uses the table for the financial year of the run period, so a run
+period can't span more than one financial year. If no table has been published
+for that financial year, Safeguard facility emissions aren't used and a warning
+is logged.
+
+Facilities are identified by name, and names change between years when
+facilities are renamed, change owner, split or absorb other facilities.
+Locations in the Safeguard Mechanism Facility Locations dataset are recorded
+against each name as published, so a renamed or split facility needs its own
+location rows. A location row can be limited to a range of financial years
+with the optional "First financial year" and "Last financial year" columns
+(like "2024-25"), for example when a facility absorbs another facility's site
+but keeps its name.
 
 Each "emissions number" reported in the Baselines and Emissions Table uses a
 unit of "tonnes of carbon dioxide equivalent" (tCO2-e), including the

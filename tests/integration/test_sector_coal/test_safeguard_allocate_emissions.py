@@ -7,12 +7,12 @@ from openmethane_prior.data_sources.safeguard import (
     safeguard_locations_data_source,
     safeguard_mechanism_data_source,
 )
-from openmethane_prior.lib import PriorConfig
+from openmethane_prior.lib import DataManager, PriorConfig
 from openmethane_prior.sectors.coal.data import coal_facilities_data_source
 from openmethane_prior.sectors.coal.safeguard_coal import allocate_safeguard_facility_emissions
 
 
-def test_safeguard_allocate_emissions(config, input_files, data_manager):
+def test_safeguard_allocate_emissions(config, input_files):
     # we will need to test with configs in the SGM period and outside
     config_params = attrs.asdict(config)
     del config_params["start_date"]
@@ -26,6 +26,8 @@ def test_safeguard_allocate_emissions(config, input_files, data_manager):
     )
     config_2023.prepare_paths()
 
+    # Safeguard data is read for the financial year of the configured period
+    data_manager = DataManager.from_config(config_2023)
     safeguard_facilities_asset = data_manager.get_asset(safeguard_mechanism_data_source)
     facility_locations_asset = data_manager.get_asset(safeguard_locations_data_source)
     coal_facilities_asset = data_manager.get_asset(coal_facilities_data_source)
