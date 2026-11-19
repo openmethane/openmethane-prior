@@ -16,15 +16,24 @@
 # limitations under the License.
 #
 import geopandas as gpd
+import http.client
+from http import HTTPStatus
 import os
 import pandas as pd
 import pathlib
+import ssl
 import tempfile
+import time
+import urllib.error
 import urllib.request
 import urllib.parse
 import zipfile
 
 from .source import ConfiguredDataSource
+from openmethane_prior.lib import logger
+
+logger = logger.get_logger(__name__)
+
 
 def google_sheet_csv_url(sheet_id_or_url: str, sheet_name: str) -> str:
     """Return the URL of the CSV export of a single sheet in a publicly
@@ -94,12 +103,14 @@ def fetch_google_sheet_csv(sheet_name: str, required_columns: list[str] | None =
             ...
         )
     """
+
     def _data_source_fetch(data_source: ConfiguredDataSource) -> pathlib.Path:
         df = fetch_google_sheet_by_name_csv(data_source.url, sheet_name, required_columns)
         df.to_csv(data_source.asset_path, index=False)
         return data_source.asset_path
 
     return _data_source_fetch
+
 
 def fetch_zipped_shp_to_gdf(
     url: str,
@@ -124,3 +135,101 @@ def fetch_zipped_shp_to_gdf(
 
         # read the extracted Shapefile with geopandas
         return gpd.read_file(tmp_path / shp_file)
+
+
+def download_resumable(
+    url: str,
+    path: pathlib.Path,
+    timeout: float = 60,
+    max_attempts: int = 10,
+    retry_delay: float = 5,
+    block_size: int = 1024 * 1024,
+    urlopen=urllib.request.urlopen,
+) -> pathlib.Path:
+    """Download a large file, resuming after stalls and dropped connections.
+
+    urllib.request.urlretrieve has no read timeout, so a connection that
+    stops sending data hangs forever, and a failure restarts from zero. Here a
+    stalled read raises after `timeout` seconds, and each retry requests only
+    the bytes not yet downloaded using an HTTP Range header.
+
+    Parameters
+    ----------
+    url
+        URL of the file to download
+    path
+        Where to save the file. Any existing file is replaced.
+    timeout
+        Seconds to wait for the connection or for each read before retrying
+    max_attempts
+        Consecutive failed attempts allowed. Attempts that extend the
+        download further than before reset the count, so a long download can
+        survive many stalls.
+    retry_delay
+        Seconds to wait before the first retry, doubling for each
+        consecutive failure up to 5 minutes
+    block_size
+        Bytes to read and write at a time
+    urlopen
+        Replaceable for tests
+
+    Returns
+    -------
+    pathlib.Path
+        The path the file was saved to
+    """
+    offset = 0
+    furthest = 0
+    failures = 0
+    total = None
+    with open(path, "wb") as f:
+        while True:
+            headers = {"Range": f"bytes={offset}-"} if offset else {}
+            try:
+                request = urllib.request.Request(url, headers=headers)
+                with urlopen(request, timeout=timeout) as response:
+                    # a server which ignores Range sends the whole file again
+                    if offset and response.status != HTTPStatus.PARTIAL_CONTENT:
+                        logger.warning(f"{url} doesn't support resuming, restarting download")
+                        offset = 0
+                        f.seek(0)
+                        f.truncate()
+                    content_length = response.headers.get("Content-Length")
+                    if content_length is not None:
+                        total = offset + int(content_length)
+                    while block := response.read(block_size):
+                        f.write(block)
+                        offset += len(block)
+
+                if total is None or offset >= total:
+                    return path
+                raise http.client.IncompleteRead(b"", total - offset)
+
+            except urllib.error.HTTPError as e:
+                # client errors won't be fixed by retrying, except rate limiting
+                if (
+                    e.code < HTTPStatus.INTERNAL_SERVER_ERROR
+                    and e.code != HTTPStatus.TOO_MANY_REQUESTS
+                ):
+                    raise
+                error = e
+            # network failures only: local errors such as a full disk are raised
+            except (
+                urllib.error.URLError,
+                ConnectionError,
+                TimeoutError,
+                ssl.SSLError,
+                http.client.HTTPException,
+            ) as e:
+                error = e
+
+            failures = 0 if offset > furthest else failures + 1
+            furthest = max(furthest, offset)
+            if failures >= max_attempts:
+                raise error
+            delay = min(retry_delay * 2 ** max(failures - 1, 0), 300)
+            logger.warning(
+                f"Download of {url} interrupted at {offset} bytes ({error!r}), "
+                f"retrying in {delay:.0f}s"
+            )
+            time.sleep(delay)

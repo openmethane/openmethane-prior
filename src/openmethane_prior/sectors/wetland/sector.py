@@ -23,20 +23,15 @@ import pandas as pd
 import xarray as xr
 
 from openmethane_prior.lib import (
-    DataSource,
     PriorSector,
     PriorSectorConfig,
     logger,
     regrid_data_array_conservative,
 )
 from openmethane_prior.lib.units import SECONDS_PER_DAY
+from openmethane_prior.sectors.wetland.data import MEAN_VARIABLE, satwet_data_source
 
 logger = logger.get_logger(__name__)
-
-satwet_giems_data_source = DataSource(
-    name="SatWet-GIEMS",
-    url="https://openmethane.s3.amazonaws.com/prior/inputs/SatWetCH4_GIEMS-MC_v2-90.nc",
-)
 
 def process_emissions(
     sector: PriorSector,
@@ -46,7 +41,7 @@ def process_emissions(
     """Process wetland emissions for the given date range."""
     config = sector_config.prior_config
     domain_grid = config.domain().grid
-    wetlands_da = sector_config.data_manager.get_asset(satwet_giems_data_source)
+    wetlands_da = sector_config.data_manager.get_asset(satwet_data_source)
     wetlands_ds = xr.open_dataset(wetlands_da.path)
 
     # SatWet time coordinates are first-of-month; compare at (year, month) granularity
@@ -63,7 +58,7 @@ def process_emissions(
 
     # Regrid all SatWet time steps to the domain grid (no climatology, no unit conversion)
     regridded_da = regrid_data_array_conservative(
-        data_da=wetlands_ds["fch4_mean"],
+        data_da=wetlands_ds[MEAN_VARIABLE],
         domain_grid=domain_grid,
         cache_path=config.intermediates_path,
         cache_name=f"{wetlands_da.name}_{prior_ds.domain_name}",
