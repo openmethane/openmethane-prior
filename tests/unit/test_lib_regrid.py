@@ -3,13 +3,8 @@ import pytest
 import xarray as xr
 
 from openmethane_prior.lib.grid.grid import Grid
-from openmethane_prior.lib.utils import load_zipped_pickle
-from openmethane_prior.lib.regrid import (
-    _compute_cell_edges,
-    _compute_from_areas,
-    _domain_crop_slices,
-    regrid_data_array_conservative,
-)
+from openmethane_prior.lib.regrid import _domain_crop_slices, regrid_data_array_conservative
+from openmethane_prior.lib.utils import area_of_rectangle_m2, load_zipped_pickle
 
 
 # 2×2 domain: 2° cells covering lon 138–142, lat –38 to –34 (eastern Australia)
@@ -94,11 +89,11 @@ def test_extensive_differs_from_density(domain_grid, source_da, tmp_path):
 def test_extensive_normalises_by_source_cell_area(domain_grid, source_da, tmp_path):
     # extensive=True divides by from_areas before regridding; the result should
     # equal the density result divided by the uniform source cell area
-    lat_edges = _compute_cell_edges(source_da["latitude"].values)
-    lon_edges = _compute_cell_edges(source_da["longitude"].values)
-    from_areas = _compute_from_areas(lat_edges, lon_edges)  # (4, 4) array in m²
+    # areas of the 1° source cells, in m²
+    lats = source_da["latitude"].values[:, np.newaxis]
+    lons = source_da["longitude"].values[np.newaxis, :]
+    from_areas = area_of_rectangle_m2(lats - 0.5, lats + 0.5, lons - 0.5, lons + 0.5)
 
-    r_density = regrid_data_array_conservative(source_da, domain_grid, tmp_path, "tnorm_d")
     # divide each source cell by its area, then regrid
     density_da = source_da / xr.DataArray(
         from_areas,
@@ -113,9 +108,10 @@ def test_extensive_normalises_by_source_cell_area(domain_grid, source_da, tmp_pa
 
 def test_mass_conservation(domain_grid, source_da, tmp_path):
     # total weighted mass in (source × from_area) ≈ total weighted mass out (result × domain_area)
-    lat_edges = _compute_cell_edges(source_da["latitude"].values)
-    lon_edges = _compute_cell_edges(source_da["longitude"].values)
-    from_areas = _compute_from_areas(lat_edges, lon_edges)
+    # areas of the 1° source cells, in m²
+    lats = source_da["latitude"].values[:, np.newaxis]
+    lons = source_da["longitude"].values[np.newaxis, :]
+    from_areas = area_of_rectangle_m2(lats - 0.5, lats + 0.5, lons - 0.5, lons + 0.5)
     total_in = float((source_da.values * from_areas).sum())
 
     result = regrid_data_array_conservative(source_da, domain_grid, tmp_path, "tmass")
@@ -151,14 +147,20 @@ def test_nan_source_cells_not_propagated(domain_grid, source_da, tmp_path):
     np.testing.assert_array_equal(result, result_clean)
 
 
-def test_cell_edges_hundredth_degree_grid():
-    # edges of 0.01 degree cells fall on the third decimal place, and must not
-    # be rounded onto the cell centres
-    centres = np.array([113.40, 113.41, 113.42])
+def test_hundredth_degree_source_cells_keep_their_edges(tmp_path):
+    # edges of 0.01 degree cells fall on the third decimal place; rounding them
+    # onto the cell centres would mix neighbouring cells' values together
+    domain_grid = Grid(dimensions=(3, 1), origin_xy=(113.395, -20.015), cell_size=(0.01, 0.02))
+    hundredth_da = xr.DataArray(
+        np.array([[1.0, 2.0, 3.0], [1.0, 2.0, 3.0]], dtype=np.float32),
+        dims=["latitude", "longitude"],
+        coords={"latitude": [-20.01, -20.00], "longitude": [113.40, 113.41, 113.42]},
+    )
 
-    result = _compute_cell_edges(centres)
+    result = regrid_data_array_conservative(hundredth_da, domain_grid, tmp_path, "thundredth")
 
-    np.testing.assert_allclose(result, [113.395, 113.405, 113.415, 113.425])
+    # each domain cell covers exactly one column of source cells
+    np.testing.assert_allclose(result.values[0] / result.values[0, 0], [1.0, 2.0, 3.0], rtol=1e-6)
 
 
 def test_source_beyond_domain_gives_same_result(domain_grid, source_da, tmp_path):
