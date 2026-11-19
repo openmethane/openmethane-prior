@@ -33,22 +33,24 @@ def remap_raster(
         direction=pyproj.enums.TransformDirection.INVERSE,
     )
 
-    # rioxarray makes this easy with clip_box
-    if 'rio' in input_xr:
-        input_search_space = input_xr.rio.clip_box(
-            minx=target_bbox_input_x.min(),
-            maxx=target_bbox_input_x.max(),
-            miny=target_bbox_input_y.min(),
-            maxy=target_bbox_input_y.max()
-        )
-    else: # support native xarray.DataArray as well
-        input_search_space = input_xr.where(
-            (target_bbox_input_x.min() <= input_xr.x) &
-            (input_xr.x <= target_bbox_input_x.max()) &
-            (target_bbox_input_y.min() <= input_xr.y) &
-            (input_xr.y <= target_bbox_input_y.max()),
-            drop=True
-        )
+    # crop with slices rather than .where(drop=True), which would copy the
+    # input as float64 to hold NaNs. raster coordinates are monotonic, so the
+    # coordinates inside the box are a contiguous run of indices
+    x_inside = np.flatnonzero(
+        (target_bbox_input_x.min() <= input_xr.x.values) &
+        (input_xr.x.values <= target_bbox_input_x.max())
+    )
+    y_inside = np.flatnonzero(
+        (target_bbox_input_y.min() <= input_xr.y.values) &
+        (input_xr.y.values <= target_bbox_input_y.max())
+    )
+    if x_inside.size == 0 or y_inside.size == 0:
+        return np.zeros(target_grid.shape)
+
+    input_search_space = input_xr.isel(
+        x=slice(x_inside[0], x_inside[-1] + 1),
+        y=slice(y_inside[0], y_inside[-1] + 1),
+    ).transpose("y", "x")
     input_search_space_np = input_search_space.to_numpy()
 
     # the raster is defined lat-lon so we need to reproject each row separately onto the LCC grid

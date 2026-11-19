@@ -81,3 +81,47 @@ def test_remap_raster_input_projection():
 
     # check that our single value occurs in the right target cell
     assert result[target_y, target_x] == 1.0
+
+
+def test_remap_raster_bool_input_cropped_to_target():
+    target_grid = Grid(
+        dimensions=(10, 10),
+        origin_xy=(130.0, -40.0),
+        cell_size=(1, 1),
+        proj_params="EPSG:4326",
+    )
+    # a bool raster extending well beyond the target, with y descending as
+    # in a GeoTIFF
+    test_input = xr.DataArray(
+        coords={"y": np.arange(-10.125, -60.0, -0.25), "x": np.arange(110.125, 170.0, 0.25)},
+        data=np.zeros((200, 240), dtype=bool),
+    )
+    inside_point = (135.125, -35.125)
+    outside_point = (120.125, -35.125)
+    test_input.loc[{"x": inside_point[0], "y": inside_point[1]}] = True
+    test_input.loc[{"x": outside_point[0], "y": outside_point[1]}] = True
+    target_x, target_y, _ = target_grid.lonlat_to_cell_index(*inside_point)
+
+    result = remap_raster(test_input, target_grid)
+
+    assert result.shape == target_grid.shape
+    assert result.sum() == 1
+    assert result[target_y, target_x] == 1
+
+
+def test_remap_raster_input_outside_target():
+    target_grid = Grid(
+        dimensions=(10, 10),
+        origin_xy=(130.0, -40.0),
+        cell_size=(1, 1),
+        proj_params="EPSG:4326",
+    )
+    test_input = xr.DataArray(
+        coords={"y": np.arange(-10.5, -20.0, -1.0), "x": np.arange(100.5, 110.0, 1.0)},
+        data=np.ones((10, 10), dtype=bool),
+    )
+
+    result = remap_raster(test_input, target_grid)
+
+    assert result.shape == target_grid.shape
+    assert result.sum() == 0
