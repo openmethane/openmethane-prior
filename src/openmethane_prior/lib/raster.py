@@ -4,6 +4,9 @@ import xarray as xr
 
 from openmethane_prior.lib.grid.grid import Grid
 
+# number of input cells to reproject at a time
+_BLOCK_CELLS = 2**22
+
 
 def remap_raster(
     input_xr: xr.DataArray,
@@ -17,7 +20,7 @@ def remap_raster(
     mapped to the grid by specifying input_crs.
 
     Returns an np.array in the shape of the domain grid, each cell containing
-    the aggregate of raster values who's center point fell within the cell.
+    the sum of the values of raster cells whose centre point falls within it.
     """
     projection_transformer = pyproj.Transformer.from_crs(crs_from=input_crs, crs_to=target_grid.projection.crs, always_xy=True)
 
@@ -52,25 +55,36 @@ def remap_raster(
         y=slice(y_inside[0], y_inside[-1] + 1),
     ).transpose("y", "x")
     input_search_space_np = input_search_space.to_numpy()
+    input_x = input_search_space.x.to_numpy()
+    input_y = input_search_space.y.to_numpy()
 
-    # the raster is defined lat-lon so we need to reproject each row separately onto the LCC grid
+    # work through blocks of rows, so the coordinates of a dense input never
+    # all need to be held in memory at once
+    block_rows = max(1, _BLOCK_CELLS // max(1, input_x.size))
     result = np.zeros(target_grid.shape)
-    for iy in range(input_search_space.y.size):
-        y = input_search_space.y.item(iy)
-        # proj needs x,y coords in equal-sized lists, each point in the row
-        # will have the same y coord
-        y_row = np.array([y]).repeat(input_search_space.x.size)
+    for row_start in range(0, input_y.size, block_rows):
+        block = input_search_space_np[row_start:row_start + block_rows]
 
-        # the central point in the high-res raster cell lies inside the cell
-        # defined on the domain grid
-        target_x, target_y = projection_transformer.transform(xx=input_search_space.x, yy=y_row)
+        # only cells with a value are reprojected: a zero adds nothing to the
+        # sum in a target cell, and projecting coordinates is the slow part.
+        # this only holds because the result is a sum of input values
+        block_iy, block_ix = np.nonzero(block)
+        if block_iy.size == 0:
+            continue
+
+        # the input cell is counted in the target cell containing its centre
+        target_x, target_y = projection_transformer.transform(
+            xx=input_x[block_ix], yy=input_y[row_start + block_iy]
+        )
         target_ix, target_iy, mask = target_grid.xy_to_cell_index(target_x, target_y)
 
-        # input domain is bigger so mask indices out of range
+        # np.add.at accumulates values when target indices repeat. input cells
+        # outside the target grid are masked out
         if mask.any():
-            # we accumulate values from each high-res grid in the raster onto
-            # our domain.
-            # the following needs to use .at method since target_iy,target_ix indices may be repeated and we need to acumulate
-            np.add.at(result, (target_iy[mask], target_ix[mask]), input_search_space_np[iy, mask])
+            np.add.at(
+                result,
+                (target_iy[mask], target_ix[mask]),
+                block[block_iy[mask], block_ix[mask]],
+            )
 
     return result

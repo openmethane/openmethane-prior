@@ -5,6 +5,7 @@ import xarray as xr
 from openmethane_prior.data_sources.inventory import inventory_domain_data_source
 from openmethane_prior.data_sources.nightlights import night_lights_data_source
 from openmethane_prior.lib.grid.grid import Grid
+from openmethane_prior.lib import raster
 from openmethane_prior.lib.raster import remap_raster
 
 def test_remap_raster(config, input_files, data_manager, data_manager_fetch_only):
@@ -125,3 +126,30 @@ def test_remap_raster_input_outside_target():
 
     assert result.shape == target_grid.shape
     assert result.sum() == 0
+
+
+def test_remap_raster_sums_values_across_row_blocks(monkeypatch):
+    # process a few rows at a time, so the input spans several blocks
+    monkeypatch.setattr(raster, "_BLOCK_CELLS", 100)
+    target_grid = Grid(
+        dimensions=(10, 10),
+        origin_xy=(130.0, -40.0),
+        cell_size=(1, 1),
+        proj_params="EPSG:4326",
+    )
+    # four input cells in each target cell
+    test_input = xr.DataArray(
+        coords={"y": np.arange(-30.25, -40.0, -0.5), "x": np.arange(130.25, 140.0, 0.5)},
+        data=np.zeros((20, 20)),
+    )
+    test_input.loc[{"x": 135.25, "y": -35.25}] = 2.5
+    test_input.loc[{"x": 135.75, "y": -35.75}] = -1.0
+    test_input.loc[{"x": 131.25, "y": -38.75}] = 4.0
+    first_x, first_y, _ = target_grid.lonlat_to_cell_index(135.5, -35.5)
+    second_x, second_y, _ = target_grid.lonlat_to_cell_index(131.5, -38.5)
+
+    result = remap_raster(test_input, target_grid)
+
+    assert result[first_y, first_x] == 1.5
+    assert result[second_y, second_x] == 4.0
+    assert result.sum() == 5.5
