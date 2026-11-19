@@ -5,7 +5,7 @@ import xarray as xr
 from openmethane_prior.lib.grid.grid import Grid
 
 # number of input cells to reproject at a time
-_BLOCK_CELLS = 2**22
+_BLOCK_CELLS = 2**20
 
 
 def remap_raster(

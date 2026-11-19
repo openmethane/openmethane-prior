@@ -153,3 +153,50 @@ def test_remap_raster_sums_values_across_row_blocks(monkeypatch):
     assert result[first_y, first_x] == 1.5
     assert result[second_y, second_x] == 4.0
     assert result.sum() == 5.5
+
+
+def test_remap_raster_nan_input():
+    target_grid = Grid(
+        dimensions=(10, 10),
+        origin_xy=(130.0, -40.0),
+        cell_size=(1, 1),
+        proj_params="EPSG:4326",
+    )
+    test_input = xr.DataArray(
+        coords={"y": np.arange(-30.25, -40.0, -0.5), "x": np.arange(130.25, 140.0, 0.5)},
+        data=np.zeros((20, 20)),
+    )
+    # a NaN and a finite value in the same target cell
+    test_input.loc[{"x": 135.25, "y": -35.25}] = np.nan
+    test_input.loc[{"x": 135.75, "y": -35.75}] = 1.0
+    test_input.loc[{"x": 131.25, "y": -38.75}] = 4.0
+    nan_x, nan_y, _ = target_grid.lonlat_to_cell_index(135.5, -35.5)
+    other_x, other_y, _ = target_grid.lonlat_to_cell_index(131.5, -38.5)
+
+    result = remap_raster(test_input, target_grid)
+
+    assert np.isnan(result[nan_y, nan_x])
+    assert np.isnan(result).sum() == 1
+    assert result[other_y, other_x] == 4.0
+
+
+def test_remap_raster_x_y_dimension_order():
+    target_grid = Grid(
+        dimensions=(10, 10),
+        origin_xy=(130.0, -40.0),
+        cell_size=(1, 1),
+        proj_params="EPSG:4326",
+    )
+    # dimensions ordered (x, y) rather than the usual (y, x), with a
+    # non-square crop
+    test_input = xr.DataArray(
+        coords={"x": np.arange(130.25, 140.0, 0.5), "y": np.arange(-35.25, -40.0, -0.5)},
+        data=np.zeros((20, 10)),
+    )
+    test_input.loc[{"x": 135.25, "y": -38.75}] = 3.0
+    target_x, target_y, _ = target_grid.lonlat_to_cell_index(135.5, -38.5)
+
+    result = remap_raster(test_input, target_grid)
+
+    assert result[target_y, target_x] == 3.0
+    assert result.sum() == 3.0
