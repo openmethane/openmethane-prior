@@ -30,6 +30,7 @@ from .regrid import regrid_data_array_conservative
 from .outputs import add_sector, convert_to_timescale
 from .create_prior import create_prior
 from .raster import remap_raster
+from .proxy import GriddedProxy
 from .sector.config import PriorSectorConfig
 from .sector.sector import PriorSector
 from .units import kg_to_period_cell_flux

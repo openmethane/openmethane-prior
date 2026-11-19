@@ -116,7 +116,6 @@ def process_emissions(sector: AustraliaPriorSector, sector_config: PriorSectorCo
                                  & sector_facilities_df["state"].isin(au_states_df["short_name"])
     gas_supply_facilities_df = sector_facilities_df[gas_supply_facilities_mask]
     gas_supply_nd = gas_supply_emissions(
-        domain_grid=config.domain().grid,
         facilities_df=gas_supply_facilities_df,
         au_states=au_states_df,
         nightlights=night_lights,

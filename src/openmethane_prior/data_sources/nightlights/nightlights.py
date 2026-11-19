@@ -24,12 +24,11 @@ from openmethane_prior.lib import (
     ConfiguredDataSource,
     DataSource,
     Domain,
-    regrid_data,
-    remap_raster,
+    GriddedProxy,
 )
 
 
-def parse_ntlt_data_source(data_source: ConfiguredDataSource):
+def parse_ntlt_data_source(data_source: ConfiguredDataSource) -> GriddedProxy:
     prior_config = data_source.prior_config
     domain = prior_config.domain()
     inventory_domain: Domain = data_source.data_assets[0].data
@@ -40,24 +39,11 @@ def parse_ntlt_data_source(data_source: ConfiguredDataSource):
     ntlt = ntlData.sum(axis=0)
     np.nan_to_num(ntlt, copy=False)
 
-    om_ntlt = remap_raster(ntlt, domain.grid)
-
-    # limit emissions to land points
-    inventory_mask_regridded = regrid_data(
-        inventory_domain.dataset["inventory_mask"],
-        from_grid=inventory_domain.grid,
-        to_grid=domain.grid,
+    return GriddedProxy.from_raster(
+        raster=ntlt,
+        domain_grid=domain.grid,
+        inventory_domain=inventory_domain,
     )
-    om_ntlt *= inventory_mask_regridded
-
-    # now collect total nightlights across inventory domain
-    inventory_ntlt = remap_raster(ntlt, inventory_domain.grid)
-
-    # now mask to region of inventory
-    inventory_ntlt *= inventory_domain.dataset["inventory_mask"]
-
-    # we want proportions of total for scaling emissions
-    return om_ntlt / float(inventory_ntlt.sum().item())
 
 
 night_lights_data_source = DataSource(
