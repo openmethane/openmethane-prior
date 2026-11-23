@@ -286,19 +286,27 @@ Monthly wetland emissions from
 [SatWetCH4](https://doi.org/10.5194/gmd-18-863-2025), with a wetland extent
 based on [GIEMS](https://doi.org/10.5194/essd-17-2985-2025). Developed as part
 of the ongoing
-[Global Methane Budget](https://www.globalcarbonproject.org/methanebudget/.
+[Global Methane Budget](https://www.globalcarbonproject.org/methanebudget/).
 
-- Dataset: TBD (not yet published)
+- Dataset: [SatWetCH4 v2.0](https://doi.org/10.5281/zenodo.23965325)
+- Model code: [SatWetCH4](https://zenodo.org/records/11204999)
 - Resolution: 0.25 degree
-- Period: 1992 - 2022, monthly averages
-- Updates: not updated regularly
+- Period: 1992 - 2024, monthly averages
+- Updates: new versions are published under the same DOI
+- License: CC-BY-4.0
 
 ### Considerations
 
 - No Australian database
 - Rough spatial resolution
-- The paper for this dataset has not yet been published. It was provided to
-  us directly by the leading researcher, Juliette Bernard.
+- The dataset is an ensemble of 50 bootstrap calibrations (9 GB), which is
+  slow to download. We average the ensemble into a much smaller file
+  (~170 MB) which the prior uses directly, fetched from the Open Methane data
+  store. This file must be regenerated when a new version of the dataset is
+  published, see `src/openmethane_prior/sectors/wetland/data.py`.
+- Months outside the dataset period use the mean of the same calendar month
+  across all years.
+- The paper describing v2.0 has been submitted but not yet published.
 
 
 ## Sector: Agriculture
