@@ -1,8 +1,9 @@
 import pathlib
+from collections.abc import Generator
 from datetime import datetime
 from pathlib import Path
+
 import pytest
-from typing import Generator
 import xarray as xr
 
 from openmethane_prior.lib.config import PriorConfig

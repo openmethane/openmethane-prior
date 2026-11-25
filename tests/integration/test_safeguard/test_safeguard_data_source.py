@@ -1,8 +1,8 @@
 import datetime
 
 from openmethane_prior.data_sources.safeguard import (
-    safeguard_mechanism_data_source,
     safeguard_locations_data_source,
+    safeguard_mechanism_data_source,
 )
 
 

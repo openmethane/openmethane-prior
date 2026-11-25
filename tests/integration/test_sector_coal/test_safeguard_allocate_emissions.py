@@ -1,5 +1,6 @@
-import attrs
 import datetime
+
+import attrs
 import pytest
 
 from openmethane_prior.data_sources.safeguard import (

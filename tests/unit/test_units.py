@@ -1,10 +1,11 @@
 from datetime import date
+
 from openmethane_prior.lib.units import (
+    days_in_overlap,
+    days_in_period,
     kg_to_kg_m2_s,
     kg_to_period_cell_flux,
     seconds_in_period,
-    days_in_period,
-    days_in_overlap,
 )
 
 

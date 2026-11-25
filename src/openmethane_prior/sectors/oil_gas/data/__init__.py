@@ -25,4 +25,4 @@ import warnings
 # imported module without the warning.
 with warnings.catch_warnings():
     warnings.filterwarnings("ignore", message="No Arcpy found", category=UserWarning)
-    import restapi  # noqa: F401
+    import restapi

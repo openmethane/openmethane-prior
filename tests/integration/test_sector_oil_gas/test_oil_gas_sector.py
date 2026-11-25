@@ -1,4 +1,5 @@
 import datetime
+
 import pytest
 
 from openmethane_prior.lib import PriorConfig, create_prior

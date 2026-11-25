@@ -1,6 +1,7 @@
+from testing import dataset_metrics
+
 from openmethane_prior.lib import create_prior
 from openmethane_prior.sectors import all_sectors
-from testing import dataset_metrics
 
 
 def test_create_prior_all_sectors(config, input_files):

@@ -4,8 +4,8 @@ import xarray as xr
 
 from openmethane_prior.data_sources.inventory import inventory_domain_data_source
 from openmethane_prior.data_sources.nightlights import night_lights_data_source
-from openmethane_prior.lib.grid.grid import Grid
 from openmethane_prior.lib import raster
+from openmethane_prior.lib.grid.grid import Grid
 from openmethane_prior.lib.raster import remap_raster
 
 

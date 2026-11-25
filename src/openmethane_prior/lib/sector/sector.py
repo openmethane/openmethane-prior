@@ -16,10 +16,11 @@
 # limitations under the License.
 #
 from __future__ import annotations
+
+from collections.abc import Callable
 from typing import Self
 
 import attrs
-from collections.abc import Callable
 import numpy as np
 import xarray as xr
 

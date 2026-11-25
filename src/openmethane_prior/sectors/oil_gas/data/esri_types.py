@@ -16,6 +16,7 @@
 # limitations under the License.
 #
 import datetime
+
 import numpy as np
 
 
@@ -30,7 +31,7 @@ def map_esri_date_to_date(esri_date_milliseconds) -> datetime.date | None:
 
     date_value = datetime.datetime.fromtimestamp(
         esri_date_milliseconds / 1000,
-        tz=datetime.timezone.utc,
+        tz=datetime.UTC,
     )
     return date_value.date()
 

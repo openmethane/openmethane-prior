@@ -19,7 +19,8 @@
 
 def is_code_in_code_family(code: str, code_family: list[str]) -> bool:
     """Returns True if the provided code matches or is a sub-category of any
-    code in the code family."""
+    code in the code family.
+    """
     for check_code in code_family:
         if code == check_code or code.startswith(f"{check_code}."):
             return True

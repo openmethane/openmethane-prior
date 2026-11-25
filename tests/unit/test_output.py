@@ -1,6 +1,6 @@
 import numpy as np
-import xarray as xr
 import pytest
+import xarray as xr
 
 from openmethane_prior.lib.outputs import (
     add_ch4_total,

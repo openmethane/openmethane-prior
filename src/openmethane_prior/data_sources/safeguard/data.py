@@ -15,9 +15,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-import pandas as pd
 import pathlib
 import unicodedata
+
+import pandas as pd
 
 from openmethane_prior.lib import ConfiguredDataSource, DataSource
 from openmethane_prior.lib.data_manager.fetchers import fetch_google_sheet_by_name_csv
@@ -72,7 +73,8 @@ petroleum_titles_columns = ["Facility name", "Data source", "Production license"
 
 def parse_csv_numeric(csv_value: str) -> float | None:
     """Convert messy input values like " 124,138 " to float. Values of "-" are
-    interpreted as None."""
+    interpreted as None.
+    """
     raw = csv_value.strip()
     if raw == "-":
         return None
@@ -81,14 +83,16 @@ def parse_csv_numeric(csv_value: str) -> float | None:
 
 def parse_csv_text(csv_value: str) -> str | None:
     """Convert messy input values like " 124,138 " to float. Values of "-" are
-    interpreted as None."""
+    interpreted as None.
+    """
     raw = csv_value.strip()
     return unicodedata.normalize("NFKC", csv_value)
 
 
 def parse_safeguard_csv(data_source: ConfiguredDataSource):
     """Read the Safeguard Mechanism Baselines and Emissions Table CSV,
-    returning only the data columns useful for methane estimation."""
+    returning only the data columns useful for methane estimation.
+    """
     safeguard_rows_df = pd.read_csv(
         filepath_or_buffer=data_source.asset_path,
         header=0,
@@ -175,7 +179,8 @@ def fetch_location_csv(data_source: ConfiguredDataSource) -> pathlib.Path:
 
 def read_location_csv(filepath_or_buffer) -> pd.DataFrame:
     """Read Safeguard facility location rows, selecting columns by header
-    name so that extra or reordered columns in the sheet don't matter."""
+    name so that extra or reordered columns in the sheet don't matter.
+    """
     locations_csv_df = pd.read_csv(filepath_or_buffer, dtype=str)
     locations_rows_df = locations_csv_df[list(safeguard_locations_columns)].rename(
         columns=safeguard_locations_columns

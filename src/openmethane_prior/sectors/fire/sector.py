@@ -29,8 +29,8 @@ import xarray as xr
 from openmethane_prior.lib import (
     PriorSector,
     PriorSectorConfig,
-    regrid_data_array_conservative,
     logger,
+    regrid_data_array_conservative,
 )
 
 from .data_gfas import gfas_data_source

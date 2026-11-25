@@ -3,7 +3,6 @@ import pytest
 
 from openmethane_prior.lib.sector.au_sector import AustraliaPriorSector
 
-
 # PriorSector requires a create_estimate, but we want to do nothing
 mock_create_estimate = lambda _a, _b, _c: np.ndarray([])
 

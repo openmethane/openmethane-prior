@@ -19,16 +19,16 @@ import numpy as np
 import numpy.typing as npt
 import xarray as xr
 
+from openmethane_prior.lib import logger
 from openmethane_prior.lib.config import PriorConfig
 from openmethane_prior.lib.sector.sector import PriorSector
 from openmethane_prior.lib.utils import (
     SECS_PER_YEAR,
-    get_version,
     get_timestamped_command,
-    time_bounds,
+    get_version,
     list_cf_grid_mappings,
+    time_bounds,
 )
-import openmethane_prior.lib.logger as logger
 
 logger = logger.get_logger(__name__)
 

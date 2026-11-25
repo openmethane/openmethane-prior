@@ -15,10 +15,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-import attrs
 import pathlib
-import pyproj
 from typing import Self
+
+import attrs
+import pyproj
 import xarray as xr
 
 from .create_grid import create_grid_from_dataset

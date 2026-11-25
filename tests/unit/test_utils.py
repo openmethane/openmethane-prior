@@ -1,16 +1,17 @@
 import datetime
+import sys
+
 import numpy as np
 import pandas as pd
-import sys
 import xarray as xr
 
 from openmethane_prior.lib.utils import (
+    bounds_from_cell_edges,
     get_command,
     get_timestamped_command,
-    time_bounds,
-    bounds_from_cell_edges,
     is_url,
     rows_in_period,
+    time_bounds,
 )
 
 

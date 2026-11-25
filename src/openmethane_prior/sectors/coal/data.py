@@ -16,6 +16,7 @@
 # limitations under the License.
 #
 import datetime
+
 import pandas as pd
 
 from openmethane_prior.data_sources.climate_trace import (

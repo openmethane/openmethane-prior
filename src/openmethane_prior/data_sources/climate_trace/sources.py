@@ -17,6 +17,7 @@
 #
 import calendar
 import datetime
+
 import geopandas as gpd
 import pandas as pd
 
@@ -43,7 +44,8 @@ def parse_emissions_sources(data_source: ConfiguredDataSource) -> pd.DataFrame:
 
 def parse_emissions_sources_geo(data_source: ConfiguredDataSource) -> gpd.GeoDataFrame:
     """Read and parse a Climate TRACE emissions sources CSV file into
-    a GeoDataFrame with Point geometry in the domain CRS."""
+    a GeoDataFrame with Point geometry in the domain CRS.
+    """
     df = parse_emissions_sources(data_source)
 
     gdf = gpd.GeoDataFrame(

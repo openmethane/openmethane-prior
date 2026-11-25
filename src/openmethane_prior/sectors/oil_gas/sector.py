@@ -18,11 +18,6 @@
 import numpy as np
 import xarray as xr
 
-from openmethane_prior.lib import (
-    logger,
-    PriorSectorConfig,
-    kg_to_period_cell_flux,
-)
 from openmethane_prior.data_sources.au_shapes import au_shapes_states_data_source
 from openmethane_prior.data_sources.inventory import (
     get_sector_emissions_by_code,
@@ -32,8 +27,13 @@ from openmethane_prior.data_sources.inventory import (
 from openmethane_prior.data_sources.nightlights import night_lights_data_source
 from openmethane_prior.data_sources.safeguard import (
     get_sector_safeguard_facilities,
-    safeguard_mechanism_data_source,
     safeguard_locations_data_source,
+    safeguard_mechanism_data_source,
+)
+from openmethane_prior.lib import (
+    PriorSectorConfig,
+    kg_to_period_cell_flux,
+    logger,
 )
 from openmethane_prior.lib.grid.geometry import grid_weights_from_linestring
 from openmethane_prior.lib.sector.au_sector import AustraliaPriorSector
@@ -107,7 +107,7 @@ def process_emissions(
         operating_periods=operating_periods_df,
     )
     if len(sector_facilities_df) == 0:
-        logger.info(f"No Safeguard facilities found for the period")
+        logger.info("No Safeguard facilities found for the period")
     else:
         logger.info(
             f"Found {len(sector_facilities_df)} Safeguard facilities in the period in sectors: {','.join(sector.anzsic_codes)}"

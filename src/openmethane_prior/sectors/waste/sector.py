@@ -24,13 +24,13 @@ from openmethane_prior.data_sources.inventory import (
 )
 from openmethane_prior.data_sources.safeguard import (
     get_sector_safeguard_facilities,
-    safeguard_mechanism_data_source,
     safeguard_locations_data_source,
+    safeguard_mechanism_data_source,
 )
 from openmethane_prior.lib import (
+    PriorSectorConfig,
     kg_to_period_cell_flux,
     logger,
-    PriorSectorConfig,
 )
 from openmethane_prior.lib.sector.au_sector import AustraliaPriorSector
 
@@ -79,7 +79,7 @@ def process_emissions(
         period=(config.start_date.date(), config.end_date.date()),
     )
     if len(sector_facilities_df) == 0:
-        logger.info(f"No Safeguard facilities found for the period")
+        logger.info("No Safeguard facilities found for the period")
     else:
         logger.info(
             f"Found {len(sector_facilities_df)} Safeguard facilities in the period in sectors: {','.join(sector.anzsic_codes)}"
@@ -150,7 +150,7 @@ def process_emissions(
 
     methane_nd = np.zeros(domain_grid.shape)
 
-    logger.debug(f"Allocating point source emissions")
+    logger.debug("Allocating point source emissions")
     cell_x, cell_y, cell_valid = domain_grid.xy_to_cell_index(
         emission_sources_df["geometry"].x, emission_sources_df["geometry"].y
     )

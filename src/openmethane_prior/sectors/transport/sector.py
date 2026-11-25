@@ -24,10 +24,10 @@ from openmethane_prior.data_sources.inventory import (
 )
 from openmethane_prior.data_sources.nightlights import night_lights_data_source
 from openmethane_prior.lib import (
-    kg_to_period_cell_flux,
-    logger,
     PriorSector,
     PriorSectorConfig,
+    kg_to_period_cell_flux,
+    logger,
 )
 
 logger = logger.get_logger(__name__)

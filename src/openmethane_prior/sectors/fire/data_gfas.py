@@ -16,8 +16,9 @@
 # limitations under the License.
 #
 
-import cdsapi
 import pathlib
+
+import cdsapi
 
 from openmethane_prior.lib import (
     ConfiguredDataSource,

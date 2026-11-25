@@ -16,12 +16,14 @@
 # limitations under the License.
 #
 import itertools
+
 import numpy as np
 import pyproj
 from shapely import geometry
 
+from openmethane_prior.lib import logger
+
 from .grid import Grid
-import openmethane_prior.lib.logger as logger
 
 logger = logger.get_logger(__name__)
 

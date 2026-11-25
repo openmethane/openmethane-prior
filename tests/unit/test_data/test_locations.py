@@ -4,11 +4,11 @@ import pandas as pd
 import pytest
 
 from openmethane_prior.data_sources.safeguard.data import read_location_csv
+from openmethane_prior.data_sources.safeguard.facility import create_facilities_from_safeguard_rows
 from openmethane_prior.data_sources.safeguard.location import (
     filter_locations,
     get_safeguard_facility_locations,
 )
-from openmethane_prior.data_sources.safeguard.facility import create_facilities_from_safeguard_rows
 
 
 @pytest.fixture()

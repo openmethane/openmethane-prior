@@ -15,29 +15,32 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-import geopandas as gpd
 import http.client
-from http import HTTPStatus
 import os
-import pandas as pd
 import pathlib
 import ssl
 import tempfile
 import time
 import urllib.error
-import urllib.request
 import urllib.parse
+import urllib.request
 import zipfile
+from http import HTTPStatus
+
+import geopandas as gpd
+import pandas as pd
+
+from openmethane_prior.lib import logger
 
 from .source import ConfiguredDataSource
-from openmethane_prior.lib import logger
 
 logger = logger.get_logger(__name__)
 
 
 def google_sheet_csv_url(sheet_id_or_url: str, sheet_name: str) -> str:
     """Return the URL of the CSV export of a single sheet in a publicly
-    viewable Google Sheet."""
+    viewable Google Sheet.
+    """
     if "://docs.google.com" in sheet_id_or_url:
         # if a url is provided, extract the sheet_id
         sheet_url = urllib.parse.urlparse(sheet_id_or_url)
@@ -117,8 +120,8 @@ def fetch_zipped_shp_to_gdf(
     shp_file: str,
 ) -> gpd.GeoDataFrame:
     """Fetch a zip file specified by DataSource.url, extract the contents and
-    read in a Shapefile (.shp) from the archive as a GeoDataFrame."""
-
+    read in a Shapefile (.shp) from the archive as a GeoDataFrame.
+    """
     # use a temporary path to store and extract the zip contents, which will
     # be cleaned up automatically afterwards
     with tempfile.TemporaryDirectory(prefix="openmethane-prior") as tmp_dir:

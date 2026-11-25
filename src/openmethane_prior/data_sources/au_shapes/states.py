@@ -17,14 +17,13 @@
 #
 import pathlib
 
-from openmethane_prior.lib.data_manager.fetchers import fetch_zipped_shp_to_gdf
-from openmethane_prior.lib.data_manager.parsers import parse_geo
 from openmethane_prior.lib import (
-    DataSource,
     ConfiguredDataSource,
+    DataSource,
     logger,
 )
-
+from openmethane_prior.lib.data_manager.fetchers import fetch_zipped_shp_to_gdf
+from openmethane_prior.lib.data_manager.parsers import parse_geo
 
 logger = logger.get_logger(__name__)
 

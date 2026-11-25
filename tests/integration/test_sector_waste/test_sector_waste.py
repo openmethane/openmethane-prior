@@ -1,7 +1,8 @@
 import datetime
+
 import pytest
 
-from openmethane_prior.lib import create_prior, PriorConfig
+from openmethane_prior.lib import PriorConfig, create_prior
 from openmethane_prior.sectors.waste import sector
 
 

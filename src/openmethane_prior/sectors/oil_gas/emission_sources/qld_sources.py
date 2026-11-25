@@ -16,12 +16,12 @@
 # limitations under the License.
 #
 import datetime
+
 import geopandas as gpd
 import numpy as np
 
 from openmethane_prior.lib.data_manager.asset import DataAsset
 from openmethane_prior.lib.utils import rows_in_period
-
 
 bore_type_map = {
     "COAL SEAM GAS": "drillhole-csg",
@@ -38,7 +38,8 @@ def qld_emission_sources(
 ) -> gpd.GeoDataFrame:
     """Create normalised emission source DataFrame by combining WA petroleum
     wells dataset for locations, with land title dataset for production
-    start/end dates."""
+    start/end dates.
+    """
     qld_boreholes_df: gpd.GeoDataFrame = qld_boreholes_da.data
     qld_leases_df: gpd.GeoDataFrame = qld_leases_da.data
 
