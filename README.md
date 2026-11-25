@@ -214,11 +214,11 @@ via docker.
 
 ## For developers
 
-The ruff-fixes target runs a series of ruff commands to format the code, check and fix linting
-issues, and then format the code again to ensure that all formatting and fixes are applied.
+The format target formats the code with ruff. CI fails a pull request whose code isn't
+formatted, which `make check-format` checks without changing any files.
 
 ```
-make ruff-fixes
+make format
 ```
 
 The test target will run all the tests

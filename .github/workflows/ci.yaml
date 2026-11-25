@@ -137,6 +137,29 @@ jobs:
           CDSAPI_KEY: ${{ secrets.CDSAPI_ADS_KEY }}
           CDSAPI_URL: https://ads.atmosphere.copernicus.eu/api
 
+  # formatting is cheap to check and has no dependency on the test data, so it
+  # runs on every change; the ruff version comes from uv.lock, matching
+  # `make format`
+  check-format:
+    runs-on: ubuntu-26.04
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version-file: ".python-version"
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+      - name: Install the project
+        run: |
+          uv sync --locked --all-extras --dev
+      - name: Check formatting
+        run: |
+          uv run ruff format --check .
+
   check-build:
     needs: changes
     if: needs.changes.outputs.checks == 'true'

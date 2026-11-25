@@ -79,7 +79,7 @@ request to "needed", and then it waits for a review as usual.
 | Pull request | First line |
 |---|---|
 | [#232](https://github.com/openmethane/openmethane-prior/pull/232) | **Review:** not needed — bug fix with a regression test; non-square domains used to crash, and square-domain outputs are unchanged |
-| [#233](https://github.com/openmethane/openmethane-prior/pull/233) | **Review:** not needed — automated `ruff format` and safe autofixes across 122 files, plus a CI check; no behaviour change |
+| [#233](https://github.com/openmethane/openmethane-prior/pull/233) | **Review:** not needed — automated `ruff format` and safe autofixes across 123 files, plus a CI check; no behaviour change |
 | [#245](https://github.com/openmethane/openmethane-prior/pull/245) | **Review:** not needed — silences warnings that carry no information; test and project settings only |
 | [#246](https://github.com/openmethane/openmethane-prior/pull/246) | **Review:** not needed — bug fix with tests; the run now fails on missing weights instead of producing NaN; no current outputs change |
 | [#227](https://github.com/openmethane/openmethane-prior/pull/227) | **Review:** needed — new feature: an inventory jurisdiction mask on the domain, plus a methodology decision and docs |

@@ -1,0 +1,8 @@
+# Commits that only reformat code, ignored by `git blame`. GitHub's blame view
+# uses this file automatically; locally, run:
+#   git config blame.ignoreRevsFile .git-blame-ignore-revs
+
+# Format project with ruff format
+d4abcea85e4183e5d416e316c13e1311fd0a3c9a
+# Apply safe ruff lint autofixes
+ffc9aa69af66ced82de71490da478d37f1eb8656
