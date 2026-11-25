@@ -155,7 +155,7 @@ class ConfiguredDataSource:
 
     def fetch(self):
         """Fetches the data to the data_path using the provided source_fetch
-         method
+        method
         """
         self.asset_path.parent.mkdir(parents=True, exist_ok=True)
         return self.source_fetch(self)

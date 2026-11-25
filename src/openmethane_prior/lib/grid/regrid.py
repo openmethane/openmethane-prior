@@ -25,6 +25,7 @@ import openmethane_prior.lib.logger as logger
 
 logger = logger.get_logger(__name__)
 
+
 def regrid_data(
     data: np.ndarray,
     from_grid: Grid,
@@ -73,7 +74,9 @@ def regrid_aligned(
 
     # transform to_grid coordinates into from_grid coordinates to
     # efficiently bin them
-    grid_transform = pyproj.Transformer.from_crs(crs_from=to_grid.projection.crs, crs_to=from_grid.projection.crs)
+    grid_transform = pyproj.Transformer.from_crs(
+        crs_from=to_grid.projection.crs, crs_to=from_grid.projection.crs
+    )
     # aligned grids differ only by a constant x/y offset (false easting/northing),
     # so find the offset from a single point and apply it to each axis
     offset_x, offset_y = grid_transform.transform(xx=0.0, yy=0.0)
@@ -117,14 +120,21 @@ def regrid_any(
     # find the bounding box of to_grid, in from_grid cell coords
     from_grid_ix_bounds, from_grid_iy_bounds, _ = from_grid.lonlat_to_cell_index(
         np.array([to_grid_lon_min, to_grid_lon_max, to_grid_lon_max, to_grid_lon_min]),
-        np.array([to_grid_lat_min, to_grid_lat_min, to_grid_lat_max, to_grid_lat_max])
+        np.array([to_grid_lat_min, to_grid_lat_min, to_grid_lat_max, to_grid_lat_max]),
     )
     # clip any "out of bounds" coords to edges
     from_grid_ix_bounds = np.clip(from_grid_ix_bounds, 0, from_grid.dimensions[0] - 1)
     from_grid_iy_bounds = np.clip(from_grid_iy_bounds, 0, from_grid.dimensions[1] - 1)
 
-    for to_grid_iy, to_grid_ix in itertools.product(range(to_grid.shape[0]), range(to_grid.shape[1])):
-        to_grid_cell_polygon = geometry.Polygon(zip(to_grid_bounds_lon[to_grid_iy, to_grid_ix], to_grid_bounds_lat[to_grid_iy, to_grid_ix]))
+    for to_grid_iy, to_grid_ix in itertools.product(
+        range(to_grid.shape[0]), range(to_grid.shape[1])
+    ):
+        to_grid_cell_polygon = geometry.Polygon(
+            zip(
+                to_grid_bounds_lon[to_grid_iy, to_grid_ix],
+                to_grid_bounds_lat[to_grid_iy, to_grid_ix],
+            )
+        )
 
         # search the source grid for the cell with the largest intersection
         largest_intersection = 0
@@ -132,7 +142,12 @@ def regrid_any(
 
         for from_grid_iy in range(from_grid_iy_bounds.min(), from_grid_iy_bounds.max() + 1):
             for from_grid_ix in range(from_grid_ix_bounds.min(), from_grid_ix_bounds.max() + 1):
-                from_grid_cell_polygon = geometry.Polygon(zip(from_grid_bounds_lon[from_grid_iy, from_grid_ix], from_grid_bounds_lat[from_grid_iy, from_grid_ix]))
+                from_grid_cell_polygon = geometry.Polygon(
+                    zip(
+                        from_grid_bounds_lon[from_grid_iy, from_grid_ix],
+                        from_grid_bounds_lat[from_grid_iy, from_grid_ix],
+                    )
+                )
                 intersection = from_grid_cell_polygon.intersection(to_grid_cell_polygon)
 
                 # cells dont overlap

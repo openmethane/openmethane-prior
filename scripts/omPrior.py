@@ -17,6 +17,7 @@
 #
 
 """Main entry point for running the openmethane-prior"""
+
 import logging
 import sys
 import prettyprinter

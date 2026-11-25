@@ -50,6 +50,7 @@ def fetch_xlsx_as_csv(data_source: ConfiguredDataSource):
 
     return data_source.asset_path
 
+
 # Production amounts by month for each well in the SA PEPS wells dataset.
 # Source: https://peps.sa.gov.au/more/excels/ -> Monthly Production by Completion
 sa_wells_production_data_source = DataSource(

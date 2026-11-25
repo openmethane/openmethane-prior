@@ -17,7 +17,7 @@
 #
 import geopandas as gpd
 import pandas as pd
-import restapi # https://github.com/Bolton-and-Menk-GIS/restapi
+import restapi  # https://github.com/Bolton-and-Menk-GIS/restapi
 
 from openmethane_prior.lib import DataSource
 from openmethane_prior.lib.data_manager.parsers import parse_geo
@@ -25,7 +25,8 @@ from openmethane_prior.lib.data_manager.source import ConfiguredDataSource
 from .esri_types import map_esri_date_to_str
 
 
-WA_ARCGIS_URL="https://public-services.slip.wa.gov.au/public/rest/services"
+WA_ARCGIS_URL = "https://public-services.slip.wa.gov.au/public/rest/services"
+
 
 # WA Petroleum Titles (DMIRS-011) - REST Service (ArcGIS)
 # https://catalogue.data.wa.gov.au/dataset/wa-petroleum-titles-dmirs-011/resource/f5bb4e83-241e-4dcf-8efe-41707866af4e
@@ -50,10 +51,12 @@ def fetch_wa_titles(data_source: ConfiguredDataSource):
     titles_df = gpd.GeoDataFrame.from_features(titles_features.features)
 
     # Rename some fields so that they match DMIRS-051
-    titles_df = titles_df.rename(columns={
-        "issued": "issued_date",
-        "expiry": "end_date",
-    })
+    titles_df = titles_df.rename(
+        columns={
+            "issued": "issued_date",
+            "expiry": "end_date",
+        }
+    )
 
     # DMIRS-051 contains the record of previous titles. One parcel of land
     # can appear in this dataset multiple times as titles change. Sometimes a

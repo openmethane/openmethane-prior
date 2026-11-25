@@ -26,6 +26,7 @@ nsw_drillhole_purpose_map = {
     "Petroleum": "drillhole-petroleum",
 }
 
+
 def nsw_emission_sources(
     start_date: datetime.date,
     end_date: datetime.date,
@@ -77,18 +78,22 @@ def nsw_emission_sources(
 
     # exclude any emission sources that would not have been emitting during
     # the period between start_date and end_date
-    sources_df = rows_in_period(sources_df, start_date=start_date, end_date=end_date, end_field="expiry_date")
+    sources_df = rows_in_period(
+        sources_df, start_date=start_date, end_date=end_date, end_field="expiry_date"
+    )
 
     # drop duplicates so there is only one entry for each location.
     sources_df = sources_df.drop_duplicates(["gsnsw_drill_id"])
 
     # normalise output to match emission sources format
-    sources_df = sources_df.rename(columns={
-        "gsnsw_drill_id": "data_source_id",
-        "title": "group_id",
-        "start_date": "activity_start",
-        "expiry_date": "activity_end",
-    })
+    sources_df = sources_df.rename(
+        columns={
+            "gsnsw_drill_id": "data_source_id",
+            "title": "group_id",
+            "start_date": "activity_start",
+            "expiry_date": "activity_end",
+        }
+    )
     sources_df["data_source"] = nsw_drillholes_da.name
 
     return sources_df

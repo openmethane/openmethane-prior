@@ -29,7 +29,10 @@ from openmethane_prior.lib import (
     PriorSectorConfig,
     PriorSector,
 )
-from openmethane_prior.data_sources.inventory import get_sector_emissions_by_code, inventory_data_source
+from openmethane_prior.data_sources.inventory import (
+    get_sector_emissions_by_code,
+    inventory_data_source,
+)
 
 logger = logger.get_logger(__name__)
 
@@ -39,6 +42,7 @@ electricity_facilities_data_source = DataSource(
     url="https://openmethane.s3.amazonaws.com/prior/inputs/ch4-electricity.csv",
     parse=parse_csv,
 )
+
 
 def process_emissions(sector: PriorSector, sector_config: PriorSectorConfig, prior_ds: xr.Dataset):
     """
@@ -57,7 +61,9 @@ def process_emissions(sector: PriorSector, sector_config: PriorSectorConfig, pri
         category_codes=sector.unfccc_categories,
     )
 
-    electricity_facilities_asset = sector_config.data_manager.get_asset(electricity_facilities_data_source)
+    electricity_facilities_asset = sector_config.data_manager.get_asset(
+        electricity_facilities_data_source
+    )
     electricity_facilities_records = electricity_facilities_asset.data.to_dict(orient="records")
 
     domain_grid = config.domain().grid
@@ -67,10 +73,14 @@ def process_emissions(sector: PriorSector, sector_config: PriorSectorConfig, pri
     methane = np.zeros(domain_grid.shape)
 
     for facility in electricity_facilities_records:
-        cell_x, cell_y, cell_valid = domain_grid.lonlat_to_cell_index(facility["lng"], facility["lat"])
+        cell_x, cell_y, cell_valid = domain_grid.lonlat_to_cell_index(
+            facility["lng"], facility["lat"]
+        )
 
         if cell_valid:
-            methane[cell_y, cell_x] += (facility["capacity"] / totalCapacity) * sector_total_emissions
+            methane[cell_y, cell_x] += (
+                facility["capacity"] / totalCapacity
+            ) * sector_total_emissions
 
     return kg_to_period_cell_flux(methane, config)
 
@@ -78,7 +88,7 @@ def process_emissions(sector: PriorSector, sector_config: PriorSectorConfig, pri
 sector = PriorSector(
     name="electricity",
     emission_category="anthropogenic",
-    unfccc_categories=["1.A.1.a"], # Public electricity and heat production
+    unfccc_categories=["1.A.1.a"],  # Public electricity and heat production
     cf_standard_name="energy_production_and_distribution",
     create_estimate=process_emissions,
 )

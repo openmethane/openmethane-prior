@@ -1,2 +1,1 @@
-
 from openmethane_prior.data_sources.nightlights.nightlights import night_lights_data_source

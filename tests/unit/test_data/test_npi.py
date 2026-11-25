@@ -24,18 +24,24 @@ def facilities_df():
     """
     test_data = [
         # facility_id, facility_name, abn,           state, first_report_year, latest_report_year, primary_anzsic_class_code, lon,     lat
-        (1001, "Alpha Gas",   "11111111111", "QLD", "2020/2021", "2024/2025", "0700", 149.0, -24.0),
-        (1002, "Beta Gas",    "22222222222", "WA",  "2018/2019", "2022/2023", "0700", 117.0, -30.0),
-        (1003, "Coal Mine",   "33333333333", "QLD", "2015/2016", "2022/2023", "060", 148.0, -22.0),
+        (1001, "Alpha Gas", "11111111111", "QLD", "2020/2021", "2024/2025", "0700", 149.0, -24.0),
+        (1002, "Beta Gas", "22222222222", "WA", "2018/2019", "2022/2023", "0700", 117.0, -30.0),
+        (1003, "Coal Mine", "33333333333", "QLD", "2015/2016", "2022/2023", "060", 148.0, -22.0),
         (1004, "Steel Works", "44444444444", "NSW", "2019/2020", "2021/2022", "2110", 151.0, -33.0),
     ]
 
     df = pd.DataFrame(
         data=test_data,
         columns=[
-            "facility_id", "facility_name", "abn", "state",
-            "first_report_year", "latest_report_year",
-            "primary_anzsic_class_code", "longitude", "latitude",
+            "facility_id",
+            "facility_name",
+            "abn",
+            "state",
+            "first_report_year",
+            "latest_report_year",
+            "primary_anzsic_class_code",
+            "longitude",
+            "latitude",
         ],
     )
 
@@ -50,11 +56,11 @@ def facilities_df():
         crs="EPSG:4326",
     ).to_crs("EPSG:3577")
 
-
     return gdf
 
 
 # --- period filtering ---
+
 
 def test_filter_npi_all_active_period(facilities_df):
     # period where all facilities were reporting
@@ -110,7 +116,7 @@ def test_filter_npi_boundary_latest_report_year(facilities_df):
         period_end=datetime.date(2023, 6, 30),
     )
 
-    assert set(result["facility_name"]) == {'Alpha Gas', 'Beta Gas', 'Coal Mine'}
+    assert set(result["facility_name"]) == {"Alpha Gas", "Beta Gas", "Coal Mine"}
 
 
 def test_filter_npi_excludes_facility_before_start(facilities_df):
@@ -129,6 +135,7 @@ def test_filter_npi_excludes_facility_before_start(facilities_df):
 
 
 # --- ANZSIC filtering ---
+
 
 def test_filter_npi_anzsic_oil_gas(facilities_df):
     result = filter_npi_facilities(
@@ -165,7 +172,6 @@ def test_filter_npi_anzsic_four_digit_code(facilities_df):
 
     assert len(result) == 1
     assert set(result["facility_name"]) == {"Steel Works"}
-
 
 
 def test_filter_npi_anzsic_multiple_codes(facilities_df):
@@ -210,6 +216,7 @@ def test_filter_npi_anzsic_none_returns_all_in_period(facilities_df):
 
 # --- combined period + ANZSIC ---
 
+
 def test_filter_npi_combined(facilities_df):
     # period after Steel Works closed (2023-07-02+) and only oil/gas ANZSIC
     result = filter_npi_facilities(
@@ -235,7 +242,9 @@ def test_filter_npi_combined_no_results(facilities_df):
     assert "Alpha Gas" not in set(result["facility_name"])
     assert "Beta Gas" in set(result["facility_name"])
 
+
 # --- still-active facility (max latest_report_year) ---
+
 
 def test_filter_npi_max_latest_report_year_treated_as_active(facilities_df):
     # The facility with the maximum latest_report_year ("2024/2025") should

@@ -57,21 +57,25 @@ class SafeguardFacility:
 @attrs.define()
 class SafeguardFacilityRecord:
     """A single row read from the Safeguard Mechanism Emissions Table"""
+
     facility_name: str
     business_name: str
     state: str
     anzsic: str
     co2e_ch4: float
 
+
 # regex to capture numeric code between (), ie "060" from "sector (060)"
 anzsic_code_pattern = re.compile(r"\((?P<code>\d+)\)$")
+
+
 def parse_anzsic_code(anzsic_full: str) -> str:
     """Given a full ANZSIC description like "Coal mining (060)", extract the
     code, i.e. "060"."""
     anzsic_code = anzsic_code_pattern.search(anzsic_full)
     if anzsic_code is None:
         raise ValueError(f"invalid ANZSIC string has no code '{anzsic_full}'")
-    return anzsic_code.group('code')
+    return anzsic_code.group("code")
 
 
 def create_facilities_from_safeguard_rows(
@@ -175,7 +179,10 @@ def get_sector_safeguard_facilities(
         operation_start = _optional_date(facility["operation_start"])
         operation_end = _optional_date(facility["operation_end"])
         year_days = days_in_overlap(
-            facility["reporting_start"], facility["reporting_end"], operation_start, operation_end,
+            facility["reporting_start"],
+            facility["reporting_end"],
+            operation_start,
+            operation_end,
         )
         if year_days == 0:
             # the facility reported emissions, so it must have operated at

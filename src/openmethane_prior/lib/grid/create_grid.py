@@ -23,9 +23,7 @@ from .grid import Grid
 from ..utils import list_cf_grid_mappings
 
 
-def create_grid_from_domain(
-    domain_ds: xr.Dataset
-) -> Grid:
+def create_grid_from_domain(domain_ds: xr.Dataset) -> Grid:
     """
     Make a Grid object from a prior domain dataset.
     """

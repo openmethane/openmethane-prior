@@ -31,7 +31,7 @@ def plot_timestep_maps(ds: xr.Dataset, var_name: str):
     fig, axes = plt.subplots(
         figsize=(8, 4 * rows),
         nrows=rows,
-        subplot_kw={ "projection": ccrs.PlateCarree(), "facecolor": "gray" },
+        subplot_kw={"projection": ccrs.PlateCarree(), "facecolor": "gray"},
         sharex=True,
     )
     for i, time_val in enumerate(ds[var_name].time):

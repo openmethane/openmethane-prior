@@ -16,24 +16,32 @@ from openmethane_prior.data_sources.inventory.inventory import (
 def unfccc_df():
     return pd.DataFrame(
         [
-            ("1",       "Energy",                          None,                            None,    None),
-            ("1.A",     "Energy",                          "Fuel Combustion",               None,    None),
-            ("1.A.1",   "Energy",                          "Fuel Combustion",               "Other", None),
-            ("1.A.1.a", "Energy",                          "Fuel Combustion",               "Other", "Mobile"),
-            ("1.B",     "Energy",                          "Fugitive Emissions From Fuels", None,    None),
-            ("2",       "Industrial Processes",            None,                            None,    None),
+            ("1", "Energy", None, None, None),
+            ("1.A", "Energy", "Fuel Combustion", None, None),
+            ("1.A.1", "Energy", "Fuel Combustion", "Other", None),
+            ("1.A.1.a", "Energy", "Fuel Combustion", "Other", "Mobile"),
+            ("1.B", "Energy", "Fugitive Emissions From Fuels", None, None),
+            ("2", "Industrial Processes", None, None, None),
         ],
-        columns=["UNFCCC_Code", "UNFCCC_Level_1", "UNFCCC_Level_2", "UNFCCC_Level_3", "UNFCCC_Level_4"],
+        columns=[
+            "UNFCCC_Code",
+            "UNFCCC_Level_1",
+            "UNFCCC_Level_2",
+            "UNFCCC_Level_3",
+            "UNFCCC_Level_4",
+        ],
     )
 
 
 def make_row(level_1, level_2, level_3, level_4):
-    return pd.Series({
-        "UNFCCC_Level_1": level_1,
-        "UNFCCC_Level_2": level_2,
-        "UNFCCC_Level_3": level_3,
-        "UNFCCC_Level_4": level_4,
-    })
+    return pd.Series(
+        {
+            "UNFCCC_Level_1": level_1,
+            "UNFCCC_Level_2": level_2,
+            "UNFCCC_Level_3": level_3,
+            "UNFCCC_Level_4": level_4,
+        }
+    )
 
 
 def test_find_unfccc_code_exact(unfccc_df):
@@ -89,7 +97,15 @@ def test_create_inventory_df_filters_non_ch4(unfccc_df):
 def test_create_inventory_df_unfccc_fallback(unfccc_df):
     # "Smoke from AI fires" has no UNFCCC entry; should fall back to parent "1.B"
     records = [
-        make_anga_record(2023, "Energy", "Fugitive Emissions From Fuels", "Smoke", "Smoke from AI fires", "CH4", 2.0)
+        make_anga_record(
+            2023,
+            "Energy",
+            "Fugitive Emissions From Fuels",
+            "Smoke",
+            "Smoke from AI fires",
+            "CH4",
+            2.0,
+        )
     ]
     result = create_inventory_df(records, unfccc_df)
 
@@ -97,7 +113,11 @@ def test_create_inventory_df_unfccc_fallback(unfccc_df):
 
 
 def test_create_inventory_df_no_unfccc_match(unfccc_df):
-    records = [make_anga_record(2023, "Unknown Sector", "Unknown L2", "Unknown L3", "Unknown L4", "CH4", 0.5)]
+    records = [
+        make_anga_record(
+            2023, "Unknown Sector", "Unknown L2", "Unknown L3", "Unknown L4", "CH4", 0.5
+        )
+    ]
 
     # it is very important that every entry in the ANGA inventory is able to
     # be matched with a UNFCCC code, otherwise we may miss reported emissions
@@ -131,20 +151,22 @@ def test_financial_year_from_date():
 
 def test_inventory_get_sector_emissions_by_code():
     # FY 1993 = 1992-07-01 to 1993-07-01 = 365 days
-    inventory = make_inventory_df([
-        (1992, "1.A.1.a", 1.0 * 1e6),
-        (1993, "1.A.1.a", 1.1 * 1e6),
-        (1994, "1.A.1.a", 2.2 * 1e6),
-        (1995, "1.A.1.a", 3.3 * 1e6),
-        (1992, "1.B",     0.1 * 1e6),
-        (1993, "1.B",     0.2 * 1e6),
-        (1994, "1.B",     0.5 * 1e6),
-        (1995, "1.B",     0.8 * 1e6),
-        (1992, "2",       0.3 * 1e6),
-        (1993, "2",       0.7 * 1e6),
-        (1994, "2",       0.11 * 1e6),
-        (1995, "2",       0.13 * 1e6),
-    ])
+    inventory = make_inventory_df(
+        [
+            (1992, "1.A.1.a", 1.0 * 1e6),
+            (1993, "1.A.1.a", 1.1 * 1e6),
+            (1994, "1.A.1.a", 2.2 * 1e6),
+            (1995, "1.A.1.a", 3.3 * 1e6),
+            (1992, "1.B", 0.1 * 1e6),
+            (1993, "1.B", 0.2 * 1e6),
+            (1994, "1.B", 0.5 * 1e6),
+            (1995, "1.B", 0.8 * 1e6),
+            (1992, "2", 0.3 * 1e6),
+            (1993, "2", 0.7 * 1e6),
+            (1994, "2", 0.11 * 1e6),
+            (1995, "2", 0.13 * 1e6),
+        ]
+    )
 
     energy_emissions = get_sector_emissions_by_code(
         emissions_inventory=inventory,

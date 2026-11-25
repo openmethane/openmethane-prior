@@ -15,7 +15,7 @@ _BBOX_EDGE_POINTS = 100
 def remap_raster(
     input_xr: xr.DataArray,
     target_grid: Grid,
-    input_crs: pyproj.crs.CRS = 4326, # EPSG:4362
+    input_crs: pyproj.crs.CRS = 4326,  # EPSG:4362
 ) -> np.ndarray:
     """
     Maps a rasterio dataset onto the domain grid defined by config.
@@ -26,7 +26,9 @@ def remap_raster(
     Returns an np.array in the shape of the domain grid, each cell containing
     the sum of the values of raster cells whose centre point falls within it.
     """
-    projection_transformer = pyproj.Transformer.from_crs(crs_from=input_crs, crs_to=target_grid.projection.crs, always_xy=True)
+    projection_transformer = pyproj.Transformer.from_crs(
+        crs_from=input_crs, crs_to=target_grid.projection.crs, always_xy=True
+    )
 
     # construct a bounding box for the target grid, over the input grid
     # this will limit our search space for mapping input values to target cells.
@@ -47,12 +49,10 @@ def remap_raster(
     # input as float64 to hold NaNs. raster coordinates are monotonic, so the
     # coordinates inside the box are a contiguous run of indices
     x_inside = np.flatnonzero(
-        (input_x_min <= input_xr.x.values) &
-        (input_xr.x.values <= input_x_max)
+        (input_x_min <= input_xr.x.values) & (input_xr.x.values <= input_x_max)
     )
     y_inside = np.flatnonzero(
-        (input_y_min <= input_xr.y.values) &
-        (input_xr.y.values <= input_y_max)
+        (input_y_min <= input_xr.y.values) & (input_xr.y.values <= input_y_max)
     )
     if x_inside.size == 0 or y_inside.size == 0:
         return np.zeros(target_grid.shape)
@@ -70,7 +70,7 @@ def remap_raster(
     block_rows = max(1, _BLOCK_CELLS // max(1, input_x.size))
     result = np.zeros(target_grid.shape)
     for row_start in range(0, input_y.size, block_rows):
-        block = input_search_space_np[row_start:row_start + block_rows]
+        block = input_search_space_np[row_start : row_start + block_rows]
 
         # only cells with a value are reprojected: a zero adds nothing to the
         # sum in a target cell, and projecting coordinates is the slow part.

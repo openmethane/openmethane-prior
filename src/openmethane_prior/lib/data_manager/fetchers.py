@@ -41,7 +41,7 @@ def google_sheet_csv_url(sheet_id_or_url: str, sheet_name: str) -> str:
     if "://docs.google.com" in sheet_id_or_url:
         # if a url is provided, extract the sheet_id
         sheet_url = urllib.parse.urlparse(sheet_id_or_url)
-        sheet_id = sheet_url.path.rpartition('/')[-1]
+        sheet_id = sheet_url.path.rpartition("/")[-1]
     else:
         sheet_id = sheet_id_or_url
 
@@ -130,7 +130,7 @@ def fetch_zipped_shp_to_gdf(
             filename=tmp_path / os.path.basename(url),
         )
         # entire zip must be extracted, as the .shp file depends on sibling files
-        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+        with zipfile.ZipFile(zip_path, "r") as zip_ref:
             zip_ref.extractall(tmp_path)
 
         # read the extracted Shapefile with geopandas

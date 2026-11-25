@@ -54,7 +54,11 @@ def get_safeguard_facility_locations(
     # filter results to only include facilities which have a location in the
     # reference data source. some facilities may not be in the input if they
     # were filtered out due to sector or emissions reporting period.
-    source_facilities = safeguard_facilities_df[safeguard_facilities_df["facility_name"].isin(source_locations["safeguard_facility_name"])]
-    source_locations = source_locations[source_locations["safeguard_facility_name"].isin(source_facilities["facility_name"])]
+    source_facilities = safeguard_facilities_df[
+        safeguard_facilities_df["facility_name"].isin(source_locations["safeguard_facility_name"])
+    ]
+    source_locations = source_locations[
+        source_locations["safeguard_facility_name"].isin(source_facilities["facility_name"])
+    ]
 
     return source_facilities, source_locations

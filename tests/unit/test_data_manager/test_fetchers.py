@@ -147,7 +147,6 @@ def test_download_resumable_resumes_after_stall(tmp_path):
     ]
 
 
-
 def test_download_resumable_retries_closed_connection(tmp_path):
     # the connection closes cleanly before the full Content-Length is sent
     server = FakeServer(DOWNLOAD_DATA, behaviours=[{"truncate": 600}])
@@ -207,8 +206,6 @@ def test_download_resumable_gives_up(tmp_path):
     assert len(server.requests) == 3
 
 
-
-
 @pytest.mark.parametrize("code", [429, 503])
 def test_download_resumable_retries_server_errors(tmp_path, code):
     server_error = urllib.error.HTTPError("https://example.com/file.nc", code, "Error", {}, None)
@@ -220,7 +217,6 @@ def test_download_resumable_retries_server_errors(tmp_path, code):
 
     assert path.read_bytes() == DOWNLOAD_DATA
     assert len(server.requests) == 2
-
 
 
 def test_download_resumable_without_range_support_gives_up(tmp_path):

@@ -29,6 +29,7 @@ bore_type_map = {
     "UNCONVENTIONAL PETROLEUM": "drillhole-unknown",
 }
 
+
 def qld_emission_sources(
     start_date: datetime.date,
     end_date: datetime.date,
@@ -42,15 +43,32 @@ def qld_emission_sources(
     qld_leases_df: gpd.GeoDataFrame = qld_leases_da.data
 
     # filter non-production and storage wells
-    emitting_bore_types = ["COAL SEAM GAS", "PETROLEUM", "UNCONVENTIONAL PETROLEUM", "GREENHOUSE GAS STORAGE"]
+    emitting_bore_types = [
+        "COAL SEAM GAS",
+        "PETROLEUM",
+        "UNCONVENTIONAL PETROLEUM",
+        "GREENHOUSE GAS STORAGE",
+    ]
     qld_boreholes_df = qld_boreholes_df[qld_boreholes_df["bore_type"].isin(emitting_bore_types)]
-    emitting_bore_subtypes = ["DEVELOPMENT WELL", "COAL SEAM GAS INJECTION WELL", "PETROLEUM INJECTION WELL"]
-    qld_boreholes_df = qld_boreholes_df[qld_boreholes_df["bore_subtype"].isin(emitting_bore_subtypes)]
+    emitting_bore_subtypes = [
+        "DEVELOPMENT WELL",
+        "COAL SEAM GAS INJECTION WELL",
+        "PETROLEUM INJECTION WELL",
+    ]
+    qld_boreholes_df = qld_boreholes_df[
+        qld_boreholes_df["bore_subtype"].isin(emitting_bore_subtypes)
+    ]
 
     # filter bores without hydrocarbons
     non_emitting_bore_result = ["NO HYDROCARBONS", "WATER", "NO COAL INTERSECTED"]
     qld_boreholes_df = qld_boreholes_df[~qld_boreholes_df["result"].isin(non_emitting_bore_result)]
-    non_emitting_bore_status = ["WATER SUPPLY", "PROPOSED", "UNKNOWN", "NEVER USED", "PLUGGED AND ABANDONED"]
+    non_emitting_bore_status = [
+        "WATER SUPPLY",
+        "PROPOSED",
+        "UNKNOWN",
+        "NEVER USED",
+        "PLUGGED AND ABANDONED",
+    ]
     qld_boreholes_df = qld_boreholes_df[~qld_boreholes_df["status"].isin(non_emitting_bore_status)]
 
     # bore datasets may have duplicate rows for a single location due to
@@ -72,22 +90,28 @@ def qld_emission_sources(
 
     # exclude any emission sources that would not have been emitting during
     # the period between start_date and end_date
-    sources_df = rows_in_period(sources_df, start_date=start_date, end_date=end_date, end_field="expirydate")
+    sources_df = rows_in_period(
+        sources_df, start_date=start_date, end_date=end_date, end_field="expirydate"
+    )
 
     # after the join with titles, there may be multiple rows for each well.
     # drop duplicates so there is only one entry for each location.
     sources_df = sources_df.drop_duplicates(["borehole_pid"])
 
     # normalise output to match emission sources format
-    sources_df = sources_df.rename(columns={
-        "borehole_pid": "data_source_id",
-        "displayname": "group_id",
-        "start_date": "activity_start",
-        "expirydate": "activity_end",
-    })
+    sources_df = sources_df.rename(
+        columns={
+            "borehole_pid": "data_source_id",
+            "displayname": "group_id",
+            "start_date": "activity_start",
+            "expirydate": "activity_end",
+        }
+    )
     sources_df["data_source"] = qld_boreholes_da.name
     sources_df["site_type"] = sources_df["bore_type"].map(
-        lambda bore_type: bore_type_map[bore_type] if bore_type in bore_type_map else "drillhole-unknown"
+        lambda bore_type: bore_type_map[bore_type]
+        if bore_type in bore_type_map
+        else "drillhole-unknown"
     )
 
     return sources_df

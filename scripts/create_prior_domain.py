@@ -51,6 +51,7 @@ logger = logger.get_logger(__name__)
 
 PROJECTION_VAR_NAME = "lambert_conformal"
 
+
 def create_domain_info(
     geometry_file: pathlib.Path,
     cross_file: pathlib.Path,
@@ -108,18 +109,26 @@ def create_domain_info(
 
     domain_ds = xr.Dataset(
         coords={
-            "x": (("x"), domain_grid.cell_coords_x(), {
-                "long_name": "x coordinate of projection",
-                "units": "m",
-                "standard_name": "projection_x_coordinate",
-                "bounds": "x_bounds",
-            }),
-            "y": (("y"), domain_grid.cell_coords_y(), {
-                "long_name": "y coordinate of projection",
-                "units": "m",
-                "standard_name": "projection_y_coordinate",
-                "bounds": "y_bounds",
-            }),
+            "x": (
+                ("x"),
+                domain_grid.cell_coords_x(),
+                {
+                    "long_name": "x coordinate of projection",
+                    "units": "m",
+                    "standard_name": "projection_x_coordinate",
+                    "bounds": "x_bounds",
+                },
+            ),
+            "y": (
+                ("y"),
+                domain_grid.cell_coords_y(),
+                {
+                    "long_name": "y coordinate of projection",
+                    "units": "m",
+                    "standard_name": "projection_y_coordinate",
+                    "bounds": "y_bounds",
+                },
+            ),
         },
         data_vars={
             # meta data
@@ -141,18 +150,18 @@ def create_domain_info(
                     "standard_name": "longitude",
                 },
             ),
-
             # # https://cfconventions.org/Data/cf-conventions/cf-conventions-1.11/cf-conventions.html#cell-boundaries
             "x_bounds": (("x", "cell_bounds"), bounds_from_cell_edges(domain_grid.cell_bounds_x())),
             "y_bounds": (("y", "cell_bounds"), bounds_from_cell_edges(domain_grid.cell_bounds_y())),
-
             # https://cfconventions.org/Data/cf-conventions/cf-conventions-1.11/cf-conventions.html#_lambert_conformal
             PROJECTION_VAR_NAME: ((), 0, domain_grid.projection.crs.to_cf()),
-
-            "cell_name": (("y", "x"), grid_cell_names, {
-                "long_name": "unique grid cell name",
-            }),
-
+            "cell_name": (
+                ("y", "x"),
+                grid_cell_names,
+                {
+                    "long_name": "unique grid cell name",
+                },
+            ),
             # data variables
             "land_mask": (
                 ("y", "x"),
@@ -164,12 +173,12 @@ def create_domain_info(
                     "grid_mapping": PROJECTION_VAR_NAME,
                 },
             ),
-
             # legacy / deprecated
             "LANDMASK": (
                 ("y", "x"),
                 mcip_cro_xr.variables["LWMASK"].squeeze(),
-                mcip_cro_xr.variables["LWMASK"].attrs | {
+                mcip_cro_xr.variables["LWMASK"].attrs
+                | {
                     "deprecated": "This variable is deprecated and will be removed in future versions",
                     "superseded_by": "land_mask",
                 },
@@ -181,18 +190,15 @@ def create_domain_info(
             "DY": geom_xr.DY,
             "XCELL": mcip_cro_xr.XCELL,
             "YCELL": mcip_cro_xr.YCELL,
-
             # domain
             "domain_name": domain_name,
             "domain_version": domain_version,
             "domain_index": domain_index,
             "domain_slug": domain_slug,
-
             # meta attributes
             "title": f"Open Methane domain: {domain_name}",
             "history": get_timestamped_command(),
             "openmethane_prior_version": get_version(),
-
             "Conventions": "CF-1.12",
         },
     )
@@ -207,8 +213,8 @@ def create_domain_info(
         else:
             inventory_mask = domain_ds["land_mask"]
 
-        domain_ds['inventory_mask'] = xr.DataArray(
-            dims=('y', 'x'),
+        domain_ds["inventory_mask"] = xr.DataArray(
+            dims=("y", "x"),
             data=inventory_mask,
             attrs={
                 "units": "1",
@@ -234,11 +240,11 @@ def create_mask_from_geotiff(
 
     geo_rio = rasterio.open(
         geotiff_file,
-        engine='rasterio',
+        engine="rasterio",
     ).read()
     geo_rio = geo_rio.squeeze()
-    geo_rio[geo_rio != 0] = 1 # now pure land-oc mask
-    sector_xr = xr.DataArray(geo_rio, coords={ 'y': geo_y, 'x': geo_x  })
+    geo_rio[geo_rio != 0] = 1  # now pure land-oc mask
+    sector_xr = xr.DataArray(geo_rio, coords={"y": geo_y, "x": geo_x})
 
     # now aggregate to coarser resolution of the domain grid
     mask_np = remap_raster(sector_xr, grid, input_crs=geo_crs)
@@ -249,7 +255,7 @@ def create_mask_from_geotiff(
     has_vals = count_mask > 0
     mask_np[has_vals] /= count_mask[has_vals]
     # binary choice land or ocean
-    mask_np = np.where( mask_np > 0.5, 1., 0.)
+    mask_np = np.where(mask_np > 0.5, 1.0, 0.0)
 
     return mask_np
 
@@ -382,7 +388,9 @@ def main(
         raise click.BadParameter("Version should start with v")
 
     if inventory_geotiff and inventory_from_landmask:
-        raise click.BadParameter("inventory_geotiff and inventory_from_landmask cannot be used together")
+        raise click.BadParameter(
+            "inventory_geotiff and inventory_from_landmask cannot be used together"
+        )
 
     geometry_directory, output_directory = clean_directories(
         geometry_directory, output_directory, name, version
@@ -391,7 +399,9 @@ def main(
     domain = create_domain_info(
         geometry_file=geometry_directory / f"geo_em.d{domain_index:02}.nc",
         cross_file=pathlib.Path(cross),
-        inventory_geotiff_file=pathlib.Path(inventory_geotiff) if inventory_geotiff is not None else None,
+        inventory_geotiff_file=pathlib.Path(inventory_geotiff)
+        if inventory_geotiff is not None
+        else None,
         inventory_from_landmask=inventory_from_landmask,
         domain_name=name,
         domain_version=version,

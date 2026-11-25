@@ -35,6 +35,7 @@ from .data import (
     ct_solid_waste_data_source,
 )
 
+
 def waste_emission_sources(
     config: PriorConfig,
     data_manager: DataManager,
@@ -45,11 +46,13 @@ def waste_emission_sources(
     wastewater_industrial_df = data_manager.get_asset(ct_wastewaster_industrial_data_source).data
     solid_waste_df = data_manager.get_asset(ct_solid_waste_data_source).data
 
-    ct_sources_df: gpd.GeoDataFrame = pd.concat([
-        wastewater_domestic_df,
-        wastewater_industrial_df,
-        solid_waste_df,
-    ])
+    ct_sources_df: gpd.GeoDataFrame = pd.concat(
+        [
+            wastewater_domestic_df,
+            wastewater_industrial_df,
+            solid_waste_df,
+        ]
+    )
 
     # select the emissions source data from the requested period
     ct_sources_df = filter_emissions_sources(
@@ -94,19 +97,23 @@ def waste_emission_sources(
     npi_df = npi_df[~npi_df.index.isin(npi_duplicate_df.index)]
 
     # normalise output to match emission sources format
-    npi_df = npi_df.rename(columns={
-        "facility_id": "data_source_id",
-        "start_date": "activity_start",
-        "expiry_date": "activity_end",
-        "primary_anzsic_class_code": "anzsic_code",
-    })
+    npi_df = npi_df.rename(
+        columns={
+            "facility_id": "data_source_id",
+            "start_date": "activity_start",
+            "expiry_date": "activity_end",
+            "primary_anzsic_class_code": "anzsic_code",
+        }
+    )
     npi_df["data_source"] = npi_da.name
     npi_df["emissions_quantity"] = np.nan
 
-    emission_sources_df: gpd.GeoDataFrame = pd.concat([
-        ct_sources_df,
-        npi_df,
-    ])
+    emission_sources_df: gpd.GeoDataFrame = pd.concat(
+        [
+            ct_sources_df,
+            npi_df,
+        ]
+    )
 
     # ClimateTRACE has "emission_quantity" column with their own estimate.
     # Add a column for the emission from each source from inventories, using

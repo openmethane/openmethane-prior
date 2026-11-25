@@ -10,12 +10,13 @@ from openmethane_prior.data_sources.safeguard.facility import (
     parse_anzsic_code,
 )
 
+
 @pytest.fixture()
 def facility_rows_df():
     test_data = [
-        ("Ironic",      "NSW", "Basic ferrous metal manufacturing (211)", 123.0),
-        ("Iron Giant",  "NSW", "Basic ferrous product manufacturing (212)", 456.0),
-        ("Al to Zn",    "NSW", "Basic non-ferrous metal manufacturing (213)", 789.0),
+        ("Ironic", "NSW", "Basic ferrous metal manufacturing (211)", 123.0),
+        ("Iron Giant", "NSW", "Basic ferrous product manufacturing (212)", 456.0),
+        ("Al to Zn", "NSW", "Basic non-ferrous metal manufacturing (213)", 789.0),
         ("Days of Ore", "NSW", "Metal ore mining (080)", 1111.0),
     ]
     return pd.DataFrame(
@@ -27,25 +28,27 @@ def facility_rows_df():
 def test_parse_anzsic_code():
     assert parse_anzsic_code("Coal mining (060)") == "060"
     assert parse_anzsic_code("Oil and gas extraction (070)") == "070"
-    assert parse_anzsic_code("Cement, lime, plaster and concrete product manufacturing (203)") == "203"
+    assert (
+        parse_anzsic_code("Cement, lime, plaster and concrete product manufacturing (203)") == "203"
+    )
     assert parse_anzsic_code("Waste treatment, disposal and remediation services (292)") == "292"
 
 
 def test_safeguard_create_facilities_from_safeguard_rows():
     facility_rows_df = pd.DataFrame(
         data=[
-            ("Ironic",      "NSW", "Basic ferrous metal manufacturing (211)", 123.0),
-            ("Iron Giant",  "NSW", "Basic ferrous product manufacturing (212)", 456.0),
-            ("Al to Zn",    "NSW", "Basic non-ferrous metal manufacturing (213)", 789.0),
+            ("Ironic", "NSW", "Basic ferrous metal manufacturing (211)", 123.0),
+            ("Iron Giant", "NSW", "Basic ferrous product manufacturing (212)", 456.0),
+            ("Al to Zn", "NSW", "Basic non-ferrous metal manufacturing (213)", 789.0),
             ("Days of Ore", "NSW", "Metal ore mining (080)", 1111.0),
-            ("Days of Ore", "NSW", "Metal ore mining (080)", 2000.0), # change of ownership
+            ("Days of Ore", "NSW", "Metal ore mining (080)", 2000.0),  # change of ownership
         ],
         columns=["facility_name", "state", "anzsic", "co2e_ch4"],
     )
 
     facilities_df = create_facilities_from_safeguard_rows(facility_rows_df, (2024, 2025), 28)
 
-    assert len(facilities_df) == 4 # 5 rows, 2 duplicates
+    assert len(facilities_df) == 4  # 5 rows, 2 duplicates
 
     facility_combined = facilities_df[facilities_df["facility_name"] == "Days of Ore"]
 
@@ -65,7 +68,7 @@ def test_safeguard_create_facilities_from_safeguard_rows():
 def test_safeguard_filter_facilities(facility_rows_df):
     facilities_df = create_facilities_from_safeguard_rows(
         safeguard_rows_df=facility_rows_df,
-        reporting_period=(2023, 2024), # 2023-07-01 to 2024-06-30
+        reporting_period=(2023, 2024),  # 2023-07-01 to 2024-06-30
         ch4_gwp=28,
     )
 
@@ -74,20 +77,28 @@ def test_safeguard_filter_facilities(facility_rows_df):
 
     assert len(test_metal_manufacturers) == 3
     assert set(test_metal_manufacturers.facility_name) == {"Ironic", "Iron Giant", "Al to Zn"}
-    pd.testing.assert_frame_equal(filter_facilities(facilities_df, anzsic_codes=["210"]), test_metal_manufacturers)
-    pd.testing.assert_frame_equal(filter_facilities(facilities_df, anzsic_codes=["2100"]), test_metal_manufacturers)
+    pd.testing.assert_frame_equal(
+        filter_facilities(facilities_df, anzsic_codes=["210"]), test_metal_manufacturers
+    )
+    pd.testing.assert_frame_equal(
+        filter_facilities(facilities_df, anzsic_codes=["2100"]), test_metal_manufacturers
+    )
 
     test_iron_manufacturers = filter_facilities(facilities_df, anzsic_codes=["211", "212"])
 
     assert len(test_iron_manufacturers) == 2
     assert set(test_iron_manufacturers.facility_name) == {"Ironic", "Iron Giant"}
-    pd.testing.assert_frame_equal(filter_facilities(facilities_df, anzsic_codes=["2110", "2120"]), test_iron_manufacturers)
+    pd.testing.assert_frame_equal(
+        filter_facilities(facilities_df, anzsic_codes=["2110", "2120"]), test_iron_manufacturers
+    )
 
     test_iron_mines = filter_facilities(facilities_df, anzsic_codes=["08"])
 
     assert len(test_iron_mines) == 1
     assert set(test_iron_mines.facility_name) == {"Days of Ore"}
-    pd.testing.assert_frame_equal(filter_facilities(facilities_df, anzsic_codes=["0800"]), test_iron_mines)
+    pd.testing.assert_frame_equal(
+        filter_facilities(facilities_df, anzsic_codes=["0800"]), test_iron_mines
+    )
 
     # filter by period
     outside_reporting_dates = [
@@ -111,7 +122,9 @@ def test_safeguard_filter_facilities(facility_rows_df):
     for period in within_reporting_dates:
         # these periods fall completely within the reporting period, so the
         # full results are returned
-        pd.testing.assert_frame_equal(filter_facilities(facilities_df, period=period), facilities_df)
+        pd.testing.assert_frame_equal(
+            filter_facilities(facilities_df, period=period), facilities_df
+        )
 
     # multiple filters
     test_multiple_filters_in_period = filter_facilities(
@@ -132,7 +145,7 @@ def test_safeguard_filter_facilities(facility_rows_df):
 def test_safeguard_get_sector_safeguard_facilities_scales_to_period(facility_rows_df):
     facilities_df = create_facilities_from_safeguard_rows(
         safeguard_rows_df=facility_rows_df,
-        reporting_period=(2023, 2024), # 2023-07-01 to 2024-06-30, 366 days
+        reporting_period=(2023, 2024),  # 2023-07-01 to 2024-06-30, 366 days
         ch4_gwp=28,
     )
 
@@ -149,15 +162,17 @@ def test_safeguard_get_sector_safeguard_facilities_scales_to_period(facility_row
 def test_safeguard_get_sector_safeguard_facilities_operating_period(facility_rows_df):
     facilities_df = create_facilities_from_safeguard_rows(
         safeguard_rows_df=facility_rows_df,
-        reporting_period=(2023, 2024), # 2023-07-01 to 2024-06-30, 366 days
+        reporting_period=(2023, 2024),  # 2023-07-01 to 2024-06-30, 366 days
         ch4_gwp=28,
     )
-    operating_periods = pd.DataFrame({
-        "facility_name": ["Ironic", "Iron Giant"],
-        # closed partway through the reporting period, after 134 days
-        "operation_start": pd.to_datetime([pd.NaT, "2006-01-01"]),
-        "operation_end": pd.to_datetime(["2023-11-11", "2023-11-11"]),
-    })
+    operating_periods = pd.DataFrame(
+        {
+            "facility_name": ["Ironic", "Iron Giant"],
+            # closed partway through the reporting period, after 134 days
+            "operation_start": pd.to_datetime([pd.NaT, "2006-01-01"]),
+            "operation_end": pd.to_datetime(["2023-11-11", "2023-11-11"]),
+        }
+    )
 
     result_df = get_sector_safeguard_facilities(
         safeguard_facilities_df=facilities_df,
@@ -180,11 +195,13 @@ def test_safeguard_get_sector_safeguard_facilities_after_operating_period(facili
         reporting_period=(2023, 2024),
         ch4_gwp=28,
     )
-    operating_periods = pd.DataFrame({
-        "facility_name": ["Ironic"],
-        "operation_start": pd.to_datetime([pd.NaT]),
-        "operation_end": pd.to_datetime(["2023-11-11"]),
-    })
+    operating_periods = pd.DataFrame(
+        {
+            "facility_name": ["Ironic"],
+            "operation_start": pd.to_datetime([pd.NaT]),
+            "operation_end": pd.to_datetime(["2023-11-11"]),
+        }
+    )
 
     result_df = get_sector_safeguard_facilities(
         safeguard_facilities_df=facilities_df,
@@ -197,18 +214,22 @@ def test_safeguard_get_sector_safeguard_facilities_after_operating_period(facili
     assert result_df.iloc[0].ch4_kg == 0
 
 
-def test_safeguard_get_sector_safeguard_facilities_operating_period_outside_reporting(facility_rows_df):
+def test_safeguard_get_sector_safeguard_facilities_operating_period_outside_reporting(
+    facility_rows_df,
+):
     facilities_df = create_facilities_from_safeguard_rows(
         safeguard_rows_df=facility_rows_df,
         reporting_period=(2023, 2024),
         ch4_gwp=28,
     )
     # inconsistent with the facility reporting emissions in 2023-2024
-    operating_periods = pd.DataFrame({
-        "facility_name": ["Ironic"],
-        "operation_start": pd.to_datetime([pd.NaT]),
-        "operation_end": pd.to_datetime(["2020-01-01"]),
-    })
+    operating_periods = pd.DataFrame(
+        {
+            "facility_name": ["Ironic"],
+            "operation_start": pd.to_datetime([pd.NaT]),
+            "operation_end": pd.to_datetime(["2020-01-01"]),
+        }
+    )
 
     result_df = get_sector_safeguard_facilities(
         safeguard_facilities_df=facilities_df,

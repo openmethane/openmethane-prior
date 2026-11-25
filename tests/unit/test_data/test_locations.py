@@ -13,19 +13,24 @@ from openmethane_prior.data_sources.safeguard.facility import create_facilities_
 
 @pytest.fixture()
 def safeguard_facilities_df():
-    return create_facilities_from_safeguard_rows(pd.DataFrame(
-        data=[
-            ("Facility Name A", "NSW", "Basic ferrous metal manufacturing (211)", 123.0),
-            ("Facility Name B", "NSW", "Basic ferrous metal manufacturing (211)", 111.0),
-            ("Facility Name B", "NSW", "Basic ferrous metal manufacturing (211)", 222.0),
-            ("Facility Name C", "NSW", "Basic ferrous metal manufacturing (211)", 400.0),
-            ("Facility Name C", "NSW", "Basic ferrous metal manufacturing (211)", 500.0),
-            ("Facility Name D", "NSW", "Basic ferrous metal manufacturing (211)", 600.0),
-            ("Facility Name E", "NSW", "Basic ferrous metal manufacturing (211)", 700.0),
-            ("Facility Name F", "NSW", "Basic ferrous product manufacturing (212)", 456.0),
-        ],
-        columns=["facility_name", "state", "anzsic", "co2e_ch4"],
-    ), (2023, 2024), 28)
+    return create_facilities_from_safeguard_rows(
+        pd.DataFrame(
+            data=[
+                ("Facility Name A", "NSW", "Basic ferrous metal manufacturing (211)", 123.0),
+                ("Facility Name B", "NSW", "Basic ferrous metal manufacturing (211)", 111.0),
+                ("Facility Name B", "NSW", "Basic ferrous metal manufacturing (211)", 222.0),
+                ("Facility Name C", "NSW", "Basic ferrous metal manufacturing (211)", 400.0),
+                ("Facility Name C", "NSW", "Basic ferrous metal manufacturing (211)", 500.0),
+                ("Facility Name D", "NSW", "Basic ferrous metal manufacturing (211)", 600.0),
+                ("Facility Name E", "NSW", "Basic ferrous metal manufacturing (211)", 700.0),
+                ("Facility Name F", "NSW", "Basic ferrous product manufacturing (212)", 456.0),
+            ],
+            columns=["facility_name", "state", "anzsic", "co2e_ch4"],
+        ),
+        (2023, 2024),
+        28,
+    )
+
 
 @pytest.fixture()
 def location_rows_df():
@@ -40,6 +45,7 @@ def location_rows_df():
         ],
         columns=["safeguard_facility_name", "data_source_name", "data_source_id"],
     )
+
 
 def test_locations_filter_locations(location_rows_df):
     # by facility id
@@ -61,7 +67,13 @@ def test_locations_filter_locations(location_rows_df):
     test_locations_c = filter_locations(location_rows_df, data_source_name="test-ds")
 
     assert len(test_locations_c) == 5
-    assert set(test_locations_c.data_source_id) == {"id-001a", "id-001b", "id-001c", "id-002", "id-003"}
+    assert set(test_locations_c.data_source_id) == {
+        "id-001a",
+        "id-001b",
+        "id-001c",
+        "id-002",
+        "id-003",
+    }
 
     test_locations_c_with_id = filter_locations(
         location_rows_df,
@@ -91,12 +103,26 @@ def test_locations_get_safeguard_facility_locations(safeguard_facilities_df, loc
 
     # facilities not in the locations dataset have been filtered out
     assert len(test_facilities) == 3
-    assert set(test_facilities.facility_name) == {"Facility Name A", "Facility Name B", "Facility Name C"}
+    assert set(test_facilities.facility_name) == {
+        "Facility Name A",
+        "Facility Name B",
+        "Facility Name C",
+    }
 
     # locations not correlated with a facility have been filtered out
     assert len(test_locations) == 5
-    assert set(test_locations.safeguard_facility_name) == {"Facility Name A", "Facility Name B", "Facility Name C"}
-    assert set(test_locations.data_source_id) == {"id-001a", "id-001b", "id-001c", "id-002", "id-003"}
+    assert set(test_locations.safeguard_facility_name) == {
+        "Facility Name A",
+        "Facility Name B",
+        "Facility Name C",
+    }
+    assert set(test_locations.data_source_id) == {
+        "id-001a",
+        "id-001b",
+        "id-001c",
+        "id-002",
+        "id-003",
+    }
 
 
 def test_read_location_csv():
@@ -110,11 +136,13 @@ def test_read_location_csv():
 
     result = read_location_csv(io.StringIO(csv))
 
-    expected = pd.DataFrame({
-        "safeguard_facility_name": ["Facility Name A", "Facility Name B"],
-        "data_source_name": ["test-ds", "test-ds"],
-        "data_source_id": ["id-001", "533928"],
-    })
+    expected = pd.DataFrame(
+        {
+            "safeguard_facility_name": ["Facility Name A", "Facility Name B"],
+            "data_source_name": ["test-ds", "test-ds"],
+            "data_source_id": ["id-001", "533928"],
+        }
+    )
     pd.testing.assert_frame_equal(result, expected)
 
 
@@ -126,11 +154,13 @@ def test_read_location_csv_reordered_columns():
 
     result = read_location_csv(io.StringIO(csv))
 
-    assert result.to_dict(orient="records") == [{
-        "safeguard_facility_name": "Facility Name A",
-        "data_source_name": "test-ds",
-        "data_source_id": "id-001",
-    }]
+    assert result.to_dict(orient="records") == [
+        {
+            "safeguard_facility_name": "Facility Name A",
+            "data_source_name": "test-ds",
+            "data_source_id": "id-001",
+        }
+    ]
 
 
 def test_read_location_csv_missing_column():

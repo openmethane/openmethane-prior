@@ -6,10 +6,10 @@ from openmethane_prior.sectors.oil_gas.safeguard import safeguard_operating_peri
 def test_safeguard_operating_periods():
     facility_locations_df = pd.DataFrame(
         data=[
-            ("Closed Plant", "oil-gas-sites", "Closed Terminal"), # match by Site
-            ("Open Plant", "oil-gas-sites", "Open Plant"), # match by Facility name
+            ("Closed Plant", "oil-gas-sites", "Closed Terminal"),  # match by Site
+            ("Open Plant", "oil-gas-sites", "Open Plant"),  # match by Facility name
             ("Mixed Plant", "oil-gas-sites", "Mixed Plant"),
-            ("Closed Plant", "NT-petroleum-wells", "NT/L1"), # ignored, not a site
+            ("Closed Plant", "NT-petroleum-wells", "NT/L1"),  # ignored, not a site
             ("Wells Only", "NT-petroleum-wells", "NT/L2"),
         ],
         columns=["safeguard_facility_name", "data_source_name", "data_source_id"],

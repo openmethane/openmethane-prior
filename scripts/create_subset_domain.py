@@ -34,6 +34,7 @@ import openmethane_prior.lib.logger as logger
 
 logger = logger.get_logger(__name__)
 
+
 def create_subset_domain(
     from_domain: pathlib.Path,
     origin: tuple[int, int],
@@ -83,9 +84,7 @@ def create_subset_domain(
             "x_bounds": subset_domain_ds["x_bounds"],
             "y_bounds": subset_domain_ds["y_bounds"],
             projection_var_name: subset_domain_ds[projection_var_name],
-
             "cell_name": subset_domain_ds["cell_name"],
-
             # data variables
             "land_mask": subset_domain_ds["land_mask"],
             "LANDMASK": subset_domain_ds["LANDMASK"],
@@ -96,18 +95,15 @@ def create_subset_domain(
             "DY": subset_domain_ds.DY,
             "XCELL": subset_domain_ds.XCELL,
             "YCELL": subset_domain_ds.YCELL,
-
             # domain
             "domain_name": domain_name,
             "domain_version": domain_version,
             "domain_index": domain_index,
             "domain_slug": domain_slug,
-
             # meta attributes
             "title": f"Open Methane domain: {domain_name}",
             "history": get_timestamped_command(),
             "openmethane_prior_version": get_version(),
-
             "Conventions": "CF-1.12",
         },
     )
