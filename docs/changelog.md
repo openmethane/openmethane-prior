@@ -19,6 +19,29 @@ of rst and use slightly different categories.
 
 <!-- towncrier release notes start -->
 
+## openmethane-prior v1.8.0 (2026-11-26)
+
+### 🎉 Improvements
+
+- Switched wetland emissions to SatWetCH4 v2.0, published on Zenodo. Monthly data now extends to the end of 2024, and wetland emissions across Australia are about 0.25% lower. ([#259](https://github.com/openmethane/openmethane-prior/pull/259))
+- Conservative regridding now crops the source data to the domain before regridding. The wetlands and fire sectors read only that region from their inputs, which cuts the wetlands sector's peak memory from about 11 GB to 250 MB, and termite and livestock build smaller regridding weights. Cached regridding weights are now named after the source grid they were built for, so existing weights files are ignored and rebuilt once. Domains crossing the antimeridian, or lying west of Greenwich with a source whose longitudes run from 0° to 360° such as GFAS, now regrid correctly instead of missing source data. ([#264](https://github.com/openmethane/openmethane-prior/pull/264))
+- Reduced the memory use and run time of remapping the land-use and night-lights rasters onto the domain and inventory grids, which mostly affects the agriculture and lulucf sectors. ([#265](https://github.com/openmethane/openmethane-prior/pull/265))
+
+### 🐛 Bug Fixes
+
+- Fixed the oil and gas sector failing with `AttributeError: 'numpy.ndarray' object has no attribute 'values'` when the domain differs from the inventory domain. ([#230](https://github.com/openmethane/openmethane-prior/pull/230))
+- Fixed gas supply emissions on domains covering only part of a state, which received the whole state's gas supply instead of the share falling inside the domain. ([#250](https://github.com/openmethane/openmethane-prior/pull/250))
+- Fixed raster cells near the curved edges of a domain being left out when remapping rasters, and inputs with `(x, y)`-ordered dimensions giving wrong sums. Outputs for current domains are unchanged. ([#265](https://github.com/openmethane/openmethane-prior/pull/265))
+
+### 📚 Improved Documentation
+
+- Described how agents preparing a change review it from a fresh context before opening a pull request, in the development guide. ([#261](https://github.com/openmethane/openmethane-prior/pull/261))
+
+### 🔧 Trivial/Internal Changes
+
+- [#233](https://github.com/openmethane/openmethane-prior/pull/233), [#262](https://github.com/openmethane/openmethane-prior/pull/262), [#266](https://github.com/openmethane/openmethane-prior/pull/266), [#267](https://github.com/openmethane/openmethane-prior/pull/267)
+
+
 ## openmethane-prior v1.7.4 (2026-11-12)
 
 ### 🎉 Improvements
