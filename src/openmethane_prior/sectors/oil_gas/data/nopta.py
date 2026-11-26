@@ -16,14 +16,15 @@
 # limitations under the License.
 #
 import json
-import restapi # https://github.com/Bolton-and-Menk-GIS/restapi
 
-from openmethane_prior.lib import DataSource, ConfiguredDataSource
+import restapi  # https://github.com/Bolton-and-Menk-GIS/restapi
+
+from openmethane_prior.lib import ConfiguredDataSource, DataSource
 from openmethane_prior.lib.data_manager.parsers import parse_geo
 
 from .esri_types import map_esri_date_to_str
 
-NOPTA_ARCGIS_URL="https://arcgis.nopta.gov.au/arcgis/rest/services"
+NOPTA_ARCGIS_URL = "https://arcgis.nopta.gov.au/arcgis/rest/services"
 
 offshore_area_state_mapping = {
     "Western Australia": "WA",
@@ -39,6 +40,8 @@ offshore_area_state_mapping = {
     "Outside of Australia": None,
     "UNK": None,
 }
+
+
 def map_offshore_area_to_state(offshore_area: str) -> str | None:
     if offshore_area in offshore_area_state_mapping:
         return offshore_area_state_mapping[offshore_area]
@@ -81,7 +84,9 @@ def fetch_nopta_titles(data_source: ConfiguredDataSource):
         # convert esriFieldTypeDate to RFC3339 date
         for feature_key in feature["properties"]:
             if feature_key.endswith("Date"):
-                feature["properties"][feature_key] = map_esri_date_to_str(feature["properties"][feature_key])
+                feature["properties"][feature_key] = map_esri_date_to_str(
+                    feature["properties"][feature_key]
+                )
 
     with open(data_source.asset_path, "w") as asset_file:
         json.dump(layer_features.json, asset_file)
@@ -134,7 +139,9 @@ def fetch_nopta_wells(data_source: ConfiguredDataSource):
 
     for feature in layer_features["features"]:
         # convert esriFieldTypeDate to RFC3339 date
-        feature["properties"]["RigReleaseDate"] = map_esri_date_to_str(feature["properties"]["RigReleaseDate"])
+        feature["properties"]["RigReleaseDate"] = map_esri_date_to_str(
+            feature["properties"]["RigReleaseDate"]
+        )
 
     with open(data_source.asset_path, "w") as asset_file:
         json.dump(layer_features.json, asset_file)

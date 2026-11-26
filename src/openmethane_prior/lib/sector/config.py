@@ -16,6 +16,7 @@
 # limitations under the License.
 #
 import attrs
+
 from openmethane_prior.lib.config import PriorConfig
 from openmethane_prior.lib.data_manager.manager import DataManager
 

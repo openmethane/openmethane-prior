@@ -15,11 +15,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-import attrs
 import datetime
+import re
+
+import attrs
 import numpy as np
 import pandas as pd
-import re
 
 from openmethane_prior.lib import logger
 from openmethane_prior.lib.units import days_in_overlap, days_in_period
@@ -57,21 +58,26 @@ class SafeguardFacility:
 @attrs.define()
 class SafeguardFacilityRecord:
     """A single row read from the Safeguard Mechanism Emissions Table"""
+
     facility_name: str
     business_name: str
     state: str
     anzsic: str
     co2e_ch4: float
 
+
 # regex to capture numeric code between (), ie "060" from "sector (060)"
 anzsic_code_pattern = re.compile(r"\((?P<code>\d+)\)$")
+
+
 def parse_anzsic_code(anzsic_full: str) -> str:
     """Given a full ANZSIC description like "Coal mining (060)", extract the
-    code, i.e. "060"."""
+    code, i.e. "060".
+    """
     anzsic_code = anzsic_code_pattern.search(anzsic_full)
     if anzsic_code is None:
         raise ValueError(f"invalid ANZSIC string has no code '{anzsic_full}'")
-    return anzsic_code.group('code')
+    return anzsic_code.group("code")
 
 
 def create_facilities_from_safeguard_rows(
@@ -81,7 +87,8 @@ def create_facilities_from_safeguard_rows(
     co2_gwp: float = 1,
 ) -> pd.DataFrame:
     """Create a SafeguardFacility object from a single row of the Baselines and
-    Emissions Table. CH4 must be converted from CO2-equivalent kg to CH4 kg."""
+    Emissions Table. CH4 must be converted from CO2-equivalent kg to CH4 kg.
+    """
     safeguard_df = safeguard_rows_df.copy()
 
     # rows with the same facility name but different business name are the same
@@ -110,7 +117,8 @@ def filter_facilities(
     period: tuple[datetime.date, datetime.date] = None,
 ) -> pd.DataFrame:
     """Filter safeguard mechanism rows, returning facilities which match the
-    provided sector and period filters."""
+    provided sector and period filters.
+    """
     if anzsic_codes is not None:
         facility_df = filter_by_anzsic_code_family(
             facility_df,
@@ -175,7 +183,10 @@ def get_sector_safeguard_facilities(
         operation_start = _optional_date(facility["operation_start"])
         operation_end = _optional_date(facility["operation_end"])
         year_days = days_in_overlap(
-            facility["reporting_start"], facility["reporting_end"], operation_start, operation_end,
+            facility["reporting_start"],
+            facility["reporting_end"],
+            operation_start,
+            operation_end,
         )
         if year_days == 0:
             # the facility reported emissions, so it must have operated at

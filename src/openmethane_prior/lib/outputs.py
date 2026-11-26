@@ -19,11 +19,16 @@ import numpy as np
 import numpy.typing as npt
 import xarray as xr
 
+from openmethane_prior.lib import logger
 from openmethane_prior.lib.config import PriorConfig
 from openmethane_prior.lib.sector.sector import PriorSector
-from openmethane_prior.lib.utils import SECS_PER_YEAR, get_version, get_timestamped_command, time_bounds, \
-    list_cf_grid_mappings
-import openmethane_prior.lib.logger as logger
+from openmethane_prior.lib.utils import (
+    SECS_PER_YEAR,
+    get_timestamped_command,
+    get_version,
+    list_cf_grid_mappings,
+    time_bounds,
+)
 
 logger = logger.get_logger(__name__)
 
@@ -97,20 +102,26 @@ def create_output_dataset(config: PriorConfig) -> xr.Dataset:
     period_end = config.end_date
 
     # generate daily time steps
-    time_steps = xr.date_range(start=period_start, end=period_end, freq="D", use_cftime=False, normalize=True)
+    time_steps = xr.date_range(
+        start=period_start, end=period_end, freq="D", use_cftime=False, normalize=True
+    )
 
     # find the domain variable containing the grid mapping
     grid_mapping_var = list_cf_grid_mappings(domain_ds)[0]
-    
+
     # copy dimensions and attributes from the domain where the grid is defined
     prior_ds = xr.Dataset(
         coords={
             "x": domain_ds.coords["x"],
             "y": domain_ds.coords["y"],
-            "time": (("time"), time_steps, {
-                "standard_name": "time",
-                "bounds": "time_bounds",
-            }),
+            "time": (
+                ("time"),
+                time_steps,
+                {
+                    "standard_name": "time",
+                    "bounds": "time_bounds",
+                },
+            ),
             # this dimension currently has no coordinate values, so it is left
             # as a dimension without coordinates
             # "vertical": (("vertical"), [0], {}),
@@ -123,12 +134,10 @@ def create_output_dataset(config: PriorConfig) -> xr.Dataset:
             "y_bounds": domain_ds["y_bounds"],
             grid_mapping_var: domain_ds[grid_mapping_var],
             "cell_name": domain_ds["cell_name"],
-
             "time_bounds": (
                 ("time", "time_period"),
                 time_bounds(time_steps),
             ),
-
             # data variables
             "land_mask": domain_ds["land_mask"],
         },
@@ -138,18 +147,15 @@ def create_output_dataset(config: PriorConfig) -> xr.Dataset:
             "DY": domain_ds.DY,
             "XCELL": domain_ds.XCELL,
             "YCELL": domain_ds.YCELL,
-
             # domain
             "domain_name": domain_ds.domain_name,
             "domain_version": domain_ds.domain_version,
             "domain_slug": domain_ds.domain_slug,
-
             # meta attributes
             "title": "Open Methane prior emissions estimate",
             "comment": "Gridded prior emissions estimate for methane across Australia",
             "history": get_timestamped_command(),
             "openmethane_prior_version": get_version(),
-
             "Conventions": "CF-1.12",
         },
     )
@@ -183,7 +189,7 @@ def create_output_dataset(config: PriorConfig) -> xr.Dataset:
     prior_ds.land_mask.encoding["dtype"] = "int8"
 
     # disable _FillValue for variables that shouldn't have empty values
-    for var_name in ['time_bounds', 'x', 'y', 'x_bounds', 'y_bounds', 'lat', 'lon']:
+    for var_name in ["time_bounds", "x", "y", "x_bounds", "y_bounds", "lat", "lon"]:
         prior_ds[var_name].encoding["_FillValue"] = None
 
     return prior_ds
@@ -209,14 +215,21 @@ def add_sector(
     logger.info(f"Adding emissions data for {sector_meta.name}")
 
     # determine the expected shape of a data layer based on the assumed coords
-    expected_shape = tuple([(prior_ds.sizes[coord_name] if coord_name in prior_ds.sizes else 1) for coord_name in COORD_NAMES])
+    expected_shape = tuple(
+        [
+            (prior_ds.sizes[coord_name] if coord_name in prior_ds.sizes else 1)
+            for coord_name in COORD_NAMES
+        ]
+    )
 
     # if this is a DataArray with the right dimensions, it can be added directly
     if type(sector_data) == xr.DataArray and sector_data.shape == expected_shape:
         # verify that time steps for the sector data match the parent coordinates exactly
         for time_step in sector_data.coords["time"].values:
             if time_step not in prior_ds.coords["time"].values:
-                raise ValueError(f"Layer {sector_meta.name} time step {time_step} not found in dataset")
+                raise ValueError(
+                    f"Layer {sector_meta.name} time step {time_step} not found in dataset"
+                )
     else:
         # some layers only generate 2 or 3-dimensional data, which needs
         # to be expanded into the same dimensions as the other layers
@@ -242,14 +255,17 @@ def add_sector(
 
     sector_data.attrs = COMMON_ATTRIBUTES | {
         "standard_name": TOTAL_LAYER_ATTRIBUTES["standard_name"],
-        "long_name": sector_meta.cf_long_name or f"expected flux of methane caused by sector: {sector_meta.name}",
+        "long_name": sector_meta.cf_long_name
+        or f"expected flux of methane caused by sector: {sector_meta.name}",
         "emission_category": sector_meta.emission_category,
         "grid_mapping": grid_mapping_var,
     }
     if sector_meta.unfccc_categories is not None:
         sector_data.attrs["unfccc_categories"] = sector_meta.unfccc_categories
     if sector_meta.cf_standard_name is not None:
-        sector_data.attrs["standard_name"] += f"_due_to_emission_from_{sector_meta.cf_standard_name}"
+        sector_data.attrs["standard_name"] += (
+            f"_due_to_emission_from_{sector_meta.cf_standard_name}"
+        )
 
     _, aligned_sector_data = xr.align(prior_ds, sector_data, join="override")
 
@@ -308,7 +324,9 @@ def add_ch4_total(prior_ds: xr.Dataset):
     # find the domain variable containing the grid mapping
     grid_mapping_var = list_cf_grid_mappings(prior_ds)[0]
 
-    sectors = [var_name for var_name in prior_ds.data_vars.keys() if var_name.startswith(SECTOR_PREFIX)]
+    sectors = [
+        var_name for var_name in prior_ds.data_vars.keys() if var_name.startswith(SECTOR_PREFIX)
+    ]
 
     # now check to find largest shape because we'll broadcast everything else to that
     summed = None
@@ -325,9 +343,11 @@ def add_ch4_total(prior_ds: xr.Dataset):
         prior_ds[TOTAL_LAYER_NAME] = (
             COORD_NAMES[:],
             summed,
-            COMMON_ATTRIBUTES | TOTAL_LAYER_ATTRIBUTES | {
+            COMMON_ATTRIBUTES
+            | TOTAL_LAYER_ATTRIBUTES
+            | {
                 "grid_mapping": grid_mapping_var,
-            }
+            },
         )
 
         # enable compression for total layer which may be duplicated

@@ -16,12 +16,14 @@
 # limitations under the License.
 #
 from __future__ import annotations
-from typing import Any, Callable
 
-import attrs
 import os
 import pathlib
 import urllib.request
+from collections.abc import Callable
+from typing import Any
+
+import attrs
 
 from openmethane_prior.lib.config import PriorConfig
 from openmethane_prior.lib.data_manager.asset import DataAsset
@@ -35,7 +37,8 @@ def file_path_from_url(_self: DataSource, prior_config: PriorConfig) -> str:
 
 def basic_fetch(data_source: ConfiguredDataSource) -> pathlib.Path:
     """Fetches a DataSource where a url is provided, and saves it in the
-    provided data_path."""
+    provided data_path.
+    """
     if data_source.url is None:
         raise ValueError("DataSource must have url set to use default fetch")
 
@@ -155,7 +158,7 @@ class ConfiguredDataSource:
 
     def fetch(self):
         """Fetches the data to the data_path using the provided source_fetch
-         method
+        method
         """
         self.asset_path.parent.mkdir(parents=True, exist_ok=True)
         return self.source_fetch(self)

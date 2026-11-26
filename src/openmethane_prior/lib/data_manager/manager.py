@@ -15,23 +15,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import pathlib
 from typing import Self
 
 import attrs
-import pathlib
 
+from openmethane_prior.lib import logger
 from openmethane_prior.lib.config import PriorConfig
 from openmethane_prior.lib.data_manager.asset import DataAsset
-from openmethane_prior.lib.data_manager.source import configure_data_source, ConfiguredDataSource, DataSource
-
-import openmethane_prior.lib.logger as logger
+from openmethane_prior.lib.data_manager.source import (
+    ConfiguredDataSource,
+    DataSource,
+    configure_data_source,
+)
 
 logger = logger.get_logger(__name__)
 
 
 @attrs.define()
 class DataManager:
-
     data_path: pathlib.Path
     """Folder on the filesystem where fetched data will be stored"""
 
@@ -64,7 +66,9 @@ class DataManager:
         existing_source = self.data_sources.get(source.name)
         if existing_source is not None:
             if existing_source.url and existing_source.url != source.url:
-                logger.warning(f"multiple DataSource instances with name '{source.name}' providing different URLs")
+                logger.warning(
+                    f"multiple DataSource instances with name '{source.name}' providing different URLs"
+                )
 
         # if data source depends on other data, prepare dependencies first
         dependency_assets: list[DataAsset] = []
@@ -83,7 +87,8 @@ class DataManager:
 
     def prepare_asset(self, source: ConfiguredDataSource) -> DataAsset:
         """Fetch and process data sources, turning them into data assets that
-        are ready to be used."""
+        are ready to be used.
+        """
         # if the file is already present on the filesystem, do not attempt to
         # re-fetch it
         if source.asset_path.exists():
@@ -97,7 +102,9 @@ class DataManager:
 
             # warn and move on
             if save_path != source.asset_path:
-                logger.warning(f"asset '{source.name}' actual path '{save_path}' does not match asset_path '{source.asset_path}'")
+                logger.warning(
+                    f"asset '{source.name}' actual path '{save_path}' does not match asset_path '{source.asset_path}'"
+                )
 
             data_asset = DataAsset(
                 name=source.name,
@@ -128,7 +135,6 @@ class DataManager:
             self.data_assets[source.name] = asset
 
         return asset
-
 
     @classmethod
     def from_config(cls, config: PriorConfig) -> Self:

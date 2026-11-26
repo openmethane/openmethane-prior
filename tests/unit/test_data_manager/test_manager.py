@@ -1,26 +1,34 @@
 import logging
 
-from openmethane_prior.lib.data_manager.manager import DataManager
-from openmethane_prior.lib.data_manager.source import DataSource, ConfiguredDataSource
 from pytest_mock import MockerFixture
+
+from openmethane_prior.lib.data_manager.manager import DataManager
+from openmethane_prior.lib.data_manager.source import ConfiguredDataSource, DataSource
 
 
 def test_manager_add_source(tmp_path, config):
     data_path = tmp_path / "data"
     test_manager = DataManager(data_path=data_path, prior_config=config)
 
-    test_manager.add_source(DataSource(
-        name="test-unfccc-codes",
-        url="https://openmethane.s3.amazonaws.com/prior/inputs/UNFCCC-codes-AU.csv",
-    ))
-    test_manager.add_source(DataSource(
-        name="test-other",
-        url="https://example.com/test.csv",
-    ))
+    test_manager.add_source(
+        DataSource(
+            name="test-unfccc-codes",
+            url="https://openmethane.s3.amazonaws.com/prior/inputs/UNFCCC-codes-AU.csv",
+        )
+    )
+    test_manager.add_source(
+        DataSource(
+            name="test-other",
+            url="https://example.com/test.csv",
+        )
+    )
 
     assert list(test_manager.data_sources.keys()) == ["test-unfccc-codes", "test-other"]
     assert test_manager.data_sources.get("test-unfccc-codes").name == "test-unfccc-codes"
-    assert test_manager.data_sources.get("test-unfccc-codes").url == "https://openmethane.s3.amazonaws.com/prior/inputs/UNFCCC-codes-AU.csv"
+    assert (
+        test_manager.data_sources.get("test-unfccc-codes").url
+        == "https://openmethane.s3.amazonaws.com/prior/inputs/UNFCCC-codes-AU.csv"
+    )
 
     assert test_manager.data_sources.get("test-other").name == "test-other"
     assert test_manager.data_sources.get("test-other").url == "https://example.com/test.csv"
@@ -33,32 +41,44 @@ def test_manager_add_source_duplicate(tmp_path, caplog, config):
     data_path = tmp_path / "data"
     test_manager = DataManager(data_path=data_path, prior_config=config)
 
-    test_manager.add_source(DataSource(
-        name="test-unfccc-codes",
-        url="https://openmethane.s3.amazonaws.com/prior/inputs/UNFCCC-codes-AU.csv",
-    ))
+    test_manager.add_source(
+        DataSource(
+            name="test-unfccc-codes",
+            url="https://openmethane.s3.amazonaws.com/prior/inputs/UNFCCC-codes-AU.csv",
+        )
+    )
 
     assert len(test_manager.data_sources.keys()) == 1
     assert test_manager.data_sources.get("test-unfccc-codes").name == "test-unfccc-codes"
-    assert test_manager.data_sources.get("test-unfccc-codes").url == "https://openmethane.s3.amazonaws.com/prior/inputs/UNFCCC-codes-AU.csv"
+    assert (
+        test_manager.data_sources.get("test-unfccc-codes").url
+        == "https://openmethane.s3.amazonaws.com/prior/inputs/UNFCCC-codes-AU.csv"
+    )
 
     # add the same source again
-    test_manager.add_source(DataSource(
-        name="test-unfccc-codes",
-        url="https://openmethane.s3.amazonaws.com/prior/inputs/UNFCCC-codes-AU.csv",
-    ))
+    test_manager.add_source(
+        DataSource(
+            name="test-unfccc-codes",
+            url="https://openmethane.s3.amazonaws.com/prior/inputs/UNFCCC-codes-AU.csv",
+        )
+    )
 
     # no additional sources added
     assert len(test_manager.data_sources.keys()) == 1
 
     # same source name but different url triggers a warning
     with caplog.at_level(logging.WARNING):
-        test_manager.add_source(DataSource(
-            name="test-unfccc-codes",
-            url="https://example.com/different-url",
-        ))
+        test_manager.add_source(
+            DataSource(
+                name="test-unfccc-codes",
+                url="https://example.com/different-url",
+            )
+        )
 
-    assert "multiple DataSource instances with name 'test-unfccc-codes' providing different URLs" in caplog.text
+    assert (
+        "multiple DataSource instances with name 'test-unfccc-codes' providing different URLs"
+        in caplog.text
+    )
     assert len(test_manager.data_sources.keys()) == 1
 
 
@@ -135,15 +155,19 @@ def test_manager_static_path_routing(tmp_path, config):
     static_path = tmp_path / "static"
     test_manager = DataManager(data_path=data_path, prior_config=config, static_path=static_path)
 
-    static_source = test_manager.add_source(DataSource(
-        name="test-static",
-        file_path="static.txt",
-    ))
-    dynamic_source = test_manager.add_source(DataSource(
-        name="test-dynamic",
-        file_path="dynamic.txt",
-        dynamic=True,
-    ))
+    static_source = test_manager.add_source(
+        DataSource(
+            name="test-static",
+            file_path="static.txt",
+        )
+    )
+    dynamic_source = test_manager.add_source(
+        DataSource(
+            name="test-dynamic",
+            file_path="dynamic.txt",
+            dynamic=True,
+        )
+    )
 
     assert static_source.asset_path == static_path / "static.txt"
     assert dynamic_source.asset_path == data_path / "dynamic.txt"

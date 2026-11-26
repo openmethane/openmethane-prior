@@ -78,10 +78,14 @@ def grid_weights_from_linestring(
     )  # both (ny, nx)
 
     # vectorised cell boxes, flattened to (ny*nx,)
-    boxes: np.ndarray = np.asarray(shapely.box(
-        bx[cell_ix].ravel(), by[cell_iy].ravel(),
-        bx[cell_ix + 1].ravel(), by[cell_iy + 1].ravel(),
-    ))
+    boxes: np.ndarray = np.asarray(
+        shapely.box(
+            bx[cell_ix].ravel(),
+            by[cell_iy].ravel(),
+            bx[cell_ix + 1].ravel(),
+            by[cell_iy + 1].ravel(),
+        )
+    )
 
     # spatial index avoids O(ny*nx) intersection calls
     tree = shapely.STRtree(boxes)

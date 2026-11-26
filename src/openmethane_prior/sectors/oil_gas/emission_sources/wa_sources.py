@@ -16,6 +16,7 @@
 # limitations under the License.
 #
 import datetime
+
 import geopandas as gpd
 import numpy as np
 
@@ -31,18 +32,23 @@ def wa_emission_sources(
 ) -> gpd.GeoDataFrame:
     """Create normalised emission source DataFrame by combining WA petroleum
     wells dataset for locations, with land title dataset for production
-    start/end dates."""
+    start/end dates.
+    """
     wa_wells_df: gpd.GeoDataFrame = wa_wells_da.data
     wa_titles_df: gpd.GeoDataFrame = wa_titles_da.data
 
     # filter out wells that aren't actively used for production
     # "class" values follow Lahee classification system
-    wells_df = wa_wells_df[wa_wells_df["class"].isin([
-        "DEV", # Development
-        "EXT", # Extension
-        "NFW", # New Field Wildcat
-        "NPW", # New Pool Wildcat
-    ])]
+    wells_df = wa_wells_df[
+        wa_wells_df["class"].isin(
+            [
+                "DEV",  # Development
+                "EXT",  # Extension
+                "NFW",  # New Field Wildcat
+                "NPW",  # New Pool Wildcat
+            ]
+        )
+    ]
 
     # WA wells dataset appears to re-use lat/lon coords for multiple wells
     # within the same field. Since these contain unique uwi/well_name values
@@ -69,12 +75,14 @@ def wa_emission_sources(
     sources_df = sources_df.drop_duplicates(["uwi"])
 
     # normalise output to match emission sources format
-    sources_df = sources_df.rename(columns={
-        "uwi": "data_source_id",
-        "title_id": "group_id",
-        "start_date": "activity_start",
-        "end_date": "activity_end",
-    })
+    sources_df = sources_df.rename(
+        columns={
+            "uwi": "data_source_id",
+            "title_id": "group_id",
+            "start_date": "activity_start",
+            "end_date": "activity_end",
+        }
+    )
     sources_df["data_source"] = wa_wells_da.name
     # not enough detail in the data source to determine the type of resource
     # being extracted by the well

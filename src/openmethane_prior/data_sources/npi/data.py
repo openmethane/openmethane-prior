@@ -16,6 +16,7 @@
 # limitations under the License.
 #
 import datetime
+
 import geopandas as gpd
 import numpy as np
 import pandas as pd
@@ -59,7 +60,8 @@ def parse_npi_facilities_csv(data_source: ConfiguredDataSource) -> gpd.GeoDataFr
     Adds reporting_start_date and reporting_end_date columns derived from
     first_report_year and latest_report_year. Facilities whose
     latest_report_year matches the most recent reporting period in the dataset
-    are assumed to still be operating (reporting_end_date is NaT)."""
+    are assumed to still be operating (reporting_end_date is NaT).
+    """
     df = pd.read_csv(
         data_source.asset_path,
         converters={

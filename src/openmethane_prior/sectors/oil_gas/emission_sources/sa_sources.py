@@ -16,6 +16,7 @@
 # limitations under the License.
 #
 import datetime
+
 import geopandas as gpd
 import numpy as np
 import pandas as pd
@@ -27,6 +28,7 @@ from openmethane_prior.lib.utils import rows_in_period
 def start_of_month(date: pd.Timestamp) -> np.datetime64:
     return np.datetime64(pd.Timestamp(year=date.year, month=date.month, day=1))
 
+
 def sa_emission_sources(
     start_date: datetime.date,
     end_date: datetime.date,
@@ -35,16 +37,22 @@ def sa_emission_sources(
 ) -> gpd.GeoDataFrame:
     """Create normalised emission source DataFrame by combining SA petroleum
     wells dataset for locations, with petroleum title dataset for production
-    start/end dates."""
+    start/end dates.
+    """
     sa_wells_df: gpd.GeoDataFrame = sa_wells_da.data
     sa_production_df: gpd.GeoDataFrame = sa_production_da.data
 
     # filter out non-production wells
     sa_emitting_types = [
-        "Oil Shows", "Oil",
-        "Gas Shows", "Gas",
-        "Oil and Gas", "Oil and Gas Shows", "Oil with Gas Shows",
-        "Gas with Oil Shows", "CO2 with Oil Shows",
+        "Oil Shows",
+        "Oil",
+        "Gas Shows",
+        "Gas",
+        "Oil and Gas",
+        "Oil and Gas Shows",
+        "Oil with Gas Shows",
+        "Gas with Oil Shows",
+        "CO2 with Oil Shows",
     ]
     wells_df = sa_wells_df[sa_wells_df["Type"].isin(sa_emitting_types)]
 
@@ -65,15 +73,17 @@ def sa_emission_sources(
     # Production values are split by Co-Formation, but we just want the sum
     # of production for each well
     production_df = production_df.groupby("WellID", as_index=False)
-    production_df = production_df.agg({
-        "Oil (m3)": "sum",
-        "Gas (m3E6)": "sum",
-        "Type": "first",
-        "Field": "first",
-        "activity_start": "first",
-        "activity_end": "first",
-        "Month Days": "first",
-    })
+    production_df = production_df.agg(
+        {
+            "Oil (m3)": "sum",
+            "Gas (m3E6)": "sum",
+            "Type": "first",
+            "Field": "first",
+            "activity_start": "first",
+            "activity_end": "first",
+            "Month Days": "first",
+        }
+    )
     production_df = production_df.rename({"WellID": "Well ID"})  # join column
 
     # join well details with production figures
@@ -88,10 +98,12 @@ def sa_emission_sources(
     ]
 
     # normalise output to match emission sources format
-    sources_df = sources_df.rename(columns={
-        "Well ID": "data_source_id",
-        "License": "group_id",
-    })
+    sources_df = sources_df.rename(
+        columns={
+            "Well ID": "data_source_id",
+            "License": "group_id",
+        }
+    )
     sources_df["data_source"] = sa_wells_da.name
     sources_df["site_type"] = [
         "drillhole-oil" if production_type == "Oil" else "drillhole-gas"

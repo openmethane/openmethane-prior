@@ -16,6 +16,7 @@
 # limitations under the License.
 #
 import datetime
+
 import geopandas as gpd
 import pandas as pd
 
@@ -149,9 +150,7 @@ def _split_at_state_borders(
 
     # objectid identifies the pipeline, so it is no longer unique once a
     # pipeline has been split. qualify it with the state to keep it unique.
-    segments_df["objectid"] = (
-        segments_df["objectid"].astype(str) + "-" + segments_df["state"]
-    )
+    segments_df["objectid"] = segments_df["objectid"].astype(str) + "-" + segments_df["state"]
 
     return segments_df
 
@@ -168,9 +167,7 @@ def pipeline_emission_sources(
     # Pipeline dataset may include gas and oil pipelines, as well as proposed
     # pipelines. Filter out proposed pipelines and map to a site_type value.
     sources_df["site_type"] = sources_df["feature_type"].map(
-        lambda pipe_type: pipeline_type_map[pipe_type]
-            if pipe_type in pipeline_type_map
-            else None
+        lambda pipe_type: pipeline_type_map[pipe_type] if pipe_type in pipeline_type_map else None
     )
     sources_df = sources_df[~pd.isna(sources_df["site_type"])]
 
@@ -183,13 +180,15 @@ def pipeline_emission_sources(
     # began or ceased operation
 
     # normalise output to match emission sources format
-    sources_df = sources_df.rename(columns={
-        "objectid": "data_source_id",
-        "feature_name": "group_id",
-        "length_km": "weight", # use pipeline length as a weighting
-        # "start_date": "activity_start",
-        # "expiry_date": "activity_end",
-    })
+    sources_df = sources_df.rename(
+        columns={
+            "objectid": "data_source_id",
+            "feature_name": "group_id",
+            "length_km": "weight",  # use pipeline length as a weighting
+            # "start_date": "activity_start",
+            # "expiry_date": "activity_end",
+        }
+    )
     sources_df["activity_start"] = pd.NaT
     sources_df["activity_end"] = pd.NaT
     sources_df["data_source"] = gas_pipelines_da.name

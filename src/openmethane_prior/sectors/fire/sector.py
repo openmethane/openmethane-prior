@@ -22,14 +22,15 @@ This downloads files from [ADS](https://atmosphere.copernicus.eu/data).
 See the project readme for more information about configuring
 the required credentials.
 """
+
 import numpy as np
 import xarray as xr
 
 from openmethane_prior.lib import (
     PriorSector,
     PriorSectorConfig,
-    regrid_data_array_conservative,
     logger,
+    regrid_data_array_conservative,
 )
 
 from .data_gfas import gfas_data_source
@@ -48,9 +49,7 @@ def process_emissions(sector: PriorSector, sector_config: PriorSectorConfig, pri
 
     # GFAS times are labelled at midnight at the end of the day (i.e. they look
     # like the following day); subtract one day to correct to the actual date
-    gfas_ds = gfas_ds.assign_coords(
-        valid_time=gfas_ds["valid_time"] - np.timedelta64(1, "D")
-    )
+    gfas_ds = gfas_ds.assign_coords(valid_time=gfas_ds["valid_time"] - np.timedelta64(1, "D"))
 
     regridded_da = regrid_data_array_conservative(
         data_da=gfas_ds["ch4fire"],

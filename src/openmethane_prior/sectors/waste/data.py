@@ -29,19 +29,19 @@ ct_wastewaster_domestic_data_source = DataSource(
     name="ct-wastewater-domestic",
     data_sources=[climate_trace_data_source],
     parse=parse_emissions_sources_geo,
-    file_path='climate-trace-AUS/DATA/waste/domestic-wastewater-treatment-and-discharge_emissions_sources_v4_8_0.csv',
+    file_path="climate-trace-AUS/DATA/waste/domestic-wastewater-treatment-and-discharge_emissions_sources_v4_8_0.csv",
 )
 
 ct_wastewaster_industrial_data_source = DataSource(
     name="ct-wastewater-industrial",
     data_sources=[climate_trace_data_source],
     parse=parse_emissions_sources_geo,
-    file_path='climate-trace-AUS/DATA/waste/industrial-wastewater-treatment-and-discharge_emissions_sources_v4_8_0.csv',
+    file_path="climate-trace-AUS/DATA/waste/industrial-wastewater-treatment-and-discharge_emissions_sources_v4_8_0.csv",
 )
 
 ct_solid_waste_data_source = DataSource(
     name="ct-solid-waste",
     data_sources=[climate_trace_data_source],
     parse=parse_emissions_sources_geo,
-    file_path='climate-trace-AUS/DATA/waste/solid-waste-disposal_emissions_sources_v4_8_0.csv',
+    file_path="climate-trace-AUS/DATA/waste/solid-waste-disposal_emissions_sources_v4_8_0.csv",
 )

@@ -15,10 +15,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-from typing import Any
 from functools import cache
+from typing import Any
+
 import numpy as np
 import pyproj
+
 
 class Grid:
     """
@@ -53,7 +55,7 @@ class Grid:
         dimensions: tuple[int, int],
         origin_xy: tuple[float, float],
         cell_size: tuple[float, float],
-        proj_params: Any = "EPSG:4326", # default projection
+        proj_params: Any = "EPSG:4326",  # default projection
     ):
         self.dimensions = dimensions
         self.origin_xy = origin_xy
@@ -66,10 +68,9 @@ class Grid:
         self.shape = (dimensions[1], dimensions[0])
         self.llc_center_xy = (
             self.origin_xy[0] + (self.cell_size[0] / 2),
-            self.origin_xy[1] + (self.cell_size[1] / 2)
+            self.origin_xy[1] + (self.cell_size[1] / 2),
         )
         self.cell_area = self.cell_size[0] * self.cell_size[1]
-
 
     def __eq__(self, other):
         return (
@@ -82,7 +83,15 @@ class Grid:
 
     # Grid must be hashable to use @cached methods
     def __hash__(self):
-        return hash((self.dimensions, self.origin_xy, self.llc_center_xy, self.cell_size, self.projection.to_wkt()))
+        return hash(
+            (
+                self.dimensions,
+                self.origin_xy,
+                self.llc_center_xy,
+                self.cell_size,
+                self.projection.to_wkt(),
+            )
+        )
 
     def is_aligned(self, other):
         if self == other or self.projection.is_exact_same(other.projection):
@@ -94,18 +103,30 @@ class Grid:
 
         # lambert projections are aligned if parameters are the same, ignoring x/y offset
         if self.projection.name == "lcc":
-            self_srs_parts = [part for part in self.projection.srs.split(" ") if not (part.startswith("+x_0") or part.startswith("+y_0"))]
-            other_srs_parts = [part for part in other.projection.srs.split(" ") if not (part.startswith("+x_0") or part.startswith("+y_0"))]
+            self_srs_parts = [
+                part
+                for part in self.projection.srs.split(" ")
+                if not (part.startswith("+x_0") or part.startswith("+y_0"))
+            ]
+            other_srs_parts = [
+                part
+                for part in other.projection.srs.split(" ")
+                if not (part.startswith("+x_0") or part.startswith("+y_0"))
+            ]
             return " ".join(self_srs_parts) == " ".join(other_srs_parts)
 
         # non-lambert projections comparisons are not implemented
         return False
 
     def lonlat_to_xy(self, lon, lat) -> tuple[float, float]:
-        return self.projection.transform(xx=lon, yy=lat, direction=pyproj.enums.TransformDirection.FORWARD)
+        return self.projection.transform(
+            xx=lon, yy=lat, direction=pyproj.enums.TransformDirection.FORWARD
+        )
 
     def xy_to_lonlat(self, x, y) -> tuple[float, float]:
-        return self.projection.transform(xx=x, yy=y, direction=pyproj.enums.TransformDirection.INVERSE)
+        return self.projection.transform(
+            xx=x, yy=y, direction=pyproj.enums.TransformDirection.INVERSE
+        )
 
     @cache
     def cell_coords_x(self) -> np.ndarray[int, np.float64]:
@@ -169,8 +190,10 @@ class Grid:
         Return true if the grid cell coords refer to a valid cell in the grid.
         """
         return (
-            (coord_x >= 0) & (coord_x < self.dimensions[0]) &
-            (coord_y >= 0) & (coord_y < self.dimensions[1])
+            (coord_x >= 0)
+            & (coord_x < self.dimensions[0])
+            & (coord_y >= 0)
+            & (coord_y < self.dimensions[1])
         )
 
     def xy_to_cell_index(self, x: Any, y: Any) -> tuple[Any, Any, Any]:
@@ -180,8 +203,8 @@ class Grid:
         representing if coords are valid and inside the grid extent.
         """
         # calculate indices assuming regular grid
-        cell_index_x = np.floor((x - self.origin_xy[0]) / self.cell_size[0]).astype('int')
-        cell_index_y = np.floor((y - self.origin_xy[1]) / self.cell_size[1]).astype('int')
+        cell_index_x = np.floor((x - self.origin_xy[0]) / self.cell_size[0]).astype("int")
+        cell_index_y = np.floor((y - self.origin_xy[1]) / self.cell_size[1]).astype("int")
 
         # determine which coords are within the grid
         mask = self.valid_cell_coords(cell_index_x, cell_index_y)

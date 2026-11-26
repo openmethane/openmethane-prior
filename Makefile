@@ -22,8 +22,12 @@ run-example:  ## Run the project for an example period
 	uv run python scripts/omPrior.py --start-date 2022-07-01 --end-date 2022-07-01
 
 .PHONY: format
-format:  # Run ruff on the project
-	uv format
+format:  ## Format the code with ruff (the version locked in uv.lock, as CI uses)
+	uv run ruff format .
+
+.PHONY: check-format
+check-format:  ## Check the code is formatted, without changing it
+	uv run ruff format --check .
 
 .PHONY: test
 test:  ## Run the tests

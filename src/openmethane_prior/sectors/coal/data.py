@@ -16,9 +16,13 @@
 # limitations under the License.
 #
 import datetime
+
 import pandas as pd
 
-from openmethane_prior.data_sources.climate_trace import climate_trace_data_source, parse_emissions_sources
+from openmethane_prior.data_sources.climate_trace import (
+    climate_trace_data_source,
+    parse_emissions_sources,
+)
 from openmethane_prior.lib import (
     ConfiguredDataSource,
     DataSource,
@@ -32,5 +36,5 @@ coal_facilities_data_source = DataSource(
     name="coal-facilities",
     data_sources=[climate_trace_data_source],
     parse=parse_emissions_sources,
-    file_path='climate-trace-AUS/DATA/fossil_fuel_operations/coal-mining_emissions_sources_v4_8_0.csv',
+    file_path="climate-trace-AUS/DATA/fossil_fuel_operations/coal-mining_emissions_sources_v4_8_0.csv",
 )

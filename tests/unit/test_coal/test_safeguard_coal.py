@@ -98,10 +98,12 @@ def test_allocate_safeguard_facility_emissions_mine_outside_domain(domain_grid, 
 
 
 def test_allocate_safeguard_facility_emissions_no_location(domain_grid, coal_facilities_df, caplog):
-    safeguard_facilities_df = pd.DataFrame({
-        "facility_name": ["Facility 1", "Facility 2"],
-        "ch4_kg": [100.0, 25.0],
-    })
+    safeguard_facilities_df = pd.DataFrame(
+        {
+            "facility_name": ["Facility 1", "Facility 2"],
+            "ch4_kg": [100.0, 25.0],
+        }
+    )
     facility_locations_df = facility_locations([("Facility 1", "Mine B")])
 
     with caplog.at_level(logging.WARNING):
@@ -143,11 +145,13 @@ def test_allocate_safeguard_facility_emissions_unknown_mine(
 
 def test_allocate_safeguard_facility_emissions_other_data_source(domain_grid, coal_facilities_df):
     safeguard_facilities_df = pd.DataFrame({"facility_name": ["Facility 1"], "ch4_kg": [100.0]})
-    facility_locations_df = pd.DataFrame({
-        "safeguard_facility_name": ["Facility 1", "Facility 1"],
-        "data_source_name": ["coal-facilities", "npi-facilities"],
-        "data_source_id": ["Mine B", "Mine C"],
-    })
+    facility_locations_df = pd.DataFrame(
+        {
+            "safeguard_facility_name": ["Facility 1", "Facility 1"],
+            "data_source_name": ["coal-facilities", "npi-facilities"],
+            "data_source_id": ["Mine B", "Mine C"],
+        }
+    )
 
     facilities, locations, gridded = allocate_safeguard_facility_emissions(
         domain_grid=domain_grid,

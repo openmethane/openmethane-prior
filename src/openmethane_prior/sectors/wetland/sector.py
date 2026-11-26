@@ -17,7 +17,9 @@
 #
 
 """Processing wetland emissions"""
+
 import calendar
+
 import numpy as np
 import pandas as pd
 import xarray as xr
@@ -32,6 +34,7 @@ from openmethane_prior.lib.units import SECONDS_PER_DAY
 from openmethane_prior.sectors.wetland.data import MEAN_VARIABLE, satwet_data_source
 
 logger = logger.get_logger(__name__)
+
 
 def process_emissions(
     sector: PriorSector,
@@ -75,8 +78,7 @@ def process_emissions(
 
     # Build (year, month) → index lookup for O(1) time-step selection
     satwet_index = {
-        (pd.Timestamp(t).year, pd.Timestamp(t).month): i
-        for i, t in enumerate(wetlands_time)
+        (pd.Timestamp(t).year, pd.Timestamp(t).month): i for i, t in enumerate(wetlands_time)
     }
 
     # If the period of interest lies outside the range of dates in the input
@@ -95,7 +97,13 @@ def process_emissions(
 
         monthly_climatology = {
             month: np.mean(
-                regridded[[i for i, t in enumerate(regridded_da['time'].values) if pd.Timestamp(t).month == month]],
+                regridded[
+                    [
+                        i
+                        for i, t in enumerate(regridded_da["time"].values)
+                        if pd.Timestamp(t).month == month
+                    ]
+                ],
                 axis=0,
             )
             for month in range(1, 13)
@@ -116,7 +124,7 @@ def process_emissions(
 
     # source dataset is a coarse grid, and has emissions over ocean which
     # definitely shouldn't be classified as wetlands
-    land_mask = prior_ds['land_mask'].to_numpy()
+    land_mask = prior_ds["land_mask"].to_numpy()
     result_nd *= land_mask
 
     result_nd = np.expand_dims(result_nd, 1)  # adding single vertical dimension

@@ -16,10 +16,11 @@
 # limitations under the License.
 #
 import datetime
-import numpy as np
 import pathlib
 
-from openmethane_prior.lib import DataSource, ConfiguredDataSource
+import numpy as np
+
+from openmethane_prior.lib import ConfiguredDataSource, DataSource
 from openmethane_prior.lib.data_manager.fetchers import fetch_zipped_shp_to_gdf
 from openmethane_prior.lib.data_manager.parsers import parse_geo
 
@@ -35,10 +36,7 @@ def fetch_nt_titles(data_source: ConfiguredDataSource) -> pathlib.Path:
     # datetime64 objects aren't JSON serialisable, convert them to string
     for field_name in df.columns:
         if df.dtypes[field_name] == "datetime64[ms]":
-            df[field_name] = [
-                str(dt) if not np.isnat(dt) else None
-                for dt in df[field_name].values
-            ]
+            df[field_name] = [str(dt) if not np.isnat(dt) else None for dt in df[field_name].values]
 
     # write the data as geojson
     with open(data_source.asset_path, "w") as asset_file:
@@ -54,7 +52,7 @@ def fetch_nt_titles(data_source: ConfiguredDataSource) -> pathlib.Path:
 nt_titles_data_source = DataSource(
     name="NT-petroleum-titles",
     url="https://geoscience.nt.gov.au/contents/prod/Downloads/NT_PetroleumPipelineTitles_shp.zip",
-    file_path='NT-petroleum-titles.geojson',
+    file_path="NT-petroleum-titles.geojson",
     fetch=fetch_nt_titles,
     parse=parse_geo,
 )
@@ -69,7 +67,9 @@ def fetch_nt_wells(data_source: ConfiguredDataSource) -> pathlib.Path:
     for field_name in df.columns:
         if field_name.startswith("DT_"):
             df[field_name] = [
-                str(datetime.datetime.strptime(dt_str, "%Y%m%d%H%M%S")) if dt_str is not None else None
+                str(datetime.datetime.strptime(dt_str, "%Y%m%d%H%M%S"))
+                if dt_str is not None
+                else None
                 for dt_str in df[field_name].values
             ]
 
@@ -88,7 +88,7 @@ def fetch_nt_wells(data_source: ConfiguredDataSource) -> pathlib.Path:
 nt_wells_data_source = DataSource(
     name="NT-petroleum-wells",
     url="https://geoscience.nt.gov.au/contents/prod/Downloads/Drilling/PETROLEUM_WELLS_shp.zip",
-    file_path='NT-petroleum-wells.geojson',
+    file_path="NT-petroleum-wells.geojson",
     fetch=fetch_nt_wells,
     parse=parse_geo,
 )

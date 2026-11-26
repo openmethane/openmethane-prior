@@ -21,10 +21,10 @@ def test_simplify_anzsic_code():
     assert simplify_anzsic_code("11") == "11"
 
     # real examples
-    assert simplify_anzsic_code("060") == "06" # Coal mining
-    assert simplify_anzsic_code("1212") == "1212" # Beer manufacturing
+    assert simplify_anzsic_code("060") == "06"  # Coal mining
+    assert simplify_anzsic_code("1212") == "1212"  # Beer manufacturing
     assert simplify_anzsic_code("0141a") == "0141a"
-    assert simplify_anzsic_code("030a") == "030a" # Native Forestry and Logging, Native Forestry
+    assert simplify_anzsic_code("030a") == "030a"  # Native Forestry and Logging, Native Forestry
 
     # not handled
     # assert simplify_anzsic_code("0301a") == "030a1a" # Native Forestry and Logging, Native Forestry
@@ -66,7 +66,11 @@ def test_filter_by_anzsic_code_family_padded_codes():
     df_group = pd.DataFrame({"anzsic_code": ["20", "201", "202", "2021", "2029", "22"]})
     by_group = filter_by_anzsic_code_family(df_group, ["202"], column="anzsic_code")
     by_padded_group = filter_by_anzsic_code_family(df_group, ["2020"], column="anzsic_code")
-    assert list(by_group["anzsic_code"]) == list(by_padded_group["anzsic_code"]) == ["202", "2021", "2029"]
+    assert (
+        list(by_group["anzsic_code"])
+        == list(by_padded_group["anzsic_code"])
+        == ["202", "2021", "2029"]
+    )
 
     # subdivision-level: 2000 and 20 are equivalent; match entire subdivision 20
     by_subdivision = filter_by_anzsic_code_family(df_group, ["20"], column="anzsic_code")

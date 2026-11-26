@@ -46,7 +46,9 @@ def gas_supply_emissions(
     """
     gridded_emission = np.zeros(nightlights.domain_grid.shape)
 
-    logger.debug(f"Found {len(facilities_df)} gas supply facilities totalling {facilities_df['ch4_kg'].sum() / 1e6:.2f} kt CH4 in the period")
+    logger.debug(
+        f"Found {len(facilities_df)} gas supply facilities totalling {facilities_df['ch4_kg'].sum() / 1e6:.2f} kt CH4 in the period"
+    )
     for state in facilities_df["state"].unique():
         # combine all gas supply facility emissions in the state
         state_facilities = facilities_df[facilities_df["state"] == state]
@@ -80,15 +82,27 @@ def safeguard_operating_periods(
     :return: DataFrame with columns facility_name, operation_start and
       operation_end, with one row for each facility which has sites.
     """
-    site_locations_df = facility_locations_df[facility_locations_df["data_source_name"] == sites_data_source_name]
+    site_locations_df = facility_locations_df[
+        facility_locations_df["data_source_name"] == sites_data_source_name
+    ]
 
-    site_matches_df = site_locations_df.merge(oil_gas_sites_df, left_on="data_source_id", right_on="Site")
-    group_matches_df = site_locations_df.merge(oil_gas_sites_df, left_on="data_source_id", right_on="Facility name")
+    site_matches_df = site_locations_df.merge(
+        oil_gas_sites_df, left_on="data_source_id", right_on="Site"
+    )
+    group_matches_df = site_locations_df.merge(
+        oil_gas_sites_df, left_on="data_source_id", right_on="Facility name"
+    )
     facility_sites_df = pd.concat([site_matches_df, group_matches_df])
 
     operating_periods_df = facility_sites_df.groupby("safeguard_facility_name").agg(
-        operation_start=("Operation start", lambda dates: pd.NaT if dates.isna().any() else dates.min()),
-        operation_end=("Operation end", lambda dates: pd.NaT if dates.isna().any() else dates.max()),
+        operation_start=(
+            "Operation start",
+            lambda dates: pd.NaT if dates.isna().any() else dates.min(),
+        ),
+        operation_end=(
+            "Operation end",
+            lambda dates: pd.NaT if dates.isna().any() else dates.max(),
+        ),
     )
 
     return operating_periods_df.reset_index(names="facility_name")

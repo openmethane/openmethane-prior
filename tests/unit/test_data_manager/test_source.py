@@ -1,6 +1,7 @@
 import pathlib
-import pytest
 from urllib.error import URLError
+
+import pytest
 
 from openmethane_prior.lib.config import PriorConfig
 from openmethane_prior.lib.data_manager.source import DataSource, configure_data_source
@@ -16,6 +17,7 @@ def test_source_file_path(tmp_path, config):
     configured_data_source = configure_data_source(test_data_source, config, tmp_path)
 
     assert configured_data_source.asset_path == tmp_path / "something-else.json"
+
 
 def test_source_data_path(tmp_path, config):
     data_path = tmp_path / "dynamic"
@@ -47,6 +49,7 @@ def test_source_data_path(tmp_path, config):
     )
     assert configured_dynamic.asset_path == data_path / "dynamic.txt"
 
+
 def test_source_file_path_absolute(tmp_path, config):
     # file_path provided
     test_data_source = DataSource(
@@ -58,6 +61,7 @@ def test_source_file_path_absolute(tmp_path, config):
 
     assert configured_data_source.asset_path == pathlib.Path("/var/prior/something-else.json")
 
+
 def test_source_file_path_from_url(tmp_path, config):
     # no file_path provided, defaults to last part of url
     test_data_source = DataSource(
@@ -67,6 +71,7 @@ def test_source_file_path_from_url(tmp_path, config):
     configured_data_source = configure_data_source(test_data_source, config, tmp_path)
 
     assert configured_data_source.asset_path == tmp_path / "UNFCCC-codes-AU.csv"
+
 
 def test_source_file_path_callable(tmp_path, config):
     # file_path as a method
@@ -121,9 +126,13 @@ def test_source_fetch_default(tmp_path, config):
     assert save_path == configured_data_source.asset_path
     assert save_path == data_path / "UNFCCC-codes-AU.csv"
 
-    with (pytest.raises(URLError) as e):
-        bad_data_source = configure_data_source(DataSource(
-            name="invalid-url",
-            url="https://invalid",
-        ), config, data_path)
+    with pytest.raises(URLError) as e:
+        bad_data_source = configure_data_source(
+            DataSource(
+                name="invalid-url",
+                url="https://invalid",
+            ),
+            config,
+            data_path,
+        )
         bad_data_source.fetch()

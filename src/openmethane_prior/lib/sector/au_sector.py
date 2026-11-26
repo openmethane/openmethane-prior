@@ -33,6 +33,7 @@ class AustraliaPriorSector(PriorSector):
     optional. Codes must not include Division, i.e.:
     - ["060", "07", "1111"] # valid
     """
+
     @anzsic_codes.validator
     def check_anzsic_codes(self, attribute, value):
         if value is not None:

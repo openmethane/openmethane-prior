@@ -15,8 +15,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-import geopandas as gpd
 import json
+
+import geopandas as gpd
 import pandas as pd
 from owslib.wfs import WebFeatureService
 
@@ -24,8 +25,8 @@ from openmethane_prior.lib import DataSource
 from openmethane_prior.lib.data_manager.parsers import parse_geo
 from openmethane_prior.lib.data_manager.source import ConfiguredDataSource
 
+NSW_GEOSCIENCE_WFS_URL = "https://public-gs.geoscience.nsw.gov.au/geoserver/wfs"
 
-NSW_GEOSCIENCE_WFS_URL="https://public-gs.geoscience.nsw.gov.au/geoserver/wfs"
 
 def fetch_nsw_drillholes(data_source: ConfiguredDataSource):
     geoserver_wfs = WebFeatureService(NSW_GEOSCIENCE_WFS_URL, version="2.0.0")
@@ -60,13 +61,17 @@ def fetch_nsw_drillholes(data_source: ConfiguredDataSource):
         outputFormat="application/json",
     )
 
-    features_df = pd.concat([
-        gpd.GeoDataFrame.from_features(json.loads(nsw_drillholes_feature_csg.read())),
-        gpd.GeoDataFrame.from_features(json.loads(nsw_drillholes_feature_petroleum.read())),
-    ])
+    features_df = pd.concat(
+        [
+            gpd.GeoDataFrame.from_features(json.loads(nsw_drillholes_feature_csg.read())),
+            gpd.GeoDataFrame.from_features(json.loads(nsw_drillholes_feature_petroleum.read())),
+        ]
+    )
 
     # only include drillholes relevant to CSG and petroleum production
-    features_df = features_df[features_df["business_purpose"].isin(["Coal seam methane", "Petroleum"])]
+    features_df = features_df[
+        features_df["business_purpose"].isin(["Coal seam methane", "Petroleum"])
+    ]
     features_df = features_df[features_df["hole_purpose"].isin(["Production"])]
 
     with open(data_source.asset_path, "w") as asset_file:

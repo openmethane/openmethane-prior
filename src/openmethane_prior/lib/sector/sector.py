@@ -16,19 +16,21 @@
 # limitations under the License.
 #
 from __future__ import annotations
+
+from collections.abc import Callable
 from typing import Self
 
 import attrs
-from collections.abc import Callable
 import numpy as np
 import xarray as xr
 
 from .config import PriorSectorConfig
 
 emission_categories = [
-    "natural", # originating in natural processes
-    "anthropogenic", # originating in human activity
+    "natural",  # originating in natural processes
+    "anthropogenic",  # originating in human activity
 ]
+
 
 @attrs.define
 class PriorSector:
@@ -36,6 +38,7 @@ class PriorSector:
     SectorMeta describes a methane emission source or sources by name
     and by various classification schemes.
     """
+
     name: str
     """A machine-friendly sector name that will be used in the name of the
     output variable, like `ch4_sector_{name}`"""
@@ -53,16 +56,17 @@ class PriorSector:
       - natural
       - anthropogenic
     """
+
     @emission_category.validator
     def check_emission_category(self, attribute, value):
         if value not in emission_categories:
             raise ValueError(f"emission_category must be one of {', '.join(emission_categories)}")
 
-
     unfccc_categories: list[str] = attrs.field(default=None)
     """List of UNFCCC CRT category codes for sectors which are represented in
     the emissions.
     """
+
     @unfccc_categories.validator
     def check_unfccc_categories(self, attribute, value):
         if self.emission_category == "natural" and value is not None:

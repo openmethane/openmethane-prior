@@ -21,11 +21,19 @@ import pandas as pd
 from openmethane_prior.data_sources.au_shapes import au_shapes_states_data_source
 from openmethane_prior.data_sources.npi import npi_facilities_data_source
 from openmethane_prior.lib import (
-    logger,
     DataManager,
     PriorConfig,
+    logger,
 )
 
+from ..data.au_pipelines import au_gas_pipelines_data_source
+from ..data.nopta import nopta_titles_data_source, nopta_wells_data_source
+from ..data.nsw_geo import nsw_drillholes_data_source, nsw_titles_data_source
+from ..data.nt_geo import nt_titles_data_source, nt_wells_data_source
+from ..data.oil_gas_sites import oil_gas_sites_data_source
+from ..data.qld_gis import qld_boreholes_data_source, qld_leases_data_source
+from ..data.sa_wells import sa_wells_data_source, sa_wells_production_data_source
+from ..data.wa_gis import wa_titles_data_source, wa_wells_data_source
 from ..emission_source import normalise_emission_source_df
 from .nsw_sources import nsw_emission_sources
 from .nt_sources import nt_emission_sources
@@ -35,16 +43,9 @@ from .qld_sources import qld_emission_sources
 from .sa_sources import sa_emission_sources
 from .site_sources import oil_gas_site_emission_sources
 from .wa_sources import wa_emission_sources
-from ..data.au_pipelines import au_gas_pipelines_data_source
-from ..data.nopta import nopta_titles_data_source, nopta_wells_data_source
-from ..data.nsw_geo import nsw_drillholes_data_source, nsw_titles_data_source
-from ..data.nt_geo import nt_titles_data_source, nt_wells_data_source
-from ..data.oil_gas_sites import oil_gas_sites_data_source
-from ..data.qld_gis import qld_boreholes_data_source, qld_leases_data_source
-from ..data.sa_wells import sa_wells_data_source, sa_wells_production_data_source
-from ..data.wa_gis import wa_titles_data_source, wa_wells_data_source
 
 logger = logger.get_logger(__name__)
+
 
 def all_emission_sources(
     data_manager: DataManager,
@@ -52,7 +53,8 @@ def all_emission_sources(
     anzsic_codes: list[str],
 ) -> gpd.GeoDataFrame:
     """Assemble a single DataFrame from multiple data sources, where each row
-    represents a possible location of emissions in the oil and gas sector."""
+    represents a possible location of emissions in the oil and gas sector.
+    """
     start_date = prior_config.start_date.date()
     end_date = prior_config.end_date.date()
 
@@ -116,13 +118,15 @@ def all_emission_sources(
     wa_df = normalise_emission_source_df(wa_df, prior_config.crs)
     logger.debug(f"found {len(wa_df)} WA sources in {len(wa_df['group_id'].unique())} titles")
 
-    states_df: gpd.GeoDataFrame = pd.concat([
-        nsw_df,
-        nt_df,
-        qld_df,
-        sa_df,
-        wa_df,
-    ])
+    states_df: gpd.GeoDataFrame = pd.concat(
+        [
+            nsw_df,
+            nt_df,
+            qld_df,
+            sa_df,
+            wa_df,
+        ]
+    )
 
     offshore_wells_da = data_manager.get_asset(nopta_wells_data_source)
     offshore_titles_da = data_manager.get_asset(nopta_titles_data_source)
@@ -137,8 +141,12 @@ def all_emission_sources(
     # NOPTA will have some wells that are already provided by state datasets,
     # which we must avoid "double counting"
     offshore_existing = states_df.sjoin_nearest(offshore_df, how="inner", max_distance=50)
-    offshore_new = offshore_df[~offshore_df["data_source_id"].isin(offshore_existing["data_source_id_right"])]
-    logger.debug(f"found {len(offshore_new)} offshore sources in {len(offshore_new['group_id'].unique())} titles")
+    offshore_new = offshore_df[
+        ~offshore_df["data_source_id"].isin(offshore_existing["data_source_id_right"])
+    ]
+    logger.debug(
+        f"found {len(offshore_new)} offshore sources in {len(offshore_new['group_id'].unique())} titles"
+    )
 
     # oil and gas sites such as refineries, processing plants, shipping
     # terminals, compressor units, all may be possible sources of emissions
@@ -152,7 +160,9 @@ def all_emission_sources(
         anzsic_codes=anzsic_codes,
     )
     sites_df = normalise_emission_source_df(sites_df, prior_config.crs)
-    logger.debug(f"found {len(sites_df[sites_df['data_source'] == oil_gas_sites_da.name])} oil and gas facilities")
+    logger.debug(
+        f"found {len(sites_df[sites_df['data_source'] == oil_gas_sites_da.name])} oil and gas facilities"
+    )
     logger.debug(f"found {len(sites_df[sites_df['data_source'] == npi_da.name])} NPI facilities")
 
     # national oil and gas pipelines dataset
@@ -167,12 +177,13 @@ def all_emission_sources(
     pipelines_df = normalise_emission_source_df(pipelines_df, prior_config.crs)
     logger.debug(f"found {len(pipelines_df)} pipelines")
 
-    all_df: gpd.GeoDataFrame = pd.concat([
-        states_df,
-        offshore_new,
-        sites_df,
-        pipelines_df,
-    ])
+    all_df: gpd.GeoDataFrame = pd.concat(
+        [
+            states_df,
+            offshore_new,
+            sites_df,
+            pipelines_df,
+        ]
+    )
 
     return all_df
-
